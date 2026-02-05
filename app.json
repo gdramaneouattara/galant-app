@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "YAMO",
+    "slug": "yamo-app",
+    "scheme": "yamo",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "YAMO utilise votre position pour les profils à proximité."
+      }
+    },
+    "android": {
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "platforms": ["ios", "android"],
+    "plugins": [
+      "expo-asset"
+    ]
+  }
+}
