@@ -5,10 +5,10 @@
     "scheme": "yamo",
     "version": "0.1.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon-1024.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/splash-1242x2436.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -18,18 +18,27 @@
     "ios": {
       "supportsTablet": false,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "YAMO utilise votre position pour les profils à proximité."
+        "NSLocationWhenInUseUsageDescription": "YAMO utilise votre position pour les profils \u00e0 proximit\u00e9."
       }
     },
     "android": {
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
-      ]
+      ],
+      "package": "com.gdramane.ouattara.yamoapp"
     },
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "plugins": [
       "expo-asset"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "733b0be9-2861-4be4-b674-e2bbe80e30a0"
+      }
+    }
   }
 }
