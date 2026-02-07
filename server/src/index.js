@@ -19,6 +19,8 @@ const {
   SUPABASE_SERVICE_ROLE_KEY,
   SUPABASE_JWT_SECRET,
   PAYSTACK_SECRET_KEY,
+  SIMULATE_PAYMENTS = 'false',
+  PAYSTACK_SIMULATE = 'false',
   PAYSTACK_CURRENCY = 'XOF',
   PAYSTACK_CALLBACK_URL,
   PLAN_MONTHLY_AMOUNT = '300000',
@@ -29,14 +31,18 @@ const {
   KYC_VERIFICATION_URL = '',
 } = process.env;
 
+const simulatePayments =
+  SIMULATE_PAYMENTS.toLowerCase() === 'true' || PAYSTACK_SIMULATE.toLowerCase() === 'true';
+
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_JWT_SECRET) {
   throw new Error('Missing SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, or SUPABASE_JWT_SECRET');
 }
-if (!PAYSTACK_SECRET_KEY) {
+if (!PAYSTACK_SECRET_KEY && !simulatePayments) {
   throw new Error('Missing PAYSTACK_SECRET_KEY');
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const simulatedPayments = new Map();
 
 const PLAN_CONFIG = {
   MONTHLY: { amount: Number(PLAN_MONTHLY_AMOUNT), durationDays: 30 },
@@ -116,6 +122,16 @@ app.post('/api/payments/initialize', requireAuth, async (req, res) => {
     const plan = PLAN_CONFIG[planKey];
     if (!plan) return res.status(400).json({ error: 'invalid_plan' });
 
+    if (simulatePayments) {
+      const reference = `sim_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      simulatedPayments.set(reference, { userId: req.user.id, planId: planKey });
+      return res.json({
+        authorization_url: PAYSTACK_CALLBACK_URL || 'https://example.com/simulated',
+        reference,
+        simulated: true,
+      });
+    }
+
     let email = req.user.email;
     if (!email) {
       const { data: userData, error: userError } = await supabase.auth.admin.getUserById(req.user.id);
@@ -157,6 +173,14 @@ app.get('/api/payments/verify', requireAuth, async (req, res) => {
     const reference = req.query.reference;
     if (!reference) return res.status(400).json({ error: 'missing_reference' });
 
+    if (simulatePayments) {
+      const simulated = simulatedPayments.get(reference) || {};
+      const planId = simulated.planId || 'MONTHLY';
+      const userId = simulated.userId || req.user.id;
+      await upsertSubscription({ userId, planId, reference, status: 'active' });
+      return res.json({ status: 'active', reference, simulated: true });
+    }
+
     const data = await paystackRequest(`/transaction/verify/${reference}`);
     const status = data.data.status === 'success' ? 'active' : data.data.status;
     const planId = data.data.metadata?.plan_id || 'MONTHLY';
@@ -174,6 +198,10 @@ app.get('/api/payments/verify', requireAuth, async (req, res) => {
 });
 
 app.post('/api/payments/webhook', async (req, res) => {
+  if (simulatePayments) {
+    return res.json({ received: true, simulated: true });
+  }
+
   const signature = req.headers['x-paystack-signature'];
   if (!signature) return res.status(400).json({ error: 'missing_signature' });
 

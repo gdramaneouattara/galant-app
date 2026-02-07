@@ -55,6 +55,7 @@ npm run dev
 - `PAYSTACK_SECRET_KEY`
 - `PAYSTACK_CURRENCY` (ex: XOF)
 - `PAYSTACK_CALLBACK_URL` (optionnel)
+- `SIMULATE_PAYMENTS=true` (optionnel: désactive Paystack et simule le paiement)
 - `PLAN_*_AMOUNT` (montants en plus petite unité)
 - `KYC_PROVIDER` + `KYC_VERIFICATION_URL` (si fournisseur manuel)
 
