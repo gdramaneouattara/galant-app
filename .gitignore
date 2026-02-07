@@ -35,7 +35,7 @@ build/
 .expo-shared/
 web-build/
 
-# If you generate native folders locally (prebuild)
+# Native builds (prebuild)
 android/.gradle/
 android/build/
 ios/build/
@@ -47,10 +47,12 @@ ios/Pods/
 coverage/
 
 # =========================
-# Editor / IDE
+# IDE / OS
 # =========================
 .idea/
 .vscode/
+.DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
@@ -58,12 +60,6 @@ coverage/
 *.sw?
 
 # =========================
-# OS
-# =========================
-.DS_Store
-Thumbs.db
-
-# =========================
-# Misc caches
+# Cache
 # =========================
 .cache/
