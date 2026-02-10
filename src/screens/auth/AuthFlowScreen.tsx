@@ -272,7 +272,13 @@ const AuthFlowScreen: React.FC = () => {
     <SafeAreaView style={styles.safe}>
       {isProfileStep && (
         <View style={styles.header}>
-          <Pressable onPress={prevStep} style={styles.backButton}>
+          <Pressable
+            onPress={prevStep}
+            style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel="Retour a l'etape precedente"
+            hitSlop={10}
+          >
             <ChevronLeft color={COLORS.muted} size={24} />
           </Pressable>
           <Text style={styles.stepText}>Étape {profileSteps.indexOf(step) + 1} sur {profileSteps.length}</Text>
@@ -294,7 +300,12 @@ const AuthFlowScreen: React.FC = () => {
           </View>
           <View style={styles.welcomeActions}>
             <PrimaryButton label="Créer un compte" onPress={() => goTo('signup')} />
-            <Pressable style={styles.secondaryButton} onPress={() => goTo('login')}>
+            <Pressable
+              style={styles.secondaryButton}
+              onPress={() => goTo('login')}
+              accessibilityRole="button"
+              accessibilityLabel="Se connecter"
+            >
               <Text style={styles.secondaryLabel}>Se connecter</Text>
             </Pressable>
             <Text style={styles.legal}>En continuant, vous confirmez avoir 18 ans et acceptez nos conditions.</Text>
@@ -304,7 +315,13 @@ const AuthFlowScreen: React.FC = () => {
 
       {(step === 'signup' || step === 'login') && (
         <ScrollView contentContainerStyle={styles.content}>
-          <Pressable onPress={() => goTo('welcome')} style={{ alignSelf: 'flex-start' }}>
+          <Pressable
+            onPress={() => goTo('welcome')}
+            style={styles.topBackButton}
+            accessibilityRole="button"
+            accessibilityLabel="Retour a l'accueil"
+            hitSlop={10}
+          >
             <ChevronLeft color={COLORS.muted} size={32} />
           </Pressable>
 
@@ -317,9 +334,12 @@ const AuthFlowScreen: React.FC = () => {
               value={email}
               onChangeText={setEmail}
               placeholder="ton@email.com"
+              placeholderTextColor="#475569"
               autoCapitalize='none'
               autoComplete='email'
               keyboardType="email-address"
+              textContentType="emailAddress"
+              accessibilityLabel="Adresse email"
               style={styles.input}
             />
           </View>
@@ -329,7 +349,10 @@ const AuthFlowScreen: React.FC = () => {
               value={password}
               onChangeText={setPassword}
               placeholder="Ton mot de passe"
+              placeholderTextColor="#475569"
               secureTextEntry
+              textContentType="password"
+              accessibilityLabel="Mot de passe"
               style={styles.input}
             />
           </View>
@@ -352,6 +375,8 @@ const AuthFlowScreen: React.FC = () => {
               value={form.name}
               onChangeText={(text) => setForm({ ...form, name: text })}
               placeholder="Ton prénom"
+              placeholderTextColor="#475569"
+              accessibilityLabel="Prenom"
               style={styles.input}
             />
           </View>
@@ -361,7 +386,9 @@ const AuthFlowScreen: React.FC = () => {
               value={form.age}
               onChangeText={(text) => setForm({ ...form, age: text })}
               placeholder="18+"
+              placeholderTextColor="#475569"
               keyboardType="number-pad"
+              accessibilityLabel="Age"
               style={styles.input}
             />
           </View>
@@ -373,6 +400,8 @@ const AuthFlowScreen: React.FC = () => {
                   key={gender}
                   onPress={() => setForm({ ...form, gender })}
                   style={[styles.choiceButton, form.gender === gender && styles.choiceButtonActive]}
+                  accessibilityRole="button"
+                  accessibilityLabel={gender === Gender.FEMALE ? 'Choisir Femme' : 'Choisir Homme'}
                 >
                   <Text style={[styles.choiceLabel, form.gender === gender && styles.choiceLabelActive]}>
                     {gender === Gender.FEMALE ? 'Femme' : 'Homme'}
@@ -397,7 +426,14 @@ const AuthFlowScreen: React.FC = () => {
             {[0, 1, 2, 3, 4, 5].map((slot) => {
               const uri = form.photos[slot];
               return (
-                <Pressable key={slot} onPress={pickImage} style={styles.photoSlot}>
+                <Pressable
+                  key={slot}
+                  onPress={pickImage}
+                  style={styles.photoSlot}
+                  accessibilityRole="button"
+                  accessibilityLabel={uri ? `Photo ${slot + 1}` : `Ajouter la photo ${slot + 1}`}
+                  hitSlop={6}
+                >
                   {uri ? (
                     <Image source={{ uri }} style={styles.photo} />
                   ) : (
@@ -422,7 +458,9 @@ const AuthFlowScreen: React.FC = () => {
             value={form.bio}
             onChangeText={(text) => setForm({ ...form, bio: text })}
             placeholder="Écris une courte bio..."
+            placeholderTextColor="#475569"
             multiline
+            accessibilityLabel="Biographie"
             style={[styles.input, styles.textArea]}
           />
           <PrimaryButton label="Continuer" onPress={nextStep} disabled={!form.bio} />
@@ -441,6 +479,8 @@ const AuthFlowScreen: React.FC = () => {
                   key={interest}
                   onPress={() => toggleInterest(interest)}
                   style={[styles.tag, active && styles.tagActive]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${interest}${active ? ', selectionne' : ''}`}
                 >
                   <Text style={[styles.tagText, active && styles.tagTextActive]}>{interest}</Text>
                 </Pressable>
@@ -455,7 +495,12 @@ const AuthFlowScreen: React.FC = () => {
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.title}>Localisation</Text>
           <Text style={styles.caption}>Pour te proposer des profils proches de toi.</Text>
-          <Pressable style={styles.locationCard} onPress={detectLocation}>
+          <Pressable
+            style={styles.locationCard}
+            onPress={detectLocation}
+            accessibilityRole="button"
+            accessibilityLabel="Detecter ma position"
+          >
             <MapPin color={COLORS.primary} size={24} />
             <View style={styles.locationCopy}>
               <Text style={styles.locationTitle}>Détecter ma position</Text>
@@ -482,7 +527,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   backButton: {
-    padding: 6,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerSpacer: {
     width: 24,
@@ -561,6 +609,13 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     gap: 18,
   },
+  topBackButton: {
+    alignSelf: 'flex-start',
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   title: {
     fontSize: 28,
     fontWeight: '900',
@@ -576,17 +631,19 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#94a3b8',
+    color: '#334155',
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   input: {
     backgroundColor: '#f8fafc',
     borderRadius: 16,
+    minHeight: 52,
     padding: 14,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     fontSize: 16,
+    color: COLORS.ink,
   },
   textArea: {
     height: 120,
@@ -611,7 +668,7 @@ const styles = StyleSheet.create({
   },
   choiceLabel: {
     fontWeight: '700',
-    color: '#94a3b8',
+    color: '#475569',
   },
   choiceLabelActive: {
     color: '#fff',

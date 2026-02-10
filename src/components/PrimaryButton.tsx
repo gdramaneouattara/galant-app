@@ -14,6 +14,9 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({ label, onPress, disabled,
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!disabled }}
+      accessibilityLabel={label}
       style={({ pressed }) => [
         styles.button,
         disabled && styles.buttonDisabled,
@@ -30,7 +33,9 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: COLORS.primary,
     borderRadius: 22,
+    minHeight: 52,
     paddingVertical: 16,
+    paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
