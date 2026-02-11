@@ -58,54 +58,67 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const refreshProfiles = async () => {
-    const { data, error } = await supabase.from('profiles').select('*');
-    if (error) {
+    try {
+      const { data, error } = await supabase.from('profiles').select('*');
+      if (error) {
+        setLastError("Impossible de charger les profils.");
+        return;
+      }
+      if (data) {
+        setLastError(null);
+        setUsers(data.map(mapProfileToUser));
+      }
+    } catch (_e) {
       setLastError("Impossible de charger les profils.");
-      return;
-    }
-    if (data) {
-      setLastError(null);
-      setUsers(data.map(mapProfileToUser));
     }
   };
 
 
   const refreshCurrentUser = async (): Promise<User | null> => {
     if (!session?.user) return null;
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .single();
-    if (error) {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+      if (error) {
+        setLastError("Impossible de charger votre profil.");
+        return null;
+      }
+      if (profile) {
+        setLastError(null);
+        const mapped = mapProfileToUser(profile);
+        setCurrentUser(mapped);
+        return mapped;
+      }
+      return null;
+    } catch (_e) {
       setLastError("Impossible de charger votre profil.");
       return null;
     }
-    if (profile) {
-      setLastError(null);
-      const mapped = mapProfileToUser(profile);
-      setCurrentUser(mapped);
-      return mapped;
-    }
-    return null;
   };
 
 
   const refreshMatches = async () => {
     if (!session?.user) return;
     const uid = session.user.id;
-    const { data, error } = await supabase
-      .from('matches')
-      .select('*')
-      .or(`user_one_id.eq.${uid},user_two_id.eq.${uid}`)
-      .order('created_at', { ascending: false });
-    if (error) {
+    try {
+      const { data, error } = await supabase
+        .from('matches')
+        .select('*')
+        .or(`user_one_id.eq.${uid},user_two_id.eq.${uid}`)
+        .order('created_at', { ascending: false });
+      if (error) {
+        setLastError("Impossible de charger les matchs.");
+        return;
+      }
+      if (data) {
+        setLastError(null);
+        setMatches(data as Match[]);
+      }
+    } catch (_e) {
       setLastError("Impossible de charger les matchs.");
-      return;
-    }
-    if (data) {
-      setLastError(null);
-      setMatches(data as Match[]);
     }
   };
 
@@ -116,18 +129,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setMessages([]);
       return;
     }
-    const { data, error } = await supabase
-      .from('messages')
-      .select('*')
-      .in('match_id', matchIds)
-      .order('created_at', { ascending: true });
-    if (error) {
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .in('match_id', matchIds)
+        .order('created_at', { ascending: true });
+      if (error) {
+        setLastError("Impossible de charger les messages.");
+        return;
+      }
+      if (data) {
+        setLastError(null);
+        setMessages(data as Message[]);
+      }
+    } catch (_e) {
       setLastError("Impossible de charger les messages.");
-      return;
-    }
-    if (data) {
-      setLastError(null);
-      setMessages(data as Message[]);
     }
   };
 
@@ -141,51 +158,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const fetchSessionAndProfile = async () => {
       setLoading(true);
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      setSession(currentSession);
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
 
-      if (currentSession?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', currentSession.user.id)
-          .single();
+        if (currentSession?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', currentSession.user.id)
+            .single();
 
-        if (profile) {
-          setCurrentUser(mapProfileToUser(profile));
+          if (profile) {
+            setCurrentUser(mapProfileToUser(profile));
+          }
+          await refreshProfiles();
+          await refreshMatches();
         }
-        await refreshProfiles();
-        await refreshMatches();
+      } catch (_e) {
+        setLastError("Impossible d'initialiser la session.");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchSessionAndProfile();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
-      setSession(newSession);
-      if (newSession?.user && newSession.user.id !== currentUser?.id) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', newSession.user.id)
-          .single();
+      try {
+        setSession(newSession);
+        if (newSession?.user && newSession.user.id !== currentUser?.id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', newSession.user.id)
+            .single();
 
-        if (profile) {
-          setCurrentUser(mapProfileToUser(profile));
+          if (profile) {
+            setCurrentUser(mapProfileToUser(profile));
+          }
+          await refreshProfiles();
+          await refreshMatches();
+        } else if (!newSession) {
+          setCurrentUser(null);
+          setUsers([]);
+          setMatches([]);
+          setMessages([]);
+          clearMatchChannels();
+          if (matchesChannelRef.current) {
+            supabase.removeChannel(matchesChannelRef.current);
+            matchesChannelRef.current = null;
+          }
         }
-        await refreshProfiles();
-        await refreshMatches();
-      } else if (!newSession) {
-        setCurrentUser(null);
-        setUsers([]);
-        setMatches([]);
-        setMessages([]);
-        clearMatchChannels();
-        if (matchesChannelRef.current) {
-          supabase.removeChannel(matchesChannelRef.current);
-          matchesChannelRef.current = null;
-        }
+      } catch (_e) {
+        setLastError("Impossible de synchroniser la session.");
       }
     });
 

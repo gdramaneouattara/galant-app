@@ -1,9 +1,23 @@
 import { supabase } from './supabase';
+import { Platform } from 'react-native';
 
 type ApiOptions = RequestInit & { requireAuth?: boolean };
 
 const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
 const normalizedApiBaseUrl = apiBaseUrl?.replace(/\/$/, '');
+
+const getRuntimeApiBaseUrl = () => {
+  if (!normalizedApiBaseUrl) return normalizedApiBaseUrl;
+
+  // Android emulators cannot access the host machine via localhost/127.0.0.1.
+  if (Platform.OS === 'android') {
+    return normalizedApiBaseUrl
+      .replace('://127.0.0.1', '://10.0.2.2')
+      .replace('://localhost', '://10.0.2.2');
+  }
+
+  return normalizedApiBaseUrl;
+};
 
 if (!normalizedApiBaseUrl) {
   throw new Error('EXPO_PUBLIC_API_BASE_URL is missing.');
@@ -23,7 +37,8 @@ export const apiRequest = async <T>(path: string, options: ApiOptions = {}): Pro
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(`${normalizedApiBaseUrl}${path}`, {
+  const runtimeApiBaseUrl = getRuntimeApiBaseUrl();
+  const response = await fetch(`${runtimeApiBaseUrl}${path}`, {
     ...options,
     headers,
   });
