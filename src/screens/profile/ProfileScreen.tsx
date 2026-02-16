@@ -32,7 +32,7 @@ const ProfileScreen: React.FC = () => {
           <View style={[styles.badge, currentUser.isPremium ? styles.badgePremium : styles.badgeFree]}>
             {currentUser.isPremium && <Crown size={14} color="#d97706" />}
             <Text style={[styles.badgeText, currentUser.isPremium ? styles.badgeTextPremium : styles.badgeTextFree]}>
-              {currentUser.isPremium ? 'MEMBRE PREMIUM' : 'MODÈLE GRATUIT'}
+              {currentUser.isPremium ? 'Membre Premium' : 'MODÈLE GRATUIT'}
             </Text>
           </View>
         </View>

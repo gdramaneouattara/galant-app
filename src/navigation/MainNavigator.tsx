@@ -10,6 +10,7 @@ import ChatScreen from '../screens/messages/ChatScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import PremiumScreen from '../screens/premium/PremiumScreen';
 import VerifyScreen from '../screens/verify/VerifyScreen';
+import BoostScreen from '../screens/boost/BoostScreen';
 import { COLORS } from '../data/mock';
 
 export type RootStackParamList = {
@@ -18,6 +19,7 @@ export type RootStackParamList = {
   Chat: { userId: string; matchId: string };
   Premium: undefined;
   Verify: undefined;
+  Boost: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -80,6 +82,7 @@ const MainNavigator: React.FC<NavigatorProps> = ({ isAuthenticated }) => (
           <Stack.Screen name="Chat" component={ChatScreen} />
           <Stack.Screen name="Premium" component={PremiumScreen} />
           <Stack.Screen name="Verify" component={VerifyScreen} />
+          <Stack.Screen name="Boost" component={BoostScreen} />
         </>
       )}
     </Stack.Navigator>

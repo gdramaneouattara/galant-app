@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const jwt = require('jsonwebtoken');
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
@@ -17,7 +16,6 @@ const {
   PORT = 8787,
   SUPABASE_URL,
   SUPABASE_SERVICE_ROLE_KEY,
-  SUPABASE_JWT_SECRET,
   PAYSTACK_SECRET_KEY,
   SIMULATE_PAYMENTS = 'false',
   PAYSTACK_SIMULATE = 'false',
@@ -27,6 +25,9 @@ const {
   PLAN_QUARTERLY_AMOUNT = '900000',
   PLAN_BIANNUAL_AMOUNT = '1500000',
   PLAN_ANNUAL_AMOUNT = '3000000',
+  BOOST_DAILY_AMOUNT = '100000',
+  BOOST_3_DAYS_AMOUNT = '250000',
+  BOOST_7_DAYS_AMOUNT = '500000',
   KYC_PROVIDER = 'manual',
   KYC_VERIFICATION_URL = '',
 } = process.env;
@@ -34,8 +35,8 @@ const {
 const simulatePayments =
   SIMULATE_PAYMENTS.toLowerCase() === 'true' || PAYSTACK_SIMULATE.toLowerCase() === 'true';
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_JWT_SECRET) {
-  throw new Error('Missing SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, or SUPABASE_JWT_SECRET');
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
 }
 if (!PAYSTACK_SECRET_KEY && !simulatePayments) {
   throw new Error('Missing PAYSTACK_SECRET_KEY');
@@ -51,13 +52,27 @@ const PLAN_CONFIG = {
   ANNUAL: { amount: Number(PLAN_ANNUAL_AMOUNT), durationDays: 365 },
 };
 
-const requireAuth = (req, res, next) => {
+const BOOST_CONFIG = {
+  DAILY: { amount: Number(BOOST_DAILY_AMOUNT), durationDays: 1 },
+  THREE_DAYS: { amount: Number(BOOST_3_DAYS_AMOUNT), durationDays: 3 },
+  SEVEN_DAYS: { amount: Number(BOOST_7_DAYS_AMOUNT), durationDays: 7 },
+};
+
+const requireAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
   if (!token) return res.status(401).json({ error: 'missing_token' });
+
   try {
-    const payload = jwt.verify(token, SUPABASE_JWT_SECRET);
-    req.user = { id: payload.sub, email: payload.email || payload.user_metadata?.email || '' };
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data?.user) {
+      return res.status(401).json({ error: 'invalid_token' });
+    }
+
+    req.user = {
+      id: data.user.id,
+      email: data.user.email || '',
+    };
     return next();
   } catch (err) {
     return res.status(401).json({ error: 'invalid_token' });
@@ -106,6 +121,21 @@ const upsertSubscription = async ({ userId, planId, reference, status }) => {
   const { error: profileError } = await supabase
     .from('profiles')
     .update({ is_premium: status === 'active' })
+    .eq('id', userId);
+
+  if (profileError) {
+    throw profileError;
+  }
+};
+
+const upsertBoost = async ({ userId, boostId, reference }) => {
+  const boost = BOOST_CONFIG[boostId];
+  const now = new Date();
+  const boostedUntil = boost ? new Date(now.getTime() + boost.durationDays * 24 * 60 * 60 * 1000) : null;
+
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ boosted_until: boostedUntil ? boostedUntil.toISOString() : null })
     .eq('id', userId);
 
   if (profileError) {
@@ -168,6 +198,60 @@ app.post('/api/payments/initialize', requireAuth, async (req, res) => {
   }
 });
 
+app.post('/api/boosts/initialize', requireAuth, async (req, res) => {
+  try {
+    const { boostId } = req.body || {};
+    const boostKey = boostId || 'DAILY';
+    const boost = BOOST_CONFIG[boostKey];
+    if (!boost) return res.status(400).json({ error: 'invalid_boost' });
+
+    if (simulatePayments) {
+      const reference = `sim_boost_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      simulatedPayments.set(reference, { userId: req.user.id, boostId: boostKey });
+      return res.json({
+        authorization_url: PAYSTACK_CALLBACK_URL || 'https://example.com/simulated',
+        reference,
+        simulated: true,
+      });
+    }
+
+    let email = req.user.email;
+    if (!email) {
+      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(req.user.id);
+      if (userError) {
+        console.error(userError);
+      }
+      email = userData?.user?.email || '';
+    }
+    if (!email) return res.status(400).json({ error: 'missing_email' });
+
+    const payload = {
+      email,
+      amount: boost.amount,
+      currency: PAYSTACK_CURRENCY,
+      callback_url: PAYSTACK_CALLBACK_URL || undefined,
+      metadata: {
+        user_id: req.user.id,
+        boost_id: boostKey,
+        type: 'boost',
+      },
+    };
+
+    const data = await paystackRequest('/transaction/initialize', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    return res.json({
+      authorization_url: data.data.authorization_url,
+      reference: data.data.reference,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'paystack_initialize_failed' });
+  }
+});
+
 app.get('/api/payments/verify', requireAuth, async (req, res) => {
   try {
     const reference = req.query.reference;
@@ -197,6 +281,35 @@ app.get('/api/payments/verify', requireAuth, async (req, res) => {
   }
 });
 
+app.get('/api/boosts/verify', requireAuth, async (req, res) => {
+  try {
+    const reference = req.query.reference;
+    if (!reference) return res.status(400).json({ error: 'missing_reference' });
+
+    if (simulatePayments) {
+      const simulated = simulatedPayments.get(reference) || {};
+      const boostId = simulated.boostId || 'DAILY';
+      const userId = simulated.userId || req.user.id;
+      await upsertBoost({ userId, boostId, reference });
+      return res.json({ status: 'active', reference, simulated: true });
+    }
+
+    const data = await paystackRequest(`/transaction/verify/${reference}`);
+    const status = data.data.status === 'success' ? 'active' : data.data.status;
+    const boostId = data.data.metadata?.boost_id || 'DAILY';
+    const userId = data.data.metadata?.user_id || req.user.id;
+
+    if (status === 'active') {
+      await upsertBoost({ userId, boostId, reference });
+    }
+
+    return res.json({ status, reference });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'paystack_verify_failed' });
+  }
+});
+
 app.post('/api/payments/webhook', async (req, res) => {
   if (simulatePayments) {
     return res.json({ received: true, simulated: true });
@@ -217,12 +330,18 @@ app.post('/api/payments/webhook', async (req, res) => {
   if (event?.event === 'charge.success') {
     const data = event.data || {};
     const status = data.status === 'success' ? 'active' : data.status;
-    const planId = data.metadata?.plan_id || 'MONTHLY';
+    const planId = data.metadata?.plan_id;
+    const boostId = data.metadata?.boost_id;
     const userId = data.metadata?.user_id;
     const reference = data.reference;
+
     if (userId && reference) {
       try {
-        await upsertSubscription({ userId, planId, reference, status });
+        if (planId) {
+          await upsertSubscription({ userId, planId, reference, status });
+        } else if (boostId) {
+          await upsertBoost({ userId, boostId, reference });
+        }
       } catch (err) {
         console.error('Webhook upsert failed', err);
       }
@@ -243,6 +362,14 @@ app.post('/api/kyc/initialize', requireAuth, async (_req, res) => {
   return res.status(501).json({ error: 'kyc_provider_not_supported' });
 });
 
+app.use((err, _req, res, _next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ error: 'invalid_json' });
+  }
+  console.error('Unhandled server error:', err);
+  return res.status(500).json({ error: 'internal_server_error' });
+});
+
 app.listen(PORT, () => {
-  console.log(`YAMO server running on http://localhost:${PORT}`);
+  console.log(`Yamo server running on http://localhost:${PORT}`);
 });

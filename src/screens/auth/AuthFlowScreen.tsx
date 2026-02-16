@@ -3,6 +3,7 @@ import React, { useMemo, useState } from 'react';
 import {
   Alert,
   Image,
+  ImageBackground,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -11,7 +12,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { Camera, ChevronLeft, MapPin } from 'lucide-react-native';
@@ -132,6 +132,7 @@ const AuthFlowScreen: React.FC = () => {
         location: { lat: 0, lng: 0, city: profile.city },
         isVerified: profile.is_verified,
         isPremium: profile.is_premium,
+        boosted_until: profile.boosted_until ?? null,
         preferences: {
           targetGender: profile.target_gender ?? [],
           minAge: 18,
@@ -254,6 +255,7 @@ const AuthFlowScreen: React.FC = () => {
         location: { lat: 0, lng: 0, city: profileData.city },
         isVerified: false,
         isPremium: false,
+        boosted_until: null,
         preferences: {
           targetGender: form.targetGender,
           minAge: 18,
@@ -292,10 +294,10 @@ const AuthFlowScreen: React.FC = () => {
       )}
 
       {step === 'welcome' && (
-        <LinearGradient colors={['#0f172a', '#111827']} style={styles.welcome}>
+        <ImageBackground source={require('../../../assets/akwaba-bg.png')} style={styles.welcome}>
           <View style={styles.welcomeTop}>
             <View style={styles.logoCircle}><Text style={styles.logoText}>Y</Text></View>
-            <Text style={styles.brand}>YAMO</Text>
+            <Text style={styles.brand}>Yamo</Text>
             <Text style={styles.subtitle}>L'amour authentique commence ici.</Text>
           </View>
           <View style={styles.welcomeActions}>
@@ -310,7 +312,7 @@ const AuthFlowScreen: React.FC = () => {
             </Pressable>
             <Text style={styles.legal}>En continuant, vous confirmez avoir 18 ans et acceptez nos conditions.</Text>
           </View>
-        </LinearGradient>
+        </ImageBackground>
       )}
 
       {(step === 'signup' || step === 'login') && (

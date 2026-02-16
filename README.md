@@ -1,4 +1,4 @@
-# YAMO — React Native (Expo)
+# Yamo — React Native (Expo)
 
 Cette base a été convertie du prototype web vers une app mobile React Native / Expo, prête pour pré‑prod.
 
@@ -34,7 +34,7 @@ EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:8787
 
 Un serveur Node est fourni dans `server/` pour :
 - Initialiser le paiement Paystack
-- Vérifier le paiement et activer le premium
+- Vérifier le paiement et activer le Premium
 - Démarrer le flux KYC (fournisseur configurable)
 
 ### Setup
@@ -51,7 +51,6 @@ npm run dev
 À renseigner dans `server/.env` :
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `SUPABASE_JWT_SECRET`
 - `PAYSTACK_SECRET_KEY`
 - `PAYSTACK_CURRENCY` (ex: XOF)
 - `PAYSTACK_CALLBACK_URL` (optionnel)

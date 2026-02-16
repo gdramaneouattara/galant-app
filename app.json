@@ -1,9 +1,10 @@
 {
   "expo": {
-    "name": "YAMO",
+    "name": "Yamo",
     "slug": "yamo-app",
     "scheme": "yamo",
     "version": "0.1.0",
+    "newArchEnabled": true,
     "orientation": "portrait",
     "icon": "./assets/icon-1024.png",
     "userInterfaceStyle": "light",
@@ -18,7 +19,7 @@
     "ios": {
       "supportsTablet": false,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "YAMO utilise votre position pour les profils \u00e0 proximit\u00e9."
+        "NSLocationWhenInUseUsageDescription": "Yamo utilise votre position pour les profils \u00e0 proximit\u00e9."
       }
     },
     "android": {

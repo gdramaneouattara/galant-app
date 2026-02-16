@@ -11,9 +11,10 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { RouteProp, useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
 import { ChevronLeft, Crown, Send } from 'lucide-react-native';
-import { RootStackParamList } from '../../navigation/MainNavigator';
+import type { RootStackParamList } from '../../navigation/MainNavigator';
 import { useApp } from '../../state/AppContext';
 import { COLORS } from '../../data/mock';
 import { supabase } from '../../lib/supabase';

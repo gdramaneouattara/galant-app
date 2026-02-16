@@ -8,23 +8,37 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Heart, MapPin, ShieldCheck, X } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Heart, MapPin, ShieldCheck, X, Rocket } from 'lucide-react-native';
 import { COLORS } from '../../data/mock';
 import { Match, User } from '../../types';
 import { useApp } from '../../state/AppContext';
 import { supabase } from '../../lib/supabase';
 import { logError, logEvent } from '../../lib/analytics';
+import type { RootStackParamList } from '../../navigation/MainNavigator';
+
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const HomeScreen: React.FC = () => {
+  const navigation = useNavigation<Nav>();
   const { users, currentUser, matches, addMatch, refreshMatches } = useApp();
   const [homeTab, setHomeTab] = useState<'discover' | 'nearby'>('discover');
   const [swipeIndex, setSwipeIndex] = useState(0);
   const [matchUser, setMatchUser] = useState<User | null>(null);
 
-  const availableProfiles = useMemo(
-    () => users.filter((u) => u.id !== currentUser?.id),
-    [users, currentUser?.id]
-  );
+  const availableProfiles = useMemo(() => {
+    const otherUsers = users.filter((u) => u.id !== currentUser?.id);
+    // Sort boosted profiles to the top
+    return otherUsers.sort((a, b) => {
+      const aBoosted = a.boosted_until && new Date(a.boosted_until) > new Date();
+      const bBoosted = b.boosted_until && new Date(b.boosted_until) > new Date();
+      if (aBoosted && !bBoosted) return -1;
+      if (!aBoosted && bBoosted) return 1;
+      return 0;
+    });
+  }, [users, currentUser?.id]);
+
   const currentProfile = availableProfiles[swipeIndex % Math.max(availableProfiles.length, 1)];
 
   const handleSwipe = async (direction: 'left' | 'right') => {
@@ -58,7 +72,7 @@ const HomeScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <Text style={styles.brand}>YAMO</Text>
+        <Text style={styles.brand}>Yamo</Text>
         <View style={styles.tabs}>
           <Pressable
             onPress={() => setHomeTab('discover')}
@@ -71,6 +85,9 @@ const HomeScreen: React.FC = () => {
             style={[styles.tab, homeTab === 'nearby' && styles.tabActive]}
           >
             <Text style={[styles.tabLabel, homeTab === 'nearby' && styles.tabLabelActive]}>À proximité</Text>
+          </Pressable>
+          <Pressable onPress={() => navigation.navigate('Boost')} style={styles.tab}>
+            <Rocket color={COLORS.primary} size={18} />
           </Pressable>
         </View>
       </View>

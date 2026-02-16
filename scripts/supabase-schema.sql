@@ -1,4 +1,4 @@
--- Base schema for YAMO
+-- Base schema for Yamo
 
 create extension if not exists "pgcrypto";
 
@@ -15,11 +15,13 @@ create table if not exists public.profiles (
   city text,
   is_verified boolean not null default false,
   is_premium boolean not null default false,
+  boosted_until timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 create index if not exists profiles_city_idx on public.profiles (city);
+create index if not exists profiles_boosted_until_idx on public.profiles (boosted_until desc nulls last);
 
 -- Auto-update updated_at
 create or replace function public.set_updated_at()
@@ -43,8 +45,10 @@ declare
 begin
   jwt_role := current_setting('request.jwt.claim.role', true);
   if jwt_role = 'authenticated' then
-    if new.is_premium is distinct from old.is_premium or new.is_verified is distinct from old.is_verified then
-      raise exception 'Not allowed to update premium/verified flags';
+    if new.is_premium is distinct from old.is_premium
+      or new.is_verified is distinct from old.is_verified
+      or new.boosted_until is distinct from old.boosted_until then
+      raise exception 'Not allowed to update sensitive flags (premium, verified, boost)';
     end if;
   end if;
   return new;

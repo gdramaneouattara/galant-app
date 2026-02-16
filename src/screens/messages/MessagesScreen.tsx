@@ -9,8 +9,8 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/MainNavigator';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../navigation/MainNavigator';
 import { useApp } from '../../state/AppContext';
 import { COLORS } from '../../data/mock';
 

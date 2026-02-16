@@ -1,67 +1,50 @@
 import React, { useState } from 'react';
 import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Crown } from 'lucide-react-native';
+import { Rocket } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
-import { COLORS, SUBSCRIPTION_PLANS } from '../../data/mock';
+import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 
-// Helper to simulate a delay
-const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const BOOST_PLANS = [
+  { id: 'DAILY', name: '1 Jour', price: '1000 F CFA' },
+  { id: 'THREE_DAYS', name: '3 Jours', price: '2500 F CFA', savings: '17%' },
+  { id: 'SEVEN_DAYS', name: '7 Jours', price: '5000 F CFA', savings: '29%' },
+];
 
-const PremiumScreen: React.FC = () => {
+const BoostScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { refreshCurrentUser, updateCurrentUser } = useApp();
+  const { refreshCurrentUser } = useApp();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
-  const subscribe = async (planId: string) => {
+  const boost = async (planId: string) => {
     if (loadingPlan) return;
     setLoadingPlan(planId);
 
-    // --- SIMULATION LOGIC ---
-    if (process.env.EXPO_PUBLIC_SIMULATE_PAYMENT === 'true') {
-      try {
-        await wait(2000); // Simulate network delay
-        updateCurrentUser({ isPremium: true }); // Directly update the user state
-        Alert.alert('Premium activé (Simulation)', 'Ton abonnement est maintenant actif.');
-        navigation.goBack();
-      } catch (error: any) {
-        Alert.alert('Erreur de simulation', error?.message);
-      } finally {
-        setLoadingPlan(null);
-      }
-      return;
-    }
-    // --- END SIMULATION LOGIC ---
-
     try {
       const init = await apiRequest<{ authorization_url: string; reference: string }>(
-        '/api/payments/initialize',
+        '/api/boosts/initialize',
         {
           method: 'POST',
-          body: JSON.stringify({ planId }),
+          body: JSON.stringify({ boostId: planId }),
           requireAuth: true,
         }
       );
 
-      const redirectUrl = Linking.createURL('paystack');
+      const redirectUrl = Linking.createURL('boost');
       await WebBrowser.openAuthSessionAsync(init.authorization_url, redirectUrl);
 
       const verify = await apiRequest<{ status: string; reference: string }>(
-        `/api/payments/verify?reference=${init.reference}`,
+        `/api/boosts/verify?reference=${init.reference}`,
         { requireAuth: true }
       );
 
       if (verify.status === 'active') {
-        const updated = await refreshCurrentUser();
-        if (updated?.isPremium) {
-          Alert.alert('Premium activé', 'Ton abonnement est actif.');
-          navigation.goBack();
-        } else {
-          Alert.alert('Paiement en attente', 'Le paiement est en cours de validation.');
-        }
+        await refreshCurrentUser();
+        Alert.alert('Boost activé', 'Ton profil est maintenant mis en avant.');
+        navigation.goBack();
       } else {
         Alert.alert('Paiement en attente', 'Le paiement est en cours de validation.');
       }
@@ -77,18 +60,18 @@ const PremiumScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.hero}>
           <View style={styles.iconWrap}>
-            <Crown color="#fff" size={42} />
+            <Rocket color="#fff" size={42} />
           </View>
-          <Text style={styles.title}>Yamo Premium</Text>
-          <Text style={styles.subtitle}>Débloque les messages et les filtres avancés.</Text>
+          <Text style={styles.title}>BOOSTER PROFIL</Text>
+          <Text style={styles.subtitle}>Mets ton profil en avant pour plus de matchs.</Text>
         </View>
 
         <View style={styles.plans}>
-          {SUBSCRIPTION_PLANS.map((plan) => (
+          {BOOST_PLANS.map((plan) => (
             <Pressable
               key={plan.id}
               style={[styles.planCard, loadingPlan === plan.id && styles.planCardDisabled]}
-              onPress={() => subscribe(plan.id)}
+              onPress={() => boost(plan.id)}
             >
               <View>
                 <Text style={styles.planName}>{plan.name}</Text>
@@ -121,7 +104,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 26,
-    backgroundColor: '#f59e0b',
+    backgroundColor: '#8b5cf6',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -158,7 +141,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   planSavings: {
-    color: '#f59e0b',
+    color: '#8b5cf6',
     fontWeight: '700',
   },
   planLoading: {
@@ -168,4 +151,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PremiumScreen;
+export default BoostScreen;

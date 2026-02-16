@@ -27,6 +27,7 @@ export interface User {
   };
   isVerified: boolean;
   isPremium: boolean;
+  boosted_until?: string | null;
   preferences: {
     targetGender: Gender[];
     minAge: number;

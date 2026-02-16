@@ -49,6 +49,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     location: { lat: 0, lng: 0, city: profile.city || '' },
     isVerified: !!profile.is_verified,
     isPremium: !!profile.is_premium,
+    boosted_until: profile.boosted_until ?? null,
     preferences: {
       targetGender: profile.target_gender || [],
       minAge: 18,
@@ -74,13 +75,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
 
-  const refreshCurrentUser = async (): Promise<User | null> => {
-    if (!session?.user) return null;
+  const refreshCurrentUser = async (userId?: string): Promise<User | null> => {
+    const resolvedUserId = userId ?? session?.user?.id;
+    if (!resolvedUserId) return null;
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', session.user.id)
+        .eq('id', resolvedUserId)
         .single();
       if (error) {
         setLastError("Impossible de charger votre profil.");
@@ -100,9 +102,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
 
-  const refreshMatches = async () => {
-    if (!session?.user) return;
-    const uid = session.user.id;
+  const refreshMatches = async (userId?: string) => {
+    const uid = userId ?? session?.user?.id;
+    if (!uid) return;
     try {
       const { data, error } = await supabase
         .from('matches')
@@ -173,7 +175,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setCurrentUser(mapProfileToUser(profile));
           }
           await refreshProfiles();
-          await refreshMatches();
+          await refreshMatches(currentSession.user.id);
         }
       } catch (_e) {
         setLastError("Impossible d'initialiser la session.");
@@ -198,7 +200,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setCurrentUser(mapProfileToUser(profile));
           }
           await refreshProfiles();
-          await refreshMatches();
+          await refreshMatches(newSession.user.id);
         } else if (!newSession) {
           setCurrentUser(null);
           setUsers([]);
