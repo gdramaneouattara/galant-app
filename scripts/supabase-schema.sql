@@ -20,6 +20,10 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
+-- Backward-compatible migrations for existing databases
+alter table if exists public.profiles
+  add column if not exists boosted_until timestamptz;
+
 create index if not exists profiles_city_idx on public.profiles (city);
 create index if not exists profiles_boosted_until_idx on public.profiles (boosted_until desc nulls last);
 

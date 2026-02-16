@@ -14,7 +14,7 @@ type AppContextValue = {
   lastError: string | null;
   clearError: () => void;
   login: (user: User) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   updateCurrentUser: (updates: Partial<User>) => void;
   addMatch: (match: Match) => void;
   addMessage: (message: Message) => void;
@@ -270,10 +270,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUser(user);
   };
 
-  const logout = async () => {
-    await supabase.auth.signOut();
+  const resetAuthState = () => {
     setCurrentUser(null);
     setSession(null);
+    setUsers([]);
+    setMatches([]);
+    setMessages([]);
+    clearMatchChannels();
+    if (matchesChannelRef.current) {
+      supabase.removeChannel(matchesChannelRef.current);
+      matchesChannelRef.current = null;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      if (error) {
+        throw error;
+      }
+    } catch (_e) {
+      setLastError("Déconnexion locale effectuée, mais la requête serveur a échoué.");
+    } finally {
+      resetAuthState();
+    }
   };
 
   const updateCurrentUser = (updates: Partial<User>) => {

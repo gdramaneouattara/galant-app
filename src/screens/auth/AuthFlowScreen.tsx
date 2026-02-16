@@ -14,13 +14,21 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { Camera, ChevronLeft, MapPin } from 'lucide-react-native';
+import * as WebBrowser from 'expo-web-browser';
+import { Camera, CheckSquare, ChevronLeft, MapPin, Square } from 'lucide-react-native';
 import { COLORS } from '../../data/mock';
 import { Gender } from '../../types';
 import { useApp } from '../../state/AppContext';
 import PrimaryButton from '../../components/PrimaryButton';
 import { supabase } from '../../lib/supabase';
 import { logEvent, logError } from '../../lib/analytics';
+
+const TERMS_URL =
+  process.env.EXPO_PUBLIC_TERMS_URL ||
+  'https://raw.githubusercontent.com/gdramaneouattara/yamo/main/docs/legal/conditions-utilisation-yamo.md';
+const PRIVACY_URL =
+  process.env.EXPO_PUBLIC_PRIVACY_URL ||
+  'https://raw.githubusercontent.com/gdramaneouattara/yamo/main/docs/legal/politique-confidentialite-yamo.md';
 
 const INTERESTS_OPTIONS = [
   'Voyage',
@@ -49,6 +57,7 @@ const AuthFlowScreen: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [hasAcceptedLegal, setHasAcceptedLegal] = useState(false);
 
   const [form, setForm] = useState({
     name: '',
@@ -81,9 +90,37 @@ const AuthFlowScreen: React.FC = () => {
     if (idx > 0) goTo(profileSteps[idx - 1]);
   };
 
+  const openLegalDocument = async (url: string, docType: 'cgu' | 'privacy') => {
+    try {
+      await WebBrowser.openBrowserAsync(url);
+      logEvent('ui', 'legal_document_opened', { docType });
+    } catch (error) {
+      logError(error, { action: 'open_legal_document', docType });
+      Alert.alert('Erreur', "Impossible d'ouvrir ce document pour le moment.");
+    }
+  };
+
   async function handleSignUp() {
+    if (!hasAcceptedLegal) {
+      Alert.alert(
+        'Consentement requis',
+        "Tu dois accepter les Conditions d'utilisation et la Politique de confidentialité pour créer un compte."
+      );
+      return;
+    }
+
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const acceptedAt = new Date().toISOString();
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          legal_terms_accepted_at: acceptedAt,
+          privacy_policy_accepted_at: acceptedAt,
+        },
+      },
+    });
     if (error) {
       logError(error, { action: 'signup' });
       Alert.alert('Erreur', error.message);
@@ -359,10 +396,41 @@ const AuthFlowScreen: React.FC = () => {
             />
           </View>
 
+          {step === 'signup' && (
+            <View style={styles.legalConsentCard}>
+              <Pressable
+                onPress={() => setHasAcceptedLegal((prev) => !prev)}
+                style={styles.checkboxRow}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: hasAcceptedLegal }}
+                accessibilityLabel="Accepter les conditions d'utilisation et la politique de confidentialité"
+              >
+                {hasAcceptedLegal ? (
+                  <CheckSquare color={COLORS.primary} size={20} />
+                ) : (
+                  <Square color="#64748b" size={20} />
+                )}
+                <Text style={styles.checkboxText}>
+                  J'accepte les Conditions générales d'utilisation et la Politique de confidentialité.
+                </Text>
+              </Pressable>
+
+              <View style={styles.legalLinksRow}>
+                <Pressable onPress={() => openLegalDocument(TERMS_URL, 'cgu')}>
+                  <Text style={styles.legalLink}>Voir les CGU</Text>
+                </Pressable>
+                <Text style={styles.legalDot}>•</Text>
+                <Pressable onPress={() => openLegalDocument(PRIVACY_URL, 'privacy')}>
+                  <Text style={styles.legalLink}>Voir la politique de confidentialité</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+
           <PrimaryButton
             label={step === 'signup' ? 'Continuer' : 'Se connecter'}
             onPress={step === 'signup' ? handleSignUp : handleLogin}
-            disabled={loading || !email || !password}
+            disabled={loading || !email || !password || (step === 'signup' && !hasAcceptedLegal)}
           />
         </ScrollView>
       )}
@@ -629,6 +697,43 @@ const styles = StyleSheet.create({
   },
   field: {
     gap: 8,
+  },
+  legalConsentCard: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    padding: 12,
+    gap: 10,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  checkboxText: {
+    flex: 1,
+    color: '#334155',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  legalLinksRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
+    paddingLeft: 30,
+  },
+  legalLink: {
+    color: COLORS.primary,
+    fontSize: 12,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
+  legalDot: {
+    color: '#94a3b8',
+    fontSize: 12,
+    fontWeight: '700',
   },
   label: {
     fontSize: 12,
