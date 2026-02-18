@@ -35,6 +35,7 @@ EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:8787
 Un serveur Node est fourni dans `server/` pour :
 - Initialiser le paiement Paystack
 - Vérifier le paiement et activer le Premium
+- Gérer les paiements pour les boosts de profil
 - Démarrer le flux KYC (fournisseur configurable)
 
 ### Setup
@@ -56,13 +57,14 @@ npm run dev
 - `PAYSTACK_CALLBACK_URL` (optionnel)
 - `SIMULATE_PAYMENTS=true` (optionnel: désactive Paystack et simule le paiement)
 - `PLAN_*_AMOUNT` (montants en plus petite unité)
+- `BOOST_*_AMOUNT` (montants en plus petite unité)
 - `KYC_PROVIDER` + `KYC_VERIFICATION_URL` (si fournisseur manuel)
 
 ## Structure
 
 - `App.tsx` : entrée principale (provider + navigation)
 - `src/navigation/` : navigation stack + tabs
-- `src/screens/` : écrans (auth, home, chat, profile, premium, verify)
+- `src/screens/` : écrans (auth, home, chat, profile, premium, verify, boost)
 - `src/state/` : état global
 - `src/lib/` : supabase + API
 - `scripts/` : SQL + scripts supabase

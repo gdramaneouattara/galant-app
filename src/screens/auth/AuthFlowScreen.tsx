@@ -14,8 +14,9 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
+import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
-import { Camera, CheckSquare, ChevronLeft, MapPin, Square } from 'lucide-react-native';
+import { Camera, CheckSquare, ChevronLeft, Eye, EyeOff, MapPin, Square } from 'lucide-react-native';
 import { COLORS } from '../../data/mock';
 import { Gender } from '../../types';
 import { useApp } from '../../state/AppContext';
@@ -56,7 +57,9 @@ const AuthFlowScreen: React.FC = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
   const [hasAcceptedLegal, setHasAcceptedLegal] = useState(false);
 
   const [form, setForm] = useState({
@@ -134,6 +137,36 @@ const AuthFlowScreen: React.FC = () => {
       }
     }
     setLoading(false);
+  }
+
+  async function handleForgotPassword() {
+    if (sendingReset) return;
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      Alert.alert('Email requis', 'Saisis ton email pour recevoir un lien de réinitialisation.');
+      return;
+    }
+
+    setSendingReset(true);
+    try {
+      const redirectTo =
+        process.env.EXPO_PUBLIC_PASSWORD_RESET_REDIRECT_URL || Linking.createURL('reset-password');
+      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo });
+      if (error) {
+        throw error;
+      }
+      logEvent('auth', 'password_reset_requested', { email: normalizedEmail });
+      Alert.alert(
+        'Email envoyé',
+        'Un lien de réinitialisation vient de t’être envoyé. Vérifie aussi tes spams.'
+      );
+    } catch (error: any) {
+      logError(error, { action: 'password_reset_requested' });
+      Alert.alert('Erreur', error?.message || "Impossible d'envoyer l'email de réinitialisation.");
+    } finally {
+      setSendingReset(false);
+    }
   }
 
   async function handleLogin() {
@@ -384,17 +417,45 @@ const AuthFlowScreen: React.FC = () => {
           </View>
           <View style={styles.field}>
             <Text style={styles.label}>Mot de passe</Text>
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Ton mot de passe"
-              placeholderTextColor="#475569"
-              secureTextEntry
-              textContentType="password"
-              accessibilityLabel="Mot de passe"
-              style={styles.input}
-            />
+            <View style={styles.passwordInputWrap}>
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Ton mot de passe"
+                placeholderTextColor="#475569"
+                secureTextEntry={!isPasswordVisible}
+                textContentType="password"
+                accessibilityLabel="Mot de passe"
+                style={[styles.input, styles.passwordInput]}
+              />
+              <Pressable
+                onPress={() => setIsPasswordVisible((prev) => !prev)}
+                style={styles.passwordToggle}
+                accessibilityRole="button"
+                accessibilityLabel={isPasswordVisible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+              >
+                {isPasswordVisible ? (
+                  <EyeOff color={COLORS.muted} size={18} />
+                ) : (
+                  <Eye color={COLORS.muted} size={18} />
+                )}
+              </Pressable>
+            </View>
           </View>
+
+          {step === 'login' && (
+            <Pressable
+              onPress={handleForgotPassword}
+              disabled={sendingReset}
+              style={styles.forgotPasswordButton}
+              accessibilityRole="button"
+              accessibilityLabel="Mot de passe oublié"
+            >
+              <Text style={styles.forgotPasswordText}>
+                {sendingReset ? 'Envoi en cours…' : 'Mot de passe oublié ?'}
+              </Text>
+            </Pressable>
+          )}
 
           {step === 'signup' && (
             <View style={styles.legalConsentCard}>
@@ -695,8 +756,32 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.muted,
   },
+  forgotPasswordButton: {
+    alignSelf: 'flex-end',
+    paddingVertical: 4,
+  },
+  forgotPasswordText: {
+    color: COLORS.primary,
+    fontSize: 13,
+    fontWeight: '700',
+  },
   field: {
     gap: 8,
+  },
+  passwordInputWrap: {
+    position: 'relative',
+  },
+  passwordInput: {
+    paddingRight: 46,
+  },
+  passwordToggle: {
+    position: 'absolute',
+    right: 12,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 28,
   },
   legalConsentCard: {
     backgroundColor: '#f8fafc',

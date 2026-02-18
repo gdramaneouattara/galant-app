@@ -11,6 +11,7 @@ import ProfileScreen from '../screens/profile/ProfileScreen';
 import PremiumScreen from '../screens/premium/PremiumScreen';
 import VerifyScreen from '../screens/verify/VerifyScreen';
 import BoostScreen from '../screens/boost/BoostScreen';
+import DiscoverGridScreen from '../screens/discover/DiscoverGridScreen';
 import { COLORS } from '../data/mock';
 
 export type RootStackParamList = {
@@ -20,6 +21,7 @@ export type RootStackParamList = {
   Premium: undefined;
   Verify: undefined;
   Boost: undefined;
+  DiscoverGrid: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -83,6 +85,7 @@ const MainNavigator: React.FC<NavigatorProps> = ({ isAuthenticated }) => (
           <Stack.Screen name="Premium" component={PremiumScreen} />
           <Stack.Screen name="Verify" component={VerifyScreen} />
           <Stack.Screen name="Boost" component={BoostScreen} />
+          <Stack.Screen name="DiscoverGrid" component={DiscoverGridScreen} />
         </>
       )}
     </Stack.Navigator>

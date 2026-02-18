@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ChevronRight, Crown, LogOut, Settings, ShieldCheck } from 'lucide-react-native';
+import { ChevronRight, Crown, LogOut, Rocket, Settings, ShieldCheck, Trophy } from 'lucide-react-native';
 import { useApp } from '../../state/AppContext';
 import { COLORS } from '../../data/mock';
 
@@ -21,6 +21,9 @@ const ProfileScreen: React.FC = () => {
     return null;
   }
 
+  const isBoosted = currentUser.boosted_until && new Date(currentUser.boosted_until) > new Date();
+  const boostedUntilDate = isBoosted ? new Date(currentUser.boosted_until!) : null;
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -29,15 +32,37 @@ const ProfileScreen: React.FC = () => {
             <Image source={{ uri: currentUser.photos[0] }} style={styles.photo} />
           </View>
           <Text style={styles.name}>{currentUser.name}, {currentUser.age}</Text>
-          <View style={[styles.badge, currentUser.isPremium ? styles.badgePremium : styles.badgeFree]}>
-            {currentUser.isPremium && <Crown size={14} color="#d97706" />}
-            <Text style={[styles.badgeText, currentUser.isPremium ? styles.badgeTextPremium : styles.badgeTextFree]}>
-              {currentUser.isPremium ? 'Membre Premium' : 'MODÈLE GRATUIT'}
-            </Text>
+          <View style={styles.badgeContainer}>
+            <View style={[styles.badge, currentUser.isPremium ? styles.badgePremium : styles.badgeFree]}>
+              {currentUser.isPremium && <Crown size={14} color="#d97706" />}
+              <Text style={[styles.badgeText, currentUser.isPremium ? styles.badgeTextPremium : styles.badgeTextFree]}>
+                {currentUser.isPremium ? 'Membre Premium' : 'MODÈLE GRATUIT'}
+              </Text>
+            </View>
+            {isBoosted && (
+              <View style={[styles.badge, styles.badgeBoosted]}>
+                <Rocket size={14} color="#8b5cf6" />
+                <Text style={[styles.badgeText, styles.badgeTextBoosted]}>PROFIL BOOSTÉ</Text>
+              </View>
+            )}
           </View>
+          {boostedUntilDate && (
+            <Pressable onPress={() => navigation.navigate('DiscoverGrid')}>
+              <Text style={styles.boostedUntil}>
+                Boosté jusqu'au {boostedUntilDate.toLocaleDateString('fr-FR')} à {boostedUntilDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}. Voir ma position.
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         <View style={styles.section}>
+          <Pressable style={styles.row} onPress={() => navigation.navigate('DiscoverGrid')}>
+            <View style={styles.rowIcon}>
+              <Trophy size={18} color={COLORS.muted} />
+            </View>
+            <Text style={styles.rowLabel}>Voir le Classement</Text>
+            <ChevronRight size={18} color="#cbd5f5" />
+          </Pressable>
           <Pressable style={styles.row}>
             <View style={styles.rowIcon}>
               <Settings size={18} color={COLORS.muted} />
@@ -61,6 +86,15 @@ const ProfileScreen: React.FC = () => {
               </View>
               <Text style={styles.rowLabel}>Passer Premium</Text>
               <ChevronRight size={18} color="#facc15" />
+            </Pressable>
+          )}
+          {!isBoosted && (
+            <Pressable style={[styles.row, styles.rowBoost]} onPress={() => navigation.navigate('Boost' as never)}>
+              <View style={[styles.rowIcon, styles.rowIconBoost]}>
+                <Rocket size={18} color="#8b5cf6" />
+              </View>
+              <Text style={styles.rowLabel}>Booster mon profil</Text>
+              <ChevronRight size={18} color="#c4b5fd" />
             </Pressable>
           )}
         </View>
@@ -107,6 +141,10 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: COLORS.ink,
   },
+  badgeContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -121,6 +159,9 @@ const styles = StyleSheet.create({
   badgeFree: {
     backgroundColor: '#e2e8f0',
   },
+  badgeBoosted: {
+    backgroundColor: '#ede9fe',
+  },
   badgeText: {
     fontSize: 10,
     fontWeight: '800',
@@ -130,6 +171,16 @@ const styles = StyleSheet.create({
   },
   badgeTextFree: {
     color: COLORS.muted,
+  },
+  badgeTextBoosted: {
+    color: '#7c3aed',
+  },
+  boostedUntil: {
+    fontSize: 11,
+    color: '#7c3aed',
+    fontWeight: '600',
+    marginTop: -4,
+    textDecorationLine: 'underline',
   },
   section: {
     gap: 12,
@@ -172,6 +223,13 @@ const styles = StyleSheet.create({
     borderColor: '#fef3c7',
   },
   rowIconPremium: {
+    backgroundColor: '#fff',
+  },
+  rowBoost: {
+    backgroundColor: '#f5f3ff',
+    borderColor: '#ede9fe',
+  },
+  rowIconBoost: {
     backgroundColor: '#fff',
   },
   rowLogout: {
