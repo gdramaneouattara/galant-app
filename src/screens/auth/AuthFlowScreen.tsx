@@ -366,7 +366,7 @@ const AuthFlowScreen: React.FC = () => {
       {step === 'welcome' && (
         <ImageBackground source={require('../../../assets/akwaba-bg.png')} style={styles.welcome}>
           <View style={styles.welcomeTop}>
-            <View style={styles.logoCircle}><Text style={styles.logoText}>Y</Text></View>
+            <Image source={require('../../../assets/logo_yamo.jpg')} style={styles.logoImage} />
             <Text style={styles.brand}>Yamo</Text>
             <Text style={styles.subtitle}>L'amour authentique commence ici.</Text>
           </View>
@@ -380,7 +380,6 @@ const AuthFlowScreen: React.FC = () => {
             >
               <Text style={styles.secondaryLabel}>Se connecter</Text>
             </Pressable>
-            <Text style={styles.legal}>En continuant, vous confirmez avoir 18 ans et acceptez nos conditions.</Text>
           </View>
         </ImageBackground>
       )}
@@ -691,19 +690,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 40,
   },
-  logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 28,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+  logoImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 25,
     marginBottom: 20,
-  },
-  logoText: {
-    color: '#fff',
-    fontSize: 38,
-    fontWeight: '900',
   },
   brand: {
     fontSize: 36,

@@ -6,7 +6,7 @@
     "version": "0.1.0",
     "newArchEnabled": true,
     "orientation": "portrait",
-    "icon": "./assets/icon-1024.png",
+    "icon": "./assets/logo_yamo.jpg",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-1242x2436.png",

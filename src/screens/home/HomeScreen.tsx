@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Heart, MapPin, ShieldCheck, X, Rocket } from 'lucide-react-native';
+import { Heart, MapPin, ShieldCheck, X } from 'lucide-react-native';
 import { COLORS } from '../../data/mock';
 import { Match, User } from '../../types';
 import { useApp } from '../../state/AppContext';
@@ -23,7 +23,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
   const { users, currentUser, matches, addMatch, refreshMatches } = useApp();
-  const [homeTab, setHomeTab] = useState<'discover' | 'nearby'>('discover');
+  const [homeTab, setHomeTab] = useState<'discover' | 'nearby' | 'featured'>('discover');
   const [swipeIndex, setSwipeIndex] = useState(0);
   const [matchUser, setMatchUser] = useState<User | null>(null);
 
@@ -86,8 +86,11 @@ const HomeScreen: React.FC = () => {
           >
             <Text style={[styles.tabLabel, homeTab === 'nearby' && styles.tabLabelActive]}>À proximité</Text>
           </Pressable>
-          <Pressable onPress={() => navigation.navigate('Boost')} style={styles.tab}>
-            <Rocket color={COLORS.primary} size={18} />
+          <Pressable
+            onPress={() => navigation.navigate('Boost')}
+            style={[styles.tab, homeTab === 'featured' && styles.tabActive]}
+          >
+            <Text style={[styles.tabLabel, homeTab === 'featured' && styles.tabLabelActive]}>À la une</Text>
           </Pressable>
         </View>
       </View>
