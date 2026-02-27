@@ -39,6 +39,9 @@ jobs:
       - name: Typecheck mobile app
         run: npm run typecheck
 
+      - name: Quality tests
+        run: npm run test:quality
+
       - name: Validate server syntax
         run: npm --prefix server run check:syntax
 
