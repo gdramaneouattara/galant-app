@@ -8,6 +8,7 @@
     "start:online": "powershell -Command \"Remove-Item Env:EXPO_OFFLINE -ErrorAction SilentlyContinue; Remove-Item Env:EXPO_NO_DOCTOR -ErrorAction SilentlyContinue; expo start --clear\"",
     "start:offline": "powershell -Command \"$env:EXPO_OFFLINE='1'; $env:EXPO_NO_DOCTOR='1'; expo start\"",
     "typecheck": "tsc --noEmit",
+    "test:quality": "node --test \"tests/quality/*.test.mjs\"",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "setup:android": "powershell -ExecutionPolicy Bypass -File scripts/setup-android.ps1 -Persist",
