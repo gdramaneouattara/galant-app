@@ -42,8 +42,15 @@ jobs:
       - name: Validate server syntax
         run: npm --prefix server run check:syntax
 
-      - name: Validate setup scripts syntax
-        run: node --check scripts/setup-test-users.mjs
+      - name: Validate setup scripts syntax (optional)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f "scripts/setup-test-users.mjs" ]]; then
+            node --check scripts/setup-test-users.mjs
+          else
+            echo "scripts/setup-test-users.mjs not found; skipping syntax check."
+          fi
 
       - name: SQL sanity checks
         shell: bash
