@@ -2,7 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { MessageCircle, Search, User as UserIcon } from 'lucide-react-native';
+import { MessageCircle, Search, User as UserIcon, Shield, Users, Megaphone } from 'lucide-react-native';
 import AuthFlowScreen from '../screens/auth/AuthFlowScreen';
 import HomeScreen from '../screens/home/HomeScreen';
 import MessagesScreen from '../screens/messages/MessagesScreen';
@@ -12,7 +12,11 @@ import PremiumScreen from '../screens/premium/PremiumScreen';
 import VerifyScreen from '../screens/verify/VerifyScreen';
 import BoostScreen from '../screens/boost/BoostScreen';
 import DiscoverGridScreen from '../screens/discover/DiscoverGridScreen';
+import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
+import UserListScreen from '../screens/admin/UserListScreen';
+import AdminMessagingScreen from '../screens/admin/AdminMessagingScreen';
 import { COLORS } from '../data/mock';
+import { useApp } from '../state/AppContext';
 
 export type RootStackParamList = {
   AuthFlow: undefined;
@@ -31,47 +35,100 @@ type NavigatorProps = {
   isAuthenticated: boolean;
 };
 
-const TabNavigator = () => (
-  <Tab.Navigator
-    screenOptions={{
-      headerShown: false,
-      tabBarActiveTintColor: COLORS.primary,
-      tabBarInactiveTintColor: '#cbd5f5',
-      tabBarStyle: {
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        paddingTop: 8,
-        height: 80,
-      },
-      tabBarLabelStyle: {
-        fontWeight: '700',
-        fontSize: 12,
-      },
-    }}
-  >
-    <Tab.Screen
-      name="Découvrir"
-      component={HomeScreen}
-      options={{
-        tabBarIcon: ({ color, size }) => <Search color={color} size={size} />,
+const TabNavigator = () => {
+  const { currentUser } = useApp();
+  const isAdmin = currentUser?.is_admin === true;
+
+  if (isAdmin) {
+    return (
+      <Tab.Navigator
+        key="tabs-admin-only"
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: COLORS.primary,
+          tabBarInactiveTintColor: '#cbd5f5',
+          tabBarStyle: {
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingTop: 8,
+            height: 80,
+          },
+          tabBarLabelStyle: {
+            fontWeight: '700',
+            fontSize: 12,
+          },
+        }}
+      >
+        <Tab.Screen
+          name="Dashboard"
+          component={AdminDashboardScreen}
+          options={{
+            title: 'Administration',
+            tabBarIcon: ({ color, size }) => <Shield color={color} size={size} />,
+          }}
+        />
+        <Tab.Screen
+          name="Utilisateurs"
+          component={UserListScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => <Users color={color} size={size} />,
+          }}
+        />
+        <Tab.Screen
+          name="Messages"
+          component={AdminMessagingScreen}
+          options={{
+            title: 'Messages Admin',
+            tabBarIcon: ({ color, size }) => <Megaphone color={color} size={size} />,
+          }}
+        />
+      </Tab.Navigator>
+    );
+  }
+
+  return (
+    <Tab.Navigator
+      key="tabs-user"
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: '#cbd5f5',
+        tabBarStyle: {
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          paddingTop: 8,
+          height: 80,
+        },
+        tabBarLabelStyle: {
+          fontWeight: '700',
+          fontSize: 12,
+        },
       }}
-    />
-    <Tab.Screen
-      name="Messages"
-      component={MessagesScreen}
-      options={{
-        tabBarIcon: ({ color, size }) => <MessageCircle color={color} size={size} />,
-      }}
-    />
-    <Tab.Screen
-      name="Profil"
-      component={ProfileScreen}
-      options={{
-        tabBarIcon: ({ color, size }) => <UserIcon color={color} size={size} />,
-      }}
-    />
-  </Tab.Navigator>
-);
+    >
+      <Tab.Screen
+        name="Découvrir"
+        component={HomeScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => <Search color={color} size={size} />,
+        }}
+      />
+      <Tab.Screen
+        name="Messages"
+        component={MessagesScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => <MessageCircle color={color} size={size} />,
+        }}
+      />
+      <Tab.Screen
+        name="Profil"
+        component={ProfileScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => <UserIcon color={color} size={size} />,
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
 
 const MainNavigator: React.FC<NavigatorProps> = ({ isAuthenticated }) => (
   <NavigationContainer>

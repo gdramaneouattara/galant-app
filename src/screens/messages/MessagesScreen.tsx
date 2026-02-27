@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Image,
   Pressable,
@@ -8,21 +8,143 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/MainNavigator';
 import { useApp } from '../../state/AppContext';
 import { COLORS } from '../../data/mock';
+import { apiRequest } from '../../lib/api';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
+
+type AdminNotification = {
+  id: string;
+  event_name: string;
+  is_read?: boolean;
+  metadata: {
+    title?: string | null;
+    message?: string;
+    sent_at?: string;
+    segment?: string;
+    is_read?: boolean;
+    read_at?: string | null;
+  } | null;
+  created_at: string;
+};
 
 const MessagesScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
   const { matches, users, currentUser, messages } = useApp();
+  const [adminNotifications, setAdminNotifications] = useState<AdminNotification[]>([]);
+  const [loadingAdminNotifications, setLoadingAdminNotifications] = useState(false);
+  const [markingAllAsRead, setMarkingAllAsRead] = useState(false);
+
+  const fetchAdminNotifications = useCallback(async () => {
+    try {
+      setLoadingAdminNotifications(true);
+      const payload = await apiRequest<{ notifications: AdminNotification[]; unreadCount: number }>(
+        '/api/notifications/admin?limit=5',
+        { requireAuth: true }
+      );
+      setAdminNotifications(payload.notifications || []);
+    } catch (_error) {
+      setAdminNotifications([]);
+    } finally {
+      setLoadingAdminNotifications(false);
+    }
+  }, []);
+
+  const isNotificationUnread = (notification: AdminNotification) => (
+    notification.is_read !== true && notification.metadata?.is_read !== true
+  );
+
+  const unreadCount = adminNotifications.filter(isNotificationUnread).length;
+
+  const markNotificationAsRead = async (notificationId: string) => {
+    try {
+      await apiRequest(`/api/notifications/admin/${notificationId}/read`, {
+        method: 'POST',
+        requireAuth: true,
+      });
+      setAdminNotifications((prev) => prev.map((item) => (
+        item.id === notificationId
+          ? { ...item, is_read: true, metadata: { ...(item.metadata || {}), is_read: true, read_at: new Date().toISOString() } }
+          : item
+      )));
+    } catch (_error) {
+      // Silent fail to avoid interrupting message browsing.
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      setMarkingAllAsRead(true);
+      await apiRequest('/api/notifications/admin/read-all', {
+        method: 'POST',
+        requireAuth: true,
+      });
+      setAdminNotifications((prev) => prev.map((item) => ({
+        ...item,
+        is_read: true,
+        metadata: {
+          ...(item.metadata || {}),
+          is_read: true,
+          read_at: new Date().toISOString(),
+        },
+      })));
+    } catch (_error) {
+      // Silent fail to avoid blocking UI.
+    } finally {
+      setMarkingAllAsRead(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      void fetchAdminNotifications();
+    }, [fetchAdminNotifications])
+  );
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.adminBox}>
+          <View style={styles.adminBoxHeader}>
+            <Text style={styles.adminBoxTitle}>Notifications admin</Text>
+            {unreadCount > 0 ? (
+              <View style={styles.adminUnreadBadge}>
+                <Text style={styles.adminUnreadBadgeText}>{unreadCount}</Text>
+              </View>
+            ) : null}
+          </View>
+          {unreadCount > 0 ? (
+            <Pressable style={styles.adminMarkAllButton} onPress={() => void markAllAsRead()} disabled={markingAllAsRead}>
+              <Text style={styles.adminMarkAllButtonText}>{markingAllAsRead ? '...' : 'Tout marquer lu'}</Text>
+            </Pressable>
+          ) : null}
+          {loadingAdminNotifications ? (
+            <Text style={styles.adminBoxEmpty}>Chargement...</Text>
+          ) : adminNotifications.length === 0 ? (
+            <Text style={styles.adminBoxEmpty}>Aucune notification administrative.</Text>
+          ) : (
+            <View style={styles.adminList}>
+              {adminNotifications.map((notification) => (
+                <Pressable key={notification.id} style={[styles.adminItem, isNotificationUnread(notification) && styles.adminItemUnread]} onPress={() => void markNotificationAsRead(notification.id)}>
+                  <Text style={styles.adminItemTitle}>
+                    {notification.metadata?.title || notification.event_name || 'Information administrateur'}
+                  </Text>
+                  <Text style={styles.adminItemMessage}>
+                    {notification.metadata?.message || 'Message non disponible.'}
+                  </Text>
+                  <Text style={styles.adminItemDate}>
+                    {new Date(notification.metadata?.sent_at || notification.created_at).toLocaleString('fr-FR')}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </View>
+
         <Text style={styles.title}>Matchs Récents</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.matchesRow}>
           {matches.length === 0 && (
@@ -100,6 +222,84 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     gap: 16,
+  },
+  adminBox: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 16,
+    padding: 14,
+    gap: 10,
+  },
+  adminBoxHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  adminBoxTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.ink,
+  },
+  adminUnreadBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#dc2626',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  adminUnreadBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  adminMarkAllButton: {
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+    backgroundColor: '#eff6ff',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  adminMarkAllButtonText: {
+    color: '#1d4ed8',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  adminBoxEmpty: {
+    color: COLORS.muted,
+    fontSize: 12,
+  },
+  adminList: {
+    gap: 8,
+  },
+  adminItem: {
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 12,
+    padding: 10,
+    gap: 4,
+  },
+  adminItemUnread: {
+    borderColor: '#93c5fd',
+    backgroundColor: '#eff6ff',
+  },
+  adminItemTitle: {
+    color: COLORS.ink,
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  adminItemMessage: {
+    color: COLORS.ink,
+    fontSize: 12,
+  },
+  adminItemDate: {
+    color: COLORS.muted,
+    fontSize: 11,
   },
   title: {
     fontSize: 22,

@@ -1,0 +1,260 @@
+import React, { useEffect, useState } from 'react';
+import { SafeAreaView, ScrollView, StyleSheet, Text, Pressable, Alert, View } from 'react-native';
+import { COLORS } from '../../data/mock';
+import { apiRequest } from '../../lib/api';
+import { useApp } from '../../state/AppContext';
+
+type AdminStats = {
+  generatedAt: string;
+  users: {
+    total: number;
+    active: number;
+    suspended: number;
+    admins: number;
+    verified: number;
+    unverified: number;
+    premium: number;
+    free: number;
+    invisiblePremium: number;
+  };
+  premiumByPlan: {
+    MONTHLY: number;
+    QUARTERLY: number;
+    BIANNUAL: number;
+    ANNUAL: number;
+    UNKNOWN: number;
+  };
+  integrity?: {
+    authUsersTotal: number | null;
+    profilesTotal: number;
+    authUsersWithoutProfile: number | null;
+  };
+};
+
+const AdminDashboardScreen: React.FC = () => {
+  const { logout } = useApp();
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStats = async () => {
+    try {
+      const data = await apiRequest<AdminStats>('/api/admin/stats', { requireAuth: true });
+      setStats(data);
+      setError(null);
+    } catch (err: any) {
+      setError(err?.message || 'Impossible de charger les statistiques.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void fetchStats();
+  }, []);
+
+  const handleLogout = () => {
+    Alert.alert('Déconnexion', 'Voulez-vous vous déconnecter ?', [
+      { text: 'Annuler', style: 'cancel' },
+      {
+        text: 'Se déconnecter',
+        style: 'destructive',
+        onPress: () => {
+          void logout();
+        },
+      },
+    ]);
+  };
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.title}>Espace d'administration</Text>
+        <Text style={styles.subtitle}>Pilotage global des utilisateurs et abonnements.</Text>
+
+        <Pressable
+          style={styles.refreshButton}
+          onPress={() => {
+            setLoading(true);
+            void fetchStats();
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Rafraîchir les statistiques"
+        >
+          <Text style={styles.refreshButtonText}>Rafraîchir</Text>
+        </Pressable>
+
+        {loading ? <Text style={styles.infoText}>Chargement des indicateurs...</Text> : null}
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+        {stats ? (
+          <View style={styles.grid}>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Utilisateurs totaux</Text>
+              <Text style={styles.cardValue}>{stats.users.total}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Utilisateurs actifs</Text>
+              <Text style={styles.cardValue}>{stats.users.active}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Comptes suspendus</Text>
+              <Text style={styles.cardValue}>{stats.users.suspended}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Utilisateurs vérifiés</Text>
+              <Text style={styles.cardValue}>{stats.users.verified}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Utilisateurs non vérifiés</Text>
+              <Text style={styles.cardValue}>{stats.users.unverified}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Utilisateurs gratuits</Text>
+              <Text style={styles.cardValue}>{stats.users.free}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Utilisateurs premium</Text>
+              <Text style={styles.cardValue}>{stats.users.premium}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Premium invisibles</Text>
+              <Text style={styles.cardValue}>{stats.users.invisiblePremium}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Comptes auth</Text>
+              <Text style={styles.cardValue}>
+                {stats.integrity?.authUsersTotal ?? '-'}
+              </Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Auth sans profil</Text>
+              <Text style={styles.cardValue}>
+                {stats.integrity?.authUsersWithoutProfile ?? '-'}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        {stats ? (
+          <View style={styles.planCard}>
+            <Text style={styles.planTitle}>Premium par type d'abonnement</Text>
+            <Text style={styles.planItem}>Mensuel: {stats.premiumByPlan.MONTHLY}</Text>
+            <Text style={styles.planItem}>Trimestriel: {stats.premiumByPlan.QUARTERLY}</Text>
+            <Text style={styles.planItem}>Semestriel: {stats.premiumByPlan.BIANNUAL}</Text>
+            <Text style={styles.planItem}>Annuel: {stats.premiumByPlan.ANNUAL}</Text>
+            <Text style={styles.planItem}>Non classé: {stats.premiumByPlan.UNKNOWN}</Text>
+          </View>
+        ) : null}
+
+        <Pressable
+          style={styles.logoutButton}
+          onPress={handleLogout}
+          accessibilityRole="button"
+          accessibilityLabel="Se déconnecter"
+        >
+          <Text style={styles.logoutButtonText}>Se déconnecter</Text>
+        </Pressable>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: COLORS.bg,
+  },
+  content: {
+    padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.ink,
+    marginBottom: 6,
+  },
+  subtitle: {
+    color: COLORS.muted,
+    marginBottom: 12,
+  },
+  refreshButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#e0f2fe',
+    borderWidth: 1,
+    borderColor: '#bae6fd',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+  refreshButtonText: {
+    color: '#0369a1',
+    fontWeight: '700',
+  },
+  infoText: {
+    color: COLORS.muted,
+    marginBottom: 8,
+  },
+  errorText: {
+    color: '#b91c1c',
+    marginBottom: 8,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    width: '48%',
+  },
+  cardLabel: {
+    color: COLORS.muted,
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  cardValue: {
+    color: COLORS.ink,
+    fontWeight: '900',
+    fontSize: 22,
+    marginTop: 6,
+  },
+  planCard: {
+    marginTop: 14,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  planTitle: {
+    fontWeight: '800',
+    color: COLORS.ink,
+    marginBottom: 8,
+  },
+  planItem: {
+    color: COLORS.ink,
+    marginBottom: 4,
+  },
+  logoutButton: {
+    marginTop: 16,
+    backgroundColor: '#fff1f2',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#ffe4e6',
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    color: '#be123c',
+    fontWeight: '800',
+  },
+});
+
+export default AdminDashboardScreen;
