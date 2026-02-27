@@ -14,6 +14,7 @@ export enum SubscriptionPlan {
 
 export interface User {
   id: string;
+  email?: string | null;
   name: string;
   age: number;
   gender: Gender;
@@ -28,6 +29,11 @@ export interface User {
   isVerified: boolean;
   isPremium: boolean;
   boosted_until?: string | null;
+  is_invisible?: boolean;
+  subscription_plan_id?: string | null;
+  invisible_mode_eligible?: boolean;
+  is_admin?: boolean;
+  suspended_at?: string | null;
   preferences: {
     targetGender: Gender[];
     minAge: number;
