@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Crown, Gem, Gift, Package } from 'lucide-react-native';
+import { Crown, Gem, Gift, Package, LucideProps } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
@@ -10,30 +10,48 @@ import { apiRequest } from '../../lib/api';
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const PREMIUM_PLANS = [
+type PremiumPlan = {
+  id: string;
+  name: string;
+  price: string;
+  savings?: string;
+  icon: (props: LucideProps) => React.ReactElement;
+  description: string;
+  isBest?: boolean;
+};
+
+const PREMIUM_PLANS: PremiumPlan[] = [
   {
     id: 'MONTHLY',
     name: '1 Mois',
     price: '3000 F CFA',
     icon: (props) => <Package {...props} />,
-    description: 'Accès complet pour un mois.',
+    description: 'Accès complet pour un mois (sans mode invisible).',
   },
   {
     id: 'QUARTERLY',
     name: '3 Mois',
-    price: '7500 F CFA',
-    savings: '17%',
+    price: '9000 F CFA',
+    savings: '0%',
     icon: (props) => <Gift {...props} />,
-    description: 'Le plus populaire.',
+    description: 'Formule trimestrielle (sans mode invisible).',
+  },
+  {
+    id: 'BIANNUAL',
+    name: '6 Mois',
+    price: '15000 F CFA',
+    savings: '17%',
+    icon: (props) => <Crown {...props} />,
+    description: 'Mode invisible inclus.',
     isBest: true,
   },
   {
     id: 'ANNUAL',
     name: '1 An',
-    price: '25000 F CFA',
-    savings: '30%',
+    price: '30000 F CFA',
+    savings: '17%',
     icon: (props) => <Gem {...props} />,
-    description: 'Le meilleur rapport qualité-prix.',
+    description: 'Mode invisible inclus.',
   },
 ];
 

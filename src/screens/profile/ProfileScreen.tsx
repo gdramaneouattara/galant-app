@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
+  Alert,
   Image,
   Pressable,
   SafeAreaView,
@@ -9,13 +10,18 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ChevronRight, Crown, LogOut, Rocket, Settings, ShieldCheck, Trophy } from 'lucide-react-native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { ChevronRight, Crown, EyeOff, LogOut, Rocket, Settings, ShieldCheck, Trophy } from 'lucide-react-native';
 import { useApp } from '../../state/AppContext';
 import { COLORS } from '../../data/mock';
+import type { RootStackParamList } from '../../navigation/MainNavigator';
+
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const ProfileScreen: React.FC = () => {
-  const navigation = useNavigation();
-  const { currentUser, logout } = useApp();
+  const navigation = useNavigation<Nav>();
+  const { currentUser, logout, toggleInvisibleMode } = useApp();
+  const [isTogglingInvisible, setIsTogglingInvisible] = useState(false);
 
   if (!currentUser) {
     return null;
@@ -23,6 +29,17 @@ const ProfileScreen: React.FC = () => {
 
   const isBoosted = currentUser.boosted_until && new Date(currentUser.boosted_until) > new Date();
   const boostedUntilDate = isBoosted ? new Date(currentUser.boosted_until!) : null;
+  const isInvisibleEligible = !!currentUser.invisible_mode_eligible;
+  const isInvisibleEnabled = !!currentUser.is_invisible && currentUser.isPremium && isInvisibleEligible;
+
+  const handleInvisibleToggle = async (enabled: boolean) => {
+    setIsTogglingInvisible(true);
+    const success = await toggleInvisibleMode(enabled);
+    if (!success) {
+      Alert.alert('Erreur', 'Impossible de mettre a jour le mode invisible.');
+    }
+    setIsTogglingInvisible(false);
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -70,6 +87,45 @@ const ProfileScreen: React.FC = () => {
             <Text style={styles.rowLabel}>Paramètres de Compte</Text>
             <ChevronRight size={18} color="#cbd5f5" />
           </Pressable>
+          {isInvisibleEligible ? (
+            <Pressable
+              style={[styles.row, styles.rowInvisible]}
+              onPress={() => { void handleInvisibleToggle(!isInvisibleEnabled); }}
+              disabled={isTogglingInvisible}
+            >
+              <View style={[styles.rowIcon, styles.rowIconInvisible]}>
+                <EyeOff size={18} color="#0f766e" />
+              </View>
+              <View style={styles.rowContent}>
+                <Text style={styles.rowLabel}>Mode invisible</Text>
+                <Text style={styles.rowSubLabel}>
+                  {isInvisibleEnabled
+                    ? 'Votre profil est masque dans la decouverte.'
+                    : 'Masquez votre profil dans la decouverte.'}
+                </Text>
+              </View>
+              {isTogglingInvisible ? (
+                <Text style={styles.rowStatus}>...</Text>
+              ) : (
+                <View style={[styles.rowStatusPill, isInvisibleEnabled && styles.rowStatusPillActive]}>
+                  <Text style={[styles.rowStatusPillText, isInvisibleEnabled && styles.rowStatusPillTextActive]}>
+                    {isInvisibleEnabled ? 'ACTIF' : 'INACTIF'}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          ) : (
+            <Pressable style={[styles.row, styles.rowInvisibleLocked]} onPress={() => navigation.navigate('Premium' as never)}>
+              <View style={[styles.rowIcon, styles.rowIconInvisibleLocked]}>
+                <EyeOff size={18} color="#6b7280" />
+              </View>
+              <View style={styles.rowContent}>
+                <Text style={styles.rowLabel}>Mode invisible</Text>
+                <Text style={styles.rowSubLabel}>Disponible uniquement sur les abonnements 6 mois et 1 an.</Text>
+              </View>
+              <ChevronRight size={18} color="#cbd5f5" />
+            </Pressable>
+          )}
           {!currentUser.isVerified && (
             <Pressable style={[styles.row, styles.rowVerify]} onPress={() => navigation.navigate('Verify' as never)}>
               <View style={[styles.rowIcon, styles.rowIconVerify]}>
@@ -207,6 +263,52 @@ const styles = StyleSheet.create({
     flex: 1,
     fontWeight: '700',
     color: COLORS.ink,
+  },
+  rowContent: {
+    flex: 1,
+    gap: 2,
+  },
+  rowSubLabel: {
+    color: COLORS.muted,
+    fontSize: 12,
+  },
+  rowStatus: {
+    color: COLORS.muted,
+    fontWeight: '700',
+  },
+  rowStatusPill: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#f8fafc',
+  },
+  rowStatusPillActive: {
+    borderColor: '#99f6e4',
+    backgroundColor: '#ccfbf1',
+  },
+  rowStatusPillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#64748b',
+  },
+  rowStatusPillTextActive: {
+    color: '#0f766e',
+  },
+  rowInvisible: {
+    backgroundColor: '#f0fdfa',
+    borderColor: '#ccfbf1',
+  },
+  rowIconInvisible: {
+    backgroundColor: '#ffffff',
+  },
+  rowInvisibleLocked: {
+    backgroundColor: '#f8fafc',
+    borderColor: '#e2e8f0',
+  },
+  rowIconInvisibleLocked: {
+    backgroundColor: '#ffffff',
   },
   rowVerify: {
     backgroundColor: '#eff6ff',

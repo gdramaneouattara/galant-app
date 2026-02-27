@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Rocket, Flame, ChevronsUp, Crown } from 'lucide-react-native';
+import { Rocket, Flame, ChevronsUp, Crown, LucideProps } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
@@ -8,7 +8,17 @@ import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 
-const BOOST_PLANS = [
+type BoostPlan = {
+  id: string;
+  name: string;
+  price: string;
+  savings?: string;
+  icon: (props: LucideProps) => React.ReactElement;
+  description: string;
+  isBest?: boolean;
+};
+
+const BOOST_PLANS: BoostPlan[] = [
   {
     id: 'DAILY',
     name: '1 Jour',

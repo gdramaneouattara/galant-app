@@ -4,6 +4,8 @@ import { Session, RealtimeChannel } from '@supabase/supabase-js';
 import { Message, Match, User } from '../types';
 import { supabase } from '../lib/supabase';
 
+const INVISIBLE_MODE_ELIGIBLE_PLANS = new Set(['BIANNUAL', 'ANNUAL']);
+
 type AppContextValue = {
   isAuthenticated: boolean;
   currentUser: User | null;
@@ -20,7 +22,8 @@ type AppContextValue = {
   addMessage: (message: Message) => void;
   refreshMatches: () => Promise<void>;
   refreshMessages: () => Promise<void>;
-  refreshCurrentUser: () => Promise<User | null>;
+  refreshCurrentUser: (userId?: string) => Promise<User | null>;
+  toggleInvisibleMode: (enabled: boolean) => Promise<boolean>;
   toggleUserVerification: (userId: string) => void;
   suspendUser: (userId: string) => void;
 };
@@ -38,7 +41,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const matchChannelsRef = useRef<RealtimeChannel[]>([]);
   const matchesChannelRef = useRef<RealtimeChannel | null>(null);
 
-  const mapProfileToUser = (profile: any): User => ({
+  const getCurrentSubscriptionState = async (userId: string) => {
+    const fallback = {
+      subscription_plan_id: null as string | null,
+      invisible_mode_eligible: false,
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('plan_id, status, current_period_end, updated_at, created_at')
+        .eq('user_id', userId)
+        .eq('status', 'active');
+
+      if (error || !data || data.length === 0) return fallback;
+
+      const nowTs = Date.now();
+      let latestPlan: { planId: string; score: number } | null = null;
+
+      for (const sub of data) {
+        if (sub.current_period_end && new Date(sub.current_period_end).getTime() <= nowTs) continue;
+        const planId = (sub.plan_id || '').toUpperCase();
+        if (!planId) continue;
+        const score = new Date(sub.current_period_end || sub.updated_at || sub.created_at || 0).getTime();
+        if (!latestPlan || score > latestPlan.score) {
+          latestPlan = { planId, score };
+        }
+      }
+
+      if (!latestPlan) return fallback;
+
+      return {
+        subscription_plan_id: latestPlan.planId,
+        invisible_mode_eligible: INVISIBLE_MODE_ELIGIBLE_PLANS.has(latestPlan.planId),
+      };
+    } catch (_e) {
+      return fallback;
+    }
+  };
+
+  const mapProfileToUser = (
+    profile: any,
+    options?: { subscription_plan_id?: string | null; invisible_mode_eligible?: boolean }
+  ): User => ({
     id: profile.id,
     name: profile.name,
     age: profile.age,
@@ -50,6 +95,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isVerified: !!profile.is_verified,
     isPremium: !!profile.is_premium,
     boosted_until: profile.boosted_until ?? null,
+    is_invisible: !!profile.is_invisible && !!profile.is_premium && (options?.invisible_mode_eligible ?? true),
+    is_admin: !!profile.is_admin,
+    suspended_at: profile.suspended_at ?? null,
+    subscription_plan_id: options?.subscription_plan_id ?? null,
+    invisible_mode_eligible: options?.invisible_mode_eligible ?? false,
     preferences: {
       targetGender: profile.target_gender || [],
       minAge: 18,
@@ -60,14 +110,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const refreshProfiles = async () => {
     try {
-      const { data, error } = await supabase.from('profiles').select('*');
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .is('suspended_at', null)
+        .eq('is_admin', false);
       if (error) {
         setLastError("Impossible de charger les profils.");
         return;
       }
       if (data) {
         setLastError(null);
-        setUsers(data.map(mapProfileToUser));
+        setUsers(data.map((profile) => mapProfileToUser(profile)));
       }
     } catch (_e) {
       setLastError("Impossible de charger les profils.");
@@ -89,8 +143,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return null;
       }
       if (profile) {
+        if (profile.suspended_at) {
+          await supabase.auth.signOut({ scope: 'local' });
+          resetAuthState();
+          setLastError("Votre compte est suspendu. Contactez le support.");
+          return null;
+        }
+        const subscriptionState = await getCurrentSubscriptionState(resolvedUserId);
+        if (profile.is_invisible && !subscriptionState.invisible_mode_eligible) {
+          const { error: disableInvisibleError } = await supabase
+            .from('profiles')
+            .update({ is_invisible: false })
+            .eq('id', resolvedUserId);
+          if (!disableInvisibleError) {
+            profile.is_invisible = false;
+          }
+        }
         setLastError(null);
-        const mapped = mapProfileToUser(profile);
+        const mapped = mapProfileToUser(profile, subscriptionState);
         setCurrentUser(mapped);
         return mapped;
       }
@@ -165,15 +235,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSession(currentSession);
 
         if (currentSession?.user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', currentSession.user.id)
-            .single();
-
-          if (profile) {
-            setCurrentUser(mapProfileToUser(profile));
-          }
+          await refreshCurrentUser(currentSession.user.id);
           await refreshProfiles();
           await refreshMatches(currentSession.user.id);
         }
@@ -190,15 +252,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         setSession(newSession);
         if (newSession?.user && newSession.user.id !== currentUser?.id) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', newSession.user.id)
-            .single();
-
-          if (profile) {
-            setCurrentUser(mapProfileToUser(profile));
-          }
+          await refreshCurrentUser(newSession.user.id);
           await refreshProfiles();
           await refreshMatches(newSession.user.id);
         } else if (!newSession) {
@@ -302,6 +356,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const sanitized = { ...updates };
     delete sanitized.isPremium;
     delete sanitized.isVerified;
+    delete sanitized.boosted_until;
+    delete sanitized.is_invisible;
+    delete sanitized.is_admin;
+    delete sanitized.suspended_at;
+    delete sanitized.subscription_plan_id;
+    delete sanitized.invisible_mode_eligible;
 
     setCurrentUser((prev) => ({
       ...prev!,
@@ -326,6 +386,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (Object.keys(payload).length > 0) {
       void supabase.from("profiles").update(payload).eq("id", currentUser.id);
+    }
+  };
+
+  const toggleInvisibleMode = async (enabled: boolean): Promise<boolean> => {
+    if (!currentUser) {
+      setLastError("Impossible de modifier le mode invisible.");
+      return false;
+    }
+    if (enabled && !currentUser.invisible_mode_eligible) {
+      setLastError("Le mode invisible est reserve aux abonnements 6 mois et 1 an.");
+      return false;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ is_invisible: enabled })
+        .eq('id', currentUser.id)
+        .select('*')
+        .single();
+
+      if (error || !data) {
+        setLastError("Impossible de mettre a jour le mode invisible.");
+        return false;
+      }
+
+      await refreshCurrentUser(currentUser.id);
+      setLastError(null);
+      await refreshProfiles();
+      return true;
+    } catch (_e) {
+      setLastError("Impossible de mettre a jour le mode invisible.");
+      return false;
     }
   };
 
@@ -357,6 +450,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       refreshMatches,
       refreshMessages,
       refreshCurrentUser,
+      toggleInvisibleMode,
       toggleUserVerification,
       suspendUser,
     }),
