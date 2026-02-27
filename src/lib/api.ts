@@ -19,10 +19,6 @@ const getRuntimeApiBaseUrl = () => {
   return normalizedApiBaseUrl;
 };
 
-if (!normalizedApiBaseUrl) {
-  throw new Error('EXPO_PUBLIC_API_BASE_URL is missing.');
-}
-
 export const apiRequest = async <T>(path: string, options: ApiOptions = {}): Promise<T> => {
   const headers = new Headers(options.headers || {});
 
@@ -38,16 +34,30 @@ export const apiRequest = async <T>(path: string, options: ApiOptions = {}): Pro
   }
 
   const runtimeApiBaseUrl = getRuntimeApiBaseUrl();
+  if (!runtimeApiBaseUrl) {
+    throw new Error('EXPO_PUBLIC_API_BASE_URL is missing.');
+  }
   const response = await fetch(`${runtimeApiBaseUrl}${path}`, {
     ...options,
     headers,
   });
 
   const text = await response.text();
-  const payload = text ? JSON.parse(text) : null;
+  let payload: any = null;
+  if (text) {
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      payload = { raw: text };
+    }
+  }
 
   if (!response.ok) {
-    const errorMessage = payload?.error || payload?.message || 'API request failed';
+    const errorMessage =
+      payload?.error ||
+      payload?.message ||
+      (typeof payload?.raw === 'string' ? payload.raw.slice(0, 200) : null) ||
+      'API request failed';
     throw new Error(errorMessage);
   }
 

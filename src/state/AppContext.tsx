@@ -251,7 +251,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       try {
         setSession(newSession);
-        if (newSession?.user && newSession.user.id !== currentUser?.id) {
+        if (newSession?.user) {
           await refreshCurrentUser(newSession.user.id);
           await refreshProfiles();
           await refreshMatches(newSession.user.id);
@@ -274,7 +274,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [currentUser?.id]);
+  }, []);
 
   useEffect(() => {
     refreshMessages();

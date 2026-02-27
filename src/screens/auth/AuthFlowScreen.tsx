@@ -52,7 +52,7 @@ const INTERESTS_OPTIONS = [
 type Step = 'welcome' | 'signup' | 'login' | 'identity' | 'photos' | 'bio' | 'preferences' | 'location';
 
 const AuthFlowScreen: React.FC = () => {
-  const { login } = useApp();
+  const { login, refreshCurrentUser } = useApp();
   const [step, setStep] = useState<Step>('welcome');
 
   const [email, setEmail] = useState('');
@@ -180,38 +180,72 @@ const AuthFlowScreen: React.FC = () => {
       return;
     }
 
+    const refreshed = await refreshCurrentUser(data.user.id);
+    if (refreshed) {
+      logEvent('auth', 'login', { userId: data.user.id });
+      setLoading(false);
+      return;
+    }
+
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', data.user.id)
       .single();
 
-    if (profileError || !profile) {
+    if (profileError) {
+      if (profileError.code === 'PGRST116') {
+        Alert.alert('Bienvenue !', 'Nous avons besoin de quelques informations supplémentaires.');
+        goTo('identity');
+        setLoading(false);
+        return;
+      }
+      logError(profileError, { action: 'login_profile_lookup' });
+      Alert.alert('Erreur', "Impossible de charger votre profil pour le moment.");
+      setLoading(false);
+      return;
+    }
+
+    if (!profile) {
       Alert.alert('Bienvenue !', 'Nous avons besoin de quelques informations supplémentaires.');
       goTo('identity');
-    } else {
-      logEvent('auth', 'login', { userId: data.user.id });
-      const appStateUser = {
-        id: profile.id,
-        name: profile.name,
-        age: profile.age,
-        gender: profile.gender,
-        photos: profile.photos,
-        bio: profile.bio,
-        interests: profile.interests,
-        location: { lat: 0, lng: 0, city: profile.city },
-        isVerified: profile.is_verified,
-        isPremium: profile.is_premium,
-        boosted_until: profile.boosted_until ?? null,
-        preferences: {
-          targetGender: profile.target_gender ?? [],
-          minAge: 18,
-          maxAge: 35,
-          maxDistance: 50,
-        },
-      };
-      login(appStateUser);
+      setLoading(false);
+      return;
     }
+
+    if (profile.suspended_at) {
+      await supabase.auth.signOut({ scope: 'local' });
+      Alert.alert('Compte suspendu', 'Votre compte est suspendu. Contactez le support.');
+      setLoading(false);
+      return;
+    }
+
+    logEvent('auth', 'login', { userId: data.user.id });
+    const appStateUser = {
+      id: profile.id,
+      name: profile.name,
+      age: profile.age,
+      gender: profile.gender,
+      photos: profile.photos,
+      bio: profile.bio,
+      interests: profile.interests,
+      location: { lat: 0, lng: 0, city: profile.city },
+      isVerified: profile.is_verified,
+      isPremium: profile.is_premium,
+      boosted_until: profile.boosted_until ?? null,
+      is_invisible: !!profile.is_invisible && !!profile.is_premium,
+      subscription_plan_id: null,
+      invisible_mode_eligible: false,
+      is_admin: !!profile.is_admin,
+      suspended_at: profile.suspended_at ?? null,
+      preferences: {
+        targetGender: profile.target_gender ?? [],
+        minAge: 18,
+        maxAge: 35,
+        maxDistance: 50,
+      },
+    };
+    login(appStateUser);
     setLoading(false);
   }
 
@@ -326,6 +360,11 @@ const AuthFlowScreen: React.FC = () => {
         isVerified: false,
         isPremium: false,
         boosted_until: null,
+        is_invisible: false,
+        subscription_plan_id: null,
+        invisible_mode_eligible: false,
+        is_admin: false,
+        suspended_at: null,
         preferences: {
           targetGender: form.targetGender,
           minAge: 18,
