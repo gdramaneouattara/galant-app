@@ -1,11 +1,18 @@
 -- RLS: Storage objects (bucket photos)
+ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS suspended_at timestamptz;
 ALTER TABLE IF EXISTS storage.objects ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Authenticated users can see all photos." ON storage.objects;
 CREATE POLICY "Authenticated users can see all photos."
   ON storage.objects FOR SELECT
   TO authenticated
-  USING (bucket_id = 'photos');
+  USING (
+    bucket_id = 'photos'
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
 
 DROP POLICY IF EXISTS "Users can upload to their own folder." ON storage.objects;
 CREATE POLICY "Users can upload to their own folder."
@@ -13,7 +20,11 @@ CREATE POLICY "Users can upload to their own folder."
   TO authenticated
   WITH CHECK (
     bucket_id = 'photos' AND
-    auth.uid()::text = (storage.foldername(name))[1]
+    auth.uid()::text = (storage.foldername(name))[1] AND
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
   );
 
 DROP POLICY IF EXISTS "Users can update their own photos." ON storage.objects;
@@ -22,7 +33,11 @@ CREATE POLICY "Users can update their own photos."
   TO authenticated
   USING (
     bucket_id = 'photos' AND
-    auth.uid()::text = (storage.foldername(name))[1]
+    auth.uid()::text = (storage.foldername(name))[1] AND
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
   );
 
 DROP POLICY IF EXISTS "Users can delete their own photos." ON storage.objects;
@@ -31,5 +46,9 @@ CREATE POLICY "Users can delete their own photos."
   TO authenticated
   USING (
     bucket_id = 'photos' AND
-    auth.uid()::text = (storage.foldername(name))[1]
+    auth.uid()::text = (storage.foldername(name))[1] AND
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
   );
