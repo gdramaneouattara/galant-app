@@ -52,6 +52,7 @@ const headers = {
 
 const bucketEndpoint = `${baseUrl}/storage/v1/bucket/${bucketName}`;
 const createEndpoint = `${baseUrl}/storage/v1/bucket`;
+const isPublicBucket = bucketName === 'photos';
 
 const check = await fetch(bucketEndpoint, { headers });
 if (check.status === 200) {
@@ -78,11 +79,11 @@ if (check.status !== 404) {
 const res = await fetch(createEndpoint, {
   method: 'POST',
   headers,
-  body: JSON.stringify({ id: bucketName, name: bucketName, public: true }),
+  body: JSON.stringify({ id: bucketName, name: bucketName, public: isPublicBucket }),
 });
 
 if (res.status === 200 || res.status === 201) {
-  console.log(`Bucket "${bucketName}" créé en public.`);
+  console.log(`Bucket "${bucketName}" créé en ${isPublicBucket ? 'public' : 'privé'}.`);
   process.exit(0);
 }
 

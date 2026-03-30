@@ -24,6 +24,28 @@ type AdminStats = {
     ANNUAL: number;
     UNKNOWN: number;
   };
+  kyc?: {
+    totalRequests: number;
+    pending: number;
+    inReview: number;
+    approved: number;
+    rejected: number;
+    requestsLast7Days: number;
+  };
+  moderation?: {
+    reportsTotal: number;
+    reportsOpen: number;
+    reportsInReview: number;
+    reportsResolved: number;
+    reportsDismissed: number;
+  };
+  privacy?: {
+    requestsTotal: number;
+    open: number;
+    inProgress: number;
+    resolved: number;
+    rejected: number;
+  };
   integrity?: {
     authUsersTotal: number | null;
     profilesTotal: number;
@@ -132,6 +154,58 @@ const AdminDashboardScreen: React.FC = () => {
               <Text style={styles.cardValue}>
                 {stats.integrity?.authUsersWithoutProfile ?? '-'}
               </Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>KYC en attente</Text>
+              <Text style={styles.cardValue}>{stats.kyc?.pending ?? 0}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>KYC en revue</Text>
+              <Text style={styles.cardValue}>{stats.kyc?.inReview ?? 0}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>KYC approuvés</Text>
+              <Text style={styles.cardValue}>{stats.kyc?.approved ?? 0}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>KYC rejetés</Text>
+              <Text style={styles.cardValue}>{stats.kyc?.rejected ?? 0}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Demandes KYC (7j)</Text>
+              <Text style={styles.cardValue}>{stats.kyc?.requestsLast7Days ?? 0}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Signalements (ouverts)</Text>
+              <Text style={styles.cardValue}>{stats.moderation?.reportsOpen ?? 0}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Signalements (en revue)</Text>
+              <Text style={styles.cardValue}>{stats.moderation?.reportsInReview ?? 0}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Signalements (résolus)</Text>
+              <Text style={styles.cardValue}>{stats.moderation?.reportsResolved ?? 0}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Signalements (rejetés)</Text>
+              <Text style={styles.cardValue}>{stats.moderation?.reportsDismissed ?? 0}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>RGPD (ouvertes)</Text>
+              <Text style={styles.cardValue}>{stats.privacy?.open ?? 0}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>RGPD (en cours)</Text>
+              <Text style={styles.cardValue}>{stats.privacy?.inProgress ?? 0}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>RGPD (résolues)</Text>
+              <Text style={styles.cardValue}>{stats.privacy?.resolved ?? 0}</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>RGPD (rejetées)</Text>
+              <Text style={styles.cardValue}>{stats.privacy?.rejected ?? 0}</Text>
             </View>
           </View>
         ) : null}

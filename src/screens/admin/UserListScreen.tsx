@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, View, Image, Pressable, Alert, TextInput } from 'react-native';
+import { ShieldCheck } from 'lucide-react-native';
 import { COLORS } from '../../data/mock';
 import { apiRequest } from '../../lib/api';
 import { User } from '../../types';
@@ -33,6 +34,7 @@ const UserListScreen: React.FC = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [reconciling, setReconciling] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterKey>('ALL');
 
@@ -86,7 +88,7 @@ const UserListScreen: React.FC = () => {
       if (!passFilter) return false;
       if (!q) return true;
 
-      const haystack = `${user.name || ''} ${user.email || ''} ${user.id}`.toLowerCase();
+      const haystack = `${user.name || ''} ${user.email || ''} ${user.phone || ''} ${user.id}`.toLowerCase();
       return haystack.includes(q);
     });
   }, [users, query, activeFilter]);
@@ -118,6 +120,39 @@ const UserListScreen: React.FC = () => {
             }
           },
           style: 'destructive',
+        },
+      ]
+    );
+  };
+
+
+  const deleteUser = async (user: AdminUser) => {
+    if (isAdmin(user)) {
+      Alert.alert('Action bloqu?e', 'La suppression d?un compte admin est d?sactiv?e.');
+      return;
+    }
+    Alert.alert(
+      'Supprimer ce compte',
+      'Cette action est d?finitive. Le profil et les donn?es seront supprim?s.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeletingUserId(user.id);
+              await apiRequest(`/api/admin/users/${user.id}`, {
+                method: 'DELETE',
+                requireAuth: true,
+              });
+              await fetchUsers(false);
+            } catch (error: any) {
+              Alert.alert('Erreur', error?.message || 'Impossible de supprimer cet utilisateur.');
+            } finally {
+              setDeletingUserId(null);
+            }
+          },
         },
       ]
     );
@@ -163,7 +198,7 @@ const UserListScreen: React.FC = () => {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Rechercher par nom, email ou UID"
+          placeholder="Rechercher par nom, email, telephone ou UID"
           style={styles.searchInput}
         />
 
@@ -195,6 +230,7 @@ const UserListScreen: React.FC = () => {
               const userIsPremium = isPremium(user);
               const userIsVerified = isVerified(user);
               const userIsSuspended = isSuspended(user);
+              const userPhotoReviewPending = user.photo_review_status === 'PENDING';
 
               return (
                 <View key={user.id} style={styles.userCard}>
@@ -208,38 +244,64 @@ const UserListScreen: React.FC = () => {
                   <View style={styles.userInfo}>
                     <Text style={styles.name}>{user.name || 'Utilisateur sans nom'}</Text>
                     <Text style={styles.email}>{user.email || 'Email indisponible'}</Text>
+                    <Text style={styles.phone}>{user.phone || 'Telephone indisponible'}</Text>
                     <Text style={styles.uid}>UID: {user.id}</Text>
 
                     <View style={styles.badgesRow}>
                       {userIsAdmin ? <Text style={[styles.badge, styles.badgeAdmin]}>ADMIN</Text> : null}
                       {userIsPremium ? <Text style={[styles.badge, styles.badgePremium]}>PREMIUM</Text> : null}
                       {userIsVerified ? (
-                        <Text style={[styles.badge, styles.badgeVerified]}>VÉRIFIÉ</Text>
+                        <View style={styles.verifiedBadge}>
+                          <ShieldCheck size={12} color="#166534" />
+                          <Text style={styles.verifiedBadgeText}>V?RIFI?</Text>
+                        </View>
                       ) : (
-                        <Text style={[styles.badge, styles.badgeUnverified]}>NON VÉRIFIÉ</Text>
+                        <Text style={[styles.badge, styles.badgeUnverified]}>NON V?RIFI?</Text>
                       )}
+                      {userPhotoReviewPending ? (
+                        <Text style={[styles.badge, styles.badgeInReview]}>EN REVUE</Text>
+                      ) : null}
                       {userIsSuspended ? <Text style={[styles.badge, styles.badgeSuspended]}>SUSPENDU</Text> : null}
                     </View>
                   </View>
-                  <Pressable
-                    onPress={() => void toggleSuspend(user)}
-                    style={[
-                      styles.suspendButton,
-                      userIsSuspended && styles.reactivateButton,
-                      userIsAdmin && styles.adminLockedButton,
-                    ]}
-                    disabled={userIsAdmin}
-                  >
-                    <Text
+                  <View style={styles.actionColumn}>
+                    <Pressable
+                      onPress={() => void toggleSuspend(user)}
                       style={[
-                        styles.suspendButtonText,
-                        userIsSuspended && styles.reactivateButtonText,
-                        userIsAdmin && styles.adminLockedButtonText,
+                        styles.suspendButton,
+                        userIsSuspended && styles.reactivateButton,
+                        userIsAdmin && styles.adminLockedButton,
                       ]}
+                      disabled={userIsAdmin}
                     >
-                      {userIsAdmin ? 'Admin' : userIsSuspended ? 'Réactiver' : 'Suspendre'}
-                    </Text>
-                  </Pressable>
+                      <Text
+                        style={[
+                          styles.suspendButtonText,
+                          userIsSuspended && styles.reactivateButtonText,
+                          userIsAdmin && styles.adminLockedButtonText,
+                        ]}
+                      >
+                        {userIsAdmin ? 'Admin' : userIsSuspended ? 'R?activer' : 'Suspendre'}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => void deleteUser(user)}
+                      style={[
+                        styles.deleteButton,
+                        (userIsAdmin || deletingUserId === user.id) && styles.adminLockedButton,
+                      ]}
+                      disabled={userIsAdmin || deletingUserId === user.id}
+                    >
+                      <Text
+                        style={[
+                          styles.deleteButtonText,
+                          (userIsAdmin || deletingUserId === user.id) && styles.adminLockedButtonText,
+                        ]}
+                      >
+                        {deletingUserId === user.id ? 'Suppression...' : 'Supprimer'}
+                      </Text>
+                    </Pressable>
+                  </View>
                 </View>
               );
             })}
@@ -383,6 +445,11 @@ const styles = StyleSheet.create({
     color: COLORS.ink,
     marginTop: 1,
   },
+  phone: {
+    fontSize: 12,
+    color: COLORS.ink,
+    marginTop: 1,
+  },
   uid: {
     fontSize: 11,
     color: COLORS.muted,
@@ -414,13 +481,46 @@ const styles = StyleSheet.create({
     backgroundColor: '#dcfce7',
     color: '#166534',
   },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#dcfce7',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  verifiedBadgeText: {
+    color: '#166534',
+    fontSize: 10,
+    fontWeight: '800',
+  },
   badgeUnverified: {
     backgroundColor: '#f1f5f9',
     color: '#475569',
   },
+  badgeInReview: {
+    backgroundColor: '#fef3c7',
+    color: '#b45309',
+  },
   badgeSuspended: {
     backgroundColor: '#fee2e2',
     color: '#b91c1c',
+  },
+  actionColumn: {
+    gap: 8,
+    alignItems: 'stretch',
+  },
+  deleteButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    backgroundColor: '#fee2e2',
+    borderRadius: 8,
+  },
+  deleteButtonText: {
+    color: '#b91c1c',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
   suspendButton: {
     paddingHorizontal: 10,

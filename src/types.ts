@@ -15,6 +15,7 @@ export enum SubscriptionPlan {
 export interface User {
   id: string;
   email?: string | null;
+  phone?: string | null;
   name: string;
   age: number;
   gender: Gender;
@@ -22,18 +23,23 @@ export interface User {
   photos: string[];
   interests: string[];
   location: {
-    lat: number;
-    lng: number;
+    lat: number | null;
+    lng: number | null;
     city: string;
+    country?: string | null;
   };
   isVerified: boolean;
   isPremium: boolean;
   boosted_until?: string | null;
+  relationship_goal?: string | null;
+  last_active_at?: string | null;
+  likes_count: number;
   is_invisible?: boolean;
   subscription_plan_id?: string | null;
   invisible_mode_eligible?: boolean;
   is_admin?: boolean;
   suspended_at?: string | null;
+  photo_review_status?: string | null;
   preferences: {
     targetGender: Gender[];
     minAge: number;
@@ -55,6 +61,9 @@ export interface Message {
   match_id: string;
   sender_id: string;
   content: string;
+  message_type?: 'TEXT' | 'IMAGE';
+  media_url?: string | null;
+  metadata?: Record<string, unknown> | null;
   is_read: boolean;
   created_at: string;
 }

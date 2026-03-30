@@ -8,222 +8,187 @@ create table if not exists public.profiles (
   name text not null,
   age integer not null check (age >= 18),
   gender text not null,
-  photos text[] not null default '{}',
-  bio text default '',
-  interests text[] not null default '{}',
-  target_gender text[] not null default '{}',
-  city text,
-  is_verified boolean not null default false,
-  is_premium boolean not null default false,
-  boosted_until timestamptz,
-  is_invisible boolean not null default false,
-  is_admin boolean not null default false,
-  suspended_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  bio text,
+  photos text[] default '{}',
+  location geography(point) not null,
+  is_premium boolean default false,
+  is_admin boolean default false,
+  is_verified boolean default false,
+  is_kyc_verified boolean default false,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now(),
+  last_online_at timestamp with time zone default now(),
+  suspended_at timestamp with time zone
 );
 
--- Backward-compatible migrations for existing databases
-alter table if exists public.profiles
-  add column if not exists boosted_until timestamptz;
-alter table if exists public.profiles
-  add column if not exists is_invisible boolean not null default false;
-alter table if exists public.profiles
-  add column if not exists is_admin boolean not null default false;
-alter table if exists public.profiles
-  add column if not exists suspended_at timestamptz;
+-- Interests table
+create table if not exists public.interests (
+  id uuid primary key default gen_random_uuid(),
+  name text unique not null,
+  category text not null,
+  created_at timestamp with time zone default now()
+);
 
-create index if not exists profiles_city_idx on public.profiles (city);
-create index if not exists profiles_boosted_until_idx on public.profiles (boosted_until desc nulls last);
-create index if not exists profiles_invisible_idx on public.profiles (is_invisible, is_premium);
+-- User Interests (Many-to-Many)
+create table if not exists public.user_interests (
+  user_id uuid references public.profiles(id) on delete cascade,
+  interest_id uuid references public.interests(id) on delete cascade,
+  primary key (user_id, interest_id)
+);
 
--- Eligibility helper: invisible mode is reserved for active 6/12 month plans.
-create or replace function public.has_invisible_mode_access(target_user_id uuid)
-returns boolean
-language plpgsql
-stable
-as $$
-declare
-  eligible boolean := false;
-begin
-  if to_regclass('public.subscriptions') is null then
-    return false;
-  end if;
-
-  execute $sql$
-    select exists (
-      select 1
-      from public.subscriptions s
-      where s.user_id = $1
-        and s.status = 'active'
-        and upper(coalesce(s.plan_id, '')) in ('BIANNUAL', 'ANNUAL')
-        and (s.current_period_end is null or s.current_period_end > now())
-    )
-  $sql$
-  into eligible
-  using target_user_id;
-
-  return coalesce(eligible, false);
-end;
-$$;
-
--- Auto-update updated_at
-create or replace function public.set_updated_at()
-returns trigger as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$ language plpgsql;
-
-drop trigger if exists set_profiles_updated_at on public.profiles;
-create trigger set_profiles_updated_at
-before update on public.profiles
-for each row execute function public.set_updated_at();
-
--- Prevent users from toggling sensitive flags
-create or replace function public.prevent_sensitive_profile_updates()
-returns trigger as $$
-declare
-  jwt_role text;
-begin
-  jwt_role := current_setting('request.jwt.claim.role', true);
-  if jwt_role = 'authenticated' then
-    if new.is_premium is distinct from old.is_premium
-      or new.is_verified is distinct from old.is_verified
-      or new.boosted_until is distinct from old.boosted_until
-      or new.is_admin is distinct from old.is_admin
-      or new.suspended_at is distinct from old.suspended_at then
-      raise exception 'Not allowed to update sensitive flags';
-    end if;
-    if new.is_invisible is distinct from old.is_invisible
-      and new.is_invisible = true
-      and not public.has_invisible_mode_access(new.id) then
-      raise exception 'Invisible mode is available for 6-month and annual plans only';
-    end if;
-  end if;
-  return new;
-end;
-$$ language plpgsql;
-
-drop trigger if exists prevent_sensitive_profile_updates on public.profiles;
-create trigger prevent_sensitive_profile_updates
-before update on public.profiles
-for each row execute function public.prevent_sensitive_profile_updates();
-
--- Matches
+-- Matches table
 create table if not exists public.matches (
   id uuid primary key default gen_random_uuid(),
-  user_one_id uuid not null references auth.users(id) on delete cascade,
-  user_two_id uuid not null references auth.users(id) on delete cascade,
-  status text not null default 'ACTIVE',
-  created_at timestamptz not null default now()
+  user_one_id uuid references public.profiles(id) on delete cascade,
+  user_two_id uuid references public.profiles(id) on delete cascade,
+  status text not null default 'ACTIVE' check (status in ('ACTIVE', 'UNMATCHED', 'BLOCKED')),
+  created_at timestamp with time zone default now(),
+  unique (user_one_id, user_two_id),
+  check (user_one_id < user_two_id)
 );
 
-create or replace function public.normalize_match_pair()
-returns trigger as $$
-declare
-  tmp uuid;
-begin
-  if new.user_one_id = new.user_two_id then
-    raise exception 'A match requires two distinct users';
-  end if;
-
-  if new.user_one_id > new.user_two_id then
-    tmp := new.user_one_id;
-    new.user_one_id := new.user_two_id;
-    new.user_two_id := tmp;
-  end if;
-
-  return new;
-end;
-$$ language plpgsql;
-
-drop trigger if exists normalize_match_pair on public.matches;
-create trigger normalize_match_pair
-before insert or update on public.matches
-for each row execute function public.normalize_match_pair();
-
-create index if not exists matches_user_one_idx on public.matches (user_one_id);
-create index if not exists matches_user_two_idx on public.matches (user_two_id);
-create unique index if not exists matches_unique_pair on public.matches (user_one_id, user_two_id);
-
--- Messages
+-- Messages table
 create table if not exists public.messages (
   id uuid primary key default gen_random_uuid(),
-  match_id uuid not null references public.matches(id) on delete cascade,
-  sender_id uuid not null references auth.users(id) on delete cascade,
-  content text not null,
-  is_read boolean not null default false,
-  created_at timestamptz not null default now()
+  match_id uuid references public.matches(id) on delete cascade,
+  sender_id uuid references public.profiles(id) on delete cascade,
+  content text,
+  type text not null default 'TEXT' check (type in ('TEXT', 'IMAGE', 'VIDEO', 'VOICE')),
+  media_url text,
+  read_at timestamp with time zone,
+  created_at timestamp with time zone default now()
 );
 
-create index if not exists messages_match_idx on public.messages (match_id);
-create index if not exists messages_sender_idx on public.messages (sender_id);
-
-create or replace function public.prevent_unsafe_message_updates()
-returns trigger as $$
-declare
-  jwt_role text;
-begin
-  jwt_role := current_setting('request.jwt.claim.role', true);
-
-  if jwt_role = 'authenticated' then
-    if new.match_id is distinct from old.match_id
-      or new.sender_id is distinct from old.sender_id
-      or new.created_at is distinct from old.created_at then
-      raise exception 'Not allowed to modify immutable message fields';
-    end if;
-
-    if auth.uid() is distinct from old.sender_id then
-      if new.content is distinct from old.content then
-        raise exception 'Not allowed to edit another user message';
-      end if;
-      if old.is_read = true and new.is_read = false then
-        raise exception 'Not allowed to mark message as unread';
-      end if;
-    end if;
-  end if;
-
-  return new;
-end;
-$$ language plpgsql;
-
-drop trigger if exists prevent_unsafe_message_updates on public.messages;
-create trigger prevent_unsafe_message_updates
-before update on public.messages
-for each row execute function public.prevent_unsafe_message_updates();
-
--- Events (analytics + error monitoring)
+-- Events table (analytics/errors)
 create table if not exists public.events (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete set null,
+  user_id uuid references public.profiles(id) on delete set null,
   event_type text not null,
-  event_name text not null,
-  metadata jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now()
+  payload jsonb default '{}',
+  created_at timestamp with time zone default now()
 );
 
-create index if not exists events_user_idx on public.events (user_id);
-create index if not exists events_type_idx on public.events (event_type);
+-- Admin audit logs
+create table if not exists public.admin_audit_logs (
+  id uuid primary key default gen_random_uuid(),
+  admin_id uuid references public.profiles(id) on delete set null,
+  action text not null,
+  target_id uuid,
+  target_type text,
+  old_data jsonb,
+  new_data jsonb,
+  created_at timestamp with time zone default now()
+);
 
--- Subscriptions (Paystack)
+-- Photo review queue
+create table if not exists public.photo_review_queue (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.profiles(id) on delete cascade,
+  photo_url text not null,
+  status text not null default 'PENDING' check (status in ('PENDING', 'APPROVED', 'REJECTED')),
+  reviewed_at timestamp with time zone,
+  rejection_reason text,
+  created_at timestamp with time zone default now()
+);
+
+-- KYC verifications
+create table if not exists public.kyc_verifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.profiles(id) on delete cascade,
+  document_type text not null check (document_type in ('PASSPORT', 'ID_CARD', 'DRIVERS_LICENSE')),
+  document_url text not null,
+  selfie_url text not null,
+  status text not null default 'PENDING' check (status in ('PENDING', 'IN_REVIEW', 'APPROVED', 'REJECTED')),
+  reviewed_by uuid references public.profiles(id),
+  reviewed_at timestamp with time zone,
+  rejection_reason text,
+  created_at timestamp with time zone default now()
+);
+
+-- Subscriptions table
 create table if not exists public.subscriptions (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  provider text not null,
+  user_id uuid references public.profiles(id) on delete cascade,
   plan_id text not null,
   status text not null,
-  reference text unique,
-  current_period_end timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  current_period_start timestamp with time zone not null,
+  current_period_end timestamp with time zone not null,
+  cancel_at_period_end boolean default false,
+  created_at timestamp with time zone default now()
 );
 
-create index if not exists subscriptions_user_idx on public.subscriptions (user_id);
+-- Likes table
+create table if not exists public.likes (
+  id uuid primary key default gen_random_uuid(),
+  liker_id uuid references public.profiles(id) on delete cascade,
+  liked_id uuid references public.profiles(id) on delete cascade,
+  is_super_like boolean default false,
+  created_at timestamp with time zone default now(),
+  unique (liker_id, liked_id)
+);
 
--- Auto-update updated_at for subscriptions
-drop trigger if exists set_subscriptions_updated_at on public.subscriptions;
-create trigger set_subscriptions_updated_at
-before update on public.subscriptions
-for each row execute function public.set_updated_at();
+-- Blocks table
+create table if not exists public.blocks (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.profiles(id) on delete cascade,
+  blocked_user_id uuid references public.profiles(id) on delete cascade,
+  reason text,
+  created_at timestamp with time zone default now(),
+  unique (user_id, blocked_user_id)
+);
+
+-- Reports table
+create table if not exists public.reports (
+  id uuid primary key default gen_random_uuid(),
+  reporter_id uuid references public.profiles(id) on delete cascade,
+  reported_user_id uuid references public.profiles(id) on delete cascade,
+  reason text not null,
+  details text,
+  status text not null default 'PENDING' check (status in ('PENDING', 'INVESTIGATING', 'RESOLVED', 'DISMISSED')),
+  created_at timestamp with time zone default now()
+);
+
+-- Push tokens
+create table if not exists public.push_tokens (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.profiles(id) on delete cascade,
+  token text not null,
+  platform text not null check (platform in ('ios', 'android')),
+  created_at timestamp with time zone default now(),
+  unique (user_id, token)
+);
+
+-- Privacy Requests (GDPR/Data deletion)
+create table if not exists public.privacy_requests (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.profiles(id) on delete cascade,
+  request_type text not null check (request_type in ('DATA_EXPORT', 'ACCOUNT_DELETION')),
+  status text not null default 'PENDING' check (status in ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED')),
+  completed_at timestamp with time zone,
+  created_at timestamp with time zone default now()
+);
+
+-- Functions
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, name, age, gender, location)
+  values (
+    new.id,
+    new.raw_user_meta_data->>'name',
+    (new.raw_user_meta_data->>'age')::integer,
+    new.raw_user_meta_data->>'gender',
+    st_setsrid(st_makepoint(
+      (new.raw_user_meta_data->>'longitude')::float,
+      (new.raw_user_meta_data->>'latitude')::float
+    ), 4326)
+  );
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- Triggers
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();

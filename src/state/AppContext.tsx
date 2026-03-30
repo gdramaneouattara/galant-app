@@ -1,6 +1,10 @@
 
 import React, { createContext, useContext, useMemo, useState, useEffect, useRef } from 'react';
 import { Session, RealtimeChannel } from '@supabase/supabase-js';
+import { Platform } from 'react-native';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { Message, Match, User } from '../types';
 import { supabase } from '../lib/supabase';
 
@@ -40,6 +44,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [loading, setLoading] = useState(true);
   const matchChannelsRef = useRef<RealtimeChannel[]>([]);
   const matchesChannelRef = useRef<RealtimeChannel | null>(null);
+  const pushTokenRef = useRef<string | null>(null);
 
   const getCurrentSubscriptionState = async (userId: string) => {
     const fallback = {
@@ -91,13 +96,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     photos: profile.photos || [],
     bio: profile.bio || '',
     interests: profile.interests || [],
-    location: { lat: 0, lng: 0, city: profile.city || '' },
+    phone: profile.phone ?? null,
+    location: {
+      lat: Number.isFinite(profile.latitude) ? profile.latitude : null,
+      lng: Number.isFinite(profile.longitude) ? profile.longitude : null,
+      city: profile.city || '',
+      country: profile.country || null,
+    },
     isVerified: !!profile.is_verified,
     isPremium: !!profile.is_premium,
     boosted_until: profile.boosted_until ?? null,
+    relationship_goal: profile.relationship_goal ?? null,
+    last_active_at: profile.last_active_at ?? null,
+    likes_count: profile.likes_count || 0,
     is_invisible: !!profile.is_invisible && !!profile.is_premium && (options?.invisible_mode_eligible ?? true),
     is_admin: !!profile.is_admin,
     suspended_at: profile.suspended_at ?? null,
+    photo_review_status: profile.photo_review_status ?? 'APPROVED',
     subscription_plan_id: options?.subscription_plan_id ?? null,
     invisible_mode_eligible: options?.invisible_mode_eligible ?? false,
     preferences: {
@@ -107,6 +122,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       maxDistance: 50,
     },
   });
+
+  const updateLastActive = async (userId: string) => {
+    try {
+      await supabase
+        .from('profiles')
+        .update({ last_active_at: new Date().toISOString() })
+        .eq('id', userId);
+    } catch (_e) {
+      // Silent error for non-critical ping
+    }
+  };
 
   const refreshProfiles = async () => {
     try {
@@ -227,6 +253,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     matchChannelsRef.current = [];
   };
 
+  const registerPushToken = async (userId: string) => {
+    try {
+      if (!Device?.isDevice) return;
+
+      const existing = await Notifications.getPermissionsAsync();
+      let status = existing?.status;
+      if (status !== 'granted') {
+        const requested = await Notifications.requestPermissionsAsync();
+        status = requested?.status;
+      }
+      if (status !== 'granted') return;
+
+      const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID
+        || Constants?.expoConfig?.extra?.eas?.projectId
+        || Constants?.easConfig?.projectId;
+
+      const tokenResult = await Notifications.getExpoPushTokenAsync(
+        projectId ? { projectId } : {}
+      );
+      const token = tokenResult?.data;
+      if (!token) return;
+
+      pushTokenRef.current = token;
+      await supabase
+        .from('push_tokens')
+        .upsert({
+          user_id: userId,
+          token,
+          platform: Platform.OS,
+          is_active: true,
+        }, { onConflict: 'user_id,token' });
+    } catch (_error) {
+      // Push is optional: do not break auth flow.
+    }
+  };
+
+  const unregisterPushToken = async (userId: string) => {
+    const token = pushTokenRef.current;
+    if (!token) return;
+    pushTokenRef.current = null;
+    try {
+      await supabase
+        .from('push_tokens')
+        .update({ is_active: false })
+        .eq('user_id', userId)
+        .eq('token', token);
+    } catch (_error) {
+      // Silent cleanup.
+    }
+  };
+
   useEffect(() => {
     const fetchSessionAndProfile = async () => {
       setLoading(true);
@@ -235,9 +312,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSession(currentSession);
 
         if (currentSession?.user) {
+          await updateLastActive(currentSession.user.id);
           await refreshCurrentUser(currentSession.user.id);
           await refreshProfiles();
           await refreshMatches(currentSession.user.id);
+          await registerPushToken(currentSession.user.id);
         }
       } catch (_e) {
         setLastError("Impossible d'initialiser la session.");
@@ -252,9 +331,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         setSession(newSession);
         if (newSession?.user) {
+          await updateLastActive(newSession.user.id);
           await refreshCurrentUser(newSession.user.id);
           await refreshProfiles();
           await refreshMatches(newSession.user.id);
+          await registerPushToken(newSession.user.id);
         } else if (!newSession) {
           setCurrentUser(null);
           setUsers([]);
@@ -325,6 +406,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetAuthState = () => {
+    pushTokenRef.current = null;
     setCurrentUser(null);
     setSession(null);
     setUsers([]);
@@ -338,7 +420,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = async () => {
+    const userId = session?.user?.id;
     try {
+      if (userId) {
+        await unregisterPushToken(userId);
+      }
       const { error } = await supabase.auth.signOut({ scope: 'local' });
       if (error) {
         throw error;
@@ -360,8 +446,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     delete sanitized.is_invisible;
     delete sanitized.is_admin;
     delete sanitized.suspended_at;
+    delete sanitized.photo_review_status;
     delete sanitized.subscription_plan_id;
     delete sanitized.invisible_mode_eligible;
+    delete sanitized.likes_count;
 
     setCurrentUser((prev) => ({
       ...prev!,
@@ -380,6 +468,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (sanitized.interests !== undefined) payload.interests = sanitized.interests;
     if (sanitized.photos !== undefined) payload.photos = sanitized.photos;
     if (sanitized.location?.city !== undefined) payload.city = sanitized.location.city;
+    if (sanitized.location?.country !== undefined) payload.country = sanitized.location.country;
+    if (sanitized.location?.lat !== undefined) payload.latitude = sanitized.location.lat;
+    if (sanitized.location?.lng !== undefined) payload.longitude = sanitized.location.lng;
+    if (sanitized.relationship_goal !== undefined) payload.relationship_goal = sanitized.relationship_goal;
     if (sanitized.preferences?.targetGender !== undefined) {
       payload.target_gender = sanitized.preferences.targetGender;
     }

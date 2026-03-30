@@ -8,20 +8,30 @@ import {
   StyleSheet,
   Text,
   View,
+  Modal,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronRight, Crown, EyeOff, LogOut, Rocket, Settings, ShieldCheck, Trophy } from 'lucide-react-native';
+import { ChevronRight, Crown, EyeOff, Heart, LogOut, Rocket, Settings, ShieldCheck, Trophy, Coffee, Users, X } from 'lucide-react-native';
 import { useApp } from '../../state/AppContext';
 import { COLORS } from '../../data/mock';
 import type { RootStackParamList } from '../../navigation/MainNavigator';
+import { apiRequest } from '../../lib/api';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
+const RELATIONSHIP_GOALS = [
+  { id: 'SERIOUS', label: 'Amour sérieux', icon: (props: any) => <Heart {...props} /> },
+  { id: 'FRIENDSHIP', label: 'Amitié', icon: (props: any) => <Users {...props} /> },
+  { id: 'CASUAL', label: 'On verra bien', icon: (props: any) => <Coffee {...props} /> },
+];
+
 const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
-  const { currentUser, logout, toggleInvisibleMode } = useApp();
+  const { currentUser, logout, toggleInvisibleMode, updateCurrentUser } = useApp();
   const [isTogglingInvisible, setIsTogglingInvisible] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [showGoalModal, setShowGoalModal] = useState(false);
 
   if (!currentUser) {
     return null;
@@ -32,6 +42,8 @@ const ProfileScreen: React.FC = () => {
   const isInvisibleEligible = !!currentUser.invisible_mode_eligible;
   const isInvisibleEnabled = !!currentUser.is_invisible && currentUser.isPremium && isInvisibleEligible;
 
+  const currentGoal = RELATIONSHIP_GOALS.find(g => g.id === currentUser.relationship_goal) || RELATIONSHIP_GOALS[0];
+
   const handleInvisibleToggle = async (enabled: boolean) => {
     setIsTogglingInvisible(true);
     const success = await toggleInvisibleMode(enabled);
@@ -41,6 +53,57 @@ const ProfileScreen: React.FC = () => {
     setIsTogglingInvisible(false);
   };
 
+  const handleGoalUpdate = (goalId: string) => {
+    updateCurrentUser({ relationship_goal: goalId });
+    setShowGoalModal(false);
+  };
+
+  const requestPrivacyAction = async (requestType: 'EXPORT' | 'DELETE') => {
+    try {
+      await apiRequest('/api/privacy/request', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({ requestType }),
+      });
+      Alert.alert(
+        'Demande enregistrée',
+        requestType === 'EXPORT'
+          ? 'Votre demande d’export RGPD a été transmise.'
+          : 'Votre demande de suppression RGPD a été transmise.'
+      );
+    } catch (error: any) {
+      Alert.alert('Erreur', error?.message || 'Impossible d’enregistrer votre demande RGPD.');
+    }
+  };
+
+  const deleteAccount = async () => {
+    if (deletingAccount) return;
+    setDeletingAccount(true);
+    try {
+      await apiRequest('/api/account/delete', {
+        method: 'POST',
+        requireAuth: true,
+      });
+      Alert.alert('Compte supprime', 'Votre compte a ete supprime.');
+      await logout();
+    } catch (error: any) {
+      Alert.alert('Erreur', error?.message || 'Impossible de supprimer le compte.');
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
+
+  const confirmDeleteAccount = () => {
+    Alert.alert(
+      'Supprimer le compte',
+      'Cette action est definitive. Votre profil et vos contenus seront supprimes.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Supprimer', style: 'destructive', onPress: () => { void deleteAccount(); } },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -48,7 +111,20 @@ const ProfileScreen: React.FC = () => {
           <View style={styles.photoWrap}>
             <Image source={{ uri: currentUser.photos[0] }} style={styles.photo} />
           </View>
-          <Text style={styles.name}>{currentUser.name}, {currentUser.age}</Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.name}>{currentUser.name}, {currentUser.age}</Text>
+            {currentUser.isVerified ? (
+              <View style={styles.verifiedBadge}>
+                <ShieldCheck size={14} color="#2563eb" />
+                <Text style={styles.verifiedBadgeText}>Vérifié</Text>
+              </View>
+            ) : null}
+            {currentUser.photo_review_status === 'PENDING' ? (
+              <View style={styles.reviewBadge}>
+                <Text style={styles.reviewBadgeText}>En revue</Text>
+              </View>
+            ) : null}
+          </View>
           <View style={styles.badgeContainer}>
             <View style={[styles.badge, currentUser.isPremium ? styles.badgePremium : styles.badgeFree]}>
               {currentUser.isPremium && <Crown size={14} color="#d97706" />}
@@ -80,6 +156,19 @@ const ProfileScreen: React.FC = () => {
             <Text style={styles.rowLabel}>Voir le Classement</Text>
             <ChevronRight size={18} color="#cbd5f5" />
           </Pressable>
+
+          {/* Objectif de Relation */}
+          <Pressable style={styles.row} onPress={() => setShowGoalModal(true)}>
+            <View style={[styles.rowIcon, { backgroundColor: '#fef2f2' }]}>
+              {currentGoal.icon({ size: 18, color: COLORS.primary })}
+            </View>
+            <View style={styles.rowContent}>
+              <Text style={styles.rowLabel}>Je cherche...</Text>
+              <Text style={styles.rowSubLabel}>{currentGoal.label}</Text>
+            </View>
+            <ChevronRight size={18} color="#cbd5f5" />
+          </Pressable>
+
           <Pressable style={styles.row}>
             <View style={styles.rowIcon}>
               <Settings size={18} color={COLORS.muted} />
@@ -87,6 +176,7 @@ const ProfileScreen: React.FC = () => {
             <Text style={styles.rowLabel}>Paramètres de Compte</Text>
             <ChevronRight size={18} color="#cbd5f5" />
           </Pressable>
+
           {isInvisibleEligible ? (
             <Pressable
               style={[styles.row, styles.rowInvisible]}
@@ -144,6 +234,15 @@ const ProfileScreen: React.FC = () => {
               <ChevronRight size={18} color="#facc15" />
             </Pressable>
           )}
+          {currentUser.isPremium ? (
+            <Pressable style={[styles.row, styles.rowLikes]} onPress={() => navigation.navigate('LikesReceived')}>
+              <View style={[styles.rowIcon, styles.rowIconLikes]}>
+                <Heart size={18} color="#be123c" />
+              </View>
+              <Text style={styles.rowLabel}>Voir qui m'a liké</Text>
+              <ChevronRight size={18} color="#fda4af" />
+            </Pressable>
+          ) : null}
           {!isBoosted && (
             <Pressable style={[styles.row, styles.rowBoost]} onPress={() => navigation.navigate('Boost' as never)}>
               <View style={[styles.rowIcon, styles.rowIconBoost]}>
@@ -153,6 +252,20 @@ const ProfileScreen: React.FC = () => {
               <ChevronRight size={18} color="#c4b5fd" />
             </Pressable>
           )}
+          <Pressable style={[styles.row, styles.rowPrivacy]} onPress={() => { void requestPrivacyAction('EXPORT'); }}>
+            <View style={[styles.rowIcon, styles.rowIconPrivacy]}>
+              <ShieldCheck size={18} color="#0369a1" />
+            </View>
+            <Text style={styles.rowLabel}>Demander export de mes données</Text>
+            <ChevronRight size={18} color="#7dd3fc" />
+          </Pressable>
+          <Pressable style={[styles.row, styles.rowPrivacyDelete]} onPress={confirmDeleteAccount} disabled={deletingAccount}>
+            <View style={[styles.rowIcon, styles.rowIconPrivacyDelete]}>
+              <LogOut size={18} color="#b91c1c" />
+            </View>
+            <Text style={styles.rowLabel}>{deletingAccount ? 'Suppression en cours...' : 'Supprimer mon compte'}</Text>
+            <ChevronRight size={18} color="#fca5a5" />
+          </Pressable>
         </View>
 
         <Pressable style={[styles.row, styles.rowLogout]} onPress={logout}>
@@ -162,6 +275,37 @@ const ProfileScreen: React.FC = () => {
           <Text style={[styles.rowLabel, styles.rowLabelLogout]}>Déconnexion</Text>
         </Pressable>
       </ScrollView>
+
+      {/* Modal pour l'Objectif de Relation */}
+      <Modal visible={showGoalModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Que cherches-tu ?</Text>
+              <Pressable onPress={() => setShowGoalModal(false)}>
+                <X color={COLORS.muted} size={24} />
+              </Pressable>
+            </View>
+            <View style={styles.goalList}>
+              {RELATIONSHIP_GOALS.map((goal) => {
+                const active = currentUser.relationship_goal === goal.id;
+                return (
+                  <Pressable
+                    key={goal.id}
+                    style={[styles.goalCard, active && styles.goalCardActive]}
+                    onPress={() => handleGoalUpdate(goal.id)}
+                  >
+                    <View style={[styles.goalIconWrap, active && styles.goalIconWrapActive]}>
+                      {goal.icon({ color: active ? '#fff' : COLORS.primary, size: 24 })}
+                    </View>
+                    <Text style={[styles.goalLabel, active && styles.goalLabelActive]}>{goal.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -178,6 +322,11 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     gap: 12,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   photoWrap: {
     width: 120,
@@ -196,6 +345,35 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     color: COLORS.ink,
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#dbeafe',
+    borderColor: '#93c5fd',
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  verifiedBadgeText: {
+    color: '#1d4ed8',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  reviewBadge: {
+    backgroundColor: '#fef3c7',
+    borderColor: '#fcd34d',
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  reviewBadgeText: {
+    color: '#b45309',
+    fontSize: 11,
+    fontWeight: '700',
   },
   badgeContainer: {
     flexDirection: 'row',
@@ -327,11 +505,32 @@ const styles = StyleSheet.create({
   rowIconPremium: {
     backgroundColor: '#fff',
   },
+  rowLikes: {
+    backgroundColor: '#fff1f2',
+    borderColor: '#ffe4e6',
+  },
+  rowIconLikes: {
+    backgroundColor: '#fff',
+  },
   rowBoost: {
     backgroundColor: '#f5f3ff',
     borderColor: '#ede9fe',
   },
   rowIconBoost: {
+    backgroundColor: '#fff',
+  },
+  rowPrivacy: {
+    backgroundColor: '#f0f9ff',
+    borderColor: '#bae6fd',
+  },
+  rowIconPrivacy: {
+    backgroundColor: '#fff',
+  },
+  rowPrivacyDelete: {
+    backgroundColor: '#fff1f2',
+    borderColor: '#fecdd3',
+  },
+  rowIconPrivacyDelete: {
     backgroundColor: '#fff',
   },
   rowLogout: {
@@ -344,6 +543,68 @@ const styles = StyleSheet.create({
   rowLabelLogout: {
     color: '#be123c',
     fontWeight: '800',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    gap: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: COLORS.ink,
+  },
+  goalList: {
+    gap: 12,
+  },
+  goalCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    backgroundColor: '#f8fafc',
+    gap: 16,
+  },
+  goalCardActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: '#fff',
+    borderWidth: 2,
+  },
+  goalIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  goalIconWrapActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  goalLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.ink,
+  },
+  goalLabelActive: {
+    color: COLORS.primary,
   },
 });
 

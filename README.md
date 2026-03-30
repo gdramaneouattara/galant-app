@@ -59,6 +59,9 @@ npm run dev
 - `PLAN_*_AMOUNT` (montants en plus petite unité)
 - `BOOST_*_AMOUNT` (montants en plus petite unité)
 - `KYC_PROVIDER` + `KYC_VERIFICATION_URL` (si fournisseur manuel)
+- `EXPO_PUSH_ACCESS_TOKEN` (optionnel, recommandé pour push Expo)
+- `CORS_ALLOW_ORIGINS` (optionnel, ex: `https://app.yamo.com,https://admin.yamo.com`)
+- `FORCE_HTTPS=true` (optionnel, à activer derrière un reverse proxy TLS)
 
 ## Structure
 
@@ -82,6 +85,18 @@ Dans **SQL Editor** :
 ### Bucket photos
 
 Créer un bucket `photos` et le marquer **Public** dans Storage.
+
+### Buckets privés requis
+
+- `kyc-docs` (privé) : justificatifs KYC (recto/verso/selfie)
+- `chat-media` (privé) : photos partagées en messagerie
+
+Tu peux les créer avec :
+
+```bash
+npm run create:bucket:kyc
+npm run create:bucket:chat
+```
 
 ## Android SDK (Windows)
 

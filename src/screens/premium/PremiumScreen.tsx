@@ -57,7 +57,7 @@ const PREMIUM_PLANS: PremiumPlan[] = [
 
 const PremiumScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { refreshCurrentUser, updateCurrentUser } = useApp();
+  const { currentUser, refreshCurrentUser, updateCurrentUser } = useApp();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
   const subscribe = async (planId: string) => {
@@ -116,6 +116,11 @@ const PremiumScreen: React.FC = () => {
           </View>
           <Text style={styles.title}>Devenez Membre Premium</Text>
           <Text style={styles.subtitle}>Accès illimité aux messages, filtres avancés et bien plus.</Text>
+          {currentUser?.isPremium ? (
+            <Pressable style={styles.likesButton} onPress={() => navigation.navigate('LikesReceived' as never)}>
+              <Text style={styles.likesButtonText}>Voir qui a liké mon profil</Text>
+            </Pressable>
+          ) : null}
         </View>
 
         <View style={styles.plans}>
@@ -193,6 +198,20 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
     textAlign: 'center',
     fontSize: 16,
+  },
+  likesButton: {
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#fecdd3',
+    backgroundColor: '#fff1f2',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  likesButtonText: {
+    color: '#be123c',
+    fontWeight: '700',
+    fontSize: 12,
   },
   plans: {
     gap: 16,

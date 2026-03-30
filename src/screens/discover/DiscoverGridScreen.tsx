@@ -3,6 +3,7 @@ import { SafeAreaView, ScrollView, StyleSheet, Text, View, Image } from 'react-n
 import { useApp } from '../../state/AppContext';
 import { COLORS } from '../../data/mock';
 import { Rocket } from 'lucide-react-native';
+import ProfileBadges from '../../components/ProfileBadges';
 
 const DiscoverGridScreen: React.FC = () => {
   const { users, currentUser } = useApp();
@@ -41,10 +42,16 @@ const DiscoverGridScreen: React.FC = () => {
           return (
             <View key={user.id} style={[styles.card, isCurrentUser && styles.currentUserCard]}>
               <Image source={{ uri: user.photos[0] }} style={styles.photo} />
+
+              <View style={styles.badgesOverlay}>
+                <ProfileBadges user={user} />
+              </View>
+
               <Text style={styles.name} numberOfLines={1}>{user.name}</Text>
+
               {isBoosted && (
                 <View style={styles.boostIcon}>
-                  <Rocket size={14} color="#fff" />
+                  <Rocket size={12} color="#fff" />
                 </View>
               )}
             </View>
@@ -104,6 +111,12 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  badgesOverlay: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    zIndex: 2,
+  },
   name: {
     position: 'absolute',
     bottom: 8,
@@ -118,11 +131,11 @@ const styles = StyleSheet.create({
   },
   boostIcon: {
     position: 'absolute',
-    top: 8,
+    bottom: 8,
     right: 8,
     backgroundColor: '#8b5cf6',
     borderRadius: 999,
-    padding: 6,
+    padding: 4,
   },
 });
 

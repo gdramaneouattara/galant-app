@@ -14,6 +14,7 @@ import type { RootStackParamList } from '../../navigation/MainNavigator';
 import { useApp } from '../../state/AppContext';
 import { COLORS } from '../../data/mock';
 import { apiRequest } from '../../lib/api';
+import { ShieldCheck } from 'lucide-react-native';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -164,7 +165,10 @@ const MessagesScreen: React.FC = () => {
                 style={styles.matchItem}
               >
                 <Image source={{ uri: user.photos[0] }} style={styles.matchAvatar} />
-                <Text style={styles.matchName}>{user.name}</Text>
+                <View style={styles.matchNameRow}>
+                  <Text style={styles.matchName}>{user.name}</Text>
+                  {user.isVerified ? <ShieldCheck size={12} color="#60a5fa" /> : null}
+                </View>
               </Pressable>
             );
           })}
@@ -189,7 +193,10 @@ const MessagesScreen: React.FC = () => {
               >
                 <Image source={{ uri: user.photos[0] }} style={styles.rowAvatar} />
                 <View style={styles.rowText}>
-                  <Text style={styles.rowName}>{user.name}</Text>
+                  <View style={styles.rowNameRow}>
+                    <Text style={styles.rowName}>{user.name}</Text>
+                    {user.isVerified ? <ShieldCheck size={12} color="#60a5fa" /> : null}
+                  </View>
                   <Text style={styles.rowMessage} numberOfLines={1}>
                     {lastMessage?.content || 'Clique pour ouvrir le chat...'}
                   </Text>
@@ -326,6 +333,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.ink,
   },
+  matchNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   empty: {
     padding: 20,
     borderRadius: 16,
@@ -366,6 +378,11 @@ const styles = StyleSheet.create({
   rowName: {
     fontWeight: '700',
     color: COLORS.ink,
+  },
+  rowNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   rowMessage: {
     fontSize: 12,

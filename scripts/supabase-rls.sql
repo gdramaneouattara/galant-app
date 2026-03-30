@@ -5,6 +5,9 @@ ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS boosted_until tim
 ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS is_admin boolean not null default false;
 ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS suspended_at timestamptz;
 ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS is_invisible boolean not null default false;
+ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS phone text;
+ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS photo_review_status text not null default 'APPROVED';
+ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS country text;
 ALTER TABLE IF EXISTS public.profiles ENABLE ROW LEVEL SECURITY;
 
 CREATE OR REPLACE FUNCTION public.has_invisible_mode_access(target_user_id uuid)
@@ -49,7 +52,8 @@ BEGIN
       OR new.is_verified IS DISTINCT FROM old.is_verified
       OR new.boosted_until IS DISTINCT FROM old.boosted_until
       OR new.is_admin IS DISTINCT FROM old.is_admin
-      OR new.suspended_at IS DISTINCT FROM old.suspended_at THEN
+      OR new.suspended_at IS DISTINCT FROM old.suspended_at
+      OR new.photo_review_status IS DISTINCT FROM old.photo_review_status THEN
       RAISE EXCEPTION 'Not allowed to update sensitive flags';
     END IF;
     IF new.is_invisible IS DISTINCT FROM old.is_invisible
@@ -94,6 +98,7 @@ CREATE POLICY "Users can insert their own profile."
     AND is_admin = false
     AND suspended_at IS NULL
     AND is_invisible = false
+    AND coalesce(array_length(photos, 1), 0) BETWEEN 3 AND 6
   );
 
 DROP POLICY IF EXISTS "Users can update their own profile." ON public.profiles;
@@ -105,6 +110,7 @@ CREATE POLICY "Users can update their own profile."
     auth.uid() = id
     AND suspended_at IS NULL
     AND (is_invisible = false OR public.has_invisible_mode_access(id))
+    AND coalesce(array_length(photos, 1), 0) BETWEEN 3 AND 6
   );
 
 DROP POLICY IF EXISTS "Users can delete their own profile." ON public.profiles;
@@ -220,6 +226,11 @@ BEGIN
       IF new.content IS DISTINCT FROM old.content THEN
         RAISE EXCEPTION 'Not allowed to edit another user message';
       END IF;
+      IF new.message_type IS DISTINCT FROM old.message_type
+        OR new.media_url IS DISTINCT FROM old.media_url
+        OR new.metadata IS DISTINCT FROM old.metadata THEN
+        RAISE EXCEPTION 'Not allowed to edit another user media fields';
+      END IF;
       IF old.is_read = true AND new.is_read = false THEN
         RAISE EXCEPTION 'Not allowed to mark message as unread';
       END IF;
@@ -250,6 +261,17 @@ CREATE POLICY "Users can read messages in their matches."
       where m.id = messages.match_id
         and (auth.uid() = m.user_one_id or auth.uid() = m.user_two_id)
     )
+    and not exists (
+      select 1
+      from public.matches m
+      join public.blocks b
+        on m.id = messages.match_id
+       and (
+        (b.user_id = m.user_one_id and b.blocked_user_id = m.user_two_id)
+        or (b.user_id = m.user_two_id and b.blocked_user_id = m.user_one_id)
+       )
+      where auth.uid() = m.user_one_id or auth.uid() = m.user_two_id
+    )
   );
 
 DROP POLICY IF EXISTS "Users can send messages in their matches." ON public.messages;
@@ -271,6 +293,22 @@ CREATE POLICY "Users can send messages in their matches."
     and exists (
       select 1 from public.profiles p
       where p.id = auth.uid() and p.is_premium = true
+    )
+    and upper(coalesce(message_type, 'TEXT')) in ('TEXT', 'IMAGE')
+    and (
+      (upper(coalesce(message_type, 'TEXT')) = 'TEXT' and length(trim(coalesce(content, ''))) > 0)
+      or (upper(coalesce(message_type, 'TEXT')) = 'IMAGE' and media_url is not null)
+    )
+    and not exists (
+      select 1
+      from public.matches m
+      join public.blocks b
+        on m.id = messages.match_id
+       and (
+        (b.user_id = m.user_one_id and b.blocked_user_id = m.user_two_id)
+        or (b.user_id = m.user_two_id and b.blocked_user_id = m.user_one_id)
+       )
+      where auth.uid() = m.user_one_id or auth.uid() = m.user_two_id
     )
   );
 
@@ -332,6 +370,134 @@ CREATE POLICY "Users can insert their own events."
     )
   );
 
+-- RLS: Admin audit logs
+ALTER TABLE IF EXISTS public.admin_audit_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admins can view audit logs." ON public.admin_audit_logs;
+CREATE POLICY "Admins can view audit logs."
+  ON public.admin_audit_logs FOR SELECT
+  TO authenticated
+  USING (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can insert audit logs." ON public.admin_audit_logs;
+CREATE POLICY "Admins can insert audit logs."
+  ON public.admin_audit_logs FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+    )
+  );
+
+-- RLS: Photo review queue
+ALTER TABLE IF EXISTS public.photo_review_queue ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admins can view photo reviews." ON public.photo_review_queue;
+CREATE POLICY "Admins can view photo reviews."
+  ON public.photo_review_queue FOR SELECT
+  TO authenticated
+  USING (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can update photo reviews." ON public.photo_review_queue;
+CREATE POLICY "Admins can update photo reviews."
+  ON public.photo_review_queue FOR UPDATE
+  TO authenticated
+  USING (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+    )
+  )
+  WITH CHECK (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can insert photo reviews." ON public.photo_review_queue;
+CREATE POLICY "Admins can insert photo reviews."
+  ON public.photo_review_queue FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+    )
+  );
+
+-- RLS: KYC verifications
+ALTER TABLE IF EXISTS public.kyc_verifications ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view their own KYC requests." ON public.kyc_verifications;
+CREATE POLICY "Users can view their own KYC requests."
+  ON public.kyc_verifications FOR SELECT
+  TO authenticated
+  USING (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can create their own KYC requests." ON public.kyc_verifications;
+CREATE POLICY "Users can create their own KYC requests."
+  ON public.kyc_verifications FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    auth.uid() = user_id
+    and status = 'PENDING'
+    and reviewed_at is null
+    and reviewed_by is null
+    and rejection_reason is null
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can view all KYC requests." ON public.kyc_verifications;
+CREATE POLICY "Admins can view all KYC requests."
+  ON public.kyc_verifications FOR SELECT
+  TO authenticated
+  USING (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can review KYC requests." ON public.kyc_verifications;
+CREATE POLICY "Admins can review KYC requests."
+  ON public.kyc_verifications FOR UPDATE
+  TO authenticated
+  USING (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+    )
+  )
+  WITH CHECK (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+    )
+    and reviewed_by = auth.uid()
+    and status in ('IN_REVIEW', 'APPROVED', 'REJECTED')
+  );
+
 -- RLS: Storage objects (bucket photos)
 ALTER TABLE IF EXISTS storage.objects ENABLE ROW LEVEL SECURITY;
 
@@ -386,6 +552,76 @@ CREATE POLICY "Users can delete their own photos."
     )
   );
 
+DROP POLICY IF EXISTS "Users can view their own KYC files." ON storage.objects;
+CREATE POLICY "Users can view their own KYC files."
+  ON storage.objects FOR SELECT
+  TO authenticated
+  USING (
+    bucket_id = 'kyc-docs'
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+    and (
+      auth.uid()::text = (storage.foldername(name))[1]
+      or exists (
+        select 1 from public.profiles p
+        where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+      )
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can upload to their own KYC folder." ON storage.objects;
+CREATE POLICY "Users can upload to their own KYC folder."
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    bucket_id = 'kyc-docs'
+    and auth.uid()::text = (storage.foldername(name))[1]
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can update their own KYC files." ON storage.objects;
+CREATE POLICY "Users can update their own KYC files."
+  ON storage.objects FOR UPDATE
+  TO authenticated
+  USING (
+    bucket_id = 'kyc-docs'
+    and (
+      auth.uid()::text = (storage.foldername(name))[1]
+      or exists (
+        select 1 from public.profiles p
+        where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+      )
+    )
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can delete their own KYC files." ON storage.objects;
+CREATE POLICY "Users can delete their own KYC files."
+  ON storage.objects FOR DELETE
+  TO authenticated
+  USING (
+    bucket_id = 'kyc-docs'
+    and (
+      auth.uid()::text = (storage.foldername(name))[1]
+      or exists (
+        select 1 from public.profiles p
+        where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+      )
+    )
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
 -- RLS: Subscriptions
 ALTER TABLE IF EXISTS public.subscriptions ENABLE ROW LEVEL SECURITY;
 
@@ -395,6 +631,293 @@ CREATE POLICY "Users can view their subscriptions."
   TO authenticated
   USING (
     auth.uid() = user_id
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
+-- RLS: Likes
+ALTER TABLE IF EXISTS public.likes ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view likes they sent." ON public.likes;
+CREATE POLICY "Users can view likes they sent."
+  ON public.likes FOR SELECT
+  TO authenticated
+  USING (
+    liker_id = auth.uid()
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Premium users can view likes they received." ON public.likes;
+CREATE POLICY "Premium users can view likes they received."
+  ON public.likes FOR SELECT
+  TO authenticated
+  USING (
+    liked_id = auth.uid()
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_premium = true and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can create likes." ON public.likes;
+CREATE POLICY "Users can create likes."
+  ON public.likes FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    liker_id = auth.uid()
+    and liked_id <> auth.uid()
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+    and (
+      is_super_like = false
+      or exists (
+        select 1 from public.profiles p
+        where p.id = auth.uid() and p.is_premium = true and p.suspended_at is null
+      )
+    )
+    and not exists (
+      select 1 from public.blocks b
+      where (b.user_id = liker_id and b.blocked_user_id = liked_id)
+         or (b.user_id = liked_id and b.blocked_user_id = liker_id)
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can delete likes they sent." ON public.likes;
+CREATE POLICY "Users can delete likes they sent."
+  ON public.likes FOR DELETE
+  TO authenticated
+  USING (
+    liker_id = auth.uid()
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
+-- RLS: Blocks
+ALTER TABLE IF EXISTS public.blocks ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view their blocks." ON public.blocks;
+CREATE POLICY "Users can view their blocks."
+  ON public.blocks FOR SELECT
+  TO authenticated
+  USING (
+    user_id = auth.uid()
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can create their blocks." ON public.blocks;
+CREATE POLICY "Users can create their blocks."
+  ON public.blocks FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    user_id = auth.uid()
+    and blocked_user_id <> auth.uid()
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can delete their blocks." ON public.blocks;
+CREATE POLICY "Users can delete their blocks."
+  ON public.blocks FOR DELETE
+  TO authenticated
+  USING (
+    user_id = auth.uid()
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
+-- RLS: Reports
+ALTER TABLE IF EXISTS public.reports ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view their own reports." ON public.reports;
+CREATE POLICY "Users can view their own reports."
+  ON public.reports FOR SELECT
+  TO authenticated
+  USING (
+    reporter_id = auth.uid()
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can create reports." ON public.reports;
+CREATE POLICY "Users can create reports."
+  ON public.reports FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    reporter_id = auth.uid()
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can view all reports." ON public.reports;
+CREATE POLICY "Admins can view all reports."
+  ON public.reports FOR SELECT
+  TO authenticated
+  USING (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can review reports." ON public.reports;
+CREATE POLICY "Admins can review reports."
+  ON public.reports FOR UPDATE
+  TO authenticated
+  USING (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+    )
+  )
+  WITH CHECK (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+    )
+  );
+
+-- RLS: Push tokens
+ALTER TABLE IF EXISTS public.push_tokens ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view their push tokens." ON public.push_tokens;
+CREATE POLICY "Users can view their push tokens."
+  ON public.push_tokens FOR SELECT
+  TO authenticated
+  USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can manage their push tokens." ON public.push_tokens;
+CREATE POLICY "Users can manage their push tokens."
+  ON public.push_tokens FOR INSERT
+  TO authenticated
+  WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can update their push tokens." ON public.push_tokens;
+CREATE POLICY "Users can update their push tokens."
+  ON public.push_tokens FOR UPDATE
+  TO authenticated
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can delete their push tokens." ON public.push_tokens;
+CREATE POLICY "Users can delete their push tokens."
+  ON public.push_tokens FOR DELETE
+  TO authenticated
+  USING (user_id = auth.uid());
+
+-- RLS: Privacy requests
+ALTER TABLE IF EXISTS public.privacy_requests ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view their privacy requests." ON public.privacy_requests;
+CREATE POLICY "Users can view their privacy requests."
+  ON public.privacy_requests FOR SELECT
+  TO authenticated
+  USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can create privacy requests." ON public.privacy_requests;
+CREATE POLICY "Users can create privacy requests."
+  ON public.privacy_requests FOR INSERT
+  TO authenticated
+  WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Admins can view all privacy requests." ON public.privacy_requests;
+CREATE POLICY "Admins can view all privacy requests."
+  ON public.privacy_requests FOR SELECT
+  TO authenticated
+  USING (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can resolve privacy requests." ON public.privacy_requests;
+CREATE POLICY "Admins can resolve privacy requests."
+  ON public.privacy_requests FOR UPDATE
+  TO authenticated
+  USING (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+    )
+  )
+  WITH CHECK (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+    )
+  );
+
+-- RLS: Storage objects (bucket chat-media)
+DROP POLICY IF EXISTS "Authenticated users can read chat media." ON storage.objects;
+CREATE POLICY "Authenticated users can read chat media."
+  ON storage.objects FOR SELECT
+  TO authenticated
+  USING (
+    bucket_id = 'chat-media'
+    and exists (
+      select 1 from public.matches m
+      where m.id::text = (storage.foldername(name))[1]
+        and m.status = 'ACTIVE'
+        and (auth.uid() = m.user_one_id or auth.uid() = m.user_two_id)
+    )
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can upload chat media to their own folder." ON storage.objects;
+CREATE POLICY "Users can upload chat media to their own folder."
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    bucket_id = 'chat-media'
+    and auth.uid()::text = (storage.foldername(name))[2]
+    and exists (
+      select 1 from public.matches m
+      where m.id::text = (storage.foldername(name))[1]
+        and m.status = 'ACTIVE'
+        and (auth.uid() = m.user_one_id or auth.uid() = m.user_two_id)
+    )
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can delete their own chat media." ON storage.objects;
+CREATE POLICY "Users can delete their own chat media."
+  ON storage.objects FOR DELETE
+  TO authenticated
+  USING (
+    bucket_id = 'chat-media'
+    and auth.uid()::text = (storage.foldername(name))[2]
+    and exists (
+      select 1 from public.matches m
+      where m.id::text = (storage.foldername(name))[1]
+        and m.status = 'ACTIVE'
+        and (auth.uid() = m.user_one_id or auth.uid() = m.user_two_id)
+    )
     and exists (
       select 1 from public.profiles p
       where p.id = auth.uid() and p.suspended_at is null
