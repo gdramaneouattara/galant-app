@@ -12,11 +12,14 @@ import {
   TextInput,
   ActivityIndicator,
 } from 'react-native';
-import { Plus, Users, ShieldCheck, X, Image as ImageIcon } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import { Plus, Users, ShieldCheck, X, ChevronRight } from 'lucide-react-native';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 import PrimaryButton from '../../components/PrimaryButton';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../navigation/MainNavigator';
 
 interface Community {
   id: string;
@@ -25,14 +28,21 @@ interface Community {
   cover_photo: string;
   member_count: number;
   creator_id: string;
+  is_member: boolean;
 }
 
+type CreateCommunityResponse = {
+  community: Community;
+};
+
 const CommunityScreen: React.FC = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { currentUser } = useApp();
   const [communities, setCommunities] = useState<Community[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowGoalModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [joiningId, setJoiningId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     name: '',
@@ -40,10 +50,8 @@ const CommunityScreen: React.FC = () => {
     cover_photo: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?q=80&w=1000',
   });
 
-  // Éligibilité : Plan BIANNUAL ou ANNUAL requis
-  const isEligible =
-    currentUser?.subscription_plan_id === 'BIANNUAL' ||
-    currentUser?.subscription_plan_id === 'ANNUAL';
+  const currentPlanKey = String(currentUser?.subscription_plan_id || '').toUpperCase();
+  const isEligible = currentPlanKey === 'BIANNUAL' || currentPlanKey === 'ANNUAL';
 
   const fetchCommunities = async () => {
     try {
@@ -60,6 +68,21 @@ const CommunityScreen: React.FC = () => {
     fetchCommunities();
   }, []);
 
+  const handleJoin = async (communityId: string) => {
+    setJoiningId(communityId);
+    try {
+      await apiRequest(`/api/communities/${communityId}/join`, {
+        method: 'POST',
+        requireAuth: true,
+      });
+      await fetchCommunities();
+    } catch (error: any) {
+      Alert.alert('Erreur', error?.message || "Impossible de rejoindre cette communauté.");
+    } finally {
+      setJoiningId(null);
+    }
+  };
+
   const handleCreate = async () => {
     if (!form.name || !form.description) {
       Alert.alert('Champs requis', 'Donne un nom et une description à ta communauté.');
@@ -68,31 +91,55 @@ const CommunityScreen: React.FC = () => {
 
     setCreating(true);
     try {
-      await apiRequest('/api/communities/create', {
+      const response = await apiRequest<CreateCommunityResponse>('/api/communities/create', {
         method: 'POST',
         requireAuth: true,
         body: JSON.stringify(form),
       });
-      Alert.alert('Succès', 'Ta communauté a été créée !');
-      setShowGoalModal(false);
+      setShowCreateModal(false);
       setForm({ name: '', description: '', cover_photo: form.cover_photo });
-      fetchCommunities();
+      await fetchCommunities();
+      if (response?.community?.id) {
+        navigation.navigate('CommunityChat', {
+          communityId: response.community.id,
+          communityName: response.community.name,
+        });
+      }
     } catch (error: any) {
-      Alert.alert('Erreur', "Tu n'as pas l'abonnement requis pour créer une communauté.");
+      Alert.alert('Erreur', error?.message || "Erreur lors de la création.");
     } finally {
       setCreating(false);
     }
   };
 
   const renderCommunity = ({ item }: { item: Community }) => (
-    <Pressable style={styles.card}>
+    <Pressable
+      style={styles.card}
+      onPress={() => {
+        if (item.is_member) {
+          navigation.navigate('CommunityChat', { communityId: item.id, communityName: item.name });
+        } else {
+          handleJoin(item.id);
+        }
+      }}
+    >
       <Image source={{ uri: item.cover_photo }} style={styles.cover} />
       <View style={styles.cardInfo}>
-        <Text style={styles.name}>{item.name}</Text>
+        <View style={styles.cardHeaderRow}>
+          <Text style={styles.name}>{item.name}</Text>
+          {item.is_member ? (
+             <View style={styles.memberBadge}><Text style={styles.memberBadgeText}>Membre</Text></View>
+          ) : (
+             <ChevronRight size={18} color={COLORS.muted} />
+          )}
+        </View>
         <Text style={styles.desc} numberOfLines={2}>{item.description}</Text>
         <View style={styles.meta}>
           <Users size={14} color={COLORS.muted} />
           <Text style={styles.memberCount}>{item.member_count} membres</Text>
+          {!item.is_member && joiningId === item.id && (
+            <ActivityIndicator size="small" color={COLORS.primary} style={{ marginLeft: 8 }} />
+          )}
         </View>
       </View>
     </Pressable>
@@ -104,7 +151,7 @@ const CommunityScreen: React.FC = () => {
         <Text style={styles.title}>Communautés</Text>
         <Pressable
           style={[styles.createBtn, !isEligible && styles.createBtnLocked]}
-          onPress={() => isEligible ? setShowGoalModal(true) : Alert.alert('Premium requis', 'La création de communauté est réservée aux abonnés 6 mois et 1 an.')}
+          onPress={() => isEligible ? setShowCreateModal(true) : Alert.alert('Premium requis', 'La création de communauté est réservée aux abonnés 6 mois et 1 an.')}
         >
           <Plus color="#fff" size={20} />
         </Pressable>
@@ -127,13 +174,12 @@ const CommunityScreen: React.FC = () => {
         />
       )}
 
-      {/* Modal Création */}
       <Modal visible={showCreateModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Créer une communauté</Text>
-              <Pressable onPress={() => setShowGoalModal(false)}><X size={24} color={COLORS.ink} /></Pressable>
+              <Pressable onPress={() => setShowCreateModal(false)}><X size={24} color={COLORS.ink} /></Pressable>
             </View>
 
             <View style={styles.form}>
@@ -182,7 +228,10 @@ const styles = StyleSheet.create({
   card: { backgroundColor: '#fff', borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: '#e2e8f0' },
   cover: { width: '100%', height: 120 },
   cardInfo: { padding: 16, gap: 6 },
+  cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   name: { fontSize: 18, fontWeight: '800', color: COLORS.ink },
+  memberBadge: { backgroundColor: '#dcfce7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  memberBadgeText: { fontSize: 10, color: '#166534', fontWeight: '800' },
   desc: { fontSize: 14, color: COLORS.muted, lineHeight: 20 },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   memberCount: { fontSize: 12, fontWeight: '700', color: COLORS.muted },

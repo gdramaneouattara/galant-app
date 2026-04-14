@@ -43,7 +43,13 @@ const LikesReceivedScreen: React.FC = () => {
       const payload = await apiRequest<{ likes: LikeRow[] }>('/api/premium/likes-received', {
         requireAuth: true,
       });
-      setLikes(payload.likes || []);
+      const sortedLikes = [...(payload.likes || [])].sort((left, right) => {
+        if (left.is_super_like !== right.is_super_like) {
+          return left.is_super_like ? -1 : 1;
+        }
+        return new Date(right.created_at).getTime() - new Date(left.created_at).getTime();
+      });
+      setLikes(sortedLikes);
       setError(null);
     } catch (err: any) {
       setLikes([]);
@@ -101,6 +107,9 @@ const LikesReceivedScreen: React.FC = () => {
                   </View>
                   <Text style={styles.meta}>{row.user.city || 'Ville non renseignée'}</Text>
                   <Text style={styles.meta}>Reçu le {new Date(row.created_at).toLocaleString('fr-FR')}</Text>
+                  <Text style={[styles.meta, row.is_super_like && styles.superLikeLabel]}>
+                    {row.is_super_like ? 'Super Like prioritaire' : 'Like standard'}
+                  </Text>
                   <View style={styles.tags}>
                     {(row.user.interests || []).slice(0, 4).map((interest) => (
                       <Text key={interest} style={styles.tag}>{interest}</Text>
@@ -198,6 +207,10 @@ const styles = StyleSheet.create({
   meta: {
     color: COLORS.muted,
     fontSize: 12,
+  },
+  superLikeLabel: {
+    color: '#b45309',
+    fontWeight: '800',
   },
   tags: {
     marginTop: 2,

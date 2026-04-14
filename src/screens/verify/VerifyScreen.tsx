@@ -7,10 +7,11 @@ import {
   StyleSheet,
   Text,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
-import { ShieldCheck } from 'lucide-react-native';
+import { ShieldCheck, Camera, FileText, CheckCircle2, AlertCircle } from 'lucide-react-native';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
@@ -25,7 +26,6 @@ type KycRequest = {
   submitted_at: string;
   reviewed_at: string | null;
   rejection_reason: string | null;
-  metadata?: Record<string, unknown>;
 };
 
 type KycMeResponse = {
@@ -35,37 +35,10 @@ type KycMeResponse = {
 };
 
 const DOCUMENT_TYPES = [
-  { value: 'NATIONAL_ID', label: 'Carte nationale' },
+  { value: 'ID_CARD', label: 'Carte nationale' },
   { value: 'PASSPORT', label: 'Passeport' },
-  { value: 'DRIVER_LICENSE', label: 'Permis de conduire' },
-  { value: 'OTHER', label: 'Autre document' },
+  { value: 'DRIVERS_LICENSE', label: 'Permis de conduire' },
 ];
-
-const normalizeError = (message?: string) => {
-  if (!message) return 'Impossible de soumettre la vérification.';
-  if (message === 'kyc_request_already_open') {
-    return 'Une demande est déjà en cours. Patientez le temps de la revue admin.';
-  }
-  if (message === 'already_verified') {
-    return 'Votre compte est déjà vérifié.';
-  }
-  if (message === 'invalid_document_paths') {
-    return 'Les fichiers uploadés sont invalides. Réessayez.';
-  }
-  if (message === 'missing_required_documents') {
-    return 'La pièce (recto) et le selfie sont requis.';
-  }
-  if (message === 'kyc_not_initialized') {
-    return 'Le module KYC n’est pas encore initialisé côté serveur.';
-  }
-  if (message === 'selfie_live_capture_required') {
-    return 'Le selfie doit être capturé en direct avec la caméra.';
-  }
-  if (message === 'invalid_selfie_capture_timestamp' || message === 'selfie_capture_too_old') {
-    return 'Le selfie doit être récent. Reprenez une photo en direct.';
-  }
-  return message;
-};
 
 const getStatusLabel = (status?: string) => {
   if (status === 'PENDING') return 'En attente';
@@ -80,7 +53,7 @@ const VerifyScreen: React.FC = () => {
   const { currentUser, refreshCurrentUser } = useApp();
   const [loadingState, setLoadingState] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [documentType, setDocumentType] = useState('NATIONAL_ID');
+  const [documentType, setDocumentType] = useState('ID_CARD');
   const [documentFrontUri, setDocumentFrontUri] = useState<string | null>(null);
   const [documentBackUri, setDocumentBackUri] = useState<string | null>(null);
   const [selfieUri, setSelfieUri] = useState<string | null>(null);
@@ -97,7 +70,7 @@ const VerifyScreen: React.FC = () => {
         await refreshCurrentUser();
       }
     } catch (error: any) {
-      Alert.alert('Erreur', normalizeError(error?.message));
+      console.error(error);
     } finally {
       setLoadingState(false);
     }
@@ -110,16 +83,15 @@ const VerifyScreen: React.FC = () => {
   );
 
   const pickImage = async (setter: (uri: string | null) => void) => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permission.status !== 'granted') {
-      Alert.alert('Permission refusée', "Autorisez l'accès à la galerie pour importer vos justificatifs.");
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission requise', "Nous avons besoin d'accéder à vos photos.");
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: false,
-      quality: 0.9,
+      quality: 0.8,
     });
 
     if (!result.canceled && result.assets[0]?.uri) {
@@ -128,17 +100,15 @@ const VerifyScreen: React.FC = () => {
   };
 
   const captureSelfie = async () => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (permission.status !== 'granted') {
-      Alert.alert('Permission refusée', "Autorisez l'accès à la caméra pour capturer un selfie live.");
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission requise', "L'accès à la caméra est obligatoire pour le selfie live.");
       return;
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.9,
       cameraType: ImagePicker.CameraType.front,
+      quality: 0.7,
     });
 
     if (!result.canceled && result.assets[0]?.uri) {
@@ -147,56 +117,38 @@ const VerifyScreen: React.FC = () => {
     }
   };
 
-  const uploadImageToKycBucket = async (uri: string, path: string) => {
+  const uploadToSupabase = async (uri: string, path: string) => {
     const response = await fetch(uri);
     const blob = await response.blob();
-    const extension = (uri.split('.').pop() || 'jpg').toLowerCase();
-    const contentType = extension === 'png' ? 'image/png' : 'image/jpeg';
-
     const { error } = await supabase.storage.from('kyc-docs').upload(path, blob, {
-      upsert: false,
-      contentType,
+      contentType: 'image/jpeg',
+      upsert: true
     });
-
     if (error) throw error;
   };
 
+  const isBackRequired = documentType === 'ID_CARD' || documentType === 'DRIVERS_LICENSE';
+
   const canSubmit = useMemo(() => {
-    if (!currentUser) return false;
-    if (loadingState || submitting) return false;
+    if (submitting || loadingState) return false;
     if (!documentFrontUri || !selfieUri || !selfieCapturedAt) return false;
-    const currentStatus = kycData?.current?.status;
-    if (currentStatus === 'PENDING' || currentStatus === 'IN_REVIEW') return false;
-    return !currentUser.isVerified;
-  }, [
-    currentUser,
-    loadingState,
-    submitting,
-    documentFrontUri,
-    selfieUri,
-    selfieCapturedAt,
-    kycData?.current?.status,
-  ]);
+    if (isBackRequired && !documentBackUri) return false;
+    return true;
+  }, [documentFrontUri, documentBackUri, selfieUri, isBackRequired, submitting, loadingState]);
 
-  const submitKyc = async () => {
-    if (!currentUser) return;
-    if (!documentFrontUri || !selfieUri || !selfieCapturedAt) {
-      Alert.alert('Pièces manquantes', 'Ajoutez le recto de la pièce et capturez un selfie live.');
-      return;
-    }
+  const handleSubmit = async () => {
+    if (!canSubmit || !currentUser) return;
 
+    setSubmitting(true);
     try {
-      setSubmitting(true);
-      const folder = `${currentUser.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      const frontPath = `${folder}/document_front.jpg`;
-      const backPath = documentBackUri ? `${folder}/document_back.jpg` : null;
-      const selfiePath = `${folder}/selfie_live.jpg`;
+      const folder = `${currentUser.id}/${Date.now()}`;
+      const frontPath = `${folder}/front.jpg`;
+      const selfiePath = `${folder}/selfie.jpg`;
+      const backPath = documentBackUri ? `${folder}/back.jpg` : null;
 
-      await uploadImageToKycBucket(documentFrontUri, frontPath);
-      if (documentBackUri) {
-        await uploadImageToKycBucket(documentBackUri, backPath!);
-      }
-      await uploadImageToKycBucket(selfieUri, selfiePath);
+      await uploadToSupabase(documentFrontUri!, frontPath);
+      await uploadToSupabase(selfieUri!, selfiePath);
+      if (backPath) await uploadToSupabase(documentBackUri!, backPath);
 
       await apiRequest('/api/kyc/requests', {
         method: 'POST',
@@ -211,32 +163,24 @@ const VerifyScreen: React.FC = () => {
         }),
       });
 
-      setDocumentFrontUri(null);
-      setDocumentBackUri(null);
-      setSelfieUri(null);
-      setSelfieCapturedAt(null);
-      await fetchKycState();
-      Alert.alert('Demande envoyée', 'Votre dossier KYC est transmis à l’administration.');
+      Alert.alert('Succès', 'Votre demande a été envoyée. Elle sera traitée sous 24h.');
+      fetchKycState();
     } catch (error: any) {
-      Alert.alert('Erreur', normalizeError(error?.message));
+      Alert.alert('Erreur', error.message || 'Échec de l’envoi.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (!currentUser) return null;
-
-  if (currentUser.isVerified || kycData?.is_verified) {
+  if (currentUser?.isVerified) {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.centered}>
-          <View style={styles.icon}>
-            <ShieldCheck color="#16a34a" size={52} />
-          </View>
-          <Text style={styles.title}>Identité vérifiée</Text>
-          <Text style={styles.subtitle}>Votre vérification KYC est validée.</Text>
+          <CheckCircle2 color="#22c55e" size={64} />
+          <Text style={styles.title}>Profil Vérifié</Text>
+          <Text style={styles.subtitle}>Votre identité a été confirmée avec succès.</Text>
           <Pressable style={styles.primary} onPress={() => navigation.goBack()}>
-            <Text style={styles.primaryLabel}>Retour</Text>
+            <Text style={styles.primaryLabel}>Retour au profil</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -246,72 +190,61 @@ const VerifyScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Vérification d’identité</Text>
-        <Text style={styles.subtitle}>
-          Transmettez votre pièce d’identité et un selfie live pour validation manuelle par l’admin.
-        </Text>
+        <Text style={styles.title}>Vérification KYC</Text>
+        <Text style={styles.subtitle}>Pour garantir la sécurité de la communauté, nous devons vérifier votre identité.</Text>
 
-        <View style={styles.statusCard}>
-          <Text style={styles.statusLabel}>Statut actuel</Text>
-          <Text style={styles.statusValue}>
-            {loadingState ? 'Chargement...' : getStatusLabel(kycData?.current?.status)}
-          </Text>
-          {kycData?.current?.submitted_at ? (
-            <Text style={styles.statusHint}>
-              Soumis le {new Date(kycData.current.submitted_at).toLocaleString('fr-FR')}
-            </Text>
-          ) : null}
-          {kycData?.current?.status === 'REJECTED' && kycData.current.rejection_reason ? (
-            <Text style={styles.rejectionText}>Motif: {kycData.current.rejection_reason}</Text>
-          ) : null}
+        <View style={styles.statusBox}>
+          <Text style={styles.label}>Statut : <Text style={styles.statusText}>{getStatusLabel(kycData?.current?.status)}</Text></Text>
+          {kycData?.current?.rejection_reason && (
+            <View style={styles.errorBox}>
+              <AlertCircle size={16} color="#ef4444" />
+              <Text style={styles.errorText}>{kycData.current.rejection_reason}</Text>
+            </View>
+          )}
         </View>
 
-        <Text style={styles.sectionTitle}>Type de document</Text>
+        <Text style={styles.sectionTitle}>1. Type de document</Text>
         <View style={styles.chips}>
-          {DOCUMENT_TYPES.map((item) => {
-            const selected = documentType === item.value;
-            return (
-              <Pressable
-                key={item.value}
-                style={[styles.chip, selected && styles.chipActive]}
-                onPress={() => setDocumentType(item.value)}
-              >
-                <Text style={[styles.chipText, selected && styles.chipTextActive]}>{item.label}</Text>
-              </Pressable>
-            );
-          })}
+          {DOCUMENT_TYPES.map((t) => (
+            <Pressable
+              key={t.value}
+              onPress={() => setDocumentType(t.value)}
+              style={[styles.chip, documentType === t.value && styles.chipActive]}
+            >
+              <Text style={[styles.chipText, documentType === t.value && styles.chipTextActive]}>{t.label}</Text>
+            </Pressable>
+          ))}
         </View>
 
-        <Text style={styles.sectionTitle}>Pièces requises</Text>
-        <Pressable style={styles.fileButton} onPress={() => void pickImage(setDocumentFrontUri)}>
-          <Text style={styles.fileButtonLabel}>
-            {documentFrontUri ? 'Recto sélectionné' : 'Ajouter recto de la pièce'}
-          </Text>
+        <Text style={styles.sectionTitle}>2. Photos du document</Text>
+        <View style={styles.row}>
+          <Pressable style={[styles.photoBtn, documentFrontUri && styles.photoBtnDone]} onPress={() => pickImage(setDocumentFrontUri)}>
+            <FileText size={24} color={documentFrontUri ? '#22c55e' : COLORS.muted} />
+            <Text style={styles.photoBtnLabel}>{documentFrontUri ? 'Recto OK' : 'Recto (obligatoire)'}</Text>
+          </Pressable>
+
+          <Pressable
+            style={[styles.photoBtn, documentBackUri && styles.photoBtnDone, !isBackRequired && { opacity: 0.5 }]}
+            onPress={() => pickImage(setDocumentBackUri)}
+          >
+            <FileText size={24} color={documentBackUri ? '#22c55e' : COLORS.muted} />
+            <Text style={styles.photoBtnLabel}>{documentBackUri ? 'Verso OK' : (isBackRequired ? 'Verso (obligatoire)' : 'Verso (facultatif)')}</Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.sectionTitle}>3. Preuve de présence</Text>
+        <Pressable style={[styles.photoBtn, styles.fullWidth, selfieUri && styles.photoBtnDone]} onPress={captureSelfie}>
+          <Camera size={24} color={selfieUri ? '#22c55e' : COLORS.muted} />
+          <Text style={styles.photoBtnLabel}>{selfieUri ? 'Selfie live capturé' : 'Capturer un Selfie Live'}</Text>
         </Pressable>
-        <Pressable style={styles.fileButton} onPress={() => void pickImage(setDocumentBackUri)}>
-          <Text style={styles.fileButtonLabel}>
-            {documentBackUri ? 'Verso sélectionné' : 'Ajouter verso (optionnel)'}
-          </Text>
-        </Pressable>
-        <Pressable style={styles.fileButton} onPress={() => void captureSelfie()}>
-          <Text style={styles.fileButtonLabel}>
-            {selfieUri ? 'Selfie live capturé' : 'Capturer selfie live (obligatoire)'}
-          </Text>
-        </Pressable>
-        <Text style={styles.selfieHint}>
-          Le selfie doit être pris en direct avec la caméra pour limiter l’usurpation.
-        </Text>
+        <Text style={styles.infoText}>⚠️ Le selfie doit être pris instantanément avec votre caméra frontale.</Text>
 
         <Pressable
           style={[styles.primary, !canSubmit && styles.primaryDisabled]}
+          onPress={handleSubmit}
           disabled={!canSubmit}
-          onPress={() => void submitKyc()}
         >
-          <Text style={styles.primaryLabel}>{submitting ? 'Envoi...' : 'Soumettre la demande'}</Text>
-        </Pressable>
-
-        <Pressable style={styles.secondary} onPress={() => void fetchKycState()}>
-          <Text style={styles.secondaryLabel}>Actualiser le statut</Text>
+          {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryLabel}>Soumettre le dossier</Text>}
         </Pressable>
       </ScrollView>
     </SafeAreaView>
@@ -319,135 +252,31 @@ const VerifyScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-    gap: 12,
-  },
-  content: {
-    padding: 20,
-    gap: 12,
-  },
-  icon: {
-    width: 96,
-    height: 96,
-    borderRadius: 32,
-    backgroundColor: '#ecfdf5',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: COLORS.ink,
-  },
-  subtitle: {
-    color: COLORS.muted,
-  },
-  sectionTitle: {
-    marginTop: 4,
-    color: COLORS.ink,
-    fontWeight: '700',
-  },
-  statusCard: {
-    backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    padding: 12,
-    gap: 4,
-  },
-  statusLabel: {
-    color: COLORS.muted,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  statusValue: {
-    color: COLORS.ink,
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  statusHint: {
-    color: COLORS.muted,
-    fontSize: 12,
-  },
-  rejectionText: {
-    color: '#b91c1c',
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    backgroundColor: '#fff',
-  },
-  chipActive: {
-    borderColor: '#7dd3fc',
-    backgroundColor: '#e0f2fe',
-  },
-  chipText: {
-    color: COLORS.ink,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  chipTextActive: {
-    color: '#0369a1',
-  },
-  fileButton: {
-    borderWidth: 1,
-    borderColor: '#dbe3ef',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-  },
-  fileButtonLabel: {
-    color: COLORS.ink,
-    fontWeight: '700',
-  },
-  selfieHint: {
-    color: '#475569',
-    fontSize: 12,
-    marginTop: -4,
-  },
-  primary: {
-    marginTop: 8,
-    backgroundColor: '#2563eb',
-    borderRadius: 12,
-    paddingHorizontal: 18,
-    paddingVertical: 13,
-    alignItems: 'center',
-  },
-  primaryDisabled: {
-    opacity: 0.5,
-  },
-  primaryLabel: {
-    color: '#fff',
-    fontWeight: '800',
-  },
-  secondary: {
-    alignSelf: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-  },
-  secondaryLabel: {
-    color: '#475569',
-    fontWeight: '700',
-  },
+  safe: { flex: 1, backgroundColor: '#f8fafc' },
+  content: { padding: 24, gap: 16 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 16 },
+  title: { fontSize: 28, fontWeight: '900', color: COLORS.ink },
+  subtitle: { fontSize: 15, color: COLORS.muted, lineHeight: 22 },
+  statusBox: { backgroundColor: '#fff', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#e2e8f0' },
+  label: { fontWeight: '700', color: COLORS.ink },
+  statusText: { color: COLORS.primary },
+  errorBox: { flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: 10, backgroundColor: '#fef2f2', padding: 10, borderRadius: 8 },
+  errorText: { color: '#ef4444', fontSize: 13, fontWeight: '600', flex: 1 },
+  sectionTitle: { fontSize: 16, fontWeight: '800', color: COLORS.ink, marginTop: 10 },
+  chips: { flexDirection: 'row', gap: 8 },
+  chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e2e8f0' },
+  chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  chipText: { fontSize: 13, fontWeight: '700', color: COLORS.muted },
+  chipTextActive: { color: '#fff' },
+  row: { flexDirection: 'row', gap: 12 },
+  photoBtn: { flex: 1, height: 100, backgroundColor: '#fff', borderRadius: 16, borderStyle: 'dashed', borderWidth: 2, borderColor: '#cbd5e1', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  photoBtnDone: { borderStyle: 'solid', borderColor: '#22c55e', backgroundColor: '#f0fdf4' },
+  photoBtnLabel: { fontSize: 11, fontWeight: '700', color: COLORS.muted, textAlign: 'center' },
+  fullWidth: { width: '100%' },
+  infoText: { fontSize: 12, color: COLORS.muted, fontStyle: 'italic' },
+  primary: { backgroundColor: COLORS.primary, paddingVertical: 16, borderRadius: 16, alignItems: 'center', marginTop: 20 },
+  primaryDisabled: { backgroundColor: '#cbd5e1' },
+  primaryLabel: { color: '#fff', fontWeight: '800', fontSize: 16 },
 });
 
 export default VerifyScreen;

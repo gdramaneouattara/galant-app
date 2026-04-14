@@ -4,6 +4,7 @@ import {
   Image,
   Pressable,
   SafeAreaView,
+  Share,
   ScrollView,
   StyleSheet,
   Text,
@@ -31,6 +32,7 @@ const ProfileScreen: React.FC = () => {
   const { currentUser, logout, toggleInvisibleMode, updateCurrentUser } = useApp();
   const [isTogglingInvisible, setIsTogglingInvisible] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [exportingData, setExportingData] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
 
   if (!currentUser) {
@@ -41,6 +43,13 @@ const ProfileScreen: React.FC = () => {
   const boostedUntilDate = isBoosted ? new Date(currentUser.boosted_until!) : null;
   const isInvisibleEligible = !!currentUser.invisible_mode_eligible;
   const isInvisibleEnabled = !!currentUser.is_invisible && currentUser.isPremium && isInvisibleEligible;
+  const invisibleModeDescription = isInvisibleEnabled
+    ? 'Votre profil est masque dans la decouverte standard. Les matchs existants et actions directes restent accessibles.'
+    : (isInvisibleEligible
+      ? 'Masquez votre profil dans la decouverte standard quand vous le souhaitez.'
+      : (currentUser.isPremium
+        ? 'Votre formule Premium actuelle n inclut pas le mode invisible. Passez en 6 mois ou 1 an.'
+        : 'Disponible uniquement sur les abonnements 6 mois et 1 an.'));
 
   const currentGoal = RELATIONSHIP_GOALS.find(g => g.id === currentUser.relationship_goal) || RELATIONSHIP_GOALS[0];
 
@@ -58,21 +67,29 @@ const ProfileScreen: React.FC = () => {
     setShowGoalModal(false);
   };
 
-  const requestPrivacyAction = async (requestType: 'EXPORT' | 'DELETE') => {
+  const exportPersonalData = async () => {
+    if (exportingData) return;
+
     try {
-      await apiRequest('/api/privacy/request', {
-        method: 'POST',
+      setExportingData(true);
+      const payload = await apiRequest<{
+        filename: string;
+        exported_at: string;
+        format: 'json';
+      } & Record<string, unknown>>('/api/privacy/export', {
         requireAuth: true,
-        body: JSON.stringify({ requestType }),
       });
-      Alert.alert(
-        'Demande enregistrée',
-        requestType === 'EXPORT'
-          ? 'Votre demande d’export RGPD a été transmise.'
-          : 'Votre demande de suppression RGPD a été transmise.'
-      );
+
+      const fileName = payload.filename || `yamo-export-${currentUser.id}.json`;
+      const prettyJson = JSON.stringify(payload, null, 2);
+      await Share.share({
+        title: fileName,
+        message: prettyJson,
+      });
     } catch (error: any) {
-      Alert.alert('Erreur', error?.message || 'Impossible d’enregistrer votre demande RGPD.');
+      Alert.alert('Erreur', error?.message || "Impossible d'exporter vos données.");
+    } finally {
+      setExportingData(false);
     }
   };
 
@@ -188,11 +205,7 @@ const ProfileScreen: React.FC = () => {
               </View>
               <View style={styles.rowContent}>
                 <Text style={styles.rowLabel}>Mode invisible</Text>
-                <Text style={styles.rowSubLabel}>
-                  {isInvisibleEnabled
-                    ? 'Votre profil est masque dans la decouverte.'
-                    : 'Masquez votre profil dans la decouverte.'}
-                </Text>
+                <Text style={styles.rowSubLabel}>{invisibleModeDescription}</Text>
               </View>
               {isTogglingInvisible ? (
                 <Text style={styles.rowStatus}>...</Text>
@@ -211,7 +224,7 @@ const ProfileScreen: React.FC = () => {
               </View>
               <View style={styles.rowContent}>
                 <Text style={styles.rowLabel}>Mode invisible</Text>
-                <Text style={styles.rowSubLabel}>Disponible uniquement sur les abonnements 6 mois et 1 an.</Text>
+                <Text style={styles.rowSubLabel}>{invisibleModeDescription}</Text>
               </View>
               <ChevronRight size={18} color="#cbd5f5" />
             </Pressable>
@@ -252,11 +265,17 @@ const ProfileScreen: React.FC = () => {
               <ChevronRight size={18} color="#c4b5fd" />
             </Pressable>
           )}
-          <Pressable style={[styles.row, styles.rowPrivacy]} onPress={() => { void requestPrivacyAction('EXPORT'); }}>
+          <Pressable
+            style={[styles.row, styles.rowPrivacy]}
+            onPress={() => { void exportPersonalData(); }}
+            disabled={exportingData}
+          >
             <View style={[styles.rowIcon, styles.rowIconPrivacy]}>
               <ShieldCheck size={18} color="#0369a1" />
             </View>
-            <Text style={styles.rowLabel}>Demander export de mes données</Text>
+            <Text style={styles.rowLabel}>
+              {exportingData ? 'Préparation de l’export...' : 'Télécharger mes données'}
+            </Text>
             <ChevronRight size={18} color="#7dd3fc" />
           </Pressable>
           <Pressable style={[styles.row, styles.rowPrivacyDelete]} onPress={confirmDeleteAccount} disabled={deletingAccount}>

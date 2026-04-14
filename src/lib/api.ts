@@ -21,6 +21,11 @@ const getRuntimeApiBaseUrl = () => {
 
 export const apiRequest = async <T>(path: string, options: ApiOptions = {}): Promise<T> => {
   const headers = new Headers(options.headers || {});
+  const resolvedTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  if (resolvedTimeZone) {
+    headers.set('X-Timezone', resolvedTimeZone);
+  }
 
   if (options.requireAuth) {
     const { data: { session } } = await supabase.auth.getSession();

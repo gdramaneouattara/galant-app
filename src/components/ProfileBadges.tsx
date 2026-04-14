@@ -1,32 +1,44 @@
 import React from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { ShieldCheck, Flame } from 'lucide-react-native';
-import { User } from '../types';
+import { ShieldCheck, Flame, Crown, Rocket } from 'lucide-react-native';
+
+type ProfileBadgeUser = {
+  isVerified?: boolean;
+  is_verified?: boolean;
+  isPremium?: boolean;
+  is_premium?: boolean;
+  boosted_until?: string | null;
+  last_active_at?: string | null;
+  likes_count?: number;
+};
 
 interface ProfileBadgesProps {
-  user: User;
+  user: ProfileBadgeUser;
   containerStyle?: ViewStyle;
   showLabels?: boolean;
 }
 
 const ProfileBadges: React.FC<ProfileBadgesProps> = ({ user, containerStyle, showLabels = false }) => {
+  const isVerified = user.isVerified ?? user.is_verified ?? false;
+  const isPremium = user.isPremium ?? user.is_premium ?? false;
+  const likesCount = user.likes_count || 0;
   const isRecentlyActive = user.last_active_at
     ? (new Date().getTime() - new Date(user.last_active_at).getTime()) < 24 * 60 * 60 * 1000
     : false;
-
-  const isPopular = user.likes_count >= 50;
+  const isPopular = likesCount >= 50;
+  const isBoosted = user.boosted_until
+    ? new Date(user.boosted_until).getTime() > new Date().getTime()
+    : false;
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {/* Badge Vérifié */}
-      {user.isVerified && (
+      {isVerified && (
         <View style={[styles.badge, styles.verifiedBadge]}>
           <ShieldCheck size={14} color="#fff" />
-          {showLabels && <Text style={styles.badgeText}>Vérifié</Text>}
+          {showLabels && <Text style={styles.badgeText}>Verifie</Text>}
         </View>
       )}
 
-      {/* Badge Populaire */}
       {isPopular && (
         <View style={[styles.badge, styles.popularBadge]}>
           <Flame size={14} color="#fff" />
@@ -34,11 +46,24 @@ const ProfileBadges: React.FC<ProfileBadgesProps> = ({ user, containerStyle, sho
         </View>
       )}
 
-      {/* Badge Actif */}
       {isRecentlyActive && (
         <View style={[styles.badge, styles.activeBadge]}>
           <View style={styles.activeDot} />
           {showLabels && <Text style={styles.badgeText}>Actif</Text>}
+        </View>
+      )}
+
+      {isPremium && (
+        <View style={[styles.badge, styles.premiumBadge]}>
+          <Crown size={14} color="#fff" />
+          {showLabels && <Text style={styles.badgeText}>Premium</Text>}
+        </View>
+      )}
+
+      {isBoosted && (
+        <View style={[styles.badge, styles.boostedBadge]}>
+          <Rocket size={14} color="#fff" />
+          {showLabels && <Text style={styles.badgeText}>Booste</Text>}
         </View>
       )}
     </View>
@@ -60,21 +85,25 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   verifiedBadge: {
-    backgroundColor: '#3b82f6', // Bleu
+    backgroundColor: '#3b82f6',
   },
   popularBadge: {
-    backgroundColor: '#f97316', // Orange/Flamme
+    backgroundColor: '#f97316',
   },
   activeBadge: {
-    backgroundColor: 'rgba(34, 197, 94, 0.2)', // Vert transparent
-    borderWidth: 1,
-    borderColor: '#22c55e',
+    backgroundColor: '#16a34a',
+  },
+  premiumBadge: {
+    backgroundColor: '#7c3aed',
+  },
+  boostedBadge: {
+    backgroundColor: '#dc2626',
   },
   activeDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#22c55e',
+    backgroundColor: '#dcfce7',
   },
   badgeText: {
     color: '#fff',

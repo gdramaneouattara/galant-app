@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, Pressable, Alert, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { COLORS } from '../../data/mock';
 import { apiRequest } from '../../lib/api';
 import { useApp } from '../../state/AppContext';
+import type { RootStackParamList } from '../../navigation/MainNavigator';
 
 type AdminStats = {
   generatedAt: string;
@@ -53,8 +56,48 @@ type AdminStats = {
   };
 };
 
+type AdminDestination = Exclude<
+  keyof RootStackParamList,
+  'AuthFlow' | 'ResetPassword' | 'MainTabs' | 'Chat' | 'CommunityChat' | 'Premium' | 'LikesReceived' | 'Verify' | 'Boost' | 'DiscoverGrid'
+>;
+
+type AdminShortcut = {
+  route: AdminDestination;
+  title: string;
+  description: string;
+};
+
+const ADMIN_SHORTCUTS: AdminShortcut[] = [
+  {
+    route: 'AdminUserList',
+    title: 'Utilisateurs',
+    description: 'Recherche, suspension, suppression et contrôle des comptes.',
+  },
+  {
+    route: 'AdminModeration',
+    title: 'Modération',
+    description: 'Signalements, demandes RGPD et revue des photos.',
+  },
+  {
+    route: 'AdminKyc',
+    title: 'KYC',
+    description: 'Validation des pièces d’identité et selfies.',
+  },
+  {
+    route: 'AdminAuditLogs',
+    title: 'Audit Logs',
+    description: 'Traçabilité des actions administratives sensibles.',
+  },
+  {
+    route: 'AdminMessaging',
+    title: 'Notifications Push',
+    description: 'Campagnes système, audience ciblée et historique d’envoi.',
+  },
+];
+
 const AdminDashboardScreen: React.FC = () => {
   const { logout } = useApp();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -221,6 +264,24 @@ const AdminDashboardScreen: React.FC = () => {
           </View>
         ) : null}
 
+        <View style={styles.shortcutsSection}>
+          <Text style={styles.shortcutsTitle}>Modules back-office</Text>
+          <View style={styles.shortcutsGrid}>
+            {ADMIN_SHORTCUTS.map((shortcut) => (
+              <Pressable
+                key={shortcut.route}
+                style={styles.shortcutCard}
+                onPress={() => navigation.navigate(shortcut.route)}
+                accessibilityRole="button"
+                accessibilityLabel={`Ouvrir ${shortcut.title}`}
+              >
+                <Text style={styles.shortcutCardTitle}>{shortcut.title}</Text>
+                <Text style={styles.shortcutCardDescription}>{shortcut.description}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
         <Pressable
           style={styles.logoutButton}
           onPress={handleLogout}
@@ -315,6 +376,34 @@ const styles = StyleSheet.create({
   planItem: {
     color: COLORS.ink,
     marginBottom: 4,
+  },
+  shortcutsSection: {
+    marginTop: 14,
+    gap: 10,
+  },
+  shortcutsTitle: {
+    fontWeight: '800',
+    color: COLORS.ink,
+    fontSize: 16,
+  },
+  shortcutsGrid: {
+    gap: 10,
+  },
+  shortcutCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  shortcutCardTitle: {
+    color: COLORS.ink,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  shortcutCardDescription: {
+    color: COLORS.muted,
+    lineHeight: 18,
   },
   logoutButton: {
     marginTop: 16,

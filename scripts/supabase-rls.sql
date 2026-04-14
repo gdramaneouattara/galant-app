@@ -290,14 +290,17 @@ CREATE POLICY "Users can send messages in their matches."
       where m.id = messages.match_id
         and (auth.uid() = m.user_one_id or auth.uid() = m.user_two_id)
     )
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.is_premium = true
-    )
-    and upper(coalesce(message_type, 'TEXT')) in ('TEXT', 'IMAGE')
+    and upper(coalesce(message_type, 'TEXT')) in ('TEXT', 'IMAGE', 'VIDEO')
     and (
       (upper(coalesce(message_type, 'TEXT')) = 'TEXT' and length(trim(coalesce(content, ''))) > 0)
-      or (upper(coalesce(message_type, 'TEXT')) = 'IMAGE' and media_url is not null)
+      or (
+        upper(coalesce(message_type, 'TEXT')) in ('IMAGE', 'VIDEO')
+        and media_url is not null
+        and exists (
+          select 1 from public.profiles p
+          where p.id = auth.uid() and p.is_premium = true and p.suspended_at is null
+        )
+      )
     )
     and not exists (
       select 1
@@ -498,130 +501,6 @@ CREATE POLICY "Admins can review KYC requests."
     and status in ('IN_REVIEW', 'APPROVED', 'REJECTED')
   );
 
--- RLS: Storage objects (bucket photos)
-ALTER TABLE IF EXISTS storage.objects ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Authenticated users can see all photos." ON storage.objects;
-CREATE POLICY "Authenticated users can see all photos."
-  ON storage.objects FOR SELECT
-  TO authenticated
-  USING (
-    bucket_id = 'photos'
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
-    )
-  );
-
-DROP POLICY IF EXISTS "Users can upload to their own folder." ON storage.objects;
-CREATE POLICY "Users can upload to their own folder."
-  ON storage.objects FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    bucket_id = 'photos' AND
-    auth.uid()::text = (storage.foldername(name))[1] AND
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
-    )
-  );
-
-DROP POLICY IF EXISTS "Users can update their own photos." ON storage.objects;
-CREATE POLICY "Users can update their own photos."
-  ON storage.objects FOR UPDATE
-  TO authenticated
-  USING (
-    bucket_id = 'photos' AND
-    auth.uid()::text = (storage.foldername(name))[1] AND
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
-    )
-  );
-
-DROP POLICY IF EXISTS "Users can delete their own photos." ON storage.objects;
-CREATE POLICY "Users can delete their own photos."
-  ON storage.objects FOR DELETE
-  TO authenticated
-  USING (
-    bucket_id = 'photos' AND
-    auth.uid()::text = (storage.foldername(name))[1] AND
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
-    )
-  );
-
-DROP POLICY IF EXISTS "Users can view their own KYC files." ON storage.objects;
-CREATE POLICY "Users can view their own KYC files."
-  ON storage.objects FOR SELECT
-  TO authenticated
-  USING (
-    bucket_id = 'kyc-docs'
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
-    )
-    and (
-      auth.uid()::text = (storage.foldername(name))[1]
-      or exists (
-        select 1 from public.profiles p
-        where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
-      )
-    )
-  );
-
-DROP POLICY IF EXISTS "Users can upload to their own KYC folder." ON storage.objects;
-CREATE POLICY "Users can upload to their own KYC folder."
-  ON storage.objects FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    bucket_id = 'kyc-docs'
-    and auth.uid()::text = (storage.foldername(name))[1]
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
-    )
-  );
-
-DROP POLICY IF EXISTS "Users can update their own KYC files." ON storage.objects;
-CREATE POLICY "Users can update their own KYC files."
-  ON storage.objects FOR UPDATE
-  TO authenticated
-  USING (
-    bucket_id = 'kyc-docs'
-    and (
-      auth.uid()::text = (storage.foldername(name))[1]
-      or exists (
-        select 1 from public.profiles p
-        where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
-      )
-    )
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
-    )
-  );
-
-DROP POLICY IF EXISTS "Users can delete their own KYC files." ON storage.objects;
-CREATE POLICY "Users can delete their own KYC files."
-  ON storage.objects FOR DELETE
-  TO authenticated
-  USING (
-    bucket_id = 'kyc-docs'
-    and (
-      auth.uid()::text = (storage.foldername(name))[1]
-      or exists (
-        select 1 from public.profiles p
-        where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
-      )
-    )
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
-    )
-  );
-
 -- RLS: Subscriptions
 ALTER TABLE IF EXISTS public.subscriptions ENABLE ROW LEVEL SECURITY;
 
@@ -695,6 +574,51 @@ CREATE POLICY "Users can delete likes they sent."
   TO authenticated
   USING (
     liker_id = auth.uid()
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
+-- RLS: Passes
+ALTER TABLE IF EXISTS public.passes ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view their passes." ON public.passes;
+CREATE POLICY "Users can view their passes."
+  ON public.passes FOR SELECT
+  TO authenticated
+  USING (
+    passer_id = auth.uid()
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can create their passes." ON public.passes;
+CREATE POLICY "Users can create their passes."
+  ON public.passes FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    passer_id = auth.uid()
+    and passed_user_id <> auth.uid()
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+    and not exists (
+      select 1 from public.blocks b
+      where (b.user_id = passer_id and b.blocked_user_id = passed_user_id)
+         or (b.user_id = passed_user_id and b.blocked_user_id = passer_id)
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can delete their passes." ON public.passes;
+CREATE POLICY "Users can delete their passes."
+  ON public.passes FOR DELETE
+  TO authenticated
+  USING (
+    passer_id = auth.uid()
     and exists (
       select 1 from public.profiles p
       where p.id = auth.uid() and p.suspended_at is null
@@ -867,59 +791,54 @@ CREATE POLICY "Admins can resolve privacy requests."
     )
   );
 
--- RLS: Storage objects (bucket chat-media)
-DROP POLICY IF EXISTS "Authenticated users can read chat media." ON storage.objects;
-CREATE POLICY "Authenticated users can read chat media."
-  ON storage.objects FOR SELECT
+-- RLS: Communities
+ALTER TABLE IF EXISTS public.communities ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can view communities." ON public.communities;
+CREATE POLICY "Anyone can view communities."
+  ON public.communities FOR SELECT
+  TO authenticated
+  USING (true);
+
+-- RLS: Community Members
+ALTER TABLE IF EXISTS public.community_members ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Members can view their communities." ON public.community_members;
+CREATE POLICY "Members can view their communities."
+  ON public.community_members FOR SELECT
+  TO authenticated
+  USING (true);
+
+DROP POLICY IF EXISTS "Users can join communities." ON public.community_members;
+CREATE POLICY "Users can join communities."
+  ON public.community_members FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+-- RLS: Community Messages
+ALTER TABLE IF EXISTS public.community_messages ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Members can read community messages." ON public.community_messages;
+CREATE POLICY "Members can read community messages."
+  ON public.community_messages FOR SELECT
   TO authenticated
   USING (
-    bucket_id = 'chat-media'
-    and exists (
-      select 1 from public.matches m
-      where m.id::text = (storage.foldername(name))[1]
-        and m.status = 'ACTIVE'
-        and (auth.uid() = m.user_one_id or auth.uid() = m.user_two_id)
-    )
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
+    exists (
+      select 1 from public.community_members cm
+      where cm.community_id = community_messages.community_id
+        and cm.user_id = auth.uid()
     )
   );
 
-DROP POLICY IF EXISTS "Users can upload chat media to their own folder." ON storage.objects;
-CREATE POLICY "Users can upload chat media to their own folder."
-  ON storage.objects FOR INSERT
+DROP POLICY IF EXISTS "Members can send community messages." ON public.community_messages;
+CREATE POLICY "Members can send community messages."
+  ON public.community_messages FOR INSERT
   TO authenticated
   WITH CHECK (
-    bucket_id = 'chat-media'
-    and auth.uid()::text = (storage.foldername(name))[2]
+    auth.uid() = sender_id
     and exists (
-      select 1 from public.matches m
-      where m.id::text = (storage.foldername(name))[1]
-        and m.status = 'ACTIVE'
-        and (auth.uid() = m.user_one_id or auth.uid() = m.user_two_id)
-    )
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
-    )
-  );
-
-DROP POLICY IF EXISTS "Users can delete their own chat media." ON storage.objects;
-CREATE POLICY "Users can delete their own chat media."
-  ON storage.objects FOR DELETE
-  TO authenticated
-  USING (
-    bucket_id = 'chat-media'
-    and auth.uid()::text = (storage.foldername(name))[2]
-    and exists (
-      select 1 from public.matches m
-      where m.id::text = (storage.foldername(name))[1]
-        and m.status = 'ACTIVE'
-        and (auth.uid() = m.user_one_id or auth.uid() = m.user_two_id)
-    )
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
+      select 1 from public.community_members cm
+      where cm.community_id = community_messages.community_id
+        and cm.user_id = auth.uid()
     )
   );

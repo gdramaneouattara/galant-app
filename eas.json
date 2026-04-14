@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 7.6.0"
+    "version": ">= 7.6.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -10,7 +11,11 @@
     "preview": {
       "distribution": "internal"
     },
-    "production": {},
+    "production": {
+      "env": {
+        "EAS_BUILD_NO_EXPO_GO_WARNING": "true"
+      }
+    },
     "production-simulated": {
       "env": {
         "EXPO_PUBLIC_SIMULATE_PAYMENT": "true"

@@ -21,6 +21,7 @@ export const MOCK_USERS: User[] = [
     location: { lat: 4.0511, lng: 9.7679, city: 'Douala' },
     isVerified: true,
     isPremium: false,
+    likes_count: 0,
     preferences: { targetGender: [Gender.MALE], minAge: 22, maxAge: 35, maxDistance: 50 },
   },
   {
@@ -34,6 +35,7 @@ export const MOCK_USERS: User[] = [
     location: { lat: 3.848, lng: 11.5021, city: 'Yaoundé' },
     isVerified: false,
     isPremium: true,
+    likes_count: 0,
     preferences: { targetGender: [Gender.FEMALE], minAge: 20, maxAge: 30, maxDistance: 100 },
   },
   {
@@ -47,6 +49,7 @@ export const MOCK_USERS: User[] = [
     location: { lat: 4.0511, lng: 9.7679, city: 'Douala' },
     isVerified: true,
     isPremium: false,
+    likes_count: 0,
     preferences: { targetGender: [Gender.MALE], minAge: 20, maxAge: 30, maxDistance: 20 },
   },
 ];

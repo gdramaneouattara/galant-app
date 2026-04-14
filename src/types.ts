@@ -61,9 +61,11 @@ export interface Message {
   match_id: string;
   sender_id: string;
   content: string;
-  message_type?: 'TEXT' | 'IMAGE';
+  type?: 'TEXT' | 'IMAGE' | 'VIDEO';
+  message_type?: 'TEXT' | 'IMAGE' | 'VIDEO';
   media_url?: string | null;
   metadata?: Record<string, unknown> | null;
   is_read: boolean;
+  read_at?: string | null;
   created_at: string;
 }

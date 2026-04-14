@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Image,
   Pressable,
@@ -60,6 +60,67 @@ const MessagesScreen: React.FC = () => {
   );
 
   const unreadCount = adminNotifications.filter(isNotificationUnread).length;
+
+  const formatConversationTime = useCallback((value?: string) => {
+    if (!value) return '';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    const now = new Date();
+    const isSameDay = now.toDateString() === date.toDateString();
+
+    if (isSameDay) {
+      return date.toLocaleTimeString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+    });
+  }, []);
+
+  const recentMatches = useMemo(() => {
+    if (!currentUser) return [];
+
+    return matches
+      .map((match) => {
+        const userId = match.user_one_id === currentUser.id ? match.user_two_id : match.user_one_id;
+        const user = users.find((candidate) => candidate.id === userId);
+        if (!user) return null;
+
+        return { match, user };
+      })
+      .filter((entry): entry is { match: typeof matches[number]; user: typeof users[number] } => !!entry);
+  }, [currentUser, matches, users]);
+
+  const conversations = useMemo(() => {
+    if (!currentUser) return [];
+
+    return recentMatches
+      .map(({ match, user }) => {
+        const thread = messages.filter((message) => message.match_id === match.id);
+        const lastMessage = thread[thread.length - 1];
+        const unreadCountForMatch = thread.filter((message) => !message.is_read && message.sender_id !== currentUser.id).length;
+        const lastActivityAt = lastMessage?.created_at || match.created_at;
+
+        return {
+          match,
+          user,
+          lastMessage,
+          unreadCount: unreadCountForMatch,
+          lastActivityAt,
+        };
+      })
+      .sort((left, right) => {
+        const leftTs = left.lastActivityAt ? new Date(left.lastActivityAt).getTime() : 0;
+        const rightTs = right.lastActivityAt ? new Date(right.lastActivityAt).getTime() : 0;
+        return rightTs - leftTs;
+      });
+  }, [currentUser, messages, recentMatches]);
 
   const markNotificationAsRead = async (notificationId: string) => {
     try {
@@ -148,71 +209,55 @@ const MessagesScreen: React.FC = () => {
 
         <Text style={styles.title}>Matchs Récents</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.matchesRow}>
-          {matches.length === 0 && (
+          {recentMatches.length === 0 && (
             <View style={styles.empty}>
               <Text style={styles.emptyText}>Swipe pour matcher !</Text>
             </View>
           )}
-          {matches.map((match) => {
-            if (!currentUser) return null;
-            const userId = match.user_one_id === currentUser.id ? match.user_two_id : match.user_one_id;
-            const user = users.find((u) => u.id === userId);
-            if (!user) return null;
-            return (
-              <Pressable
-                key={match.id}
-                onPress={() => navigation.navigate('Chat', { userId: user.id, matchId: match.id })}
-                style={styles.matchItem}
-              >
-                <Image source={{ uri: user.photos[0] }} style={styles.matchAvatar} />
-                <View style={styles.matchNameRow}>
-                  <Text style={styles.matchName}>{user.name}</Text>
-                  {user.isVerified ? <ShieldCheck size={12} color="#60a5fa" /> : null}
-                </View>
-              </Pressable>
-            );
-          })}
+          {recentMatches.map(({ match, user }) => (
+            <Pressable
+              key={match.id}
+              onPress={() => navigation.navigate('Chat', { userId: user.id, matchId: match.id })}
+              style={styles.matchItem}
+            >
+              <Image source={{ uri: user.photos[0] }} style={styles.matchAvatar} />
+              <View style={styles.matchNameRow}>
+                <Text style={styles.matchName}>{user.name}</Text>
+                {user.isVerified ? <ShieldCheck size={12} color="#60a5fa" /> : null}
+              </View>
+            </Pressable>
+          ))}
         </ScrollView>
 
         <Text style={styles.subtitle}>Conversations</Text>
         <View style={styles.list}>
-          {matches.map((match) => {
-            if (!currentUser) return null;
-            const userId = match.user_one_id === currentUser.id ? match.user_two_id : match.user_one_id;
-            const user = users.find((u) => u.id === userId);
-            if (!user) return null;
-            const thread = messages.filter((m) => m.match_id === match.id);
-            const lastMessage = thread[thread.length - 1];
-            const unreadCount = thread.filter((m) => !m.is_read && m.sender_id !== currentUser.id).length;
-
-            return (
-              <Pressable
-                key={match.id}
-                onPress={() => navigation.navigate('Chat', { userId: user.id, matchId: match.id })}
-                style={styles.row}
-              >
-                <Image source={{ uri: user.photos[0] }} style={styles.rowAvatar} />
-                <View style={styles.rowText}>
-                  <View style={styles.rowNameRow}>
-                    <Text style={styles.rowName}>{user.name}</Text>
-                    {user.isVerified ? <ShieldCheck size={12} color="#60a5fa" /> : null}
+          {conversations.map(({ match, user, lastMessage, unreadCount: conversationUnreadCount, lastActivityAt }) => (
+            <Pressable
+              key={match.id}
+              onPress={() => navigation.navigate('Chat', { userId: user.id, matchId: match.id })}
+              style={styles.row}
+            >
+              <Image source={{ uri: user.photos[0] }} style={styles.rowAvatar} />
+              <View style={styles.rowText}>
+                <View style={styles.rowNameRow}>
+                  <Text style={styles.rowName}>{user.name}</Text>
+                  {user.isVerified ? <ShieldCheck size={12} color="#60a5fa" /> : null}
+                </View>
+                <Text style={styles.rowMessage} numberOfLines={1}>
+                  {lastMessage?.content || 'Clique pour ouvrir le chat...'}
+                </Text>
+              </View>
+              <View style={styles.rowMeta}>
+                <Text style={styles.rowTime}>{formatConversationTime(lastActivityAt)}</Text>
+                {conversationUnreadCount > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{conversationUnreadCount}</Text>
                   </View>
-                  <Text style={styles.rowMessage} numberOfLines={1}>
-                    {lastMessage?.content || 'Clique pour ouvrir le chat...'}
-                  </Text>
-                </View>
-                <View style={styles.rowMeta}>
-                  <Text style={styles.rowTime}>Maintenant</Text>
-                  {unreadCount > 0 && (
-                    <View style={styles.badge}>
-                      <Text style={styles.badgeText}>{unreadCount}</Text>
-                    </View>
-                  )}
-                </View>
-              </Pressable>
-            );
-          })}
-          {matches.length === 0 && (
+                )}
+              </View>
+            </Pressable>
+          ))}
+          {conversations.length === 0 && (
             <Text style={styles.emptyList}>Aucune conversation pour le moment.</Text>
           )}
         </View>

@@ -13,6 +13,7 @@ import {
   Text,
   TextInput,
   View,
+  type ViewStyle,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -120,6 +121,8 @@ type LikeQuota = {
   remaining: number | null;
   resetAt: string | null;
 };
+
+type LikeBadgeTone = 'ok' | 'warn' | 'danger' | 'premium' | 'loading';
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
@@ -240,6 +243,11 @@ const HomeScreen: React.FC = () => {
 
       if (response.matched) {
         setMatchUser(targetProfile);
+      } else if (response.superLiked) {
+        Alert.alert(
+          'Super Like envoye',
+          `${targetProfile.name} verra votre interet fort en priorite.`
+        );
       }
 
       if (response.likeQuota) {
@@ -444,7 +452,15 @@ const HomeScreen: React.FC = () => {
     }
     const used = likeQuota.used ?? (likeQuota.limit - likeQuota.remaining);
     return { text: `Likes ${likeQuota.remaining}/${likeQuota.limit}`, tone: used >= likeQuota.limit * 0.7 ? 'warn' : 'ok' };
-  }, [isPremium, likeQuota, likeQuotaLoading]);
+  }, [isPremium, likeQuota, likeQuotaLoading]) as { text: string; tone: LikeBadgeTone };
+
+  const likeBadgeToneStyles: Record<LikeBadgeTone, ViewStyle> = {
+    ok: styles.likeBadge_ok,
+    warn: styles.likeBadge_warn,
+    danger: styles.likeBadge_danger,
+    premium: styles.likeBadge_premium,
+    loading: styles.likeBadge_loading,
+  };
 
   if (!currentUser) return null;
 
@@ -454,7 +470,7 @@ const HomeScreen: React.FC = () => {
         <View>
           <Text style={styles.brand}>Découvrir</Text>
           <Text style={styles.subtitle}>{headerSubtitle}</Text>
-          <View style={[styles.likeBadge, styles[`likeBadge_${likeQuotaBadge.tone}` as const]]}>
+          <View style={[styles.likeBadge, likeBadgeToneStyles[likeQuotaBadge.tone]]}>
             <Text style={styles.likeBadgeText}>{likeQuotaBadge.text}</Text>
           </View>
           {!isPremium ? <Text style={styles.likeQuota}>{likeQuotaText}</Text> : null}
@@ -640,6 +656,7 @@ const HomeScreen: React.FC = () => {
                 <View style={styles.hintsRow}>
                   <Text style={styles.hintPill}>Glissez à gauche/droite</Text>
                   {currentProfile.liked_me ? <Text style={styles.hintPill}>Vous a liké</Text> : null}
+                  {currentProfile.super_liked_me ? <Text style={[styles.hintPill, styles.hintPillSuperLike]}>Super Like recu</Text> : null}
                   {currentProfile.is_premium ? <Text style={styles.hintPill}>Premium</Text> : null}
                   {currentProfile.relationship_goal ? <Text style={styles.hintPill}>{currentProfile.relationship_goal}</Text> : null}
                 </View>
@@ -674,6 +691,7 @@ const HomeScreen: React.FC = () => {
           }}
           style={[styles.actionBtn, styles.actionSuper, !isPremium && styles.actionLocked]}
           disabled={!currentProfile || swiping}
+          accessibilityLabel={isPremium ? 'Envoyer un Super Like' : 'Super Like reserve aux membres Premium'}
         >
           <Star color={isPremium ? '#fff' : '#fbbf24'} size={24} fill={isPremium ? '#fff' : 'transparent'} />
         </Pressable>
@@ -1063,6 +1081,10 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     overflow: 'hidden',
+  },
+  hintPillSuperLike: {
+    color: '#854d0e',
+    backgroundColor: '#fef3c7',
   },
   emptyCard: {
     flex: 1,

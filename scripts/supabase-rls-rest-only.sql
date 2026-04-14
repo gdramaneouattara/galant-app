@@ -290,14 +290,17 @@ CREATE POLICY "Users can send messages in their matches."
       where m.id = messages.match_id
         and (auth.uid() = m.user_one_id or auth.uid() = m.user_two_id)
     )
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.is_premium = true
-    )
-    and upper(coalesce(message_type, 'TEXT')) in ('TEXT', 'IMAGE')
+    and upper(coalesce(message_type, 'TEXT')) in ('TEXT', 'IMAGE', 'VIDEO')
     and (
       (upper(coalesce(message_type, 'TEXT')) = 'TEXT' and length(trim(coalesce(content, ''))) > 0)
-      or (upper(coalesce(message_type, 'TEXT')) = 'IMAGE' and media_url is not null)
+      or (
+        upper(coalesce(message_type, 'TEXT')) in ('IMAGE', 'VIDEO')
+        and media_url is not null
+        and exists (
+          select 1 from public.profiles p
+          where p.id = auth.uid() and p.is_premium = true and p.suspended_at is null
+        )
+      )
     )
     and not exists (
       select 1
@@ -395,45 +398,48 @@ CREATE POLICY "Admins can insert audit logs."
     )
   );
 
--- RLS: Photo review queue
-ALTER TABLE IF EXISTS public.photo_review_queue ENABLE ROW LEVEL SECURITY;
+-- RLS: Passes
+ALTER TABLE IF EXISTS public.passes ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Admins can view photo reviews." ON public.photo_review_queue;
-CREATE POLICY "Admins can view photo reviews."
-  ON public.photo_review_queue FOR SELECT
+DROP POLICY IF EXISTS "Users can view their passes." ON public.passes;
+CREATE POLICY "Users can view their passes."
+  ON public.passes FOR SELECT
   TO authenticated
   USING (
-    exists (
+    passer_id = auth.uid()
+    and exists (
       select 1 from public.profiles p
-      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+      where p.id = auth.uid() and p.suspended_at is null
     )
   );
 
-DROP POLICY IF EXISTS "Admins can update photo reviews." ON public.photo_review_queue;
-CREATE POLICY "Admins can update photo reviews."
-  ON public.photo_review_queue FOR UPDATE
+DROP POLICY IF EXISTS "Users can create their passes." ON public.passes;
+CREATE POLICY "Users can create their passes."
+  ON public.passes FOR INSERT
   TO authenticated
-  USING (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
-    )
-  )
   WITH CHECK (
-    exists (
+    passer_id = auth.uid()
+    and passed_user_id <> auth.uid()
+    and exists (
       select 1 from public.profiles p
-      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+    and not exists (
+      select 1 from public.blocks b
+      where (b.user_id = passer_id and b.blocked_user_id = passed_user_id)
+         or (b.user_id = passed_user_id and b.blocked_user_id = passer_id)
     )
   );
 
-DROP POLICY IF EXISTS "Admins can insert photo reviews." ON public.photo_review_queue;
-CREATE POLICY "Admins can insert photo reviews."
-  ON public.photo_review_queue FOR INSERT
+DROP POLICY IF EXISTS "Users can delete their passes." ON public.passes;
+CREATE POLICY "Users can delete their passes."
+  ON public.passes FOR DELETE
   TO authenticated
-  WITH CHECK (
-    exists (
+  USING (
+    passer_id = auth.uid()
+    and exists (
       select 1 from public.profiles p
-      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+      where p.id = auth.uid() and p.suspended_at is null
     )
   );
 
@@ -496,249 +502,4 @@ CREATE POLICY "Admins can review KYC requests."
     )
     and reviewed_by = auth.uid()
     and status in ('IN_REVIEW', 'APPROVED', 'REJECTED')
-  );
-
--- RLS: Subscriptions
-ALTER TABLE IF EXISTS public.subscriptions ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Users can view their subscriptions." ON public.subscriptions;
-CREATE POLICY "Users can view their subscriptions."
-  ON public.subscriptions FOR SELECT
-  TO authenticated
-  USING (
-    auth.uid() = user_id
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
-    )
-  );
-
--- RLS: Likes
-ALTER TABLE IF EXISTS public.likes ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Users can view likes they sent." ON public.likes;
-CREATE POLICY "Users can view likes they sent."
-  ON public.likes FOR SELECT
-  TO authenticated
-  USING (
-    liker_id = auth.uid()
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
-    )
-  );
-
-DROP POLICY IF EXISTS "Premium users can view likes they received." ON public.likes;
-CREATE POLICY "Premium users can view likes they received."
-  ON public.likes FOR SELECT
-  TO authenticated
-  USING (
-    liked_id = auth.uid()
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.is_premium = true and p.suspended_at is null
-    )
-  );
-
-DROP POLICY IF EXISTS "Users can create likes." ON public.likes;
-CREATE POLICY "Users can create likes."
-  ON public.likes FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    liker_id = auth.uid()
-    and liked_id <> auth.uid()
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
-    )
-    and (
-      is_super_like = false
-      or exists (
-        select 1 from public.profiles p
-        where p.id = auth.uid() and p.is_premium = true and p.suspended_at is null
-      )
-    )
-    and not exists (
-      select 1 from public.blocks b
-      where (b.user_id = liker_id and b.blocked_user_id = liked_id)
-         or (b.user_id = liked_id and b.blocked_user_id = liker_id)
-    )
-  );
-
-DROP POLICY IF EXISTS "Users can delete likes they sent." ON public.likes;
-CREATE POLICY "Users can delete likes they sent."
-  ON public.likes FOR DELETE
-  TO authenticated
-  USING (
-    liker_id = auth.uid()
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
-    )
-  );
-
--- RLS: Blocks
-ALTER TABLE IF EXISTS public.blocks ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Users can view their blocks." ON public.blocks;
-CREATE POLICY "Users can view their blocks."
-  ON public.blocks FOR SELECT
-  TO authenticated
-  USING (
-    user_id = auth.uid()
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
-    )
-  );
-
-DROP POLICY IF EXISTS "Users can create their blocks." ON public.blocks;
-CREATE POLICY "Users can create their blocks."
-  ON public.blocks FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    user_id = auth.uid()
-    and blocked_user_id <> auth.uid()
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
-    )
-  );
-
-DROP POLICY IF EXISTS "Users can delete their blocks." ON public.blocks;
-CREATE POLICY "Users can delete their blocks."
-  ON public.blocks FOR DELETE
-  TO authenticated
-  USING (
-    user_id = auth.uid()
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
-    )
-  );
-
--- RLS: Reports
-ALTER TABLE IF EXISTS public.reports ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Users can view their own reports." ON public.reports;
-CREATE POLICY "Users can view their own reports."
-  ON public.reports FOR SELECT
-  TO authenticated
-  USING (
-    reporter_id = auth.uid()
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
-    )
-  );
-
-DROP POLICY IF EXISTS "Users can create reports." ON public.reports;
-CREATE POLICY "Users can create reports."
-  ON public.reports FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    reporter_id = auth.uid()
-    and exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.suspended_at is null
-    )
-  );
-
-DROP POLICY IF EXISTS "Admins can view all reports." ON public.reports;
-CREATE POLICY "Admins can view all reports."
-  ON public.reports FOR SELECT
-  TO authenticated
-  USING (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
-    )
-  );
-
-DROP POLICY IF EXISTS "Admins can review reports." ON public.reports;
-CREATE POLICY "Admins can review reports."
-  ON public.reports FOR UPDATE
-  TO authenticated
-  USING (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
-    )
-  )
-  WITH CHECK (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
-    )
-  );
-
--- RLS: Push tokens
-ALTER TABLE IF EXISTS public.push_tokens ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Users can view their push tokens." ON public.push_tokens;
-CREATE POLICY "Users can view their push tokens."
-  ON public.push_tokens FOR SELECT
-  TO authenticated
-  USING (user_id = auth.uid());
-
-DROP POLICY IF EXISTS "Users can manage their push tokens." ON public.push_tokens;
-CREATE POLICY "Users can manage their push tokens."
-  ON public.push_tokens FOR INSERT
-  TO authenticated
-  WITH CHECK (user_id = auth.uid());
-
-DROP POLICY IF EXISTS "Users can update their push tokens." ON public.push_tokens;
-CREATE POLICY "Users can update their push tokens."
-  ON public.push_tokens FOR UPDATE
-  TO authenticated
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
-
-DROP POLICY IF EXISTS "Users can delete their push tokens." ON public.push_tokens;
-CREATE POLICY "Users can delete their push tokens."
-  ON public.push_tokens FOR DELETE
-  TO authenticated
-  USING (user_id = auth.uid());
-
--- RLS: Privacy requests
-ALTER TABLE IF EXISTS public.privacy_requests ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Users can view their privacy requests." ON public.privacy_requests;
-CREATE POLICY "Users can view their privacy requests."
-  ON public.privacy_requests FOR SELECT
-  TO authenticated
-  USING (user_id = auth.uid());
-
-DROP POLICY IF EXISTS "Users can create privacy requests." ON public.privacy_requests;
-CREATE POLICY "Users can create privacy requests."
-  ON public.privacy_requests FOR INSERT
-  TO authenticated
-  WITH CHECK (user_id = auth.uid());
-
-DROP POLICY IF EXISTS "Admins can view all privacy requests." ON public.privacy_requests;
-CREATE POLICY "Admins can view all privacy requests."
-  ON public.privacy_requests FOR SELECT
-  TO authenticated
-  USING (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
-    )
-  );
-
-DROP POLICY IF EXISTS "Admins can resolve privacy requests." ON public.privacy_requests;
-CREATE POLICY "Admins can resolve privacy requests."
-  ON public.privacy_requests FOR UPDATE
-  TO authenticated
-  USING (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
-    )
-  )
-  WITH CHECK (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
-    )
   );

@@ -47,9 +47,9 @@ const STATUS_FILTERS: Array<{ value: KycReviewStatus; label: string }> = [
 ];
 
 const documentTypeLabel = (value: string) => {
-  if (value === 'NATIONAL_ID') return 'Carte nationale';
+  if (value === 'NATIONAL_ID' || value === 'ID_CARD') return 'Carte nationale';
   if (value === 'PASSPORT') return 'Passeport';
-  if (value === 'DRIVER_LICENSE') return 'Permis de conduire';
+  if (value === 'DRIVER_LICENSE' || value === 'DRIVERS_LICENSE') return 'Permis de conduire';
   if (value === 'OTHER') return 'Autre';
   return value;
 };

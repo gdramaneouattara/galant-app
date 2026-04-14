@@ -24,6 +24,7 @@ import PrimaryButton from '../../components/PrimaryButton';
 import { supabase } from '../../lib/supabase';
 import { apiRequest } from '../../lib/api';
 import { logEvent, logError } from '../../lib/analytics';
+import { getPasswordPolicyHint, validatePasswordPolicy } from '../../lib/passwordPolicy';
 
 const TERMS_URL =
   process.env.EXPO_PUBLIC_TERMS_URL ||
@@ -117,6 +118,8 @@ const normalizePhone = (value: string) => {
 };
 const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 const isValidPhone = (value: string) => /^\+[1-9]\d{7,14}$/.test(value);
+const OTP_COOLDOWN_SECONDS = 45;
+const OTP_COOLDOWN_RATE_LIMIT_SECONDS = 60;
 
 const AuthFlowScreen: React.FC = () => {
   const { login, refreshCurrentUser } = useApp();
@@ -127,6 +130,7 @@ const AuthFlowScreen: React.FC = () => {
   const [password, setPassword] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [otpMode, setOtpMode] = useState<'signup' | 'login' | null>(null);
   const [selectedCountry, setSelectedCountry] = useState<CountryOption>(() => getDefaultCountry());
   const [isCountryPickerOpen, setIsCountryPickerOpen] = useState(false);
   const [countrySearch, setCountrySearch] = useState('');
@@ -134,6 +138,7 @@ const AuthFlowScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [sendingReset, setSendingReset] = useState(false);
   const [hasAcceptedLegal, setHasAcceptedLegal] = useState(false);
+  const [otpCooldownRemaining, setOtpCooldownRemaining] = useState(0);
 
   const [form, setForm] = useState({
     name: '',
@@ -169,6 +174,8 @@ const AuthFlowScreen: React.FC = () => {
 
   const canSubmitEmail = isValidEmail(normalizeEmail(identifier));
   const canSubmitPhone = isValidPhone(normalizePhone(identifier));
+  const passwordPolicy = useMemo(() => validatePasswordPolicy(password), [password]);
+  const passwordPolicyHint = useMemo(() => getPasswordPolicyHint(), []);
 
   const handleIdentifierChange = (value: string) => {
     if (authMethod !== 'phone') {
@@ -199,6 +206,8 @@ const AuthFlowScreen: React.FC = () => {
       setIdentifier('');
       setOtpCode('');
       setOtpSent(false);
+      setOtpMode(null);
+      setOtpCooldownRemaining(0);
       setIsCountryPickerOpen(false);
     }
   }, [authMethod, selectedPhonePrefix]);
@@ -207,6 +216,8 @@ const AuthFlowScreen: React.FC = () => {
     if (authMethod === 'phone' && otpSent) {
       setOtpSent(false);
       setOtpCode('');
+      setOtpMode(null);
+      setOtpCooldownRemaining(0);
     }
   }, [identifier]);
 
@@ -222,8 +233,18 @@ const AuthFlowScreen: React.FC = () => {
     if (step !== 'signup' && step !== 'login') {
       setOtpSent(false);
       setOtpCode('');
+      setOtpMode(null);
+      setOtpCooldownRemaining(0);
     }
   }, [step]);
+
+  useEffect(() => {
+    if (otpCooldownRemaining <= 0) return;
+    const timer = setInterval(() => {
+      setOtpCooldownRemaining((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [otpCooldownRemaining]);
 
   useEffect(() => {
     if (!isCountryPickerOpen) setCountrySearch('');
@@ -253,6 +274,41 @@ const AuthFlowScreen: React.FC = () => {
     }
   };
 
+  const normalizeAuthError = (error: any) => {
+    const message = String(error?.message || '').toLowerCase();
+    const status = Number(error?.status || 0);
+
+    if (
+      status === 429
+      || message.includes('too many request')
+      || message.includes('rate limit')
+      || message.includes('over_email_send_rate_limit')
+    ) {
+      return {
+        code: 'too_many_requests' as const,
+        userMessage: 'Trop de tentatives. Attends un peu avant de reessayer.',
+      };
+    }
+
+    if (
+      message.includes('invalid otp')
+      || message.includes('otp is invalid')
+      || message.includes('token has expired')
+      || message.includes('otp expired')
+      || message.includes('verification code')
+    ) {
+      return {
+        code: 'invalid_otp' as const,
+        userMessage: 'Code invalide ou expire. Demande un nouveau code SMS.',
+      };
+    }
+
+    return {
+      code: 'unknown' as const,
+      userMessage: error?.message || 'Une erreur est survenue.',
+    };
+  };
+
   const finalizeLogin = async (userId: string, method: 'email' | 'phone') => {
     try {
       const refreshed = await refreshCurrentUser(userId);
@@ -263,7 +319,7 @@ const AuthFlowScreen: React.FC = () => {
 
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, suspended_at')
         .eq('id', userId)
         .single();
 
@@ -284,49 +340,13 @@ const AuthFlowScreen: React.FC = () => {
         return;
       }
 
-      const { data: authUserData } = await supabase.auth.getUser();
-      const authPhone = authUserData?.user?.phone ? normalizePhone(authUserData.user.phone) : null;
-      if (authPhone && !profile.phone) {
-        await supabase.from('profiles').update({ phone: authPhone }).eq('id', userId);
-        profile.phone = authPhone;
-      }
-
       if (profile.suspended_at) {
         await supabase.auth.signOut({ scope: 'local' });
         Alert.alert('Compte suspendu', 'Votre compte est suspendu. Contactez le support.');
         return;
       }
 
-      logEvent('auth', 'login', { userId, method });
-      const appStateUser = {
-        id: profile.id,
-        name: profile.name,
-        age: profile.age,
-        gender: profile.gender,
-        photos: profile.photos,
-        bio: profile.bio,
-        interests: profile.interests,
-        phone: profile.phone ?? null,
-        location: { lat: 0, lng: 0, city: profile.city },
-        isVerified: profile.is_verified,
-        isPremium: profile.is_premium,
-        boosted_until: profile.boosted_until ?? null,
-        relationship_goal: profile.relationship_goal ?? 'SERIOUS',
-        likes_count: profile.likes_count || 0,
-        last_active_at: profile.last_active_at || null,
-        is_invisible: !!profile.is_invisible && !!profile.is_premium,
-        subscription_plan_id: null,
-        invisible_mode_eligible: false,
-        is_admin: !!profile.is_admin,
-        suspended_at: profile.suspended_at ?? null,
-        preferences: {
-          targetGender: profile.target_gender ?? [],
-          minAge: 18,
-          maxAge: 35,
-          maxDistance: 50,
-        },
-      };
-      login(appStateUser);
+      Alert.alert('Erreur', "Impossible d'initialiser votre session pour le moment.");
     } finally {
       setLoading(false);
     }
@@ -336,6 +356,11 @@ const AuthFlowScreen: React.FC = () => {
     const normalizedPhone = normalizePhone(identifier);
     if (!isValidPhone(normalizedPhone)) {
       Alert.alert('Telephone invalide', "Utilise le format international, ex: +2376XXXXXXXX.");
+      return;
+    }
+
+    if (otpCooldownRemaining > 0) {
+      Alert.alert('Patiente un instant', `Tu peux demander un nouveau code dans ${otpCooldownRemaining}s.`);
       return;
     }
 
@@ -357,14 +382,20 @@ const AuthFlowScreen: React.FC = () => {
     });
 
     if (error) {
+      const normalizedError = normalizeAuthError(error);
       logError(error, { action: 'otp_request', mode });
-      Alert.alert('Erreur', error.message);
+      if (normalizedError.code === 'too_many_requests') {
+        setOtpCooldownRemaining((prev) => Math.max(prev, OTP_COOLDOWN_RATE_LIMIT_SECONDS));
+      }
+      Alert.alert('Erreur', normalizedError.userMessage);
       setLoading(false);
       return;
     }
 
     setOtpCode('');
     setOtpSent(true);
+    setOtpMode(mode);
+    setOtpCooldownRemaining(OTP_COOLDOWN_SECONDS);
     logEvent('auth', 'otp_requested', { method: 'phone', mode });
     Alert.alert('Code envoye', "Un code SMS vient d'etre envoye.");
     setLoading(false);
@@ -389,14 +420,41 @@ const AuthFlowScreen: React.FC = () => {
     });
 
     if (error || !data?.user) {
+      const normalizedError = normalizeAuthError(error);
       logError(error || 'otp_missing_user', { action: 'otp_verify' });
-      Alert.alert('Erreur', error?.message || 'Verification SMS impossible.');
+      Alert.alert('Erreur', normalizedError.userMessage);
       setLoading(false);
       return;
     }
 
+    if (otpMode === 'signup') {
+      const acceptedAt = new Date().toISOString();
+      const { error: consentError } = await supabase.auth.updateUser({
+        data: {
+          ...(data.user.user_metadata || {}),
+          legal_terms_accepted_at: acceptedAt,
+          privacy_policy_accepted_at: acceptedAt,
+        },
+      });
+
+      if (consentError) {
+        logError(consentError, { action: 'otp_signup_consent_persist' });
+        await supabase.auth.signOut({ scope: 'local' });
+        setOtpSent(false);
+        setOtpCode('');
+        setOtpMode(null);
+        setLoading(false);
+        Alert.alert(
+          'Erreur',
+          "Le compte a ete cree, mais l'enregistrement du consentement legal a echoue. Reessaie."
+        );
+        return;
+      }
+    }
+
     setOtpSent(false);
     setOtpCode('');
+    setOtpMode(null);
     logEvent('auth', 'otp_verified', { method: 'phone' });
     await finalizeLogin(data.user.id, 'phone');
   };
@@ -415,6 +473,10 @@ const AuthFlowScreen: React.FC = () => {
     const normalizedEmail = normalizeEmail(identifier);
     if (!isValidEmail(normalizedEmail)) {
       Alert.alert('Email invalide', 'Saisis une adresse email valide pour continuer.');
+      return;
+    }
+    if (!passwordPolicy.valid) {
+      Alert.alert('Mot de passe trop faible', `Le mot de passe doit contenir ${passwordPolicy.reasons.join(', ')}.`);
       return;
     }
 
@@ -667,7 +729,7 @@ const AuthFlowScreen: React.FC = () => {
         photoReviewStatus = 'PENDING';
         Alert.alert(
           'Photos en revue',
-          "Certaines photos sont en cours de vérification. Tu peux continuer, elles seront validées après examen."
+          "Certaines photos sont en cours de vérification. Tu peux continuer, mais ton profil ne sera pas visible dans la découverte tant qu'elles ne sont pas approuvées."
         );
       }
     } catch (error: any) {
@@ -909,10 +971,13 @@ const AuthFlowScreen: React.FC = () => {
               <Pressable
                 onPress={() => void handleSendOtp(step === 'signup' ? 'signup' : 'login')}
                 style={styles.resendButton}
+                disabled={loading || otpCooldownRemaining > 0}
                 accessibilityRole="button"
                 accessibilityLabel="Renvoyer le code"
               >
-                <Text style={styles.resendText}>Renvoyer le code</Text>
+                <Text style={styles.resendText}>
+                  {otpCooldownRemaining > 0 ? `Renvoyer le code (${otpCooldownRemaining}s)` : 'Renvoyer le code'}
+                </Text>
               </Pressable>
             </View>
           )}
@@ -944,6 +1009,9 @@ const AuthFlowScreen: React.FC = () => {
                   )}
                 </Pressable>
               </View>
+              {step === 'signup' && (
+                <Text style={styles.helperText}>{passwordPolicyHint}</Text>
+              )}
             </View>
           )}
 
@@ -1002,7 +1070,7 @@ const AuthFlowScreen: React.FC = () => {
             disabled={
               loading
               || (authMethod === 'email'
-                ? (!identifier || !password || !canSubmitEmail)
+                ? (!identifier || !password || !canSubmitEmail || (step === 'signup' && !passwordPolicy.valid))
                 : (!canSubmitPhone || (otpSent && otpCode.trim().length < 6)))
               || (step === 'signup' && !hasAcceptedLegal)
             }

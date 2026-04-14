@@ -50,6 +50,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const fallback = {
       subscription_plan_id: null as string | null,
       invisible_mode_eligible: false,
+      has_active_subscription: false,
     };
 
     try {
@@ -79,6 +80,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return {
         subscription_plan_id: latestPlan.planId,
         invisible_mode_eligible: INVISIBLE_MODE_ELIGIBLE_PLANS.has(latestPlan.planId),
+        has_active_subscription: true,
       };
     } catch (_e) {
       return fallback;
@@ -87,8 +89,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const mapProfileToUser = (
     profile: any,
-    options?: { subscription_plan_id?: string | null; invisible_mode_eligible?: boolean }
-  ): User => ({
+    options?: {
+      subscription_plan_id?: string | null;
+      invisible_mode_eligible?: boolean;
+      has_active_subscription?: boolean;
+    }
+  ): User => {
+    const isPremium = options?.has_active_subscription ?? !!profile.is_premium;
+    const invisibleModeEligible = options?.invisible_mode_eligible ?? false;
+    return {
     id: profile.id,
     name: profile.name,
     age: profile.age,
@@ -104,24 +113,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       country: profile.country || null,
     },
     isVerified: !!profile.is_verified,
-    isPremium: !!profile.is_premium,
+    isPremium,
     boosted_until: profile.boosted_until ?? null,
     relationship_goal: profile.relationship_goal ?? null,
     last_active_at: profile.last_active_at ?? null,
     likes_count: profile.likes_count || 0,
-    is_invisible: !!profile.is_invisible && !!profile.is_premium && (options?.invisible_mode_eligible ?? true),
+    is_invisible: !!profile.is_invisible && isPremium && invisibleModeEligible,
     is_admin: !!profile.is_admin,
     suspended_at: profile.suspended_at ?? null,
     photo_review_status: profile.photo_review_status ?? 'APPROVED',
     subscription_plan_id: options?.subscription_plan_id ?? null,
-    invisible_mode_eligible: options?.invisible_mode_eligible ?? false,
+    invisible_mode_eligible: invisibleModeEligible,
     preferences: {
       targetGender: profile.target_gender || [],
       minAge: 18,
       maxAge: 35,
       maxDistance: 50,
     },
-  });
+  };
+  };
 
   const updateLastActive = async (userId: string) => {
     try {
@@ -140,6 +150,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .from('profiles')
         .select('*')
         .is('suspended_at', null)
+        .neq('photo_review_status', 'REJECTED')
         .eq('is_admin', false);
       if (error) {
         setLastError("Impossible de charger les profils.");
@@ -176,6 +187,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return null;
         }
         const subscriptionState = await getCurrentSubscriptionState(resolvedUserId);
+        const effectivePremium = subscriptionState.has_active_subscription;
+        if (profile.is_premium !== effectivePremium) {
+          const patch: { is_premium: boolean; is_invisible?: boolean } = { is_premium: effectivePremium };
+          if (!effectivePremium) patch.is_invisible = false;
+          const { error: premiumSyncError } = await supabase
+            .from('profiles')
+            .update(patch)
+            .eq('id', resolvedUserId);
+          if (!premiumSyncError) {
+            profile.is_premium = effectivePremium;
+            if (!effectivePremium) profile.is_invisible = false;
+          }
+        }
         if (profile.is_invisible && !subscriptionState.invisible_mode_eligible) {
           const { error: disableInvisibleError } = await supabase
             .from('profiles')
@@ -370,7 +394,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${match.id}` },
           (payload) => {
             const newMessage = payload.new as Message;
-            setMessages((prev) => [...prev, newMessage]);
+            setMessages((prev) => (
+              prev.some((message) => message.id === newMessage.id)
+                ? prev
+                : [...prev, newMessage]
+            ));
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'messages', filter: `match_id=eq.${match.id}` },
+          (payload) => {
+            const updatedMessage = payload.new as Message;
+            setMessages((prev) => prev.map((message) => (
+              message.id === updatedMessage.id ? updatedMessage : message
+            )));
           }
         )
         .subscribe();
@@ -515,7 +553,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addMatch = (match: Match) => setMatches((prev) => [match, ...prev]);
-  const addMessage = (message: Message) => setMessages((prev) => [...prev, message]);
+  const addMessage = (message: Message) => setMessages((prev) => (
+    prev.some((existing) => existing.id === message.id)
+      ? prev.map((existing) => (existing.id === message.id ? message : existing))
+      : [...prev, message]
+  ));
   const clearError = () => setLastError(null);
 
   const toggleUserVerification = (userId: string) => {

@@ -3,6 +3,7 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   SafeAreaView,
@@ -14,7 +15,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
-import { ChevronLeft, Crown, ImagePlus, Send, ShieldAlert, ShieldBan } from 'lucide-react-native';
+import { ChevronLeft, Crown, Film, ImagePlus, Send, ShieldAlert, ShieldBan } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import type { RootStackParamList } from '../../navigation/MainNavigator';
 import { useApp } from '../../state/AppContext';
@@ -30,12 +31,16 @@ type SendMessageResponse = {
     match_id: string;
     sender_id: string;
     content: string;
-    message_type?: 'TEXT' | 'IMAGE';
+    message_type?: 'TEXT' | 'IMAGE' | 'VIDEO';
     media_url?: string | null;
     created_at: string;
     is_read: boolean;
+    read_at?: string | null;
   };
 };
+
+const getMessageType = (message: { message_type?: 'TEXT' | 'IMAGE' | 'VIDEO'; type?: 'TEXT' | 'IMAGE' | 'VIDEO' }) =>
+  message.message_type ?? message.type ?? 'TEXT';
 
 const ChatScreen: React.FC = () => {
   const { params } = useRoute<ChatRoute>();
@@ -43,7 +48,7 @@ const ChatScreen: React.FC = () => {
   const { currentUser, users, messages, addMessage } = useApp();
   const [inputText, setInputText] = useState('');
   const [sending, setSending] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
   const [signedMediaUrls, setSignedMediaUrls] = useState<Record<string, string>>({});
 
   if (!currentUser) {
@@ -61,11 +66,15 @@ const ChatScreen: React.FC = () => {
   useFocusEffect(
     React.useCallback(() => {
       const markRead = async () => {
-        await supabase
-          .from('messages')
-          .update({ is_read: true })
-          .eq('match_id', matchId)
-          .neq('sender_id', currentUser.id);
+        try {
+          await apiRequest('/api/messages/read', {
+            method: 'POST',
+            requireAuth: true,
+            body: JSON.stringify({ matchId }),
+          });
+        } catch (_error) {
+          // Ignore read receipt sync failures on focus; the thread remains usable.
+        }
       };
       void markRead();
       return () => {};
@@ -76,8 +85,10 @@ const ChatScreen: React.FC = () => {
     let cancelled = false;
 
     const hydrateSignedUrls = async () => {
-      const imageMessages = thread.filter((msg) => msg.message_type === 'IMAGE' && !!msg.media_url);
-      for (const msg of imageMessages) {
+      const mediaMessages = thread.filter((msg) => (
+        (getMessageType(msg) === 'IMAGE' || getMessageType(msg) === 'VIDEO') && !!msg.media_url
+      ));
+      for (const msg of mediaMessages) {
         const mediaPath = msg.media_url as string;
         if (signedMediaUrls[mediaPath]) continue;
 
@@ -125,8 +136,8 @@ const ChatScreen: React.FC = () => {
     }
   }, [inputText, sending, matchId, addMessage]);
 
-  const sendImageMessage = useCallback(async () => {
-    if (uploadingImage) return;
+  const sendMediaMessage = useCallback(async (type: 'IMAGE' | 'VIDEO') => {
+    if (uploadingMedia) return;
     if (!currentUser.isPremium) {
       navigation.navigate('Premium' as never);
       return;
@@ -140,17 +151,21 @@ const ChatScreen: React.FC = () => {
       }
 
       const picked = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: type === 'IMAGE' ? ImagePicker.MediaTypeOptions.Images : ImagePicker.MediaTypeOptions.Videos,
         allowsMultipleSelection: false,
         quality: 0.8,
       });
 
       if (picked.canceled || !picked.assets?.[0]?.uri) return;
 
-      setUploadingImage(true);
-      const uri = picked.assets[0].uri;
-      const extension = (uri.split('.').pop() || 'jpg').toLowerCase();
-      const contentType = extension === 'png' ? 'image/png' : 'image/jpeg';
+      setUploadingMedia(true);
+      const asset = picked.assets[0];
+      const uri = asset.uri;
+      const extension = (uri.split('.').pop() || (type === 'VIDEO' ? 'mp4' : 'jpg')).toLowerCase();
+      const contentType = asset.mimeType
+        || (type === 'VIDEO'
+          ? (extension === 'mov' ? 'video/quicktime' : 'video/mp4')
+          : (extension === 'png' ? 'image/png' : 'image/jpeg'));
       const filePath = `${matchId}/${currentUser.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${extension}`;
 
       const response = await fetch(uri);
@@ -172,10 +187,11 @@ const ChatScreen: React.FC = () => {
         requireAuth: true,
         body: JSON.stringify({
           matchId,
-          content: '📷 Photo',
-          messageType: 'IMAGE',
+          content: type === 'VIDEO' ? 'Video' : 'Photo',
+          messageType: type,
           mediaPath: filePath,
           mediaSizeBytes: blob.size,
+          mediaMimeType: contentType,
         }),
       });
 
@@ -183,11 +199,11 @@ const ChatScreen: React.FC = () => {
         addMessage(sent.message);
       }
     } catch (error: any) {
-      Alert.alert('Envoi impossible', error?.message || 'Impossible d’envoyer la photo.');
+      Alert.alert('Envoi impossible', error?.message || `Impossible d'envoyer le ${type === 'VIDEO' ? 'contenu video' : 'media'}.`);
     } finally {
-      setUploadingImage(false);
+      setUploadingMedia(false);
     }
-  }, [uploadingImage, currentUser.id, currentUser.isPremium, matchId, addMessage, navigation]);
+  }, [uploadingMedia, currentUser.id, currentUser.isPremium, matchId, addMessage, navigation]);
 
   const blockUser = async () => {
     if (!matchedUser) return;
@@ -274,7 +290,8 @@ const ChatScreen: React.FC = () => {
         ) : (
           thread.map((msg) => {
             const mine = msg.sender_id === currentUser.id;
-            const isImage = msg.message_type === 'IMAGE' && !!msg.media_url;
+            const isImage = getMessageType(msg) === 'IMAGE' && !!msg.media_url;
+            const isVideo = getMessageType(msg) === 'VIDEO' && !!msg.media_url;
             const signedUrl = msg.media_url ? signedMediaUrls[msg.media_url] : null;
 
             return (
@@ -282,11 +299,20 @@ const ChatScreen: React.FC = () => {
                 {isImage && signedUrl ? (
                   <Image source={{ uri: signedUrl }} style={styles.messageImage} />
                 ) : null}
+                {isVideo && signedUrl ? (
+                  <Pressable style={styles.videoCard} onPress={() => void Linking.openURL(signedUrl)}>
+                    <Film color={mine ? '#fff' : COLORS.primary} size={20} />
+                    <Text style={[styles.videoLabel, mine ? styles.bubbleRightText : styles.bubbleLeftText]}>
+                      Ouvrir la video
+                    </Text>
+                  </Pressable>
+                ) : null}
                 {!!msg.content ? (
                   <Text style={[styles.bubbleText, mine ? styles.bubbleRightText : styles.bubbleLeftText]}>
                     {msg.content}
                   </Text>
                 ) : null}
+                {mine ? <Text style={styles.readReceipt}>{msg.is_read ? 'Lu' : 'Envoye'}</Text> : null}
               </View>
             );
           })
@@ -294,34 +320,36 @@ const ChatScreen: React.FC = () => {
       </ScrollView>
 
       <KeyboardAvoidingView behavior={Platform.select({ ios: 'padding', android: undefined })}>
-        {currentUser.isPremium ? (
-          <View style={styles.inputRow}>
-            <Pressable style={styles.mediaButton} onPress={() => void sendImageMessage()} disabled={uploadingImage || sending}>
-              <ImagePlus color={COLORS.primary} size={18} />
-            </Pressable>
-            <TextInput
-              value={inputText}
-              onChangeText={setInputText}
-              placeholder="Message (texte + emojis)"
-              style={styles.input}
-              onSubmitEditing={() => void sendTextMessage()}
-              editable={!sending}
-            />
-            <Pressable onPress={() => void sendTextMessage()} style={styles.sendButton} disabled={sending || uploadingImage}>
-              <Send color="#fff" size={18} />
-            </Pressable>
-          </View>
-        ) : (
+        {!currentUser.isPremium ? (
           <Pressable style={styles.premiumCard} onPress={() => navigation.navigate('Premium' as never)}>
             <View style={styles.premiumIcon}>
               <Crown color={COLORS.primary} size={22} />
             </View>
             <View style={styles.premiumText}>
-              <Text style={styles.premiumTitle}>Messagerie premium</Text>
-              <Text style={styles.premiumSubtitle}>Abonnement Premium requis pour répondre et envoyer des photos.</Text>
+              <Text style={styles.premiumTitle}>Medias premium</Text>
+              <Text style={styles.premiumSubtitle}>Le texte est disponible pour tous les matchs. Les photos et videos restent reservees au Premium.</Text>
             </View>
           </Pressable>
-        )}
+        ) : null}
+        <View style={styles.inputRow}>
+          <Pressable style={styles.mediaButton} onPress={() => void sendMediaMessage('IMAGE')} disabled={uploadingMedia || sending}>
+            <ImagePlus color={COLORS.primary} size={18} />
+          </Pressable>
+          <Pressable style={styles.mediaButton} onPress={() => void sendMediaMessage('VIDEO')} disabled={uploadingMedia || sending}>
+            <Film color={COLORS.primary} size={18} />
+          </Pressable>
+          <TextInput
+            value={inputText}
+            onChangeText={setInputText}
+            placeholder="Message (texte + emojis)"
+            style={styles.input}
+            onSubmitEditing={() => void sendTextMessage()}
+            editable={!sending && !uploadingMedia}
+          />
+          <Pressable onPress={() => void sendTextMessage()} style={styles.sendButton} disabled={sending || uploadingMedia}>
+            <Send color="#fff" size={18} />
+          </Pressable>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -414,6 +442,12 @@ const styles = StyleSheet.create({
   bubbleText: {
     fontSize: 14,
   },
+  readReceipt: {
+    alignSelf: 'flex-end',
+    fontSize: 10,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.78)',
+  },
   bubbleLeftText: {
     color: COLORS.ink,
   },
@@ -425,6 +459,22 @@ const styles = StyleSheet.create({
     height: 220,
     borderRadius: 12,
     backgroundColor: '#f1f5f9',
+  },
+  videoCard: {
+    minWidth: 170,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+  },
+  videoLabel: {
+    fontSize: 13,
+    fontWeight: '800',
   },
   inputRow: {
     flexDirection: 'row',
