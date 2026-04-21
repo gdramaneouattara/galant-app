@@ -3022,5 +3022,7 @@ app.use('/api/admin', requireAuth, requireAdmin, adminRouter);
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Yamo server running on port ${PORT}`);
+  const env = process.env.NODE_ENV || 'development';
+  const url = env === 'production' ? 'your Render URL' : `http://localhost:${PORT}`;
+  console.log(`Yamo server running on port ${PORT} (${url})`);
 });
