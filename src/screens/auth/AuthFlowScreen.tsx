@@ -29,10 +29,10 @@ import { uploadArrayBufferToBucket } from '../../lib/storageUpload';
 
 const TERMS_URL =
   process.env.EXPO_PUBLIC_TERMS_URL ||
-  'https://raw.githubusercontent.com/gdramaneouattara/yamo/main/docs/legal/conditions-utilisation-yamo.md';
+  'https://https://sites.google.com/view/yamo-app-legal/cgu';
 const PRIVACY_URL =
   process.env.EXPO_PUBLIC_PRIVACY_URL ||
-  'https://raw.githubusercontent.com/gdramaneouattara/yamo/main/docs/legal/politique-confidentialite-yamo.md';
+  'https://https://sites.google.com/view/yamo-app-legal/accueil';
 
 const INTERESTS_OPTIONS = [
   'Voyage',

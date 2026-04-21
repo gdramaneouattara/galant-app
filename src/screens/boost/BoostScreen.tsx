@@ -54,6 +54,20 @@ const BoostScreen: React.FC = () => {
     if (loadingPlan) return;
     setLoadingPlan(planId);
 
+    if (process.env.EXPO_PUBLIC_SIMULATE_PAYMENT === 'true') {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        await refreshCurrentUser();
+        Alert.alert('Boost activé (Simulation)', 'Ton profil est maintenant mis en avant.');
+        navigation.goBack();
+      } catch (error: any) {
+        Alert.alert('Erreur de simulation', error?.message);
+      } finally {
+        setLoadingPlan(null);
+      }
+      return;
+    }
+
     try {
       const init = await apiRequest<{ authorization_url: string; reference: string }>(
         '/api/boosts/initialize',
