@@ -647,6 +647,7 @@ const buildReconciledProfilePayload = (authUser) => {
     country: String(metadata.country || '').trim() || null,
     phone: authUser?.phone || String(metadata.phone || '').trim() || null,
     photo_review_status: 'PENDING',
+    onboarding_completed: true,
   };
 };
 
@@ -694,7 +695,7 @@ const requireAuth = async (req, res, next) => {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('is_admin, suspended_at, is_premium, is_verified')
+      .select('is_admin, suspended_at, is_premium, is_verified, onboarding_completed')
       .eq('id', data.user.id)
       .single();
 
@@ -727,6 +728,7 @@ const requireAuth = async (req, res, next) => {
       isAdmin: !!profile?.is_admin,
       isPremium: effectivePremium,
       isVerified: !!profile?.is_verified,
+      onboardingCompleted: !!profile?.onboarding_completed,
     };
     req.authUser = data.user;
     return next();
@@ -987,14 +989,14 @@ app.get('/api/premium/likes-received', requireAuth, async (req, res) => {
 
   const { data: likerProfiles, error: profilesError } = await supabase
     .from('profiles')
-    .select('id, name, age, gender, city, photos, interests, is_verified, is_premium, suspended_at, is_admin')
+    .select('id, name, age, gender, city, photos, interests, is_verified, is_premium, suspended_at, is_admin, onboarding_completed')
     .in('id', likerIds);
 
   if (profilesError) return res.status(500).json({ error: profilesError.message });
 
   const profileById = new Map(
     (likerProfiles || [])
-      .filter((profile) => !profile.suspended_at && !profile.is_admin)
+      .filter((profile) => !profile.suspended_at && !profile.is_admin && profile.onboarding_completed)
       .map((profile) => [profile.id, profile])
   );
 
@@ -1024,6 +1026,10 @@ app.get('/api/premium/likes-received', requireAuth, async (req, res) => {
 });
 
 app.get('/api/matchmaking/suggestions', requireAuth, async (req, res) => {
+  if (!req.user.onboardingCompleted) {
+    return res.status(403).json({ error: 'profile_incomplete' });
+  }
+
   const {
     min_age,
     max_age,
@@ -1050,6 +1056,7 @@ app.get('/api/matchmaking/suggestions', requireAuth, async (req, res) => {
     .select('*')
     .neq('id', req.user.id)
     .eq('is_admin', false)
+    .eq('onboarding_completed', true)
     .eq('photo_review_status', 'APPROVED')
     .is('suspended_at', null);
 
@@ -1168,7 +1175,7 @@ app.post('/api/matchmaking/view-profile', requireAuth, async (req, res) => {
     .maybeSingle();
 
   if (error) return res.status(500).json({ error: error.message });
-  if (!profile || profile.suspended_at || profile.photo_review_status !== 'APPROVED') {
+  if (!profile || !profile.onboarding_completed || profile.suspended_at || profile.photo_review_status !== 'APPROVED') {
     return res.status(404).json({ error: 'profile_not_found' });
   }
 
@@ -1206,12 +1213,12 @@ app.post('/api/matchmaking/swipe', requireAuth, async (req, res) => {
 
   const { data: targetProfile, error: targetProfileError } = await supabase
     .from('profiles')
-    .select('id, name, suspended_at, is_admin, photo_review_status')
+    .select('id, name, suspended_at, is_admin, photo_review_status, onboarding_completed')
     .eq('id', targetUserId)
     .maybeSingle();
 
   if (targetProfileError) return res.status(500).json({ error: targetProfileError.message });
-  if (!targetProfile || targetProfile.suspended_at || targetProfile.is_admin || targetProfile.photo_review_status !== 'APPROVED') {
+  if (!targetProfile || !targetProfile.onboarding_completed || targetProfile.suspended_at || targetProfile.is_admin || targetProfile.photo_review_status !== 'APPROVED') {
     return res.status(404).json({ error: 'profile_not_found' });
   }
 

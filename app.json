@@ -27,14 +27,24 @@
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
       ],
-      "package": "com.gdramane.ouattara.yamoapp"
+      "package": "com.konan.yamo",
+      "versionCode": 2
     },
     "platforms": [
       "ios",
       "android"
     ],
     "plugins": [
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {

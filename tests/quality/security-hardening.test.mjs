@@ -4,6 +4,25 @@ import { readFile } from 'node:fs/promises';
 
 const read = (path) => readFile(path, 'utf8');
 
+test('mobile storage uploads use array buffers instead of blobs', async () => {
+  const helper = await read('src/lib/storageUpload.ts');
+  const authFlow = await read('src/screens/auth/AuthFlowScreen.tsx');
+  const chatScreen = await read('src/screens/messages/ChatScreen.tsx');
+  const communityChatScreen = await read('src/screens/community/CommunityChatScreen.tsx');
+  const verifyScreen = await read('src/screens/verify/VerifyScreen.tsx');
+
+  assert.match(helper, /response\.arrayBuffer\(\)/);
+  assert.match(helper, /supabase\.storage\.from\(bucket\)\.upload/);
+  assert.match(authFlow, /uploadArrayBufferToBucket/);
+  assert.match(chatScreen, /uploadArrayBufferToBucket/);
+  assert.match(communityChatScreen, /uploadArrayBufferToBucket/);
+  assert.match(verifyScreen, /uploadArrayBufferToBucket/);
+  assert.doesNotMatch(authFlow, /blob\(\)/);
+  assert.doesNotMatch(chatScreen, /blob\(\)/);
+  assert.doesNotMatch(communityChatScreen, /blob\(\)/);
+  assert.doesNotMatch(verifyScreen, /blob\(\)/);
+});
+
 test('backend auth returns profile_not_found for missing profile (PGRST116)', async () => {
   const server = await read('server/src/index.js');
   assert.match(server, /profileError\.code\s*===\s*['"]PGRST116['"]/);
@@ -52,7 +71,9 @@ test('backend exposes matchmaking, moderation and privacy admin endpoints', asyn
   assert.match(server, /app\.post\(\s*['"]\/api\/matchmaking\/swipe['"]/);
   assert.match(server, /app\.post\(\s*['"]\/api\/matchmaking\/view-profile['"]/);
   assert.match(server, /\.eq\('photo_review_status', 'APPROVED'\)/);
+  assert.match(server, /\.eq\('onboarding_completed', true\)/);
   assert.match(server, /photo_review_status !== 'APPROVED'/);
+  assert.match(server, /profile_incomplete/);
   assert.match(server, /premium_required_for_super_like/);
   assert.match(server, /app\.post\(\s*['"]\/api\/messages\/send['"]/);
   assert.match(server, /app\.post\(\s*['"]\/api\/moderation\/report['"]/);
@@ -178,6 +199,17 @@ test('schema defines moderation and privacy tables for internal governance', asy
   assert.match(schema, /create table if not exists public\.privacy_requests/i);
   assert.match(schema, /create table if not exists public\.push_tokens/i);
   assert.match(schema, /validate_profile_photos_count/i);
+  assert.match(schema, /add column if not exists onboarding_completed boolean not null default false/i);
+  assert.match(schema, /insert into public\.profiles \(id, name, phone, onboarding_completed\)/i);
+  assert.match(schema, /nullif\(trim\(split_part\(coalesce\(new\.email, ''\), '@', 1\)\), ''\)/i);
+  assert.match(schema, /profiles must contain between 3 and 6 photos before onboarding completion/i);
+});
+
+test('rls allows minimal signup profiles but only exposes completed profiles publicly', async () => {
+  const sql = await read('scripts/supabase-rls.sql');
+  assert.match(sql, /ALTER TABLE IF EXISTS public\.profiles ADD COLUMN IF NOT EXISTS onboarding_completed boolean not null default false/i);
+  assert.match(sql, /onboarding_completed = true\s+AND\s+is_admin = false/i);
+  assert.match(sql, /coalesce\(onboarding_completed, false\) = false\s+OR\s+coalesce\(array_length\(photos, 1\), 0\) BETWEEN 3 AND 6/i);
 });
 
 test('schema defines KYC verification table with one open request per user', async () => {

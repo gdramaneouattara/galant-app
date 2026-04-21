@@ -7,8 +7,11 @@ const read = (path) => readFile(path, 'utf8');
 test('auth flow handles missing profile and suspended profile explicitly', async () => {
   const authFlow = await read('src/screens/auth/AuthFlowScreen.tsx');
   assert.match(authFlow, /profileError\.code\s*===\s*['"]PGRST116['"]/);
+  assert.match(authFlow, /select\('id, suspended_at, onboarding_completed'\)/);
+  assert.match(authFlow, /if\s*\(!profile\s*\|\|\s*!profile\.onboarding_completed\)/);
+  assert.match(authFlow, /const resumeIncompleteOnboarding = async \(\) => \{/);
   assert.match(authFlow, /goTo\(\s*['"]identity['"]\s*\)/);
-  assert.match(authFlow, /if\s*\(\s*profile\.suspended_at\s*\)/);
+  assert.match(authFlow, /if\s*\(\s*profile\??\.suspended_at\s*\)/);
   assert.match(authFlow, /Compte suspendu/);
 });
 
@@ -41,7 +44,8 @@ test('verify screen uses internal KYC submission flow', async () => {
   const verifyScreen = await read('src/screens/verify/VerifyScreen.tsx');
   assert.match(verifyScreen, /\/api\/kyc\/me/);
   assert.match(verifyScreen, /\/api\/kyc\/requests/);
-  assert.match(verifyScreen, /supabase\.storage\.from\('kyc-docs'\)\.upload/);
+  assert.match(verifyScreen, /uploadArrayBufferToBucket/);
+  assert.doesNotMatch(verifyScreen, /blob\(\)/);
   assert.match(verifyScreen, /launchCameraAsync/);
   assert.match(verifyScreen, /selfie_capture_mode:\s*'CAMERA'/);
   assert.match(verifyScreen, /value:\s*'ID_CARD'/);
@@ -54,6 +58,7 @@ test('auth flow enforces 3 to 6 profile photos before onboarding completion', as
   assert.match(authFlow, /form\.photos\.length\s*>\s*6/);
   assert.match(authFlow, /Photos:\s*\{form\.photos\.length\}\/6/);
   assert.match(authFlow, /profil ne sera pas visible dans la d[ée]couverte tant qu'elles ne sont pas approuv[ée]es/i);
+  assert.match(authFlow, /onboarding_completed:\s*true/);
 });
 
 test('home screen uses backend matchmaking suggestions and swipe actions', async () => {
@@ -83,7 +88,8 @@ test('chat screen uses backend message endpoint and moderation actions', async (
   const chatScreen = await read('src/screens/messages/ChatScreen.tsx');
   assert.match(chatScreen, /\/api\/messages\/send/);
   assert.match(chatScreen, /\/api\/messages\/read/);
-  assert.match(chatScreen, /supabase\.storage\.from\('chat-media'\)\.upload/);
+  assert.match(chatScreen, /uploadArrayBufferToBucket/);
+  assert.doesNotMatch(chatScreen, /blob\(\)/);
   assert.match(chatScreen, /\/api\/moderation\/report/);
   assert.match(chatScreen, /\/api\/moderation\/block/);
   assert.match(chatScreen, /Le texte est disponible pour tous les matchs/);
@@ -109,7 +115,8 @@ test('community screens use backend community endpoints, realtime chat and membe
 
   assert.match(communityChatScreen, /\/api\/communities\/\$\{communityId\}\/messages/);
   assert.match(communityChatScreen, /\/api\/communities\/\$\{communityId\}\/members/);
-  assert.match(communityChatScreen, /supabase\.storage\.from\('community-media'\)\.upload/);
+  assert.match(communityChatScreen, /uploadArrayBufferToBucket/);
+  assert.doesNotMatch(communityChatScreen, /blob\(\)/);
   assert.match(communityChatScreen, /createSignedUrl/);
   assert.match(communityChatScreen, /message_type:\s*'TEXT'\s*\|\s*'IMAGE'\s*\|\s*'VIDEO'/);
   assert.match(communityChatScreen, /PATCH/);
@@ -164,17 +171,23 @@ test('admin dashboard, messaging and navigator expose back-office workflows', as
   assert.match(navigator, /AdminKycScreen/);
   assert.match(navigator, /AdminAuditLogScreen/);
   assert.match(navigator, /AdminMessagingScreen/);
-  assert.match(navigator, /name="AdminModeration"/);
-  assert.match(navigator, /name="AdminKyc"/);
+  assert.match(navigator, /name="AdminStack"/);
+  assert.match(navigator, /name="AdminTabs"/);
+  assert.match(navigator, /name="AdminModerationTab"/);
+  assert.match(navigator, /name="AdminKycTab"/);
+  assert.match(navigator, /name="AdminUsersTab"/);
+  assert.match(navigator, /name="AdminDashboardTab"/);
   assert.match(navigator, /name="AdminAuditLogs"/);
   assert.match(navigator, /name="AdminMessaging"/);
+  assert.match(navigator, /title:\s*'Dashboard'/);
+  assert.match(navigator, /title:\s*'Utilisateurs'/);
+  assert.match(navigator, /title:\s*'Modération'/);
+  assert.match(navigator, /title:\s*'KYC'/);
 
-  assert.match(dashboard, /route:\s*'AdminUserList'/);
-  assert.match(dashboard, /route:\s*'AdminModeration'/);
-  assert.match(dashboard, /route:\s*'AdminKyc'/);
   assert.match(dashboard, /route:\s*'AdminAuditLogs'/);
   assert.match(dashboard, /route:\s*'AdminMessaging'/);
   assert.match(dashboard, /navigation\.navigate\(shortcut\.route\)/);
+  assert.doesNotMatch(dashboard, /route:\s*'AdminUserList'/);
 
   assert.match(adminMessaging, /\/api\/admin\/messages\/audience/);
   assert.match(adminMessaging, /\/api\/admin\/messages\/history/);

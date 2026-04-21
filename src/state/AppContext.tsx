@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
-import { Message, Match, User } from '../types';
+import { Gender, Message, Match, User } from '../types';
 import { supabase } from '../lib/supabase';
 
 const INVISIBLE_MODE_ELIGIBLE_PLANS = new Set(['BIANNUAL', 'ANNUAL']);
@@ -99,9 +99,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const invisibleModeEligible = options?.invisible_mode_eligible ?? false;
     return {
     id: profile.id,
-    name: profile.name,
-    age: profile.age,
-    gender: profile.gender,
+    name: profile.name || 'Utilisateur',
+    age: Number(profile.age) || 18,
+    gender: (profile.gender || Gender.OTHER) as Gender,
     photos: profile.photos || [],
     bio: profile.bio || '',
     interests: profile.interests || [],
@@ -151,6 +151,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .select('*')
         .is('suspended_at', null)
         .neq('photo_review_status', 'REJECTED')
+        .eq('onboarding_completed', true)
         .eq('is_admin', false);
       if (error) {
         setLastError("Impossible de charger les profils.");
@@ -184,6 +185,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           await supabase.auth.signOut({ scope: 'local' });
           resetAuthState();
           setLastError("Votre compte est suspendu. Contactez le support.");
+          return null;
+        }
+        if (!profile.onboarding_completed) {
+          setCurrentUser(null);
+          setLastError(null);
           return null;
         }
         const subscriptionState = await getCurrentSubscriptionState(resolvedUserId);
@@ -337,10 +343,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (currentSession?.user) {
           await updateLastActive(currentSession.user.id);
-          await refreshCurrentUser(currentSession.user.id);
-          await refreshProfiles();
-          await refreshMatches(currentSession.user.id);
-          await registerPushToken(currentSession.user.id);
+          const refreshedUser = await refreshCurrentUser(currentSession.user.id);
+          if (refreshedUser) {
+            await refreshProfiles();
+            await refreshMatches(currentSession.user.id);
+            await registerPushToken(currentSession.user.id);
+          }
         }
       } catch (_e) {
         setLastError("Impossible d'initialiser la session.");
@@ -356,10 +364,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSession(newSession);
         if (newSession?.user) {
           await updateLastActive(newSession.user.id);
-          await refreshCurrentUser(newSession.user.id);
-          await refreshProfiles();
-          await refreshMatches(newSession.user.id);
-          await registerPushToken(newSession.user.id);
+          const refreshedUser = await refreshCurrentUser(newSession.user.id);
+          if (refreshedUser) {
+            await refreshProfiles();
+            await refreshMatches(newSession.user.id);
+            await registerPushToken(newSession.user.id);
+          } else {
+            setUsers([]);
+            setMatches([]);
+            setMessages([]);
+            clearMatchChannels();
+          }
         } else if (!newSession) {
           setCurrentUser(null);
           setUsers([]);

@@ -16,6 +16,7 @@ import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
+import { uploadArrayBufferToBucket } from '../../lib/storageUpload';
 
 type KycStatus = 'PENDING' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED';
 
@@ -118,13 +119,13 @@ const VerifyScreen: React.FC = () => {
   };
 
   const uploadToSupabase = async (uri: string, path: string) => {
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    const { error } = await supabase.storage.from('kyc-docs').upload(path, blob, {
+    await uploadArrayBufferToBucket({
+      bucket: 'kyc-docs',
+      path,
+      uri,
       contentType: 'image/jpeg',
       upsert: true
     });
-    if (error) throw error;
   };
 
   const isBackRequired = documentType === 'ID_CARD' || documentType === 'DRIVERS_LICENSE';

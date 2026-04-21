@@ -22,6 +22,7 @@ import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
+import { uploadArrayBufferToBucket } from '../../lib/storageUpload';
 
 interface CommunityMessage {
   id: string;
@@ -235,8 +236,6 @@ const CommunityChatScreen: React.FC = () => {
     if (!result.canceled && result.assets[0].uri) {
       const uri = result.assets[0].uri;
       try {
-        const response = await fetch(uri);
-        const blob = await response.blob();
         const fileExt = (uri.split('.').pop() || (type === 'VIDEO' ? 'mp4' : 'jpg')).toLowerCase();
         const contentType = result.assets[0].mimeType
           || (type === 'VIDEO'
@@ -245,17 +244,17 @@ const CommunityChatScreen: React.FC = () => {
         const fileName = `${currentUser.id}_${Date.now()}.${fileExt}`;
         const filePath = `${communityId}/${fileName}`;
 
-        const { error } = await supabase.storage.from('community-media').upload(
-          filePath,
-          blob,
-          { upsert: false, contentType }
-        );
-
-        if (error) throw error;
+        const uploadResult = await uploadArrayBufferToBucket({
+          bucket: 'community-media',
+          path: filePath,
+          uri,
+          contentType,
+          upsert: false,
+        });
 
         void handleSend(type, filePath, {
           mediaMimeType: contentType,
-          mediaSizeBytes: blob.size,
+          mediaSizeBytes: uploadResult.bytes,
         });
       } catch (e) {
         Alert.alert('Erreur Upload', "Impossible d'envoyer le média.");

@@ -22,6 +22,7 @@ import { useApp } from '../../state/AppContext';
 import { COLORS } from '../../data/mock';
 import { supabase } from '../../lib/supabase';
 import { apiRequest } from '../../lib/api';
+import { uploadArrayBufferToBucket } from '../../lib/storageUpload';
 
 type ChatRoute = RouteProp<RootStackParamList, 'Chat'>;
 
@@ -168,19 +169,13 @@ const ChatScreen: React.FC = () => {
           : (extension === 'png' ? 'image/png' : 'image/jpeg'));
       const filePath = `${matchId}/${currentUser.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${extension}`;
 
-      const response = await fetch(uri);
-      const blob = await response.blob();
-
-      const { error: uploadError } = await supabase.storage.from('chat-media').upload(
-        filePath,
-        blob,
-        { upsert: false, contentType }
-      );
-
-      if (uploadError) {
-        Alert.alert('Upload impossible', uploadError.message || 'Impossible de téléverser la photo.');
-        return;
-      }
+      const uploadResult = await uploadArrayBufferToBucket({
+        bucket: 'chat-media',
+        path: filePath,
+        uri,
+        contentType,
+        upsert: false,
+      });
 
       const sent = await apiRequest<SendMessageResponse>('/api/messages/send', {
         method: 'POST',
@@ -190,7 +185,7 @@ const ChatScreen: React.FC = () => {
           content: type === 'VIDEO' ? 'Video' : 'Photo',
           messageType: type,
           mediaPath: filePath,
-          mediaSizeBytes: blob.size,
+          mediaSizeBytes: uploadResult.bytes,
           mediaMimeType: contentType,
         }),
       });

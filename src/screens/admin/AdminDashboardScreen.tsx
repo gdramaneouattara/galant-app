@@ -58,7 +58,7 @@ type AdminStats = {
 
 type AdminDestination = Exclude<
   keyof RootStackParamList,
-  'AuthFlow' | 'ResetPassword' | 'MainTabs' | 'Chat' | 'CommunityChat' | 'Premium' | 'LikesReceived' | 'Verify' | 'Boost' | 'DiscoverGrid'
+  'AuthFlow' | 'ResetPassword' | 'MainTabs' | 'AdminStack' | 'Chat' | 'CommunityChat' | 'Premium' | 'LikesReceived' | 'Verify' | 'Boost' | 'DiscoverGrid'
 >;
 
 type AdminShortcut = {
@@ -68,21 +68,6 @@ type AdminShortcut = {
 };
 
 const ADMIN_SHORTCUTS: AdminShortcut[] = [
-  {
-    route: 'AdminUserList',
-    title: 'Utilisateurs',
-    description: 'Recherche, suspension, suppression et contrôle des comptes.',
-  },
-  {
-    route: 'AdminModeration',
-    title: 'Modération',
-    description: 'Signalements, demandes RGPD et revue des photos.',
-  },
-  {
-    route: 'AdminKyc',
-    title: 'KYC',
-    description: 'Validation des pièces d’identité et selfies.',
-  },
   {
     route: 'AdminAuditLogs',
     title: 'Audit Logs',

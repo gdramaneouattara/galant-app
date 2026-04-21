@@ -8,6 +8,14 @@ ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS is_invisible bool
 ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS phone text;
 ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS photo_review_status text not null default 'APPROVED';
 ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS country text;
+ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS interests text[] default '{}';
+ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS latitude double precision;
+ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS longitude double precision;
+ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS onboarding_completed boolean not null default false;
+ALTER TABLE IF EXISTS public.profiles ALTER COLUMN name DROP NOT NULL;
+ALTER TABLE IF EXISTS public.profiles ALTER COLUMN age DROP NOT NULL;
+ALTER TABLE IF EXISTS public.profiles ALTER COLUMN gender DROP NOT NULL;
+ALTER TABLE IF EXISTS public.profiles ALTER COLUMN location DROP NOT NULL;
 ALTER TABLE IF EXISTS public.profiles ENABLE ROW LEVEL SECURITY;
 
 CREATE OR REPLACE FUNCTION public.has_invisible_mode_access(target_user_id uuid)
@@ -80,6 +88,8 @@ CREATE POLICY "Profiles are viewable by all authenticated users."
     AND (
       auth.uid() = id
       OR (
+        onboarding_completed = true
+        AND
         is_admin = false
         AND NOT (is_invisible = true AND public.has_invisible_mode_access(id))
       )
@@ -98,7 +108,10 @@ CREATE POLICY "Users can insert their own profile."
     AND is_admin = false
     AND suspended_at IS NULL
     AND is_invisible = false
-    AND coalesce(array_length(photos, 1), 0) BETWEEN 3 AND 6
+    AND (
+      coalesce(onboarding_completed, false) = false
+      OR coalesce(array_length(photos, 1), 0) BETWEEN 3 AND 6
+    )
   );
 
 DROP POLICY IF EXISTS "Users can update their own profile." ON public.profiles;
@@ -110,7 +123,10 @@ CREATE POLICY "Users can update their own profile."
     auth.uid() = id
     AND suspended_at IS NULL
     AND (is_invisible = false OR public.has_invisible_mode_access(id))
-    AND coalesce(array_length(photos, 1), 0) BETWEEN 3 AND 6
+    AND (
+      coalesce(onboarding_completed, false) = false
+      OR coalesce(array_length(photos, 1), 0) BETWEEN 3 AND 6
+    )
   );
 
 DROP POLICY IF EXISTS "Users can delete their own profile." ON public.profiles;

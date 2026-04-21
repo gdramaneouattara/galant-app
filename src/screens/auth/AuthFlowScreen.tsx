@@ -25,6 +25,7 @@ import { supabase } from '../../lib/supabase';
 import { apiRequest } from '../../lib/api';
 import { logEvent, logError } from '../../lib/analytics';
 import { getPasswordPolicyHint, validatePasswordPolicy } from '../../lib/passwordPolicy';
+import { uploadArrayBufferToBucket } from '../../lib/storageUpload';
 
 const TERMS_URL =
   process.env.EXPO_PUBLIC_TERMS_URL ||
@@ -250,6 +251,30 @@ const AuthFlowScreen: React.FC = () => {
     if (!isCountryPickerOpen) setCountrySearch('');
   }, [isCountryPickerOpen]);
 
+  useEffect(() => {
+    let active = true;
+
+    const resumeIncompleteOnboarding = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!active || !session?.user) return;
+
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('id, suspended_at, onboarding_completed')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      if (!active || error || !profile || profile.suspended_at || profile.onboarding_completed) return;
+      goTo('identity');
+    };
+
+    void resumeIncompleteOnboarding();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const goTo = (targetStep: Step) => setStep(targetStep);
   const nextStep = () => {
     const idx = profileSteps.indexOf(step);
@@ -319,7 +344,7 @@ const AuthFlowScreen: React.FC = () => {
 
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, suspended_at')
+        .select('id, suspended_at, onboarding_completed')
         .eq('id', userId)
         .single();
 
@@ -334,15 +359,15 @@ const AuthFlowScreen: React.FC = () => {
         return;
       }
 
-      if (!profile) {
-        Alert.alert('Bienvenue !', 'Nous avons besoin de quelques informations supplementaires.');
-        goTo('identity');
+      if (profile?.suspended_at) {
+        await supabase.auth.signOut({ scope: 'local' });
+        Alert.alert('Compte suspendu', 'Votre compte est suspendu. Contactez le support.');
         return;
       }
 
-      if (profile.suspended_at) {
-        await supabase.auth.signOut({ scope: 'local' });
-        Alert.alert('Compte suspendu', 'Votre compte est suspendu. Contactez le support.');
+      if (!profile || !profile.onboarding_completed) {
+        Alert.alert('Bienvenue !', 'Nous avons besoin de quelques informations supplementaires.');
+        goTo('identity');
         return;
       }
 
@@ -655,18 +680,17 @@ const AuthFlowScreen: React.FC = () => {
     const photoUrls: string[] = [];
     for (const uri of form.photos) {
       try {
-        const response = await fetch(uri);
-        const blob = await response.blob();
-
         const fileExt = uri.split('.').pop() || 'jpg';
         const fileName = `${user.id}_${Date.now()}.${fileExt}`;
         const filePath = `${user.id}/${fileName}`;
+        const normalizedExt = fileExt.toLowerCase();
 
-        const { error: uploadError } = await supabase.storage.from('photos').upload(filePath, blob, {
-          contentType: `image/${fileExt === 'png' ? 'png' : 'jpeg'}`,
+        await uploadArrayBufferToBucket({
+          bucket: 'photos',
+          path: filePath,
+          uri,
+          contentType: `image/${normalizedExt === 'png' ? 'png' : 'jpeg'}`,
         });
-
-        if (uploadError) throw uploadError;
 
         const { data: { publicUrl } } = supabase.storage.from('photos').getPublicUrl(filePath);
         if (publicUrl) {
@@ -753,6 +777,7 @@ const AuthFlowScreen: React.FC = () => {
       target_gender: form.targetGender,
       relationship_goal: form.relationshipGoal,
       phone: normalizedUserPhone,
+      onboarding_completed: true,
       updated_at: new Date().toISOString(),
     };
 

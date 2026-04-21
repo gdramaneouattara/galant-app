@@ -1,16 +1,20 @@
 -- Base schema for Yamo
 
 create extension if not exists "pgcrypto";
+create extension if not exists postgis;
 
 -- Profiles table (linked to auth.users)
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
-  name text not null,
-  age integer not null check (age >= 18),
-  gender text not null,
+  name text,
+  age integer check (age >= 18),
+  gender text,
   bio text,
   photos text[] default '{}',
-  location geography(point) not null,
+  location geography(point),
+  latitude double precision,
+  longitude double precision,
+  interests text[] default '{}',
   is_premium boolean default false,
   is_admin boolean default false,
   is_verified boolean default false,
@@ -27,8 +31,54 @@ create table if not exists public.profiles (
   is_invisible boolean default false,
   likes_count integer default 0,
   phone text,
-  photo_review_status text not null default 'APPROVED'
+  photo_review_status text not null default 'APPROVED',
+  onboarding_completed boolean not null default false
 );
+
+alter table if exists public.profiles
+  add column if not exists name text,
+  add column if not exists age integer,
+  add column if not exists gender text,
+  add column if not exists bio text,
+  add column if not exists photos text[] default '{}',
+  add column if not exists location geography(point),
+  add column if not exists latitude double precision,
+  add column if not exists longitude double precision,
+  add column if not exists interests text[] default '{}',
+  add column if not exists is_premium boolean default false,
+  add column if not exists is_admin boolean default false,
+  add column if not exists is_verified boolean default false,
+  add column if not exists is_kyc_verified boolean default false,
+  add column if not exists relationship_goal text,
+  add column if not exists city text,
+  add column if not exists country text,
+  add column if not exists target_gender text[] default '{}',
+  add column if not exists created_at timestamp with time zone default now(),
+  add column if not exists updated_at timestamp with time zone default now(),
+  add column if not exists last_online_at timestamp with time zone default now(),
+  add column if not exists last_active_at timestamp with time zone default now(),
+  add column if not exists suspended_at timestamp with time zone,
+  add column if not exists is_invisible boolean default false,
+  add column if not exists likes_count integer default 0,
+  add column if not exists phone text,
+  add column if not exists photo_review_status text not null default 'APPROVED',
+  add column if not exists onboarding_completed boolean not null default false;
+
+alter table if exists public.profiles
+  alter column name drop not null,
+  alter column age drop not null,
+  alter column gender drop not null,
+  alter column location drop not null;
+
+update public.profiles
+set onboarding_completed = true
+where coalesce(onboarding_completed, false) = false
+  and nullif(trim(coalesce(name, '')), '') is not null
+  and age is not null
+  and gender is not null
+  and nullif(trim(coalesce(bio, '')), '') is not null
+  and coalesce(array_length(interests, 1), 0) > 0
+  and coalesce(array_length(photos, 1), 0) between 3 and 6;
 
 -- Interests table
 create table if not exists public.interests (
@@ -228,16 +278,78 @@ create table if not exists public.community_messages (
 );
 
 -- Realtime activation
-alter publication supabase_realtime add table public.matches;
-alter publication supabase_realtime add table public.messages;
-alter publication supabase_realtime add table public.community_messages;
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_rel pr
+    join pg_class c on c.oid = pr.prrelid
+    join pg_namespace n on n.oid = c.relnamespace
+    join pg_publication p on p.oid = pr.prpubid
+    where p.pubname = 'supabase_realtime'
+      and n.nspname = 'public'
+      and c.relname = 'matches'
+  ) then
+    alter publication supabase_realtime add table public.matches;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_publication_rel pr
+    join pg_class c on c.oid = pr.prrelid
+    join pg_namespace n on n.oid = c.relnamespace
+    join pg_publication p on p.oid = pr.prpubid
+    where p.pubname = 'supabase_realtime'
+      and n.nspname = 'public'
+      and c.relname = 'messages'
+  ) then
+    alter publication supabase_realtime add table public.messages;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_publication_rel pr
+    join pg_class c on c.oid = pr.prrelid
+    join pg_namespace n on n.oid = c.relnamespace
+    join pg_publication p on p.oid = pr.prpubid
+    where p.pubname = 'supabase_realtime'
+      and n.nspname = 'public'
+      and c.relname = 'community_messages'
+  ) then
+    alter publication supabase_realtime add table public.community_messages;
+  end if;
+end;
+$$;
 
 -- Functions
 create or replace function public.validate_profile_photos_count()
 returns trigger as $$
+declare
+  photo_count integer := coalesce(array_length(new.photos, 1), 0);
 begin
-  if coalesce(array_length(new.photos, 1), 0) not between 3 and 6 then
-    raise exception 'profiles must contain between 3 and 6 photos';
+  if photo_count > 6 then
+    raise exception 'profiles cannot contain more than 6 photos';
+  end if;
+
+  if coalesce(new.onboarding_completed, false) then
+    if nullif(trim(coalesce(new.name, '')), '') is null then
+      raise exception 'profiles must contain a name before onboarding completion';
+    end if;
+    if new.age is null or new.age < 18 then
+      raise exception 'profiles must contain an adult age before onboarding completion';
+    end if;
+    if nullif(trim(coalesce(new.gender, '')), '') is null then
+      raise exception 'profiles must contain a gender before onboarding completion';
+    end if;
+    if nullif(trim(coalesce(new.bio, '')), '') is null then
+      raise exception 'profiles must contain a bio before onboarding completion';
+    end if;
+    if coalesce(array_length(new.interests, 1), 0) = 0 then
+      raise exception 'profiles must contain at least one interest before onboarding completion';
+    end if;
+    if photo_count not between 3 and 6 then
+      raise exception 'profiles must contain between 3 and 6 photos before onboarding completion';
+    end if;
   end if;
   return new;
 end;
@@ -263,17 +375,22 @@ $$ language plpgsql;
 
 create or replace function public.handle_new_user()
 returns trigger as $$
+declare
+  fallback_name text;
 begin
-  insert into public.profiles (id, name, age, gender, location)
+  fallback_name := coalesce(
+    nullif(trim(new.raw_user_meta_data->>'name'), ''),
+    nullif(trim(split_part(coalesce(new.email, ''), '@', 1)), ''),
+    nullif(trim(coalesce(new.phone, '')), ''),
+    'Utilisateur'
+  );
+
+  insert into public.profiles (id, name, phone, onboarding_completed)
   values (
     new.id,
-    new.raw_user_meta_data->>'name',
-    (new.raw_user_meta_data->>'age')::integer,
-    new.raw_user_meta_data->>'gender',
-    st_setsrid(st_makepoint(
-      (new.raw_user_meta_data->>'longitude')::float,
-      (new.raw_user_meta_data->>'latitude')::float
-    ), 4326)
+    fallback_name,
+    new.phone,
+    false
   );
   return new;
 end;
