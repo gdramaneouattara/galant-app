@@ -19,16 +19,23 @@
     "ios": {
       "supportsTablet": false,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Yamo utilise votre position pour les profils \u00e0 proximit\u00e9."
-      }
+        "NSLocationWhenInUseUsageDescription": "Yamo utilise votre position pour les profils à proximité.",
+        "UIUserInterfaceStyle": "Light",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.konan.yamo"
     },
     "android": {
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "POST_NOTIFICATIONS"
       ],
       "package": "com.konan.yamo",
-      "versionCode": 2
+      "versionCode": 2,
+      "notification": {
+        "color": "#FF6B6B"
+      }
     },
     "platforms": [
       "ios",
@@ -36,6 +43,7 @@
     ],
     "plugins": [
       "expo-asset",
+      "expo-notifications",
       [
         "expo-build-properties",
         {
