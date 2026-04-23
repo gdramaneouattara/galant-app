@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 
 type ApiOptions = RequestInit & { requireAuth?: boolean };
 
+const API_TIMEOUT_MS = 60000; // 60 seconds
 const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
 const normalizedApiBaseUrl = apiBaseUrl?.replace(/\/$/, '');
 
@@ -42,29 +43,46 @@ export const apiRequest = async <T>(path: string, options: ApiOptions = {}): Pro
   if (!runtimeApiBaseUrl) {
     throw new Error('EXPO_PUBLIC_API_BASE_URL is missing.');
   }
-  const response = await fetch(`${runtimeApiBaseUrl}${path}`, {
-    ...options,
-    headers,
-  });
 
-  const text = await response.text();
-  let payload: any = null;
-  if (text) {
-    try {
-      payload = JSON.parse(text);
-    } catch {
-      payload = { raw: text };
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${runtimeApiBaseUrl}${path}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+
+    const text = await response.text();
+    let payload: any = null;
+    if (text) {
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        payload = { raw: text };
+      }
     }
-  }
 
-  if (!response.ok) {
-    const errorMessage =
-      payload?.error ||
-      payload?.message ||
-      (typeof payload?.raw === 'string' ? payload.raw.slice(0, 200) : null) ||
-      'API request failed';
-    throw new Error(errorMessage);
-  }
+    if (!response.ok) {
+      const errorMessage =
+        payload?.error ||
+        payload?.message ||
+        (typeof payload?.raw === 'string' ? payload.raw.slice(0, 200) : null) ||
+        'API request failed';
+      throw new Error(errorMessage);
+    }
 
-  return payload as T;
+    return payload as T;
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Serveur indisponible - La requête a dépassé le délai d\'attente');
+      }
+      throw error;
+    }
+    throw new Error('An unknown error occurred');
+  } finally {
+    clearTimeout(timeoutId);
+  }
 };
