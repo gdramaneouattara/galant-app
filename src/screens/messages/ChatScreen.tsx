@@ -152,7 +152,7 @@ const ChatScreen: React.FC = () => {
       }
 
       const picked = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: type === 'IMAGE' ? [ImagePicker.MediaType.IMAGE] : [ImagePicker.MediaType.VIDEO],
+        mediaTypes: type === 'IMAGE' ? 'images' : 'videos',
         allowsMultipleSelection: false,
         quality: 0.8,
       });

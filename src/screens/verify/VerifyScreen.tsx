@@ -91,7 +91,7 @@ const VerifyScreen: React.FC = () => {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: [ImagePicker.MediaType.IMAGE],
+      mediaTypes: 'images',
       quality: 0.8,
     });
 

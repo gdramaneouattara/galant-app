@@ -625,7 +625,7 @@ const AuthFlowScreen: React.FC = () => {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: [ImagePicker.MediaType.IMAGE],
+      mediaTypes: 'images',
       allowsMultipleSelection: false,
       quality: 0.8,
     });
