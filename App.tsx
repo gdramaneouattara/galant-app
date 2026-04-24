@@ -58,7 +58,11 @@ const hydrateRecoverySessionFromUrl = async (url: string) => {
 
   try {
     if (accessToken && refreshToken) {
-      await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+      // Check if session already exists to avoid reusing tokens
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || session.access_token !== accessToken) {
+        await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+      }
       return;
     }
 

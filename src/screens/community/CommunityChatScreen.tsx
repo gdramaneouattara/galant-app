@@ -227,7 +227,7 @@ const CommunityChatScreen: React.FC = () => {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: type === 'IMAGE' ? ImagePicker.MediaTypeOptions.Images : ImagePicker.MediaTypeOptions.Videos,
+      mediaTypes: type === 'IMAGE' ? [ImagePicker.MediaType.IMAGE] : [ImagePicker.MediaType.VIDEO],
       allowsEditing: true,
       quality: 0.7,
       videoMaxDuration: 15,
