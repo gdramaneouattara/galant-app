@@ -3023,6 +3023,11 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 app.listen(PORT, '0.0.0.0', () => {
   const env = process.env.NODE_ENV || 'development';
-  const url = env === 'production' ? 'your Render URL' : `http://localhost:${PORT}`;
-  console.log(`Yamo server running on port ${PORT} (${url})`);
+  const url = env === 'production' ? 'https://yamo-u7oo.onrender.com' : `http://localhost:${PORT}`;
+  console.log('-------------------------------------------');
+  console.log('🚀 YAMO SERVER LIVE ON RENDER');
+  console.log(`📡 Environment: ${env}`);
+  console.log(`🔗 URL: ${url}`);
+  console.log(`🔌 Port: ${PORT}`);
+  console.log('-------------------------------------------');
 });
