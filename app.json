@@ -32,7 +32,7 @@
         "POST_NOTIFICATIONS"
       ],
       "package": "com.konan.yamo",
-      "versionCode": 2,
+      "versionCode": 3,
       "notification": {
         "color": "#FF6B6B"
       }
