@@ -4,6 +4,7 @@ import {
   Alert,
   Image,
   ImageBackground,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -116,6 +117,23 @@ const getDefaultCountryCode = () => {
 };
 
 const getDefaultCountry = () => COUNTRY_BY_CODE[getDefaultCountryCode()] || COUNTRY_BY_CODE.CM;
+const buildSelectedPhoto = (asset: ImagePicker.ImagePickerAsset | null | undefined): SelectedPhoto | null => {
+  if (!asset) return null;
+
+  const mimeType = asset.base64 ? 'image/jpeg' : (asset.mimeType || 'image/jpeg');
+  const normalizedExtension = mimeType === 'image/png' ? 'png' : 'jpg';
+  const dataUri = asset.base64 ? `data:${mimeType};base64,${asset.base64}` : null;
+  const previewUri = asset.uri || dataUri;
+
+  if (!previewUri) return null;
+
+  return {
+    previewUri,
+    uploadUri: dataUri || previewUri,
+    contentType: mimeType,
+    fileExtension: normalizedExtension,
+  };
+};
 
 const normalizeEmail = (value: string) => value.trim().toLowerCase();
 const normalizePhone = (value: string) => {
@@ -624,6 +642,59 @@ const AuthFlowScreen: React.FC = () => {
     }
   };
 
+  const applySelectedPhoto = (slot: number, photo: SelectedPhoto) => {
+    setForm((prev) => {
+      const nextPhotos = [...prev.photos];
+      if (slot < nextPhotos.length) {
+        nextPhotos[slot] = photo;
+      } else if (nextPhotos.length < 6) {
+        nextPhotos.push(photo);
+      }
+      return { ...prev, photos: nextPhotos.slice(0, 6) };
+    });
+  };
+
+  const recoverPendingImage = async (slot: number) => {
+    if (Platform.OS !== 'android') return false;
+
+    try {
+      const pendingResults = await ImagePicker.getPendingResultAsync();
+      for (const pendingResult of pendingResults) {
+        if ('canceled' in pendingResult && !pendingResult.canceled) {
+          const recoveredPhoto = buildSelectedPhoto(pendingResult.assets?.[0]);
+          if (recoveredPhoto) {
+            applySelectedPhoto(slot, recoveredPhoto);
+            return true;
+          }
+        }
+      }
+    } catch (error) {
+      logError(error, { action: 'recover_pending_image' });
+    }
+
+    return false;
+  };
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    void ImagePicker.getPendingResultAsync()
+      .then((pendingResults) => {
+        for (const pendingResult of pendingResults) {
+          if ('canceled' in pendingResult && !pendingResult.canceled) {
+            const recoveredPhoto = buildSelectedPhoto(pendingResult.assets?.[0]);
+            if (recoveredPhoto) {
+              applySelectedPhoto(form.photos.length, recoveredPhoto);
+              break;
+            }
+          }
+        }
+      })
+      .catch((error) => {
+        logError(error, { action: 'recover_pending_image_on_mount' });
+      });
+  }, []);
+
   const pickImage = async (slot: number) => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permission.status !== 'granted') {
@@ -635,31 +706,21 @@ const AuthFlowScreen: React.FC = () => {
       mediaTypes: 'images',
       allowsMultipleSelection: false,
       base64: true,
-      legacy: true,
       quality: 0.8,
     });
 
-    const asset = result.canceled ? null : result.assets?.[0];
-    if (asset?.uri) {
-      const mimeType = asset.base64 ? 'image/jpeg' : (asset.mimeType || 'image/jpeg');
-      const normalizedExtension = mimeType === 'image/png' ? 'png' : 'jpg';
-      const dataUri = asset.base64 ? `data:${mimeType};base64,${asset.base64}` : null;
-      const selectedPhoto: SelectedPhoto = {
-        previewUri: dataUri || asset.uri,
-        uploadUri: dataUri || asset.uri,
-        contentType: mimeType,
-        fileExtension: normalizedExtension,
-      };
+    const selectedPhoto = result.canceled ? null : buildSelectedPhoto(result.assets?.[0]);
+    if (selectedPhoto) {
+      applySelectedPhoto(slot, selectedPhoto);
+      return;
+    }
 
-      setForm((prev) => {
-        const nextPhotos = [...prev.photos];
-        if (slot < nextPhotos.length) {
-          nextPhotos[slot] = selectedPhoto;
-        } else if (nextPhotos.length < 6) {
-          nextPhotos.push(selectedPhoto);
-        }
-        return { ...prev, photos: nextPhotos.slice(0, 6) };
-      });
+    const recovered = await recoverPendingImage(slot);
+    if (!result.canceled && !recovered) {
+      Alert.alert(
+        'Photo indisponible',
+        "La photo sélectionnée n'a pas pu être récupérée sur cet appareil. Réessaie avec une autre photo ou relance l'application."
+      );
     }
   };
 
