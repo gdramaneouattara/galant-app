@@ -1,6 +1,16 @@
+import { decode } from 'base64-arraybuffer';
 import { supabase } from './supabase';
 
 const readFileAsArrayBuffer = async (uri: string) => {
+  if (uri.startsWith('data:')) {
+    const [, base64Payload] = uri.split(',', 2);
+    if (!base64Payload) {
+      throw new Error('Impossible de lire le fichier local (data URI invalide)');
+    }
+
+    return decode(base64Payload);
+  }
+
   const response = await fetch(uri);
   if (!response.ok) {
     throw new Error(`Impossible de lire le fichier local (${response.status})`);

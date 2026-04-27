@@ -61,6 +61,12 @@ const RELATIONSHIP_GOALS = [
 type Step = 'welcome' | 'signup' | 'login' | 'identity' | 'photos' | 'bio' | 'preferences' | 'goal' | 'location';
 
 type CountryOption = { code: string; name: string; callingCode: string };
+type SelectedPhoto = {
+  previewUri: string;
+  uploadUri: string;
+  contentType: string;
+  fileExtension: string;
+};
 
 const COUNTRY_OPTIONS: CountryOption[] = [
   { code: 'CM', name: 'Cameroun', callingCode: '237' },
@@ -145,7 +151,7 @@ const AuthFlowScreen: React.FC = () => {
     name: '',
     age: '',
     gender: Gender.FEMALE,
-    photos: [] as string[],
+    photos: [] as SelectedPhoto[],
     bio: '',
     interests: [] as string[],
     relationshipGoal: 'SERIOUS',
@@ -624,18 +630,33 @@ const AuthFlowScreen: React.FC = () => {
       Alert.alert('Permission refusée', 'Vous devez autoriser l\'accès à la galerie pour continuer.');
       return;
     }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: 'images',
       allowsMultipleSelection: false,
+      base64: true,
+      legacy: true,
       quality: 0.8,
     });
-    if (!result.canceled && result.assets[0].uri) {
+
+    const asset = result.canceled ? null : result.assets?.[0];
+    if (asset?.uri) {
+      const mimeType = asset.base64 ? 'image/jpeg' : (asset.mimeType || 'image/jpeg');
+      const normalizedExtension = mimeType === 'image/png' ? 'png' : 'jpg';
+      const dataUri = asset.base64 ? `data:${mimeType};base64,${asset.base64}` : null;
+      const selectedPhoto: SelectedPhoto = {
+        previewUri: dataUri || asset.uri,
+        uploadUri: dataUri || asset.uri,
+        contentType: mimeType,
+        fileExtension: normalizedExtension,
+      };
+
       setForm((prev) => {
         const nextPhotos = [...prev.photos];
         if (slot < nextPhotos.length) {
-          nextPhotos[slot] = result.assets[0].uri;
+          nextPhotos[slot] = selectedPhoto;
         } else if (nextPhotos.length < 6) {
-          nextPhotos.push(result.assets[0].uri);
+          nextPhotos.push(selectedPhoto);
         }
         return { ...prev, photos: nextPhotos.slice(0, 6) };
       });
@@ -678,18 +699,16 @@ const AuthFlowScreen: React.FC = () => {
 
     // Upload photos and get public URLs.
     const photoUrls: string[] = [];
-    for (const uri of form.photos) {
+    for (const photo of form.photos) {
       try {
-        const fileExt = uri.split('.').pop() || 'jpg';
-        const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+        const fileName = `${user.id}_${Date.now()}.${photo.fileExtension}`;
         const filePath = `${user.id}/${fileName}`;
-        const normalizedExt = fileExt.toLowerCase();
 
         await uploadArrayBufferToBucket({
           bucket: 'photos',
           path: filePath,
-          uri,
-          contentType: `image/${normalizedExt === 'png' ? 'png' : 'jpeg'}`,
+          uri: photo.uploadUri,
+          contentType: photo.contentType,
         });
 
         const { data: { publicUrl } } = supabase.storage.from('photos').getPublicUrl(filePath);
@@ -1162,19 +1181,19 @@ const AuthFlowScreen: React.FC = () => {
           <Text style={styles.caption}>Ajoute entre 3 et 6 photos pour activer ton profil.</Text>
           <View style={styles.photoGrid}>
             {[0, 1, 2, 3, 4, 5].map((slot) => {
-              const uri = form.photos[slot];
+              const photo = form.photos[slot];
               return (
                 <Pressable
                   key={slot}
                   onPress={() => void pickImage(slot)}
-                  onLongPress={() => uri ? removePhoto(slot) : undefined}
+                  onLongPress={() => photo ? removePhoto(slot) : undefined}
                   style={styles.photoSlot}
                   accessibilityRole="button"
-                  accessibilityLabel={uri ? `Photo ${slot + 1}, appui long pour supprimer` : `Ajouter la photo ${slot + 1}`}
+                  accessibilityLabel={photo ? `Photo ${slot + 1}, appui long pour supprimer` : `Ajouter la photo ${slot + 1}`}
                   hitSlop={6}
                 >
-                  {uri ? (
-                    <Image source={{ uri }} style={styles.photo} />
+                  {photo ? (
+                    <Image source={{ uri: photo.previewUri }} style={styles.photo} />
                   ) : (
                     <View style={styles.photoPlaceholder}>
                       <Camera color={COLORS.muted} size={28} />
