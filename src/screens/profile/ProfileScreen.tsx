@@ -247,15 +247,13 @@ const ProfileScreen: React.FC = () => {
               <ChevronRight size={18} color="#facc15" />
             </Pressable>
           )}
-          {currentUser.isPremium ? (
-            <Pressable style={[styles.row, styles.rowLikes]} onPress={() => navigation.navigate('LikesReceived')}>
-              <View style={[styles.rowIcon, styles.rowIconLikes]}>
-                <Heart size={18} color="#be123c" />
-              </View>
-              <Text style={styles.rowLabel}>Voir qui m'a liké</Text>
-              <ChevronRight size={18} color="#fda4af" />
-            </Pressable>
-          ) : null}
+          <Pressable style={[styles.row, styles.rowLikes]} onPress={() => navigation.navigate('LikesReceived')}>
+            <View style={[styles.rowIcon, styles.rowIconLikes]}>
+              <Heart size={18} color="#be123c" />
+            </View>
+            <Text style={styles.rowLabel}>Boîte Super Likes</Text>
+            <ChevronRight size={18} color="#fda4af" />
+          </Pressable>
           {!isBoosted && (
             <Pressable style={[styles.row, styles.rowBoost]} onPress={() => navigation.navigate('Boost' as never)}>
               <View style={[styles.rowIcon, styles.rowIconBoost]}>

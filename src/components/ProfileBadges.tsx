@@ -1,12 +1,13 @@
 import React from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { ShieldCheck, Flame, Crown, Rocket } from 'lucide-react-native';
+import { ShieldCheck, Flame, Crown, Rocket, Gem } from 'lucide-react-native';
 
 type ProfileBadgeUser = {
   isVerified?: boolean;
   is_verified?: boolean;
   isPremium?: boolean;
   is_premium?: boolean;
+  is_vip?: boolean;
   boosted_until?: string | null;
   last_active_at?: string | null;
   likes_count?: number;
@@ -21,6 +22,7 @@ interface ProfileBadgesProps {
 const ProfileBadges: React.FC<ProfileBadgesProps> = ({ user, containerStyle, showLabels = false }) => {
   const isVerified = user.isVerified ?? user.is_verified ?? false;
   const isPremium = user.isPremium ?? user.is_premium ?? false;
+  const isVip = user.is_vip ?? false;
   const likesCount = user.likes_count || 0;
   const isRecentlyActive = user.last_active_at
     ? (new Date().getTime() - new Date(user.last_active_at).getTime()) < 24 * 60 * 60 * 1000
@@ -32,6 +34,13 @@ const ProfileBadges: React.FC<ProfileBadgesProps> = ({ user, containerStyle, sho
 
   return (
     <View style={[styles.container, containerStyle]}>
+      {isVip && (
+        <View style={[styles.badge, styles.vipBadge]}>
+          <Gem size={14} color="#fff" />
+          {showLabels && <Text style={styles.badgeText}>VIP</Text>}
+        </View>
+      )}
+
       {isVerified && (
         <View style={[styles.badge, styles.verifiedBadge]}>
           <ShieldCheck size={14} color="#fff" />
@@ -53,7 +62,7 @@ const ProfileBadges: React.FC<ProfileBadgesProps> = ({ user, containerStyle, sho
         </View>
       )}
 
-      {isPremium && (
+      {isPremium && !isVip && (
         <View style={[styles.badge, styles.premiumBadge]}>
           <Crown size={14} color="#fff" />
           {showLabels && <Text style={styles.badgeText}>Premium</Text>}
@@ -89,6 +98,9 @@ const styles = StyleSheet.create({
   },
   popularBadge: {
     backgroundColor: '#f97316',
+  },
+  vipBadge: {
+    backgroundColor: '#f59e0b',
   },
   activeBadge: {
     backgroundColor: '#16a34a',

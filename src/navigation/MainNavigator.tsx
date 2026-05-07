@@ -6,6 +6,7 @@ import { MessageCircle, Search, Shield, ShieldAlert, ShieldCheck, User as UserIc
 import AuthFlowScreen from '../screens/auth/AuthFlowScreen';
 import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 import HomeScreen from '../screens/home/HomeScreen';
+import StatusScreen from '../screens/home/StatusScreen';
 import MessagesScreen from '../screens/messages/MessagesScreen';
 import ChatScreen from '../screens/messages/ChatScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
@@ -30,6 +31,7 @@ export type RootStackParamList = {
   ResetPassword: undefined;
   MainTabs: undefined;
   AdminStack: undefined;
+  AdminUserList: undefined;
   Chat: { userId: string; matchId: string };
   CommunityChat: { communityId: string; communityName: string };
   Premium: undefined;
@@ -39,6 +41,7 @@ export type RootStackParamList = {
   DiscoverGrid: undefined;
   AdminAuditLogs: undefined;
   AdminMessaging: undefined;
+  Status: undefined;
 };
 
 type UserTabParamList = {
@@ -50,21 +53,14 @@ type UserTabParamList = {
 
 type AdminStackParamList = {
   AdminTabs: undefined;
+  AdminUserList: undefined;
   AdminAuditLogs: undefined;
   AdminMessaging: undefined;
-};
-
-type AdminTabParamList = {
-  AdminDashboardTab: undefined;
-  AdminUsersTab: undefined;
-  AdminModerationTab: undefined;
-  AdminKycTab: undefined;
 };
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const UserTab = createBottomTabNavigator<UserTabParamList>();
 const AdminStack = createNativeStackNavigator<AdminStackParamList>();
-const AdminTab = createBottomTabNavigator<AdminTabParamList>();
 
 const linking = {
   prefixes: ['yamo://'],
@@ -75,115 +71,37 @@ const linking = {
   },
 };
 
-type NavigatorProps = {
-  isAuthenticated: boolean;
-};
-
 const UserTabNavigator = () => (
   <UserTab.Navigator
     screenOptions={{
       headerShown: false,
       tabBarActiveTintColor: COLORS.primary,
       tabBarInactiveTintColor: '#cbd5f5',
-      tabBarStyle: {
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        paddingTop: 8,
-        height: 80,
-      },
-      tabBarLabelStyle: {
-        fontWeight: '700',
-        fontSize: 12,
-      },
+      tabBarStyle: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 8, height: 80 },
+      tabBarLabelStyle: { fontWeight: '700', fontSize: 12 },
     }}
   >
     <UserTab.Screen
       name="DiscoverTab"
       component={HomeScreen}
-      options={{
-        title: 'Découvrir',
-        tabBarIcon: ({ color, size }) => <Search color={color} size={size} />,
-      }}
+      options={{ title: 'Découvrir', tabBarIcon: ({ color, size }) => <Search color={color} size={size} /> }}
     />
     <UserTab.Screen
       name="CommunityTab"
       component={CommunityScreen}
-      options={{
-        title: 'Communauté',
-        tabBarIcon: ({ color, size }) => <Users color={color} size={size} />,
-      }}
+      options={{ title: 'Communauté', tabBarIcon: ({ color, size }) => <Users color={color} size={size} /> }}
     />
     <UserTab.Screen
       name="MessagesTab"
       component={MessagesScreen}
-      options={{
-        title: 'Messages',
-        tabBarIcon: ({ color, size }) => <MessageCircle color={color} size={size} />,
-      }}
+      options={{ title: 'Messages', tabBarIcon: ({ color, size }) => <MessageCircle color={color} size={size} /> }}
     />
     <UserTab.Screen
       name="ProfileTab"
       component={ProfileScreen}
-      options={{
-        title: 'Profil',
-        tabBarIcon: ({ color, size }) => <UserIcon color={color} size={size} />,
-      }}
+      options={{ title: 'Profil', tabBarIcon: ({ color, size }) => <UserIcon color={color} size={size} /> }}
     />
   </UserTab.Navigator>
-);
-
-const AdminTabNavigator = () => (
-  <AdminTab.Navigator
-    screenOptions={{
-      headerShown: false,
-      tabBarActiveTintColor: '#7f1d1d',
-      tabBarInactiveTintColor: '#94a3b8',
-      tabBarStyle: {
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        paddingTop: 8,
-        height: 80,
-        backgroundColor: '#fffaf5',
-      },
-      tabBarLabelStyle: {
-        fontWeight: '700',
-        fontSize: 12,
-      },
-    }}
-  >
-    <AdminTab.Screen
-      name="AdminDashboardTab"
-      component={AdminDashboardScreen}
-      options={{
-        title: 'Dashboard',
-        tabBarIcon: ({ color, size }) => <Shield color={color} size={size} />,
-      }}
-    />
-    <AdminTab.Screen
-      name="AdminUsersTab"
-      component={UserListScreen}
-      options={{
-        title: 'Utilisateurs',
-        tabBarIcon: ({ color, size }) => <Users color={color} size={size} />,
-      }}
-    />
-    <AdminTab.Screen
-      name="AdminModerationTab"
-      component={AdminModerationScreen}
-      options={{
-        title: 'Modération',
-        tabBarIcon: ({ color, size }) => <ShieldAlert color={color} size={size} />,
-      }}
-    />
-    <AdminTab.Screen
-      name="AdminKycTab"
-      component={AdminKycScreen}
-      options={{
-        title: 'KYC',
-        tabBarIcon: ({ color, size }) => <ShieldCheck color={color} size={size} />,
-      }}
-    />
-  </AdminTab.Navigator>
 );
 
 const AdminStackNavigator = () => (
@@ -192,35 +110,19 @@ const AdminStackNavigator = () => (
       headerTintColor: COLORS.primary,
       headerBackTitle: 'Retour',
       headerShadowVisible: false,
-      headerStyle: {
-        backgroundColor: COLORS.bg,
-      },
-      headerTitleStyle: {
-        color: COLORS.ink,
-        fontWeight: '800',
-      },
+      headerStyle: { backgroundColor: COLORS.bg },
+      headerTitleStyle: { color: COLORS.ink, fontWeight: '800' },
     }}
   >
-    <AdminStack.Screen
-      name="AdminTabs"
-      component={AdminTabNavigator}
-      options={{ headerShown: false }}
-    />
-    <AdminStack.Screen
-      name="AdminAuditLogs"
-      component={AdminAuditLogScreen}
-      options={{ title: 'Audit' }}
-    />
-    <AdminStack.Screen
-      name="AdminMessaging"
-      component={AdminMessagingScreen}
-      options={{ title: 'Messages admin' }}
-    />
+    <AdminStack.Screen name="AdminTabs" component={AdminDashboardScreen} options={{ title: 'Dashboard' }} />
+    <AdminStack.Screen name="AdminUserList" component={UserListScreen} options={{ title: 'Utilisateurs' }} />
+    <AdminStack.Screen name="AdminAuditLogs" component={AdminAuditLogScreen} options={{ title: 'Audit' }} />
+    <AdminStack.Screen name="AdminMessaging" component={AdminMessagingScreen} options={{ title: 'Messages admin' }} />
   </AdminStack.Navigator>
 );
 
-const MainNavigator: React.FC<NavigatorProps> = ({ isAuthenticated }) => {
-  const { currentUser } = useApp();
+const MainNavigator: React.FC = () => {
+  const { currentUser, isAuthenticated } = useApp();
   const isAdmin = !!currentUser?.is_admin;
 
   return (
@@ -232,10 +134,7 @@ const MainNavigator: React.FC<NavigatorProps> = ({ isAuthenticated }) => {
             <RootStack.Screen name="ResetPassword" component={ResetPasswordScreen} />
           </>
         ) : isAdmin ? (
-          <>
-            <RootStack.Screen name="AdminStack" component={AdminStackNavigator} />
-            <RootStack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-          </>
+          <RootStack.Screen name="AdminStack" component={AdminStackNavigator} />
         ) : (
           <>
             <RootStack.Screen name="MainTabs" component={UserTabNavigator} />
@@ -246,7 +145,7 @@ const MainNavigator: React.FC<NavigatorProps> = ({ isAuthenticated }) => {
             <RootStack.Screen name="Verify" component={VerifyScreen} />
             <RootStack.Screen name="Boost" component={BoostScreen} />
             <RootStack.Screen name="DiscoverGrid" component={DiscoverGridScreen} />
-            <RootStack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+            <RootStack.Screen name="Status" component={StatusScreen} />
           </>
         )}
       </RootStack.Navigator>

@@ -7,6 +7,7 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { Gender, Message, Match, User } from '../types';
 import { supabase } from '../lib/supabase';
+import { apiRequest } from '../lib/api';
 
 const INVISIBLE_MODE_ELIGIBLE_PLANS = new Set(['BIANNUAL', 'ANNUAL']);
 
@@ -30,6 +31,8 @@ type AppContextValue = {
   toggleInvisibleMode: (enabled: boolean) => Promise<boolean>;
   toggleUserVerification: (userId: string) => void;
   suspendUser: (userId: string) => void;
+  activateBoost: () => Promise<string | null>;
+  markMessagesAsRead: (matchId: string) => Promise<void>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -122,6 +125,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     is_admin: !!profile.is_admin,
     suspended_at: profile.suspended_at ?? null,
     photo_review_status: profile.photo_review_status ?? 'APPROVED',
+    is_vip: !!profile.is_vip,
+    trial_started_at: profile.trial_started_at ?? null,
     subscription_plan_id: options?.subscription_plan_id ?? null,
     invisible_mode_eligible: invisibleModeEligible,
     preferences: {
@@ -581,6 +586,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const suspendUser = (userId: string) => setUsers((prev) => prev.filter((u) => u.id !== userId));
 
+  const activateBoost = async (): Promise<string | null> => {
+    try {
+      const data = await apiRequest<{ boosted_until?: string; error?: string }>('/api/profile/boost', {
+        method: 'POST',
+        requireAuth: true,
+      });
+      if (data.boosted_until) {
+        setCurrentUser(prev => prev ? { ...prev, boosted_until: data.boosted_until } : null);
+        return data.boosted_until;
+      }
+      if (data.error) setLastError(data.error);
+      return null;
+    } catch (e) {
+      setLastError("Erreur lors de l'activation du boost");
+      return null;
+    }
+  };
+
+  const markMessagesAsRead = async (matchId: string) => {
+    try {
+      await apiRequest('/api/messages/mark-read', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({ matchId })
+      });
+    } catch (e) {
+      console.error("Erreur marquage messages lus", e);
+    }
+  };
+
   const value = useMemo(
     () => ({
       session,
@@ -602,6 +637,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       toggleInvisibleMode,
       toggleUserVerification,
       suspendUser,
+      activateBoost,
+      markMessagesAsRead
     }),
     [session, currentUser, users, matches, messages, lastError]
   );

@@ -40,6 +40,8 @@ export interface User {
   is_admin?: boolean;
   suspended_at?: string | null;
   photo_review_status?: string | null;
+  is_vip?: boolean;
+  trial_started_at?: string | null;
   preferences: {
     targetGender: Gender[];
     minAge: number;

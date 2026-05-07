@@ -19,7 +19,12 @@
     "ios": {
       "supportsTablet": false,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Yamo utilise votre position pour les profils à proximité.",
+        "NSLocationWhenInUseUsageDescription": "Yamo utilise votre position pour vous proposer des profils à proximité et faciliter les rencontres locales.",
+        "NSCameraUsageDescription": "L'accès à l'appareil photo permet de prendre des photos de profil et de réaliser la vérification d'identité (KYC).",
+        "NSPhotoLibraryUsageDescription": "Accédez à votre galerie pour sélectionner et partager vos plus belles photos sur votre profil Yamo.",
+        "NSPhotoLibraryAddUsageDescription": "Permet à Yamo d'enregistrer des photos dans votre bibliothèque.",
+        "PHPhotoLibraryPreventAutomaticLimitedAccessAlert": true,
+        "NSMicrophoneUsageDescription": "Le micro est nécessaire pour enregistrer le son de vos vidéos de statut et envoyer des messages vocaux.",
         "UIUserInterfaceStyle": "Light",
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -29,10 +34,18 @@
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "CAMERA",
+        "RECORD_AUDIO",
+        "VIBRATE",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES",
+        "READ_MEDIA_VIDEO",
+        "READ_MEDIA_AUDIO"
       ],
       "package": "com.konan.yamo",
-      "versionCode": 3,
+      "versionCode": 4,
       "notification": {
         "color": "#FF6B6B"
       }
@@ -45,6 +58,15 @@
       "expo-asset",
       "expo-image-picker",
       "expo-notifications",
+      "expo-location",
+      "expo-av",
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "yamo-tech",
+          "project": "yamo-app"
+        }
+      ],
       [
         "expo-build-properties",
         {
@@ -53,7 +75,8 @@
             "targetSdkVersion": 35
           }
         }
-      ]
+      ],
+      "react-native-iap"
     ],
     "extra": {
       "eas": {

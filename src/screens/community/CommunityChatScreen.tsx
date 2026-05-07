@@ -3,7 +3,6 @@ import {
   Alert,
   FlatList,
   Image,
-  Linking,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -16,13 +15,14 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { ChevronLeft, Send, Image as ImageIcon, Video, Crown, Users } from 'lucide-react-native';
+import { ChevronLeft, Send, Image as ImageIcon, Video, Crown, Users, X } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
 import { uploadArrayBufferToBucket } from '../../lib/storageUpload';
+import VideoPlayer from '../../components/VideoPlayer';
 
 interface CommunityMessage {
   id: string;
@@ -211,7 +211,7 @@ const CommunityChatScreen: React.FC = () => {
         }),
       });
       setInputText('');
-      void fetchMessages(); // On rafraîchit pour voir son propre message immédiatement
+      void fetchMessages();
     } catch (error: any) {
       Alert.alert('Erreur', error?.message || "Impossible d'envoyer le message.");
     } finally {
@@ -227,7 +227,7 @@ const CommunityChatScreen: React.FC = () => {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: type === 'IMAGE' ? 'images' : 'videos',
+      mediaTypes: type === 'IMAGE' ? ImagePicker.MediaTypeOptions.Images : ImagePicker.MediaTypeOptions.Videos,
       allowsEditing: true,
       quality: 0.7,
       videoMaxDuration: 15,
@@ -244,7 +244,7 @@ const CommunityChatScreen: React.FC = () => {
         const fileName = `${currentUser.id}_${Date.now()}.${fileExt}`;
         const filePath = `${communityId}/${fileName}`;
 
-        const uploadResult = await uploadArrayBufferToBucket({
+        await uploadArrayBufferToBucket({
           bucket: 'community-media',
           path: filePath,
           uri,
@@ -254,7 +254,7 @@ const CommunityChatScreen: React.FC = () => {
 
         void handleSend(type, filePath, {
           mediaMimeType: contentType,
-          mediaSizeBytes: uploadResult.bytes,
+          mediaSizeBytes: 0,
         });
       } catch (e) {
         Alert.alert('Erreur Upload', "Impossible d'envoyer le média.");
@@ -333,24 +333,12 @@ const CommunityChatScreen: React.FC = () => {
             <Text style={[styles.messageText, isMine && styles.myMessageText]}>{item.content}</Text>
           )}
 
-          {item.message_type === 'IMAGE' && (
-            resolvedMediaUrl ? <Image source={{ uri: resolvedMediaUrl }} style={styles.mediaContent} resizeMode="cover" /> : null
+          {item.message_type === 'IMAGE' && resolvedMediaUrl && (
+            <Image source={{ uri: resolvedMediaUrl }} style={styles.mediaContent} resizeMode="cover" />
           )}
 
-          {item.message_type === 'VIDEO' && (
-            <Pressable
-              style={styles.videoContainer}
-              onPress={() => {
-                if (resolvedMediaUrl) {
-                  void Linking.openURL(resolvedMediaUrl);
-                }
-              }}
-            >
-              <View style={styles.videoPlaceholder}>
-                <Video size={28} color="#fff" />
-                <Text style={styles.videoPlaceholderText}>Ouvrir la vidéo</Text>
-              </View>
-            </Pressable>
+          {item.message_type === 'VIDEO' && resolvedMediaUrl && (
+            <VideoPlayer uri={resolvedMediaUrl} style={styles.videoContent} useNativeControls={true} />
           )}
 
           <Text style={[styles.time, isMine && styles.myTime]}>
@@ -445,7 +433,7 @@ const CommunityChatScreen: React.FC = () => {
                 <Text style={styles.membersSubtitle}>{communityName}</Text>
               </View>
               <Pressable onPress={() => setMembersVisible(false)} style={styles.membersCloseButton}>
-                <ChevronLeft color={COLORS.ink} size={20} />
+                <X color={COLORS.ink} size={20} />
               </Pressable>
             </View>
 
@@ -567,9 +555,7 @@ const styles = StyleSheet.create({
   messageText: { fontSize: 15, color: COLORS.ink, lineHeight: 20 },
   myMessageText: { color: '#fff' },
   mediaContent: { width: 240, height: 240, borderRadius: 12, marginTop: 4 },
-  videoContainer: { width: 240, height: 240, borderRadius: 12, overflow: 'hidden', backgroundColor: '#000' },
-  videoPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
-  videoPlaceholderText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  videoContent: { width: 240, height: 240, borderRadius: 12, marginBottom: 4 },
   time: { fontSize: 10, color: 'rgba(0,0,0,0.4)', marginTop: 4, alignSelf: 'flex-end' },
   myTime: { color: 'rgba(255,255,255,0.7)' },
   empty: { flex: 1, alignItems: 'center', marginTop: 100 },
@@ -587,7 +573,7 @@ const styles = StyleSheet.create({
   membersHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   membersTitle: { fontSize: 22, fontWeight: '900', color: COLORS.ink },
   membersSubtitle: { fontSize: 12, fontWeight: '700', color: COLORS.muted },
-  membersCloseButton: { width: 38, height: 38, borderRadius: 12, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '90deg' }] },
+  membersCloseButton: { width: 38, height: 38, borderRadius: 12, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' },
   membersList: { paddingBottom: 24, gap: 12 },
   memberCard: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 18, padding: 14, backgroundColor: '#fff', gap: 12 },
   memberIdentity: { flexDirection: 'row', alignItems: 'center', gap: 12 },

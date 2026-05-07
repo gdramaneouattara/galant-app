@@ -69,6 +69,11 @@ type AdminShortcut = {
 
 const ADMIN_SHORTCUTS: AdminShortcut[] = [
   {
+    route: 'AdminUserList',
+    title: 'Gestion Utilisateurs',
+    description: 'Liste complète, suspension et vérification des profils.',
+  },
+  {
     route: 'AdminAuditLogs',
     title: 'Audit Logs',
     description: 'Traçabilité des actions administratives sensibles.',

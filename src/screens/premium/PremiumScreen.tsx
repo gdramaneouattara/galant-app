@@ -1,19 +1,29 @@
-import React, { useState } from 'react';
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Crown, Gem, Gift, Package, LucideProps } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
+import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, Platform, ActivityIndicator } from 'react-native';
+import { Crown, Gem, Gift, Package, LucideProps, CreditCard, Play } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
+import * as IAP from 'react-native-iap';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+const PLAN_AMOUNTS = {
+  MONTHLY: parseInt(process.env.EXPO_PUBLIC_PLAN_MONTHLY_AMOUNT || '3000'),
+  QUARTERLY: parseInt(process.env.EXPO_PUBLIC_PLAN_QUARTERLY_AMOUNT || '9000'),
+  BIANNUAL: parseInt(process.env.EXPO_PUBLIC_PLAN_BIANNUAL_AMOUNT || '15000'),
+  ANNUAL: parseInt(process.env.EXPO_PUBLIC_PLAN_ANNUAL_AMOUNT || '30000'),
+};
+
 type PremiumPlan = {
   id: string;
+  sku: string; // Google Play SKU
   name: string;
-  price: string;
+  priceText: string;
+  priceAmount: number;
   savings?: string;
   icon: (props: LucideProps) => React.ReactElement;
   description: string;
@@ -23,23 +33,29 @@ type PremiumPlan = {
 const PREMIUM_PLANS: PremiumPlan[] = [
   {
     id: 'MONTHLY',
+    sku: 'premium_1_month',
     name: '1 Mois',
-    price: '3000 F CFA',
+    priceText: `${PLAN_AMOUNTS.MONTHLY} F CFA`,
+    priceAmount: PLAN_AMOUNTS.MONTHLY,
     icon: (props) => <Package {...props} />,
     description: 'Accès complet pour un mois (sans mode invisible).',
   },
   {
     id: 'QUARTERLY',
+    sku: 'premium_3_months',
     name: '3 Mois',
-    price: '9000 F CFA',
+    priceText: `${PLAN_AMOUNTS.QUARTERLY} F CFA`,
+    priceAmount: PLAN_AMOUNTS.QUARTERLY,
     savings: '0%',
     icon: (props) => <Gift {...props} />,
     description: 'Formule trimestrielle (sans mode invisible).',
   },
   {
     id: 'BIANNUAL',
+    sku: 'premium_6_months',
     name: '6 Mois',
-    price: '15000 F CFA',
+    priceText: `${PLAN_AMOUNTS.BIANNUAL} F CFA`,
+    priceAmount: PLAN_AMOUNTS.BIANNUAL,
     savings: '17%',
     icon: (props) => <Crown {...props} />,
     description: 'Mode invisible inclus.',
@@ -47,8 +63,10 @@ const PREMIUM_PLANS: PremiumPlan[] = [
   },
   {
     id: 'ANNUAL',
+    sku: 'premium_1_year',
     name: '1 An',
-    price: '30000 F CFA',
+    priceText: `${PLAN_AMOUNTS.ANNUAL} F CFA`,
+    priceAmount: PLAN_AMOUNTS.ANNUAL,
     savings: '17%',
     icon: (props) => <Gem {...props} />,
     description: 'Mode invisible inclus.',
@@ -59,29 +77,39 @@ const PremiumScreen: React.FC = () => {
   const navigation = useNavigation();
   const { currentUser, refreshCurrentUser, updateCurrentUser } = useApp();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [iapAvailable, setIapAvailable] = useState(false);
 
-  const subscribe = async (planId: string) => {
-    if (loadingPlan) return;
-    setLoadingPlan(planId);
-
-    if (process.env.EXPO_PUBLIC_SIMULATE_PAYMENT === 'true') {
+  useEffect(() => {
+    const initIAP = async () => {
       try {
-        await wait(2000);
-        updateCurrentUser({ isPremium: true });
-        Alert.alert('Premium activé (Simulation)', 'Ton abonnement est maintenant actif.');
-        navigation.goBack();
-      } catch (error: any) {
-        Alert.alert('Erreur de simulation', error?.message);
-      } finally {
-        setLoadingPlan(null);
+        await IAP.initConnection();
+        setIapAvailable(true);
+      } catch (err) {
+        console.warn('IAP Init Error', err);
       }
-      return;
-    }
+    };
+    initIAP();
+    return () => {
+      IAP.endConnection();
+    };
+  }, []);
+
+  const subscribePaystack = async (plan: PremiumPlan) => {
+    if (loadingPlan) return;
+    setLoadingPlan(plan.id);
 
     try {
       const init = await apiRequest<{ authorization_url: string; reference: string }>(
         '/api/payments/initialize',
-        { method: 'POST', body: JSON.stringify({ planId }), requireAuth: true }
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            planId: plan.id,
+            amount: plan.priceAmount,
+            type: 'PREMIUM'
+          }),
+          requireAuth: true
+        }
       );
       const redirectUrl = Linking.createURL('paystack');
       await WebBrowser.openAuthSessionAsync(init.authorization_url, redirectUrl);
@@ -90,18 +118,45 @@ const PremiumScreen: React.FC = () => {
         { requireAuth: true }
       );
       if (verify.status === 'active') {
-        const updated = await refreshCurrentUser();
-        if (updated?.isPremium) {
-          Alert.alert('Premium activé', 'Ton abonnement est actif.');
-          navigation.goBack();
-        } else {
-          Alert.alert('Paiement en attente', 'Le paiement est en cours de validation.');
-        }
+        await refreshCurrentUser();
+        Alert.alert('Succès', 'Ton abonnement est actif.');
+        navigation.goBack();
       } else {
         Alert.alert('Paiement en attente', 'Le paiement est en cours de validation.');
       }
     } catch (error: any) {
-      Alert.alert('Erreur paiement', error?.message || 'Impossible de démarrer le paiement.');
+      Alert.alert('Erreur', error.message);
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
+  const subscribeGooglePlay = async (plan: PremiumPlan) => {
+    if (loadingPlan) return;
+    setLoadingPlan(plan.id);
+    try {
+      // @ts-ignore
+      const purchase = await IAP.requestPurchase({ skus: [plan.sku] });
+      const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;
+      if (purchaseItem) {
+        // Valider le reçu auprès de votre backend
+        await apiRequest('/api/payments/google-verify', {
+          method: 'POST',
+          body: JSON.stringify({
+            purchaseToken: purchaseItem.purchaseToken,
+            productId: purchaseItem.productId,
+            planId: plan.id,
+          }),
+          requireAuth: true,
+        });
+        await refreshCurrentUser();
+        Alert.alert('Succès', 'Ton abonnement Google Play est actif.');
+        navigation.goBack();
+      }
+    } catch (err: any) {
+      if (err.code !== 'E_USER_CANCELLED') {
+        Alert.alert('Erreur Google Play', err.message);
+      }
     } finally {
       setLoadingPlan(null);
     }
@@ -116,48 +171,64 @@ const PremiumScreen: React.FC = () => {
           </View>
           <Text style={styles.title}>Devenez Membre Premium</Text>
           <Text style={styles.subtitle}>Accès illimité aux messages, filtres avancés et bien plus.</Text>
-          {currentUser?.isPremium ? (
-            <Pressable style={styles.likesButton} onPress={() => navigation.navigate('LikesReceived' as never)}>
-              <Text style={styles.likesButtonText}>Voir qui a liké mon profil</Text>
-            </Pressable>
-          ) : null}
         </View>
 
         <View style={styles.plans}>
           {PREMIUM_PLANS.map((plan) => (
-            <Pressable
-              key={plan.id}
-              style={[
-                styles.planCard,
-                plan.isBest && styles.bestPlanCard,
-                loadingPlan === plan.id && styles.planCardDisabled,
-              ]}
-              onPress={() => subscribe(plan.id)}
-            >
+            <View key={plan.id} style={[styles.planCard, plan.isBest && styles.bestPlanCard]}>
               {plan.isBest && (
                 <View style={styles.bestBadge}>
                   <Text style={styles.bestBadgeText}>MEILLEUR CHOIX</Text>
                 </View>
               )}
-              <View style={[styles.planIcon, plan.isBest && styles.bestPlanIcon]}>
-                {plan.icon({ color: plan.isBest ? '#fff' : '#f59e0b', size: 28 })}
-              </View>
-              <View style={styles.planDetails}>
-                <Text style={[styles.planName, plan.isBest && styles.bestPlanText]}>{plan.name}</Text>
-                <Text style={[styles.planDescription, plan.isBest && styles.bestPlanText]}>
-                  {plan.description}
-                </Text>
-              </View>
-              <View style={styles.planPricing}>
-                <Text style={[styles.planPrice, plan.isBest && styles.bestPlanText]}>{plan.price}</Text>
+
+              <View style={styles.planHeader}>
+                <View style={[styles.planIcon, plan.isBest && styles.bestPlanIcon]}>
+                  {plan.icon({ color: plan.isBest ? '#fff' : '#f59e0b', size: 28 })}
+                </View>
+                <View style={styles.planDetails}>
+                  <Text style={[styles.planName, plan.isBest && styles.bestPlanText]}>{plan.name}</Text>
+                  <Text style={[styles.planPrice, plan.isBest && styles.bestPlanText]}>{plan.priceText}</Text>
+                </View>
                 {plan.savings && (
                   <Text style={[styles.planSavings, plan.isBest && styles.bestPlanSavings]}>
-                    Économisez {plan.savings}
+                    -{plan.savings}
                   </Text>
                 )}
               </View>
-              {loadingPlan === plan.id && <Text style={styles.planLoading}>Traitement…</Text>}
-            </Pressable>
+
+              <Text style={[styles.planDescription, plan.isBest && styles.bestPlanText]}>
+                {plan.description}
+              </Text>
+
+              <View style={styles.buttonGroup}>
+                <Pressable
+                  style={[styles.payBtn, styles.paystackBtn]}
+                  onPress={() => subscribePaystack(plan)}
+                  disabled={!!loadingPlan}
+                >
+                  {loadingPlan === plan.id ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <CreditCard size={18} color="#fff" />
+                      <Text style={styles.payBtnText}>Paystack</Text>
+                    </>
+                  )}
+                </Pressable>
+
+                {Platform.OS === 'android' && (
+                  <Pressable
+                    style={[styles.payBtn, styles.googleBtn]}
+                    onPress={() => subscribeGooglePlay(plan)}
+                    disabled={!!loadingPlan}
+                  >
+                    <Play size={18} color="#fff" fill="#fff" />
+                    <Text style={styles.payBtnText}>Google Pay</Text>
+                  </Pressable>
+                )}
+              </View>
+            </View>
           ))}
         </View>
       </ScrollView>
@@ -178,18 +249,17 @@ const styles = StyleSheet.create({
   hero: {
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: 20,
   },
   heroIconWrap: {
     width: 80,
     height: 80,
-    borderRadius: 999,
+    borderRadius: 40,
     backgroundColor: '#f59e0b',
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '900',
     color: COLORS.ink,
     textAlign: 'center',
@@ -197,48 +267,29 @@ const styles = StyleSheet.create({
   subtitle: {
     color: COLORS.muted,
     textAlign: 'center',
-    fontSize: 16,
-  },
-  likesButton: {
-    marginTop: 4,
-    borderWidth: 1,
-    borderColor: '#fecdd3',
-    backgroundColor: '#fff1f2',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  likesButtonText: {
-    color: '#be123c',
-    fontWeight: '700',
-    fontSize: 12,
+    fontSize: 15,
   },
   plans: {
-    gap: 16,
+    gap: 20,
   },
   planCard: {
     backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
     borderRadius: 24,
     padding: 20,
-    gap: 16,
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  planCardDisabled: {
-    opacity: 0.6,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   bestPlanCard: {
-    backgroundColor: '#1a1a1a',
-    borderColor: '#1a1a1a',
+    backgroundColor: '#1e293b',
+    borderColor: '#334155',
   },
   bestBadge: {
     position: 'absolute',
     top: -12,
     right: 20,
     backgroundColor: '#f59e0b',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 999,
   },
@@ -247,13 +298,18 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
   },
+  planHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   planIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#fef3c7',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fef3c7',
   },
   bestPlanIcon: {
     backgroundColor: 'rgba(255,255,255,0.1)',
@@ -263,39 +319,60 @@ const styles = StyleSheet.create({
   },
   planName: {
     fontSize: 18,
-    fontWeight: '800',
-    color: COLORS.ink,
-  },
-  planDescription: {
-    color: COLORS.muted,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  planPricing: {
-    alignItems: 'flex-end',
-  },
-  planPrice: {
-    fontSize: 16,
     fontWeight: 'bold',
     color: COLORS.ink,
   },
+  planPrice: {
+    fontSize: 14,
+    color: COLORS.muted,
+    fontWeight: '600',
+  },
   planSavings: {
-    color: '#22c55e',
-    fontWeight: '700',
-    fontSize: 11,
+    backgroundColor: '#dcfce7',
+    color: '#166534',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    fontSize: 12,
+    fontWeight: 'bold',
+    overflow: 'hidden',
+  },
+  bestPlanSavings: {
+    backgroundColor: '#f59e0b',
+    color: '#fff',
+  },
+  planDescription: {
+    fontSize: 13,
+    color: COLORS.muted,
+    lineHeight: 18,
   },
   bestPlanText: {
     color: '#fff',
   },
-  bestPlanSavings: {
-    color: '#fde047',
+  buttonGroup: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
   },
-  planLoading: {
-    position: 'absolute',
-    right: 20,
-    bottom: 10,
-    color: COLORS.muted,
-    fontSize: 12,
+  payBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  paystackBtn: {
+    backgroundColor: '#09a5db',
+  },
+  googleBtn: {
+    backgroundColor: '#000',
+  },
+  payBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
   },
 });
 

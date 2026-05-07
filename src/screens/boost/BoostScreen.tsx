@@ -1,17 +1,26 @@
-import React, { useState } from 'react';
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Rocket, Flame, ChevronsUp, Crown, LucideProps } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
+import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, ActivityIndicator, Platform } from 'react-native';
+import { Rocket, Flame, ChevronsUp, Crown, LucideProps, CreditCard, Play } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
+import * as IAP from 'react-native-iap';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 
+const BOOST_PRICES = {
+  '1D': parseInt(process.env.EXPO_PUBLIC_BOOST_1D_AMOUNT || '1000'),
+  '3D': parseInt(process.env.EXPO_PUBLIC_BOOST_3D_AMOUNT || '2500'),
+  '7D': parseInt(process.env.EXPO_PUBLIC_BOOST_7D_AMOUNT || '5000'),
+};
+
 type BoostPlan = {
   id: string;
+  sku: string;
   name: string;
-  price: string;
+  priceText: string;
+  priceAmount: number;
   savings?: string;
   icon: (props: LucideProps) => React.ReactElement;
   description: string;
@@ -20,25 +29,31 @@ type BoostPlan = {
 
 const BOOST_PLANS: BoostPlan[] = [
   {
-    id: 'DAILY',
+    id: '1D',
+    sku: 'boost_1_day',
     name: '1 Jour',
-    price: '1000 F CFA',
+    priceText: `${BOOST_PRICES['1D']} F CFA`,
+    priceAmount: BOOST_PRICES['1D'],
     icon: (props) => <Flame {...props} />,
     description: 'Un coup de pouce pour aujourd\'hui.',
   },
   {
-    id: 'THREE_DAYS',
+    id: '3D',
+    sku: 'boost_3_days',
     name: '3 Jours',
-    price: '2500 F CFA',
+    priceText: `${BOOST_PRICES['3D']} F CFA`,
+    priceAmount: BOOST_PRICES['3D'],
     savings: '17%',
     icon: (props) => <ChevronsUp {...props} />,
     description: 'Le choix le plus populaire.',
     isBest: true,
   },
   {
-    id: 'SEVEN_DAYS',
+    id: '7D',
+    sku: 'boost_7_days',
     name: '7 Jours',
-    price: '5000 F CFA',
+    priceText: `${BOOST_PRICES['7D']} F CFA`,
+    priceAmount: BOOST_PRICES['7D'],
     savings: '29%',
     icon: (props) => <Crown {...props} />,
     description: 'Dominez les résultats pendant une semaine.',
@@ -47,33 +62,44 @@ const BOOST_PLANS: BoostPlan[] = [
 
 const BoostScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { refreshCurrentUser } = useApp();
+  const { currentUser, refreshCurrentUser, activateBoost } = useApp();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [activatingFree, setActivatingFree] = useState(false);
 
-  const boost = async (planId: string) => {
-    if (loadingPlan) return;
-    setLoadingPlan(planId);
+  useEffect(() => {
+    IAP.initConnection().catch(() => {});
+    return () => { IAP.endConnection().catch(() => {}); };
+  }, []);
 
-    if (process.env.EXPO_PUBLIC_SIMULATE_PAYMENT === 'true') {
-      try {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        await refreshCurrentUser();
-        Alert.alert('Boost activé (Simulation)', 'Ton profil est maintenant mis en avant.');
+  const handleFreeBoost = async () => {
+    try {
+      setActivatingFree(true);
+      const result = await activateBoost();
+      if (result) {
+        Alert.alert('Succès', 'Votre boost d\'une heure est activé !');
         navigation.goBack();
-      } catch (error: any) {
-        Alert.alert('Erreur de simulation', error?.message);
-      } finally {
-        setLoadingPlan(null);
       }
-      return;
+    } catch (e) {
+      Alert.alert('Erreur', 'Impossible d\'activer le boost gratuit.');
+    } finally {
+      setActivatingFree(false);
     }
+  };
+
+  const boostPaystack = async (plan: BoostPlan) => {
+    if (loadingPlan) return;
+    setLoadingPlan(plan.id);
 
     try {
       const init = await apiRequest<{ authorization_url: string; reference: string }>(
-        '/api/boosts/initialize',
+        '/api/payments/initialize',
         {
           method: 'POST',
-          body: JSON.stringify({ boostId: planId }),
+          body: JSON.stringify({
+            planId: plan.id,
+            amount: plan.priceAmount,
+            type: 'BOOST'
+          }),
           requireAuth: true,
         }
       );
@@ -81,20 +107,51 @@ const BoostScreen: React.FC = () => {
       const redirectUrl = Linking.createURL('boost');
       await WebBrowser.openAuthSessionAsync(init.authorization_url, redirectUrl);
 
-      const verify = await apiRequest<{ status: string; reference: string }>(
-        `/api/boosts/verify?reference=${init.reference}`,
+      const verify = await apiRequest<{ status: string }>(
+        `/api/payments/verify?reference=${init.reference}`,
         { requireAuth: true }
       );
 
       if (verify.status === 'active') {
         await refreshCurrentUser();
-        Alert.alert('Boost activé', 'Ton profil est maintenant mis en avant.');
+        Alert.alert('Succès', 'Boost activé.');
         navigation.goBack();
       } else {
         Alert.alert('Paiement en attente', 'Le paiement est en cours de validation.');
       }
     } catch (error: any) {
-      Alert.alert('Erreur paiement', error?.message || 'Impossible de démarrer le paiement.');
+      Alert.alert('Erreur', error.message);
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
+  const boostGooglePlay = async (plan: BoostPlan) => {
+    if (loadingPlan) return;
+    setLoadingPlan(plan.id);
+    try {
+      // @ts-ignore
+      const purchase = await IAP.requestPurchase({ skus: [plan.sku] });
+      const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;
+      if (purchaseItem) {
+        await apiRequest('/api/payments/google-verify', {
+          method: 'POST',
+          body: JSON.stringify({
+            purchaseToken: purchaseItem.purchaseToken,
+            productId: purchaseItem.productId,
+            type: 'BOOST',
+            planId: plan.id
+          }),
+          requireAuth: true,
+        });
+        await refreshCurrentUser();
+        Alert.alert('Succès', 'Boost activé avec Google Play.');
+        navigation.goBack();
+      }
+    } catch (err: any) {
+      if (err.code !== 'E_USER_CANCELLED') {
+        Alert.alert('Erreur Google Play', err.message);
+      }
     } finally {
       setLoadingPlan(null);
     }
@@ -107,45 +164,71 @@ const BoostScreen: React.FC = () => {
           <View style={styles.heroIconWrap}>
             <Rocket color="#fff" size={42} />
           </View>
-          <Text style={styles.title}>Passez à la vitesse supérieure</Text>
-          <Text style={styles.subtitle}>Votre profil est vu jusqu'à 10x plus. Obtenez plus de matchs !</Text>
+          <Text style={styles.title}>Boostez votre profil</Text>
+          <Text style={styles.subtitle}>Soyez vu par plus de monde et obtenez plus de matchs !</Text>
         </View>
+
+        {/* Free Boost Block */}
+        {(currentUser?.isPremium || (currentUser?.gender === 'MALE')) && (
+          <Pressable
+            style={[styles.freeBoostCard, activatingFree && { opacity: 0.7 }]}
+            onPress={handleFreeBoost}
+            disabled={activatingFree}
+          >
+            <View style={styles.freeBoostIcon}>
+              <Flame color="#fff" size={24} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.freeBoostTitle}>Boost gratuit disponible</Text>
+              <Text style={styles.freeBoostSub}>Utilisez votre heure de visibilité offerte.</Text>
+            </View>
+            {activatingFree ? (
+              <ActivityIndicator color={COLORS.primary} size="small" />
+            ) : (
+              <View style={styles.freeBoostBtn}>
+                <Text style={styles.freeBoostBtnText}>Activer</Text>
+              </View>
+            )}
+          </Pressable>
+        )}
 
         <View style={styles.plans}>
           {BOOST_PLANS.map((plan) => (
-            <Pressable
-              key={plan.id}
-              style={[
-                styles.planCard,
-                plan.isBest && styles.bestPlanCard,
-                loadingPlan === plan.id && styles.planCardDisabled,
-              ]}
-              onPress={() => boost(plan.id)}
-            >
-              {plan.isBest && (
-                <View style={styles.bestBadge}>
-                  <Text style={styles.bestBadgeText}>MEILLEUR CHOIX</Text>
+            <View key={plan.id} style={[styles.planCard, plan.isBest && styles.bestPlanCard]}>
+              <View style={styles.planHeader}>
+                <View style={[styles.planIcon, plan.isBest && styles.bestPlanIcon]}>
+                  {plan.icon({ color: plan.isBest ? '#fff' : COLORS.primary, size: 28 })}
                 </View>
-              )}
-              <View style={[styles.planIcon, plan.isBest && styles.bestPlanIcon]}>
-                {plan.icon({ color: plan.isBest ? '#fff' : COLORS.primary, size: 28 })}
+                <View style={styles.planDetails}>
+                  <Text style={[styles.planName, plan.isBest && styles.bestPlanText]}>{plan.name}</Text>
+                  <Text style={[styles.planPrice, plan.isBest && styles.bestPlanText]}>{plan.priceText}</Text>
+                </View>
               </View>
-              <View style={styles.planDetails}>
-                <Text style={[styles.planName, plan.isBest && styles.bestPlanText]}>{plan.name}</Text>
-                <Text style={[styles.planDescription, plan.isBest && styles.bestPlanText]}>
-                  {plan.description}
-                </Text>
-              </View>
-              <View style={styles.planPricing}>
-                <Text style={[styles.planPrice, plan.isBest && styles.bestPlanText]}>{plan.price}</Text>
-                {plan.savings && (
-                  <Text style={[styles.planSavings, plan.isBest && styles.bestPlanSavings]}>
-                    Économisez {plan.savings}
-                  </Text>
+
+              <Text style={[styles.planDescription, plan.isBest && styles.bestPlanText]}>{plan.description}</Text>
+
+              <View style={styles.buttonGroup}>
+                <Pressable
+                  style={[styles.payBtn, styles.paystackBtn]}
+                  onPress={() => boostPaystack(plan)}
+                  disabled={!!loadingPlan}
+                >
+                  <CreditCard size={18} color="#fff" />
+                  <Text style={styles.payBtnText}>Paystack</Text>
+                </Pressable>
+
+                {Platform.OS === 'android' && (
+                  <Pressable
+                    style={[styles.payBtn, styles.googleBtn]}
+                    onPress={() => boostGooglePlay(plan)}
+                    disabled={!!loadingPlan}
+                  >
+                    <Play size={18} color="#fff" fill="#fff" />
+                    <Text style={styles.payBtnText}>Google Play</Text>
+                  </Pressable>
                 )}
               </View>
-              {loadingPlan === plan.id && <Text style={styles.planLoading}>Traitement…</Text>}
-            </Pressable>
+            </View>
           ))}
         </View>
       </ScrollView>
@@ -154,123 +237,34 @@ const BoostScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  content: {
-    padding: 20,
-    paddingVertical: 40,
-    gap: 32,
-  },
-  hero: {
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 20,
-  },
-  heroIconWrap: {
-    width: 80,
-    height: 80,
-    borderRadius: 999,
-    backgroundColor: '#8b5cf6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: COLORS.ink,
-    textAlign: 'center',
-  },
-  subtitle: {
-    color: COLORS.muted,
-    textAlign: 'center',
-    fontSize: 16,
-  },
-  plans: {
-    gap: 16,
-  },
-  planCard: {
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
-    borderRadius: 24,
-    padding: 20,
-    gap: 16,
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  planCardDisabled: {
-    opacity: 0.6,
-  },
-  bestPlanCard: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  bestBadge: {
-    position: 'absolute',
-    top: -12,
-    right: 20,
-    backgroundColor: '#f59e0b',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  bestBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  planIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f1f5f9',
-  },
-  bestPlanIcon: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  planDetails: {
-    flex: 1,
-  },
-  planName: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: COLORS.ink,
-  },
-  planDescription: {
-    color: COLORS.muted,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  planPricing: {
-    alignItems: 'flex-end',
-  },
-  planPrice: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.ink,
-  },
-  planSavings: {
-    color: '#22c55e',
-    fontWeight: '700',
-    fontSize: 11,
-  },
-  bestPlanText: {
-    color: '#fff',
-  },
-  bestPlanSavings: {
-    color: '#fde047',
-  },
-  planLoading: {
-    position: 'absolute',
-    right: 20,
-    bottom: 10,
-    color: COLORS.muted,
-    fontSize: 12,
-  },
+  safe: { flex: 1, backgroundColor: '#f8fafc' },
+  content: { padding: 20, paddingVertical: 40, gap: 32 },
+  hero: { alignItems: 'center', gap: 12 },
+  heroIconWrap: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#8b5cf6', alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 26, fontWeight: '900', color: COLORS.ink, textAlign: 'center' },
+  subtitle: { color: COLORS.muted, textAlign: 'center', fontSize: 15 },
+  freeBoostCard: { backgroundColor: '#fff', borderWidth: 2, borderColor: COLORS.primary, borderRadius: 24, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  freeBoostIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
+  freeBoostTitle: { fontSize: 16, fontWeight: '800', color: COLORS.ink },
+  freeBoostSub: { fontSize: 12, color: COLORS.muted },
+  freeBoostBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, backgroundColor: '#fef2f2' },
+  freeBoostBtnText: { color: COLORS.primary, fontWeight: '700', fontSize: 13 },
+  plans: { gap: 20 },
+  planCard: { backgroundColor: '#fff', borderRadius: 24, padding: 20, gap: 12, borderWidth: 1, borderColor: '#e2e8f0' },
+  bestPlanCard: { backgroundColor: '#4c1d95', borderColor: '#5b21b6' },
+  planHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  planIcon: { width: 48, height: 48, borderRadius: 14, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' },
+  bestPlanIcon: { backgroundColor: 'rgba(255,255,255,0.1)' },
+  planDetails: { flex: 1 },
+  planName: { fontSize: 18, fontWeight: 'bold', color: COLORS.ink },
+  planPrice: { fontSize: 14, color: COLORS.muted, fontWeight: '600' },
+  planDescription: { fontSize: 13, color: COLORS.muted, lineHeight: 18 },
+  bestPlanText: { color: '#fff' },
+  buttonGroup: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  payBtn: { flex: 1, height: 48, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  paystackBtn: { backgroundColor: '#09a5db' },
+  googleBtn: { backgroundColor: '#000' },
+  payBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 });
 
 export default BoostScreen;

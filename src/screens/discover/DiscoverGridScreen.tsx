@@ -36,6 +36,8 @@ type DiscoverResponse = {
   suggestions: DiscoverSuggestion[];
 };
 
+const MATCHMAKING_LIMIT = 80;
+
 const DiscoverGridScreen: React.FC = () => {
   const { currentUser } = useApp();
   const [profiles, setProfiles] = useState<DiscoverSuggestion[]>([]);
@@ -45,7 +47,7 @@ const DiscoverGridScreen: React.FC = () => {
     try {
       setLoading(true);
       const response = await apiRequest<DiscoverResponse>(
-        '/api/matchmaking/suggestions?limit=80',
+        `/api/matchmaking/suggestions?limit=${MATCHMAKING_LIMIT}`,
         { requireAuth: true }
       );
       setProfiles(response.suggestions || []);
