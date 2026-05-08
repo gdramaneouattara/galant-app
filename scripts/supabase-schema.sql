@@ -75,6 +75,16 @@ create table if not exists public.daily_usage (
   unique(user_id, action_type, action_date)
 );
 
+-- Likes table
+create table if not exists public.likes (
+  id uuid primary key default gen_random_uuid(),
+  liker_id uuid references public.profiles(id) on delete cascade,
+  liked_id uuid references public.profiles(id) on delete cascade,
+  is_super_like boolean default false,
+  created_at timestamp with time zone default now(),
+  unique (liker_id, liked_id)
+);
+
 -- Matches table
 create table if not exists public.matches (
   id uuid primary key default gen_random_uuid(),
@@ -156,6 +166,16 @@ create table if not exists public.super_likes (
   check (sender_id <> recipient_id)
 );
 
+-- Privacy Requests
+create table if not exists public.privacy_requests (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.profiles(id) on delete set null,
+  request_type text not null check (request_type in ('DATA_EXPORT', 'ACCOUNT_DELETION')),
+  status text not null default 'PENDING' check (status in ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED')),
+  completed_at timestamp with time zone,
+  created_at timestamp with time zone default now()
+);
+
 -- Admin audit logs
 create table if not exists public.admin_audit_logs (
   id uuid primary key default gen_random_uuid(),
@@ -165,6 +185,17 @@ create table if not exists public.admin_audit_logs (
   target_type text,
   old_data jsonb,
   new_data jsonb,
+  created_at timestamp with time zone default now()
+);
+
+-- Photo review queue (Legacy/Internal)
+create table if not exists public.photo_review_queue (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.profiles(id) on delete cascade,
+  photo_url text not null,
+  status text not null default 'PENDING' check (status in ('PENDING', 'APPROVED', 'REJECTED')),
+  reviewed_at timestamp with time zone,
+  rejection_reason text,
   created_at timestamp with time zone default now()
 );
 
