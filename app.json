@@ -4,7 +4,7 @@
     "slug": "yamo-app",
     "scheme": "yamo",
     "version": "0.1.0",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/logo_yamo.jpg",
     "userInterfaceStyle": "light",
