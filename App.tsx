@@ -4,18 +4,11 @@ import { enableScreens } from 'react-native-screens';
 import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
 import * as Linking from 'expo-linking';
-import * as Sentry from '@sentry/react-native';
 import MainNavigator from './src/navigation/MainNavigator';
 import { AppProvider, useApp } from './src/state/AppContext';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import ErrorBanner from './src/components/ErrorBanner';
 import { supabase } from './src/lib/supabase';
-
-// Initialize Sentry for crash monitoring
-Sentry.init({
-  dsn: 'https://placeholder-dsn@sentry.io/placeholder', // Replace with your real DSN from Sentry dashboard
-  debug: false,
-});
 
 enableScreens();
 
@@ -75,7 +68,7 @@ const hydrateRecoverySessionFromUrl = async (url: string) => {
       await supabase.auth.verifyOtp({ type: 'recovery', token_hash: tokenHash });
     }
   } catch (error) {
-    Sentry.captureException(error);
+    // Sentry disabled
   }
 };
 
@@ -117,5 +110,5 @@ const App: React.FC = () => {
   );
 };
 
-// Wrap the root component with Sentry
-export default Sentry.wrap(App);
+// Root component
+export default App;

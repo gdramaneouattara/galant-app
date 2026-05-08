@@ -42,10 +42,11 @@
         "WRITE_EXTERNAL_STORAGE",
         "READ_MEDIA_IMAGES",
         "READ_MEDIA_VIDEO",
-        "READ_MEDIA_AUDIO"
+        "READ_MEDIA_AUDIO",
+        "com.android.vending.BILLING"
       ],
       "package": "com.konan.yamo",
-      "versionCode": 4,
+      "versionCode": 6,
       "notification": {
         "color": "#FF6B6B"
       }
@@ -61,18 +62,12 @@
       "expo-location",
       "expo-av",
       [
-        "@sentry/react-native/expo",
-        {
-          "organization": "yamo-tech",
-          "project": "yamo-app"
-        }
-      ],
-      [
         "expo-build-properties",
         {
           "android": {
             "compileSdkVersion": 35,
-            "targetSdkVersion": 35
+            "targetSdkVersion": 35,
+            "kotlinVersion": "1.9.24"
           }
         }
       ],
