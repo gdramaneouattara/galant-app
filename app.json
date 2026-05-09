@@ -65,13 +65,13 @@
         "expo-build-properties",
         {
           "android": {
+            "minSdkVersion": 26,
             "compileSdkVersion": 35,
             "targetSdkVersion": 35,
             "kotlinVersion": "1.9.24"
           }
         }
-      ],
-      "react-native-iap"
+      ]
     ],
     "extra": {
       "eas": {
