@@ -6,7 +6,7 @@
     "version": "0.1.0",
     "newArchEnabled": false,
     "orientation": "portrait",
-    "icon": "./assets/logo_yamo.jpg",
+    "icon": "./assets/icon-1024.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-1242x2436.png",
@@ -46,10 +46,7 @@
         "com.android.vending.BILLING"
       ],
       "package": "com.konan.yamo",
-      "versionCode": 6,
-      "notification": {
-        "color": "#FF6B6B"
-      }
+      "versionCode": 6
     },
     "platforms": [
       "ios",
