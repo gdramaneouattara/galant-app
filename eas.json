@@ -10,13 +10,17 @@
     },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "KOTLIN_VERSION": "1.9.24"
+      },
       "android": {
         "buildType": "apk"
       }
     },
     "production": {
       "env": {
-        "EAS_BUILD_NO_EXPO_GO_WARNING": "true"
+        "EAS_BUILD_NO_EXPO_GO_WARNING": "true",
+        "KOTLIN_VERSION": "1.9.24"
       }
     },
     "production-simulated": {
