@@ -45,8 +45,7 @@
         "READ_MEDIA_AUDIO",
         "com.android.vending.BILLING"
       ],
-      "package": "com.konan.yamo",
-      "versionCode": 7
+      "package": "com.konan.yamo"
     },
     "platforms": [
       "ios",
@@ -62,9 +61,9 @@
         "expo-build-properties",
         {
           "android": {
-            "minSdkVersion": 26,
-            "compileSdkVersion": 35,
-            "targetSdkVersion": 35,
+            "minSdkVersion": 23,
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34,
             "kotlinVersion": "1.9.24"
           }
         }
