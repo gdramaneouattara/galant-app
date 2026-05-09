@@ -14,13 +14,14 @@ import {
   Text,
   TextInput,
   View,
-  type ViewStyle,
+  Platform,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
-import { Heart, MapPin, ShieldAlert, ShieldBan, SlidersHorizontal, Star, X, PlayCircle } from 'lucide-react-native';
+import * as IAP from 'react-native-iap';
+import { Heart, MapPin, SlidersHorizontal, Star, X, PlayCircle } from 'lucide-react-native';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
@@ -42,36 +43,11 @@ type Suggestion = {
   is_verified: boolean;
   is_premium: boolean;
   boosted_until: string | null;
-  last_active_at?: string | null;
-  likes_count: number;
-  relationship_goal?: string | null;
   score: number;
-  liked_by_me: boolean;
-  liked_me: boolean;
-  super_liked_me: boolean;
-  super_liked_by_me?: boolean;
-  distance_km: number | null;
-};
-
-type MatchmakingResponse = {
-  suggestions: Suggestion[];
-};
-
-type SwipeResponse = {
-  liked: boolean;
-  superLiked: boolean;
-  matched: boolean;
-  likeQuota?: {
-    limit: number;
-    used: number;
-    remaining: number;
-    resetAt: string;
-  } | null;
 };
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SWIPE_TRIGGER_DISTANCE = 110;
-const MATCHMAKING_LIMIT = 80;
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
@@ -81,9 +57,9 @@ const HomeScreen: React.FC = () => {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [matchUser, setMatchUser] = useState<Suggestion | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [likeQuota, setLikeQuota] = useState<any>(null);
   const [showSuperLikeModal, setShowSuperLikeModal] = useState(false);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
+
   const [filters, setFilters] = useState({
     gender: 'ALL',
     minAge: 18,
@@ -92,12 +68,17 @@ const HomeScreen: React.FC = () => {
 
   const swipePosition = useRef(new Animated.ValueXY()).current;
 
+  useEffect(() => {
+    IAP.initConnection().catch(() => {});
+    return () => { IAP.endConnection().catch(() => {}); };
+  }, []);
+
   const fetchSuggestions = useCallback(async () => {
     if (!currentUser) return;
     try {
       setLoading(true);
-      const query = `?limit=${MATCHMAKING_LIMIT}&gender=${filters.gender}&minAge=${filters.minAge}&maxAge=${filters.maxAge}`;
-      const response = await apiRequest<MatchmakingResponse>(`/api/matchmaking/suggestions${query}`, { requireAuth: true });
+      const query = `?gender=${filters.gender}&minAge=${filters.minAge}&maxAge=${filters.maxAge}`;
+      const response = await apiRequest<{ suggestions: Suggestion[] }>(`/api/matchmaking/suggestions${query}`, { requireAuth: true });
       setSuggestions(response.suggestions || []);
     } catch (_error) {
       setSuggestions([]);
@@ -106,26 +87,17 @@ const HomeScreen: React.FC = () => {
     }
   }, [currentUser, filters]);
 
-  const fetchLikeQuota = useCallback(async () => {
-    if (!currentUser || currentUser.isPremium) return;
-    try {
-      const data = await apiRequest<any>('/api/likes/quota', { requireAuth: true });
-      setLikeQuota(data);
-    } catch (_error) {}
-  }, [currentUser]);
-
   useFocusEffect(
     useCallback(() => {
       void fetchSuggestions();
-      void fetchLikeQuota();
-    }, [fetchSuggestions, fetchLikeQuota])
+    }, [fetchSuggestions])
   );
 
   const handleSwipe = async (direction: 'LEFT' | 'RIGHT', isSuper = false, targetProfile = suggestions[0]) => {
     if (!targetProfile || swiping) return;
     try {
       setSwiping(true);
-      const response = await apiRequest<SwipeResponse>('/api/matchmaking/swipe', {
+      const response = await apiRequest<{ matched: boolean }>('/api/matchmaking/swipe', {
         method: 'POST',
         requireAuth: true,
         body: JSON.stringify({ targetUserId: targetProfile.id, direction, isSuperLike: isSuper })
@@ -144,11 +116,40 @@ const HomeScreen: React.FC = () => {
   };
 
   const handleSuperLikePurchasePaystack = async () => {
-    if (!currentProfile) return;
+    if (!suggestions[0]) return;
     try {
       setPurchaseLoading(true);
-      await initiatePurchase('SUPER_LIKE', parseInt(process.env.EXPO_PUBLIC_SUPER_LIKE_AMOUNT || '500'), currentProfile.id);
+      await initiatePurchase('SUPER_LIKE', parseInt(process.env.EXPO_PUBLIC_SUPER_LIKE_AMOUNT || '500'), suggestions[0].id);
       setShowSuperLikeModal(false);
+    } finally {
+      setPurchaseLoading(false);
+    }
+  };
+
+  const handleSuperLikePurchaseGoogle = async () => {
+    if (!suggestions[0]) return;
+    try {
+      setPurchaseLoading(true);
+      // @ts-ignore
+      const purchase: any = await IAP.requestPurchase('super_like_1');
+      const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;
+      if (purchaseItem) {
+        await apiRequest('/api/payments/google-verify', {
+          method: 'POST',
+          body: JSON.stringify({
+            purchaseToken: purchaseItem.purchaseToken,
+            productId: purchaseItem.productId,
+            type: 'SUPER_LIKE',
+            targetId: suggestions[0].id
+          }),
+          requireAuth: true,
+        });
+        Alert.alert('Succès', 'Super Like envoyé !');
+        setShowSuperLikeModal(false);
+        void fetchSuggestions();
+      }
+    } catch (err: any) {
+      if (err.code !== 'E_USER_CANCELLED') Alert.alert('Erreur', err.message);
     } finally {
       setPurchaseLoading(false);
     }
@@ -247,10 +248,12 @@ const HomeScreen: React.FC = () => {
         <Pressable style={[styles.actionBtn, styles.btnYes]} onPress={() => handleSwipe('RIGHT')}><Heart color="#fff" size={30} fill="#fff" /></Pressable>
       </View>
 
+      {/* @ts-ignore */}
       <SuperLikePurchaseModal
         visible={showSuperLikeModal}
         onClose={() => setShowSuperLikeModal(false)}
         onPurchasePaystack={handleSuperLikePurchasePaystack}
+        onPurchaseGoogle={handleSuperLikePurchaseGoogle}
         loading={purchaseLoading}
         userName={currentProfile?.name}
       />
@@ -305,6 +308,18 @@ const HomeScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {matchUser && (
+        <Modal visible transparent animationType="fade">
+          <View style={styles.matchOverlay}>
+            <Text style={styles.matchTitle}>C'est un Match !</Text>
+            <Text style={styles.matchSub}>Vous et {matchUser.name} vous plaisez.</Text>
+            <Pressable style={styles.matchBtn} onPress={() => setMatchUser(null)}>
+              <Text style={styles.matchBtnText}>Continuer</Text>
+            </Pressable>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 };
@@ -348,6 +363,11 @@ const styles = StyleSheet.create({
   ageDash: { fontWeight: '700', color: COLORS.muted },
   applyBtn: { backgroundColor: COLORS.primary, paddingVertical: 16, borderRadius: 16, alignItems: 'center', marginTop: 32 },
   applyBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  matchOverlay: { flex: 1, backgroundColor: 'rgba(255,107,107,0.95)', justifyContent: 'center', alignItems: 'center', gap: 20 },
+  matchTitle: { fontSize: 42, fontWeight: '900', color: '#fff' },
+  matchSub: { fontSize: 18, color: '#fff', textAlign: 'center', paddingHorizontal: 40 },
+  matchBtn: { backgroundColor: '#fff', paddingHorizontal: 40, paddingVertical: 15, borderRadius: 30 },
+  matchBtnText: { color: COLORS.primary, fontWeight: '900', fontSize: 16 }
 });
 
 export default HomeScreen;

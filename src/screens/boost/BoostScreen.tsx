@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
-import { Rocket, Flame, ChevronsUp, Crown, LucideProps, CreditCard } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
+import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, ActivityIndicator, Platform } from 'react-native';
+import { Rocket, Flame, ChevronsUp, Crown, LucideProps, CreditCard, Play } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
+import * as IAP from 'react-native-iap';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
@@ -65,6 +66,11 @@ const BoostScreen: React.FC = () => {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [activatingFree, setActivatingFree] = useState(false);
 
+  useEffect(() => {
+    IAP.initConnection().catch(() => {});
+    return () => { IAP.endConnection().catch(() => {}); };
+  }, []);
+
   const handleFreeBoost = async () => {
     try {
       setActivatingFree(true);
@@ -115,6 +121,37 @@ const BoostScreen: React.FC = () => {
       }
     } catch (error: any) {
       Alert.alert('Erreur', error.message);
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
+  const boostGooglePlay = async (plan: BoostPlan) => {
+    if (loadingPlan) return;
+    setLoadingPlan(plan.id);
+    try {
+      // @ts-ignore
+      const purchase: any = await IAP.requestPurchase(plan.sku);
+      const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;
+      if (purchaseItem) {
+        await apiRequest('/api/payments/google-verify', {
+          method: 'POST',
+          body: JSON.stringify({
+            purchaseToken: purchaseItem.purchaseToken,
+            productId: purchaseItem.productId,
+            type: 'BOOST',
+            planId: plan.id
+          }),
+          requireAuth: true,
+        });
+        await refreshCurrentUser();
+        Alert.alert('Succès', 'Boost activé avec Google Play.');
+        navigation.goBack();
+      }
+    } catch (err: any) {
+      if (err.code !== 'E_USER_CANCELLED') {
+        Alert.alert('Erreur Google Play', err.message);
+      }
     } finally {
       setLoadingPlan(null);
     }
@@ -179,6 +216,17 @@ const BoostScreen: React.FC = () => {
                   <CreditCard size={18} color="#fff" />
                   <Text style={styles.payBtnText}>Paystack</Text>
                 </Pressable>
+
+                {Platform.OS === 'android' && (
+                  <Pressable
+                    style={[styles.payBtn, styles.googleBtn]}
+                    onPress={() => boostGooglePlay(plan)}
+                    disabled={!!loadingPlan}
+                  >
+                    <Play size={18} color="#fff" fill="#fff" />
+                    <Text style={styles.payBtnText}>Google Play</Text>
+                  </Pressable>
+                )}
               </View>
             </View>
           ))}
@@ -212,9 +260,10 @@ const styles = StyleSheet.create({
   planPrice: { fontSize: 14, color: COLORS.muted, fontWeight: '600' },
   planDescription: { fontSize: 13, color: COLORS.muted, lineHeight: 18 },
   bestPlanText: { color: '#fff' },
-  buttonGroup: { marginTop: 8 },
+  buttonGroup: { flexDirection: 'row', gap: 10, marginTop: 8 },
   payBtn: { flex: 1, height: 48, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   paystackBtn: { backgroundColor: '#09a5db' },
+  googleBtn: { backgroundColor: '#000' },
   payBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 });
 

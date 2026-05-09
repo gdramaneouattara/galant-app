@@ -46,10 +46,7 @@
         "com.android.vending.BILLING"
       ],
       "package": "com.konan.yamo",
-      "versionCode": 7,
-      "notification": {
-        "color": "#FF6B6B"
-      }
+      "versionCode": 7
     },
     "platforms": [
       "ios",
@@ -58,7 +55,7 @@
     "plugins": [
       "expo-asset",
       "expo-image-picker",
-      "expo-notifications",
+      ["expo-notifications", { "color": "#FF6B6B" }],
       "expo-location",
       "expo-av",
       [
