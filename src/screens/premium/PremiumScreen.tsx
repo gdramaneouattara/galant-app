@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, Platform, ActivityIndicator } from 'react-native';
-import { Crown, Gem, Gift, Package, LucideProps, CreditCard, Play } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
+import { Crown, Gem, Gift, Package, LucideProps, CreditCard } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
-import * as IAP from 'react-native-iap';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
@@ -77,22 +76,6 @@ const PremiumScreen: React.FC = () => {
   const navigation = useNavigation();
   const { currentUser, refreshCurrentUser, updateCurrentUser } = useApp();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-  const [iapAvailable, setIapAvailable] = useState(false);
-
-  useEffect(() => {
-    const initIAP = async () => {
-      try {
-        await IAP.initConnection();
-        setIapAvailable(true);
-      } catch (err) {
-        console.warn('IAP Init Error', err);
-      }
-    };
-    initIAP();
-    return () => {
-      IAP.endConnection();
-    };
-  }, []);
 
   const subscribePaystack = async (plan: PremiumPlan) => {
     if (loadingPlan) return;
@@ -126,37 +109,6 @@ const PremiumScreen: React.FC = () => {
       }
     } catch (error: any) {
       Alert.alert('Erreur', error.message);
-    } finally {
-      setLoadingPlan(null);
-    }
-  };
-
-  const subscribeGooglePlay = async (plan: PremiumPlan) => {
-    if (loadingPlan) return;
-    setLoadingPlan(plan.id);
-    try {
-      // @ts-ignore
-      const purchase = await IAP.requestPurchase({ skus: [plan.sku] });
-      const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;
-      if (purchaseItem) {
-        // Valider le reçu auprès de votre backend
-        await apiRequest('/api/payments/google-verify', {
-          method: 'POST',
-          body: JSON.stringify({
-            purchaseToken: purchaseItem.purchaseToken,
-            productId: purchaseItem.productId,
-            planId: plan.id,
-          }),
-          requireAuth: true,
-        });
-        await refreshCurrentUser();
-        Alert.alert('Succès', 'Ton abonnement Google Play est actif.');
-        navigation.goBack();
-      }
-    } catch (err: any) {
-      if (err.code !== 'E_USER_CANCELLED') {
-        Alert.alert('Erreur Google Play', err.message);
-      }
     } finally {
       setLoadingPlan(null);
     }
@@ -216,17 +168,6 @@ const PremiumScreen: React.FC = () => {
                     </>
                   )}
                 </Pressable>
-
-                {Platform.OS === 'android' && (
-                  <Pressable
-                    style={[styles.payBtn, styles.googleBtn]}
-                    onPress={() => subscribeGooglePlay(plan)}
-                    disabled={!!loadingPlan}
-                  >
-                    <Play size={18} color="#fff" fill="#fff" />
-                    <Text style={styles.payBtnText}>Google Pay</Text>
-                  </Pressable>
-                )}
               </View>
             </View>
           ))}
@@ -349,11 +290,7 @@ const styles = StyleSheet.create({
   bestPlanText: {
     color: '#fff',
   },
-  buttonGroup: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 8,
-  },
+  buttonGroup: { marginTop: 8 },
   payBtn: {
     flex: 1,
     height: 48,
@@ -365,9 +302,6 @@ const styles = StyleSheet.create({
   },
   paystackBtn: {
     backgroundColor: '#09a5db',
-  },
-  googleBtn: {
-    backgroundColor: '#000',
   },
   payBtnText: {
     color: '#fff',

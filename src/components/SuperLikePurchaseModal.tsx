@@ -1,13 +1,12 @@
 import React from 'react';
-import { Modal, View, Text, StyleSheet, Pressable, ActivityIndicator, Platform } from 'react-native';
-import { Star, X, CreditCard, Play } from 'lucide-react-native';
+import { Modal, View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
+import { Star, X, CreditCard } from 'lucide-react-native';
 import { COLORS } from '../data/mock';
 
 interface Props {
   visible: boolean;
   onClose: () => void;
   onPurchasePaystack: () => void;
-  onPurchaseGoogle: () => void;
   loading?: boolean;
   userName?: string;
 }
@@ -18,7 +17,6 @@ const SuperLikePurchaseModal: React.FC<Props> = ({
   visible,
   onClose,
   onPurchasePaystack,
-  onPurchaseGoogle,
   loading,
   userName
 }) => {
@@ -53,17 +51,6 @@ const SuperLikePurchaseModal: React.FC<Props> = ({
                 </>
               )}
             </Pressable>
-
-            {Platform.OS === 'android' && (
-              <Pressable style={[styles.btn, styles.googleBtn]} onPress={onPurchaseGoogle} disabled={loading}>
-                {loading ? <ActivityIndicator color="#fff" /> : (
-                  <>
-                    <Play color="#fff" size={20} fill="#fff" />
-                    <Text style={styles.btnText}>Google Play</Text>
-                  </>
-                )}
-              </Pressable>
-            )}
           </View>
 
           <Pressable style={styles.secondaryBtn} onPress={onClose} disabled={loading}>
@@ -89,7 +76,6 @@ const styles = StyleSheet.create({
   buttonGroup: { width: '100%', gap: 10, marginTop: 8 },
   btn: { width: '100%', height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10 },
   paystackBtn: { backgroundColor: '#09a5db' },
-  googleBtn: { backgroundColor: '#000' },
   btnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
   secondaryBtn: { padding: 8 },
   secondaryBtnText: { color: COLORS.muted, fontWeight: '600', fontSize: 14 },

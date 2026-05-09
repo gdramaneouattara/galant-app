@@ -18,7 +18,6 @@ import { ChevronLeft, Send, Image as ImageIcon, Video, ShieldAlert, ShieldBan, L
 import * as ImagePicker from 'expo-image-picker';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
-import * as IAP from 'react-native-iap';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
@@ -118,34 +117,6 @@ const ChatScreen: React.FC = () => {
       }
     } catch (error: any) {
       Alert.alert('Erreur', error.message);
-    } finally {
-      setPurchaseLoading(false);
-    }
-  };
-
-  const initiateDirectMessagePurchaseGoogle = async () => {
-    try {
-      setPurchaseLoading(true);
-      // @ts-ignore
-      const purchase = await IAP.requestPurchase({ skus: ['direct_message_1'] });
-      const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;
-      if (purchaseItem) {
-        await apiRequest('/api/payments/google-verify', {
-          method: 'POST',
-          body: JSON.stringify({
-            purchaseToken: purchaseItem.purchaseToken,
-            productId: purchaseItem.productId,
-            type: 'DIRECT_MESSAGE',
-            targetId: userId
-          }),
-          requireAuth: true,
-        });
-        Alert.alert('Succès', 'Message direct débloqué !');
-        setIsUnlocked(true);
-        setShowUnlockModal(false);
-      }
-    } catch (err: any) {
-      if (err.code !== 'E_USER_CANCELLED') Alert.alert('Erreur Google Play', err.message);
     } finally {
       setPurchaseLoading(false);
     }
@@ -306,7 +277,6 @@ const ChatScreen: React.FC = () => {
         visible={showUnlockModal}
         onClose={() => setShowUnlockModal(false)}
         onPurchasePaystack={initiateDirectMessagePurchasePaystack}
-        onPurchaseGoogle={initiateDirectMessagePurchaseGoogle}
         loading={purchaseLoading}
         userName={targetUser?.name}
       />

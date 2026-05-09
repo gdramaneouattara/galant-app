@@ -20,7 +20,6 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
-import * as IAP from 'react-native-iap';
 import { Heart, MapPin, ShieldAlert, ShieldBan, SlidersHorizontal, Star, X, PlayCircle } from 'lucide-react-native';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
@@ -155,35 +154,6 @@ const HomeScreen: React.FC = () => {
     }
   };
 
-  const handleSuperLikePurchaseGoogle = async () => {
-    if (!currentProfile) return;
-    try {
-      setPurchaseLoading(true);
-      // @ts-ignore
-      const purchase = await IAP.requestPurchase({ skus: ['super_like_1'] });
-      const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;
-      if (purchaseItem) {
-        await apiRequest('/api/payments/google-verify', {
-          method: 'POST',
-          body: JSON.stringify({
-            purchaseToken: purchaseItem.purchaseToken,
-            productId: purchaseItem.productId,
-            type: 'SUPER_LIKE',
-            targetId: currentProfile.id
-          }),
-          requireAuth: true,
-        });
-        Alert.alert('Succès', 'Super Like envoyé !');
-        setShowSuperLikeModal(false);
-        void fetchSuggestions();
-      }
-    } catch (err: any) {
-      if (err.code !== 'E_USER_CANCELLED') Alert.alert('Erreur', err.message);
-    } finally {
-      setPurchaseLoading(false);
-    }
-  };
-
   const initiatePurchase = async (type: string, amount: number, targetId?: string) => {
     try {
       const init = await apiRequest<{ authorization_url: string; reference: string }>(
@@ -281,7 +251,6 @@ const HomeScreen: React.FC = () => {
         visible={showSuperLikeModal}
         onClose={() => setShowSuperLikeModal(false)}
         onPurchasePaystack={handleSuperLikePurchasePaystack}
-        onPurchaseGoogle={handleSuperLikePurchaseGoogle}
         loading={purchaseLoading}
         userName={currentProfile?.name}
       />
