@@ -46,7 +46,10 @@
         "com.android.vending.BILLING"
       ],
       "package": "com.konan.yamo",
-      "versionCode": 6
+      "versionCode": 7,
+      "notification": {
+        "color": "#FF6B6B"
+      }
     },
     "platforms": [
       "ios",
@@ -68,7 +71,8 @@
             "kotlinVersion": "1.9.24"
           }
         }
-      ]
+      ],
+      "react-native-iap"
     ],
     "extra": {
       "eas": {
