@@ -57,18 +57,18 @@
       ["expo-notifications", { "color": "#FF6B6B" }],
       "expo-location",
       "expo-av",
+      "react-native-iap",
       [
         "expo-build-properties",
         {
           "android": {
-            "minSdkVersion": 23,
+            "minSdkVersion": 26,
             "compileSdkVersion": 34,
             "targetSdkVersion": 34,
             "kotlinVersion": "1.9.24"
           }
         }
-      ],
-      "react-native-iap"
+      ]
     ],
     "extra": {
       "eas": {
