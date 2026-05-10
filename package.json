@@ -21,7 +21,8 @@
     "supabase:init:force": "powershell -ExecutionPolicy Bypass -File scripts/apply-supabase-init.ps1 -AllowErrors",
     "supabase:rls": "powershell -ExecutionPolicy Bypass -File scripts/apply-rls.ps1",
     "supabase:schema": "powershell -ExecutionPolicy Bypass -File scripts/apply-rls.ps1 -WithSchema",
-    "sentry:upload-sourcemaps": "npx sentry-expo-upload-sourcemaps dist"
+    "sentry:upload-sourcemaps": "npx sentry-expo-upload-sourcemaps dist",
+    "eas-build-post-install": "bash ./scripts/eas-post-install.sh"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "1.23.1",
