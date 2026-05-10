@@ -9,8 +9,6 @@ import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 
-const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 const PLAN_AMOUNTS = {
   MONTHLY: parseInt(process.env.EXPO_PUBLIC_PLAN_MONTHLY_AMOUNT || '3000'),
   QUARTERLY: parseInt(process.env.EXPO_PUBLIC_PLAN_QUARTERLY_AMOUNT || '9000'),
@@ -75,7 +73,7 @@ const PREMIUM_PLANS: PremiumPlan[] = [
 
 const PremiumScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { currentUser, refreshCurrentUser, updateCurrentUser } = useApp();
+  const { refreshCurrentUser } = useApp();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
   useEffect(() => {
@@ -104,7 +102,8 @@ const PremiumScreen: React.FC = () => {
           body: JSON.stringify({
             planId: plan.id,
             amount: plan.priceAmount,
-            type: 'PREMIUM'
+            type: 'PREMIUM',
+            paymentMethod: 'MOBILE_MONEY',
           }),
           requireAuth: true
         }
@@ -133,21 +132,24 @@ const PremiumScreen: React.FC = () => {
     if (loadingPlan) return;
     setLoadingPlan(plan.id);
     try {
-      // @ts-ignore
-      const purchase: any = await IAP.requestSubscription(plan.sku);
+      const purchase: any = await IAP.requestSubscription({ sku: plan.sku });
       const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;
       if (purchaseItem) {
-        await apiRequest('/api/payments/google-verify', {
+        const verifyPath = Platform.OS === 'ios' ? '/api/payments/apple-verify' : '/api/payments/google-verify';
+        await apiRequest(verifyPath, {
           method: 'POST',
           body: JSON.stringify({
-            purchaseToken: purchaseItem.purchaseToken,
             productId: purchaseItem.productId,
             planId: plan.id,
+            type: 'PREMIUM',
+            purchaseToken: purchaseItem.purchaseToken,
+            transactionId: purchaseItem.transactionId || purchaseItem.originalTransactionIdentifierIOS,
           }),
           requireAuth: true,
         });
+        await IAP.finishTransaction({ purchase: purchaseItem });
         await refreshCurrentUser();
-        Alert.alert('Succès', 'Ton abonnement Google Play est actif.');
+        Alert.alert('Succès', Platform.OS === 'ios' ? 'Ton abonnement App Store est actif.' : 'Ton abonnement Google Play est actif.');
         navigation.goBack();
       }
     } catch (err: any) {
@@ -209,19 +211,21 @@ const PremiumScreen: React.FC = () => {
                   ) : (
                     <>
                       <CreditCard size={18} color="#fff" />
-                      <Text style={styles.payBtnText}>Paystack</Text>
+                      <Text style={styles.payBtnText}>Mobile Money (Paystack)</Text>
                     </>
                   )}
                 </Pressable>
 
-                {Platform.OS === 'android' && (
+                {Platform.OS !== 'web' && (
                   <Pressable
                     style={[styles.payBtn, styles.googleBtn]}
                     onPress={() => subscribeGooglePlay(plan)}
                     disabled={!!loadingPlan}
                   >
                     <Play size={18} color="#fff" fill="#fff" />
-                    <Text style={styles.payBtnText}>Google Play</Text>
+                    <Text style={styles.payBtnText}>
+                      {Platform.OS === 'ios' ? 'Carte bancaire (App Store)' : 'Carte bancaire (Google Play)'}
+                    </Text>
                   </Pressable>
                 )}
               </View>

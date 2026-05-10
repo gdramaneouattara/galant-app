@@ -58,6 +58,7 @@
       "expo-location",
       "expo-av",
       "react-native-iap",
+      "@sentry/react-native/expo",
       [
         "expo-build-properties",
         {
@@ -66,6 +67,9 @@
             "compileSdkVersion": 34,
             "targetSdkVersion": 34,
             "kotlinVersion": "1.9.24"
+          },
+          "ios": {
+            "deploymentTarget": "15.1"
           }
         }
       ]

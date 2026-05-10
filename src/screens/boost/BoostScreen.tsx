@@ -98,7 +98,8 @@ const BoostScreen: React.FC = () => {
           body: JSON.stringify({
             planId: plan.id,
             amount: plan.priceAmount,
-            type: 'BOOST'
+            type: 'BOOST',
+            paymentMethod: 'MOBILE_MONEY',
           }),
           requireAuth: true,
         }
@@ -130,22 +131,24 @@ const BoostScreen: React.FC = () => {
     if (loadingPlan) return;
     setLoadingPlan(plan.id);
     try {
-      // @ts-ignore
-      const purchase: any = await IAP.requestPurchase(plan.sku);
+      const purchase: any = await IAP.requestPurchase({ sku: plan.sku });
       const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;
       if (purchaseItem) {
-        await apiRequest('/api/payments/google-verify', {
+        const verifyPath = Platform.OS === 'ios' ? '/api/payments/apple-verify' : '/api/payments/google-verify';
+        await apiRequest(verifyPath, {
           method: 'POST',
           body: JSON.stringify({
-            purchaseToken: purchaseItem.purchaseToken,
             productId: purchaseItem.productId,
             type: 'BOOST',
-            planId: plan.id
+            planId: plan.id,
+            purchaseToken: purchaseItem.purchaseToken,
+            transactionId: purchaseItem.transactionId || purchaseItem.originalTransactionIdentifierIOS,
           }),
           requireAuth: true,
         });
+        await IAP.finishTransaction({ purchase: purchaseItem, isConsumable: true });
         await refreshCurrentUser();
-        Alert.alert('Succès', 'Boost activé avec Google Play.');
+        Alert.alert('Succès', Platform.OS === 'ios' ? 'Boost activé avec App Store.' : 'Boost activé avec Google Play.');
         navigation.goBack();
       }
     } catch (err: any) {
@@ -214,17 +217,19 @@ const BoostScreen: React.FC = () => {
                   disabled={!!loadingPlan}
                 >
                   <CreditCard size={18} color="#fff" />
-                  <Text style={styles.payBtnText}>Paystack</Text>
+                  <Text style={styles.payBtnText}>Mobile Money (Paystack)</Text>
                 </Pressable>
 
-                {Platform.OS === 'android' && (
+                {Platform.OS !== 'web' && (
                   <Pressable
                     style={[styles.payBtn, styles.googleBtn]}
                     onPress={() => boostGooglePlay(plan)}
                     disabled={!!loadingPlan}
                   >
                     <Play size={18} color="#fff" fill="#fff" />
-                    <Text style={styles.payBtnText}>Google Play</Text>
+                    <Text style={styles.payBtnText}>
+                      {Platform.OS === 'ios' ? 'Carte bancaire (App Store)' : 'Carte bancaire (Google Play)'}
+                    </Text>
                   </Pressable>
                 )}
               </View>

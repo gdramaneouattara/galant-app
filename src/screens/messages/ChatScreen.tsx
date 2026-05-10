@@ -18,6 +18,7 @@ import { ChevronLeft, Send, Image as ImageIcon, Video, ShieldAlert, ShieldBan, L
 import * as ImagePicker from 'expo-image-picker';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
+import * as IAP from 'react-native-iap';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
@@ -41,6 +42,11 @@ const ChatScreen: React.FC = () => {
   const [checkingUnlock, setCheckingUnlock] = useState(true);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
+
+  useEffect(() => {
+    IAP.initConnection().catch(() => {});
+    return () => { IAP.endConnection().catch(() => {}); };
+  }, []);
 
   const checkUnlockStatus = useCallback(async () => {
     try {
@@ -100,7 +106,12 @@ const ChatScreen: React.FC = () => {
         '/api/payments/initialize',
         {
           method: 'POST',
-          body: JSON.stringify({ amount: parseInt(process.env.EXPO_PUBLIC_DIRECT_MESSAGE_AMOUNT || '200'), type: 'DIRECT_MESSAGE', targetId: userId }),
+          body: JSON.stringify({
+            amount: parseInt(process.env.EXPO_PUBLIC_DIRECT_MESSAGE_AMOUNT || '200'),
+            type: 'DIRECT_MESSAGE',
+            targetId: userId,
+            paymentMethod: 'MOBILE_MONEY',
+          }),
           requireAuth: true
         }
       );
@@ -117,6 +128,38 @@ const ChatScreen: React.FC = () => {
       }
     } catch (error: any) {
       Alert.alert('Erreur', error.message);
+    } finally {
+      setPurchaseLoading(false);
+    }
+  };
+
+  const initiateDirectMessagePurchaseGoogle = async () => {
+    try {
+      setPurchaseLoading(true);
+      const purchase: any = await IAP.requestPurchase({ sku: 'direct_message_1' });
+      const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;
+      if (purchaseItem) {
+        const verifyPath = Platform.OS === 'ios' ? '/api/payments/apple-verify' : '/api/payments/google-verify';
+        await apiRequest(verifyPath, {
+          method: 'POST',
+          body: JSON.stringify({
+            productId: purchaseItem.productId,
+            type: 'DIRECT_MESSAGE',
+            targetId: userId,
+            purchaseToken: purchaseItem.purchaseToken,
+            transactionId: purchaseItem.transactionId || purchaseItem.originalTransactionIdentifierIOS,
+          }),
+          requireAuth: true,
+        });
+        await IAP.finishTransaction({ purchase: purchaseItem, isConsumable: true });
+        Alert.alert('Succès', 'Message direct débloqué !');
+        setIsUnlocked(true);
+        setShowUnlockModal(false);
+      }
+    } catch (error: any) {
+      if (error?.code !== 'E_USER_CANCELLED') {
+        Alert.alert('Erreur Google Play', error?.message || 'Achat non finalisé');
+      }
     } finally {
       setPurchaseLoading(false);
     }
@@ -277,6 +320,7 @@ const ChatScreen: React.FC = () => {
         visible={showUnlockModal}
         onClose={() => setShowUnlockModal(false)}
         onPurchasePaystack={initiateDirectMessagePurchasePaystack}
+        onPurchaseGoogle={initiateDirectMessagePurchaseGoogle}
         loading={purchaseLoading}
         userName={targetUser?.name}
       />

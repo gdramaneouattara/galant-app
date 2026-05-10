@@ -130,20 +130,22 @@ const HomeScreen: React.FC = () => {
     if (!suggestions[0]) return;
     try {
       setPurchaseLoading(true);
-      // @ts-ignore
-      const purchase: any = await IAP.requestPurchase('super_like_1');
+      const purchase: any = await IAP.requestPurchase({ sku: 'super_like_1' });
       const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;
       if (purchaseItem) {
-        await apiRequest('/api/payments/google-verify', {
+        const verifyPath = Platform.OS === 'ios' ? '/api/payments/apple-verify' : '/api/payments/google-verify';
+        await apiRequest(verifyPath, {
           method: 'POST',
           body: JSON.stringify({
-            purchaseToken: purchaseItem.purchaseToken,
             productId: purchaseItem.productId,
             type: 'SUPER_LIKE',
-            targetId: suggestions[0].id
+            targetId: suggestions[0].id,
+            purchaseToken: purchaseItem.purchaseToken,
+            transactionId: purchaseItem.transactionId || purchaseItem.originalTransactionIdentifierIOS,
           }),
           requireAuth: true,
         });
+        await IAP.finishTransaction({ purchase: purchaseItem, isConsumable: true });
         Alert.alert('Succès', 'Super Like envoyé !');
         setShowSuperLikeModal(false);
         void fetchSuggestions();
@@ -159,7 +161,11 @@ const HomeScreen: React.FC = () => {
     try {
       const init = await apiRequest<{ authorization_url: string; reference: string }>(
         '/api/payments/initialize',
-        { method: 'POST', body: JSON.stringify({ amount, type, targetId }), requireAuth: true }
+        {
+          method: 'POST',
+          body: JSON.stringify({ amount, type, targetId, paymentMethod: 'MOBILE_MONEY' }),
+          requireAuth: true
+        }
       );
       const redirectUrl = Linking.createURL('paystack');
       await WebBrowser.openAuthSessionAsync(init.authorization_url, redirectUrl);

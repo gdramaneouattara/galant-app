@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+const jwt = require('jsonwebtoken');
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
@@ -10,7 +11,15 @@ const {
   SUPABASE_SERVICE_ROLE_KEY,
   EXPO_PUSH_ACCESS_TOKEN = '',
   ALLOWED_ORIGINS = '',
-  PAYSTACK_SECRET_KEY = ''
+  PAYSTACK_SECRET_KEY = '',
+  PAYSTACK_CALLBACK_URL = 'yamo://payment-callback',
+  GOOGLE_SERVICE_ACCOUNT_EMAIL = '',
+  GOOGLE_PRIVATE_KEY = '',
+  ANDROID_PACKAGE_NAME = '',
+  APPLE_ISSUER_ID = '',
+  APPLE_KEY_ID = '',
+  APPLE_PRIVATE_KEY = '',
+  IOS_BUNDLE_ID = ''
 } = process.env;
 
 const app = express();
@@ -41,6 +50,13 @@ const QUOTAS = {
   TRIAL_BOOST_SECONDS: 3600
 };
 const PLAN_DURATIONS = { MONTHLY: 30, QUARTERLY: 90, BIANNUAL: 180, ANNUAL: 365 };
+const GOOGLE_ANDROID_PUBLISHER_SCOPE = 'https://www.googleapis.com/auth/androidpublisher';
+const GOOGLE_OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const googleAccessTokenCache = { token: null, expiresAt: 0 };
+const APPLE_AUDIENCE = 'appstoreconnect-v1';
+const APPLE_PROD_TRANSACTION_URL = 'https://api.storekit.itunes.apple.com/inApps/v1/transactions';
+const APPLE_SANDBOX_TRANSACTION_URL = 'https://api.storekit-sandbox.itunes.apple.com/inApps/v1/transactions';
+const appleTokenCache = { token: null, expiresAt: 0 };
 
 const allowedOrigins = ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean);
 app.use(cors({ origin: (origin, cb) => (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) ? cb(null, true) : cb(new Error('CORS_ERROR')) }));
@@ -183,19 +199,284 @@ const appendAdminAuditLog = async ({
   }
 };
 
+const getBoostDurationDays = (planId) => {
+  if (planId === '7D') return 7;
+  if (planId === '3D') return 3;
+  return 1;
+};
+
+const getGooglePrivateKey = () => String(GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+const getApplePrivateKey = () => String(APPLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+
+const getGoogleAccessToken = async () => {
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (googleAccessTokenCache.token && googleAccessTokenCache.expiresAt > nowSeconds + 60) {
+    return googleAccessTokenCache.token;
+  }
+
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) {
+    throw new Error('google_credentials_not_configured');
+  }
+
+  const assertion = jwt.sign(
+    {
+      iss: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      scope: GOOGLE_ANDROID_PUBLISHER_SCOPE,
+      aud: GOOGLE_OAUTH_TOKEN_URL,
+      iat: nowSeconds,
+      exp: nowSeconds + 3600,
+    },
+    getGooglePrivateKey(),
+    { algorithm: 'RS256' }
+  );
+
+  const params = new URLSearchParams({
+    grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+    assertion,
+  });
+
+  const response = await axios.post(GOOGLE_OAUTH_TOKEN_URL, params.toString(), {
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  });
+
+  const accessToken = response?.data?.access_token;
+  const expiresIn = Number(response?.data?.expires_in || 3600);
+  if (!accessToken) throw new Error('google_access_token_missing');
+
+  googleAccessTokenCache.token = accessToken;
+  googleAccessTokenCache.expiresAt = nowSeconds + expiresIn;
+  return accessToken;
+};
+
+const verifyGooglePlayPurchase = async ({ productId, purchaseToken, type }) => {
+  if (!ANDROID_PACKAGE_NAME) {
+    return { valid: false, reason: 'android_package_name_missing' };
+  }
+
+  const accessToken = await getGoogleAccessToken();
+  const headers = { Authorization: `Bearer ${accessToken}` };
+  const encodedPackageName = encodeURIComponent(ANDROID_PACKAGE_NAME);
+  const encodedProductId = encodeURIComponent(productId);
+  const encodedToken = encodeURIComponent(purchaseToken);
+
+  const isSubscription = String(type || '').toUpperCase() === 'PREMIUM' || String(productId || '').includes('premium');
+  const endpoint = isSubscription
+    ? `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodedPackageName}/purchases/subscriptions/${encodedProductId}/tokens/${encodedToken}`
+    : `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodedPackageName}/purchases/products/${encodedProductId}/tokens/${encodedToken}`;
+
+  const response = await axios.get(endpoint, { headers });
+  const payload = response?.data || {};
+
+  if (isSubscription) {
+    const expiry = Number(payload.expiryTimeMillis || 0);
+    const isExpired = Number.isFinite(expiry) && expiry > 0 && expiry <= Date.now();
+    const isCanceled = payload.cancelReason !== undefined && payload.cancelReason !== null;
+    if (isExpired || isCanceled) return { valid: false, reason: 'subscription_not_active' };
+    return { valid: true, payload };
+  }
+
+  if (Number(payload.purchaseState) !== 0) {
+    return { valid: false, reason: 'product_not_purchased' };
+  }
+  return { valid: true, payload };
+};
+
+const getAppleAccessToken = async () => {
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (appleTokenCache.token && appleTokenCache.expiresAt > nowSeconds + 60) {
+    return appleTokenCache.token;
+  }
+
+  if (!APPLE_ISSUER_ID || !APPLE_KEY_ID || !APPLE_PRIVATE_KEY) {
+    throw new Error('apple_credentials_not_configured');
+  }
+
+  const token = jwt.sign(
+    {
+      iss: APPLE_ISSUER_ID,
+      iat: nowSeconds,
+      exp: nowSeconds + 1800,
+      aud: APPLE_AUDIENCE,
+    },
+    getApplePrivateKey(),
+    {
+      algorithm: 'ES256',
+      keyid: APPLE_KEY_ID,
+      header: { typ: 'JWT' },
+    }
+  );
+
+  appleTokenCache.token = token;
+  appleTokenCache.expiresAt = nowSeconds + 1800;
+  return token;
+};
+
+const decodeJwsPayload = (jws) => {
+  const parts = String(jws || '').split('.');
+  if (parts.length < 2) return null;
+  const base64Payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+  const padded = base64Payload + '='.repeat((4 - (base64Payload.length % 4)) % 4);
+  const json = Buffer.from(padded, 'base64').toString('utf8');
+  return JSON.parse(json);
+};
+
+const fetchAppleTransactionPayload = async (transactionId) => {
+  const token = await getAppleAccessToken();
+  const encodedTransactionId = encodeURIComponent(transactionId);
+  const endpoints = [APPLE_PROD_TRANSACTION_URL, APPLE_SANDBOX_TRANSACTION_URL];
+  let lastError = null;
+
+  for (const baseUrl of endpoints) {
+    try {
+      const response = await axios.get(`${baseUrl}/${encodedTransactionId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const signedTransactionInfo = response?.data?.signedTransactionInfo;
+      if (!signedTransactionInfo) {
+        return { valid: false, reason: 'apple_signed_transaction_missing' };
+      }
+      const payload = decodeJwsPayload(signedTransactionInfo);
+      if (!payload) {
+        return { valid: false, reason: 'apple_transaction_decode_failed' };
+      }
+      return { valid: true, payload };
+    } catch (error) {
+      lastError = error;
+      const status = Number(error?.response?.status || 0);
+      if (status === 404) continue;
+      break;
+    }
+  }
+
+  if (lastError) {
+    return { valid: false, reason: 'apple_transaction_lookup_failed', error: String(lastError?.message || lastError) };
+  }
+  return { valid: false, reason: 'apple_transaction_not_found' };
+};
+
+const verifyApplePurchase = async ({ transactionId, productId, type }) => {
+  if (!transactionId || !productId) {
+    return { valid: false, reason: 'apple_purchase_payload_missing' };
+  }
+
+  const transaction = await fetchAppleTransactionPayload(transactionId);
+  if (!transaction.valid) return transaction;
+
+  const payload = transaction.payload || {};
+  if (IOS_BUNDLE_ID && payload.bundleId && payload.bundleId !== IOS_BUNDLE_ID) {
+    return { valid: false, reason: 'apple_bundle_mismatch' };
+  }
+  if (payload.productId !== productId) {
+    return { valid: false, reason: 'apple_product_mismatch' };
+  }
+  if (payload.revocationDate) {
+    return { valid: false, reason: 'apple_purchase_revoked' };
+  }
+
+  const normalizedType = String(type || '').toUpperCase();
+  if (normalizedType === 'PREMIUM') {
+    const expiresAtMs = Number(payload.expiresDate || 0);
+    if (Number.isFinite(expiresAtMs) && expiresAtMs > 0 && expiresAtMs <= Date.now()) {
+      return { valid: false, reason: 'apple_subscription_expired' };
+    }
+  }
+
+  return { valid: true, payload };
+};
+
+const applyPurchasedEntitlement = async ({ userId, planId, type, targetId, reference, paymentMethod }) => {
+  const normalizedType = String(type || '').toUpperCase();
+  const normalizedPlanId = String(planId || '').toUpperCase();
+
+  if (normalizedType === 'PREMIUM') {
+    const days = PLAN_DURATIONS[normalizedPlanId] || 30;
+    const end = new Date();
+    end.setDate(end.getDate() + days);
+    await supabase.from('subscriptions').insert({
+      user_id: userId,
+      plan_id: normalizedPlanId || 'MONTHLY',
+      status: 'active',
+      current_period_end: end.toISOString(),
+      payment_method: paymentMethod || null,
+    });
+    await supabase.from('profiles').update({ is_premium: true }).eq('id', userId);
+    return;
+  }
+
+  if (normalizedType === 'BOOST') {
+    const days = getBoostDurationDays(normalizedPlanId);
+    const until = new Date();
+    until.setDate(until.getDate() + days);
+    await supabase.from('profiles').update({ boosted_until: until.toISOString() }).eq('id', userId);
+    return;
+  }
+
+  if (normalizedType === 'SUPER_LIKE') {
+    if (!targetId) return;
+    await supabase.from('super_likes').insert({
+      sender_id: userId,
+      recipient_id: targetId,
+      status: 'PENDING',
+      reference,
+    });
+    await supabase.from('purchased_interactions').insert({
+      user_id: userId,
+      interaction_type: 'SUPER_LIKE',
+      target_id: targetId,
+      reference,
+      price_amount: PRICES.SUPER_LIKE,
+    });
+    return;
+  }
+
+  if (normalizedType === 'DIRECT_MESSAGE') {
+    if (!targetId) return;
+    await supabase.from('purchased_interactions').insert({
+      user_id: userId,
+      interaction_type: 'DIRECT_MESSAGE',
+      target_id: targetId,
+      reference,
+      price_amount: PRICES.DIRECT_MESSAGE,
+    });
+  }
+};
+
 // --- PAYSTACK ---
 
 app.post('/api/payments/initialize', requireAuth, async (req, res) => {
-  const { planId, amount, type, targetId } = req.body;
+  const { planId, amount, type, targetId, paymentMethod } = req.body;
   const email = req.authUser.email || `${req.user.id}@yamo.app`;
+  const normalizedType = String(type || '').toUpperCase();
+  const normalizedPaymentMethod = String(paymentMethod || 'CARD').toUpperCase();
+  const roundedAmount = Math.round(Number(amount || 0) * 100);
+
+  if (!Number.isFinite(roundedAmount) || roundedAmount <= 0) {
+    return res.status(400).json({ error: 'invalid_amount' });
+  }
+
+  const payload = {
+    email,
+    amount: roundedAmount,
+    currency: 'XOF',
+    callback_url: PAYSTACK_CALLBACK_URL,
+    metadata: {
+      userId: req.user.id,
+      planId,
+      type: normalizedType,
+      targetId: targetId || null,
+      paymentMethod: normalizedPaymentMethod,
+    },
+  };
+
+  // Mobile money purchases are explicitly routed to Paystack.
+  if (normalizedPaymentMethod === 'MOBILE_MONEY') {
+    payload.channels = ['mobile_money'];
+  }
+
   try {
-    const response = await axios.post('https://api.paystack.co/transaction/initialize', {
-      email,
-      amount: Math.round(amount * 100),
-      currency: 'XOF',
-      callback_url: 'yamo://payment-callback',
-      metadata: { userId: req.user.id, planId, type, targetId }
-    }, { headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` } });
+    const response = await axios.post('https://api.paystack.co/transaction/initialize', payload, {
+      headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
+    });
     res.json(response.data.data);
   } catch (e) { res.status(500).json({ error: 'paystack_init_failed' }); }
 });
@@ -206,17 +487,15 @@ app.get('/api/payments/verify', requireAuth, async (req, res) => {
     const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, { headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` } });
     const data = response.data.data;
     if (data.status === 'success') {
-      const { userId, planId, type, targetId } = data.metadata;
-      if (type === 'PREMIUM') {
-        const days = PLAN_DURATIONS[planId] || 30;
-        const end = new Date(); end.setDate(end.getDate() + days);
-        await supabase.from('subscriptions').insert({ user_id: userId, plan_id: planId, status: 'active', current_period_end: end.toISOString() });
-        await supabase.from('profiles').update({ is_premium: true }).eq('id', userId);
-      } else if (type === 'SUPER_LIKE') {
-        await supabase.from('super_likes').insert({ sender_id: userId, recipient_id: targetId, status: 'PENDING', reference });
-      } else if (type === 'DIRECT_MESSAGE') {
-        await supabase.from('purchased_interactions').insert({ user_id: userId, interaction_type: 'DIRECT_MESSAGE', target_id: targetId, reference, price_amount: PRICES.DIRECT_MESSAGE });
-      }
+      const { userId, planId, type, targetId } = data.metadata || {};
+      await applyPurchasedEntitlement({
+        userId,
+        planId,
+        type,
+        targetId,
+        reference,
+        paymentMethod: 'PAYSTACK',
+      });
       return res.json({ status: 'active', reference });
     }
     res.json({ status: data.status });
@@ -226,46 +505,60 @@ app.get('/api/payments/verify', requireAuth, async (req, res) => {
 app.post('/api/payments/google-verify', requireAuth, async (req, res) => {
   const { purchaseToken, productId, planId, type, targetId } = req.body;
   const userId = req.user.id;
+  const normalizedType = String(type || '').toUpperCase();
+  const normalizedPlanId = String(planId || '').toUpperCase();
+  const safeReference = String(purchaseToken || '').slice(0, 50);
 
   try {
-    // Note: Pour une production réelle, vous devriez vérifier le reçu avec l'API Google Play.
-    // Ici, nous implémentons la logique de mise à jour de la DB après confirmation.
-
-    if (type === 'PREMIUM' || (!type && productId.includes('premium'))) {
-      const days = PLAN_DURATIONS[planId] || 30;
-      const end = new Date(); end.setDate(end.getDate() + days);
-      await supabase.from('subscriptions').insert({
-        user_id: userId,
-        plan_id: planId || 'MONTHLY',
-        status: 'active',
-        current_period_end: end.toISOString(),
-        payment_method: 'GOOGLE_PLAY'
-      });
-      await supabase.from('profiles').update({ is_premium: true }).eq('id', userId);
-    } else if (type === 'BOOST') {
-      const days = planId === '7D' ? 7 : (planId === '3D' ? 3 : 1);
-      const until = new Date(); until.setDate(until.getDate() + days);
-      await supabase.from('profiles').update({ boosted_until: until.toISOString() }).eq('id', userId);
-    } else if (type === 'SUPER_LIKE') {
-      await supabase.from('super_likes').insert({
-        sender_id: userId,
-        recipient_id: targetId,
-        status: 'PENDING',
-        reference: purchaseToken.slice(0, 50)
-      });
-    } else if (type === 'DIRECT_MESSAGE') {
-      await supabase.from('purchased_interactions').insert({
-        user_id: userId,
-        interaction_type: 'DIRECT_MESSAGE',
-        target_id: targetId,
-        reference: purchaseToken.slice(0, 50),
-        price_amount: PRICES.DIRECT_MESSAGE
-      });
+    if (!purchaseToken || !productId) {
+      return res.status(400).json({ error: 'missing_google_purchase_payload' });
     }
+
+    const verification = await verifyGooglePlayPurchase({ productId, purchaseToken, type: normalizedType });
+    if (!verification.valid) {
+      return res.status(400).json({ error: 'invalid_google_purchase', reason: verification.reason || 'verification_failed' });
+    }
+
+    await applyPurchasedEntitlement({
+      userId,
+      planId: normalizedPlanId,
+      type: normalizedType || (String(productId).includes('premium') ? 'PREMIUM' : ''),
+      targetId,
+      reference: safeReference,
+      paymentMethod: 'GOOGLE_PLAY',
+    });
 
     res.json({ status: 'success' });
   } catch (e) {
-    res.status(500).json({ error: 'google_verify_failed' });
+    res.status(500).json({ error: 'google_verify_failed', detail: String(e?.message || e) });
+  }
+});
+
+app.post('/api/payments/apple-verify', requireAuth, async (req, res) => {
+  const { transactionId, productId, planId, type, targetId } = req.body;
+  const userId = req.user.id;
+  const normalizedType = String(type || '').toUpperCase();
+  const normalizedPlanId = String(planId || '').toUpperCase();
+  const safeReference = String(transactionId || '').slice(0, 50);
+
+  try {
+    const verification = await verifyApplePurchase({ transactionId, productId, type: normalizedType });
+    if (!verification.valid) {
+      return res.status(400).json({ error: 'invalid_apple_purchase', reason: verification.reason || 'verification_failed' });
+    }
+
+    await applyPurchasedEntitlement({
+      userId,
+      planId: normalizedPlanId,
+      type: normalizedType,
+      targetId,
+      reference: safeReference,
+      paymentMethod: 'APPLE_STORE',
+    });
+
+    res.json({ status: 'success' });
+  } catch (e) {
+    res.status(500).json({ error: 'apple_verify_failed', detail: String(e?.message || e) });
   }
 });
 

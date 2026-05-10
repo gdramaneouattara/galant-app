@@ -9,6 +9,7 @@ import { AppProvider, useApp } from './src/state/AppContext';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import ErrorBanner from './src/components/ErrorBanner';
 import { supabase } from './src/lib/supabase';
+import { Sentry } from './src/lib/sentry';
 
 enableScreens();
 
@@ -68,7 +69,7 @@ const hydrateRecoverySessionFromUrl = async (url: string) => {
       await supabase.auth.verifyOtp({ type: 'recovery', token_hash: tokenHash });
     }
   } catch (error) {
-    // Sentry disabled
+    Sentry.captureException(error);
   }
 };
 
@@ -111,4 +112,4 @@ const App: React.FC = () => {
 };
 
 // Root component
-export default App;
+export default Sentry.wrap(App);

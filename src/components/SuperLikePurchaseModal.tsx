@@ -49,17 +49,19 @@ const SuperLikePurchaseModal: React.FC<Props> = ({
               {loading ? <ActivityIndicator color="#fff" /> : (
                 <>
                   <CreditCard color="#fff" size={20} />
-                  <Text style={styles.btnText}>Paystack</Text>
+                  <Text style={styles.btnText}>Mobile Money (Paystack)</Text>
                 </>
               )}
             </Pressable>
 
-            {Platform.OS === 'android' && (
+            {Platform.OS !== 'web' && (
               <Pressable style={[styles.btn, styles.googleBtn]} onPress={onPurchaseGoogle} disabled={loading}>
                 {loading ? <ActivityIndicator color="#fff" /> : (
                   <>
                     <Play color="#fff" size={20} fill="#fff" />
-                    <Text style={styles.btnText}>Google Play</Text>
+                    <Text style={styles.btnText}>
+                      {Platform.OS === 'ios' ? 'Carte bancaire (App Store)' : 'Carte bancaire (Google Play)'}
+                    </Text>
                   </>
                 )}
               </Pressable>
