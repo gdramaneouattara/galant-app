@@ -311,7 +311,7 @@ const ChatScreen: React.FC = () => {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: type === 'IMAGE' ? ImagePicker.MediaTypeOptions.Images : ImagePicker.MediaTypeOptions.Videos,
+      mediaTypes: type === 'IMAGE' ? ['images'] : ['videos'],
       quality: 0.8,
       allowsEditing: false,
     });
@@ -342,6 +342,64 @@ const ChatScreen: React.FC = () => {
     } finally {
       setMediaUploading(false);
     }
+  };
+
+  const submitReport = async (reason: string) => {
+    try {
+      await apiRequest('/api/messages/report', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({
+          reportedUserId: userId,
+          reason,
+          details: `Reported from chat screen (${new Date().toISOString()})`,
+        }),
+      });
+      Alert.alert('Signalement envoyé', 'Merci. Notre équipe de modération va examiner ce signalement.');
+    } catch (error: any) {
+      Alert.alert('Erreur', error?.message || 'Impossible de signaler ce profil.');
+    }
+  };
+
+  const confirmBlockUser = () => {
+    Alert.alert(
+      'Bloquer cet utilisateur ?',
+      "Vous ne pourrez plus échanger avec ce profil tant que le blocage est actif.",
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Bloquer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiRequest('/api/messages/block', {
+                method: 'POST',
+                requireAuth: true,
+                body: JSON.stringify({ blockedUserId: userId }),
+              });
+              Alert.alert('Utilisateur bloqué', 'Le blocage est actif.');
+              navigation.goBack();
+            } catch (error: any) {
+              Alert.alert('Erreur', error?.message || 'Impossible de bloquer cet utilisateur.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const openSafetyMenu = () => {
+    Alert.alert(
+      'Sécurité',
+      'Choisissez une action',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Signaler - Harcèlement', onPress: () => void submitReport('HARASSMENT') },
+        { text: 'Signaler - Faux profil', onPress: () => void submitReport('FAKE_PROFILE') },
+        { text: 'Signaler - Contenu inapproprié', onPress: () => void submitReport('INAPPROPRIATE_CONTENT') },
+        { text: 'Bloquer', style: 'destructive', onPress: confirmBlockUser },
+      ]
+    );
   };
 
   const formatMessageTime = (value?: string) => {
@@ -411,7 +469,7 @@ const ChatScreen: React.FC = () => {
           </View>
           <Text style={styles.headerSubtitle}>{isTargetOnline ? 'En ligne' : 'Hors ligne'}</Text>
         </View>
-        <Pressable style={styles.headerMenuBtn}>
+        <Pressable style={styles.headerMenuBtn} onPress={openSafetyMenu}>
           <MoreVertical size={22} color="#2d2723" />
         </Pressable>
       </View>

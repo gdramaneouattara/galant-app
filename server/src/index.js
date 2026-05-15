@@ -891,12 +891,18 @@ app.post('/api/messages/direct-thread', requireAuth, async (req, res) => {
   const [userOneId, userTwoId] = [me.id, targetUserId].sort();
   const { data: existingMatch } = await supabase
     .from('matches')
-    .select('id')
+    .select('id, status')
     .eq('user_one_id', userOneId)
     .eq('user_two_id', userTwoId)
     .maybeSingle();
 
   if (existingMatch?.id) {
+    if (existingMatch.status === 'BLOCKED') {
+      return res.status(403).json({ error: 'conversation_blocked' });
+    }
+    if (existingMatch.status === 'UNMATCHED') {
+      return res.status(403).json({ error: 'conversation_unmatched' });
+    }
     return res.json({ matchId: existingMatch.id, unlocked: true });
   }
 
@@ -945,10 +951,82 @@ app.post('/api/messages/direct-thread', requireAuth, async (req, res) => {
   return res.json({ matchId: createdMatch.id, unlocked: true });
 });
 
+app.post('/api/messages/report', requireAuth, async (req, res) => {
+  const me = req.user;
+  const reportedUserId = String(req.body?.reportedUserId || '').trim();
+  const reason = String(req.body?.reason || '').trim() || 'GENERAL';
+  const details = String(req.body?.details || '').trim() || null;
+
+  if (!reportedUserId || reportedUserId === String(me.id)) {
+    return res.status(400).json({ error: 'invalid_target' });
+  }
+
+  const { data: targetUser } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', reportedUserId)
+    .maybeSingle();
+  if (!targetUser) return res.status(404).json({ error: 'target_not_found' });
+
+  const { error } = await supabase.from('reports').insert({
+    reporter_id: me.id,
+    reported_user_id: reportedUserId,
+    reason,
+    details,
+    status: 'PENDING',
+  });
+  if (error) return res.status(500).json({ error: error.message });
+
+  res.json({ success: true });
+});
+
+app.post('/api/messages/block', requireAuth, async (req, res) => {
+  const me = req.user;
+  const blockedUserId = String(req.body?.blockedUserId || '').trim();
+  if (!blockedUserId || blockedUserId === String(me.id)) {
+    return res.status(400).json({ error: 'invalid_target' });
+  }
+
+  const { data: targetUser } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', blockedUserId)
+    .maybeSingle();
+  if (!targetUser) return res.status(404).json({ error: 'target_not_found' });
+
+  const [userOneId, userTwoId] = [me.id, blockedUserId].sort();
+  const { data: existingMatch } = await supabase
+    .from('matches')
+    .select('id')
+    .eq('user_one_id', userOneId)
+    .eq('user_two_id', userTwoId)
+    .maybeSingle();
+
+  if (existingMatch?.id) {
+    const { error: updateError } = await supabase
+      .from('matches')
+      .update({ status: 'BLOCKED' })
+      .eq('id', existingMatch.id);
+    if (updateError) return res.status(500).json({ error: updateError.message });
+    return res.json({ success: true, blocked: true, matchId: existingMatch.id });
+  }
+
+  const { data: createdMatch, error: createError } = await supabase
+    .from('matches')
+    .insert({ user_one_id: userOneId, user_two_id: userTwoId, status: 'BLOCKED' })
+    .select('id')
+    .single();
+  if (createError) return res.status(500).json({ error: createError.message });
+
+  res.json({ success: true, blocked: true, matchId: createdMatch?.id || null });
+});
+
 app.post('/api/messages/send', requireAuth, async (req, res) => {
   const { matchId, content, recipientId, messageType, mediaPath } = req.body;
   const me = req.user;
-  const { data: match } = await supabase.from('matches').select('id').eq('id', matchId).maybeSingle();
+  const { data: match } = await supabase.from('matches').select('id, status').eq('id', matchId).maybeSingle();
+  if (match?.status === 'BLOCKED') return res.status(403).json({ error: 'conversation_blocked' });
+  if (match?.status === 'UNMATCHED') return res.status(403).json({ error: 'conversation_unmatched' });
   if (!match && !isTrialActive(me)) {
     const { data: p } = await supabase.from('purchased_interactions').select('id').eq('user_id', me.id).eq('interaction_type', 'DIRECT_MESSAGE').eq('target_id', recipientId).maybeSingle();
     if (!p) return res.status(403).json({ error: 'payment_required', amount: PRICES.DIRECT_MESSAGE });

@@ -59,7 +59,12 @@
     "plugins": [
       "expo-asset",
       "expo-image-picker",
-      ["expo-notifications", { "color": "#FF6B6B" }],
+      [
+        "expo-notifications",
+        {
+          "color": "#FF6B6B"
+        }
+      ],
       "expo-location",
       "expo-av",
       "react-native-iap",
@@ -67,18 +72,19 @@
       [
         "expo-build-properties",
         {
-        "android": {
-          "minSdkVersion": 24,
-          "buildToolsVersion": "35.0.0",
-          "compileSdkVersion": 35,
-          "targetSdkVersion": 35,
-          "kotlinVersion": "1.9.24"
-        },
+          "android": {
+            "minSdkVersion": 24,
+            "buildToolsVersion": "35.0.0",
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "kotlinVersion": "1.9.24"
+          },
           "ios": {
             "deploymentTarget": "15.1"
           }
         }
-      ]
+      ],
+      "expo-video"
     ],
     "extra": {
       "eas": {
