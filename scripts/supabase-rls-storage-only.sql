@@ -1,6 +1,9 @@
 -- RLS: Storage objects
 ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS suspended_at timestamptz;
 ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS is_admin boolean not null default false;
+ALTER TABLE IF EXISTS public.profiles ALTER COLUMN is_admin SET DEFAULT false;
+UPDATE public.profiles SET is_admin = false WHERE is_admin IS NULL;
+ALTER TABLE IF EXISTS public.profiles ALTER COLUMN is_admin SET NOT NULL;
 ALTER TABLE IF EXISTS storage.objects ENABLE ROW LEVEL SECURITY;
 
 -- BUCKET: photos

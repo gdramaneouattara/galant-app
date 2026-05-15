@@ -861,12 +861,29 @@ const AuthFlowScreen: React.FC = () => {
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase.from('profiles').upsert(profileData);
+    const { data: existingProfile, error: existingProfileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle();
 
-    if (error) {
-      logError(error, { action: 'upsert_profile' });
-      Alert.alert('Erreur', 'La sauvegarde du profil a échoué.');
-      console.error(error);
+    if (existingProfileError) {
+      logError(existingProfileError, { action: 'fetch_profile_before_save' });
+      Alert.alert('Erreur', existingProfileError.message || 'La sauvegarde du profil a échoué.');
+      setLoading(false);
+      return;
+    }
+
+    const saveRequest = existingProfile
+      ? supabase.from('profiles').update(profileData).eq('id', user.id)
+      : supabase.from('profiles').insert(profileData);
+
+    const { error: saveError } = await saveRequest;
+
+    if (saveError) {
+      logError(saveError, { action: existingProfile ? 'update_profile' : 'insert_profile' });
+      Alert.alert('Erreur', saveError.message || 'La sauvegarde du profil a échoué.');
+      console.error(saveError);
     } else {
       logEvent('auth', 'profile_completed', { userId: profileData.id });
       const appStateUser = {
