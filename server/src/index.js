@@ -85,6 +85,22 @@ const requireAuth = async (req, res, next) => {
       profile.is_vip = isVip;
     }
 
+    // Keep "Actif" badge reliable without writing on every request.
+    try {
+      const now = new Date();
+      const lastActiveTs = profile.last_active_at ? new Date(profile.last_active_at).getTime() : 0;
+      const shouldRefreshLastActive = !lastActiveTs || (now.getTime() - lastActiveTs) >= 5 * 60 * 1000;
+      if (shouldRefreshLastActive) {
+        await supabase
+          .from('profiles')
+          .update({ last_active_at: now.toISOString() })
+          .eq('id', user.id);
+        profile.last_active_at = now.toISOString();
+      }
+    } catch (_e) {
+      // Never block authenticated requests on presence refresh.
+    }
+
     req.user = profile;
     req.subscription = sub;
     req.authUser = user;
@@ -203,6 +219,67 @@ const getBoostDurationDays = (planId) => {
   if (planId === '7D') return 7;
   if (planId === '3D') return 3;
   return 1;
+};
+
+const getExpectedAmountForPurchase = ({ type, planId }) => {
+  const normalizedType = String(type || '').toUpperCase();
+  const normalizedPlanId = String(planId || '').toUpperCase();
+
+  if (normalizedType === 'PREMIUM') {
+    return PLAN_AMOUNTS[normalizedPlanId] ?? null;
+  }
+  if (normalizedType === 'BOOST') {
+    if (normalizedPlanId === '7D') return PRICES.BOOST_7D;
+    if (normalizedPlanId === '3D') return PRICES.BOOST_3D;
+    if (normalizedPlanId === '1D') return PRICES.BOOST_1D;
+    return null;
+  }
+  if (normalizedType === 'SUPER_LIKE') return PRICES.SUPER_LIKE;
+  if (normalizedType === 'DIRECT_MESSAGE') return PRICES.DIRECT_MESSAGE;
+  return null;
+};
+
+const extractPaystackError = (error) => {
+  const payload = error?.response?.data;
+  if (typeof payload?.message === 'string' && payload.message.trim()) {
+    return payload.message.trim();
+  }
+  if (typeof error?.message === 'string' && error.message.trim()) {
+    return error.message.trim();
+  }
+  return 'paystack_init_failed';
+};
+
+const shouldFallbackFromMobileMoney = (error) => {
+  const message = extractPaystackError(error).toLowerCase();
+  return (
+    message.includes('mobile money') ||
+    message.includes('channel') ||
+    message.includes('not available') ||
+    message.includes('unsupported')
+  );
+};
+
+const toRadians = (value) => (value * Math.PI) / 180;
+
+const getDistanceKm = (lat1, lon1, lat2, lon2) => {
+  if (
+    !Number.isFinite(lat1) ||
+    !Number.isFinite(lon1) ||
+    !Number.isFinite(lat2) ||
+    !Number.isFinite(lon2)
+  ) {
+    return null;
+  }
+  const earthRadiusKm = 6371;
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadiusKm * c;
 };
 
 const getGooglePrivateKey = () => String(GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
@@ -404,9 +481,27 @@ const applyPurchasedEntitlement = async ({ userId, planId, type, targetId, refer
   }
 
   if (normalizedType === 'BOOST') {
+    if (reference) {
+      const { data: existingBoostPurchase } = await supabase
+        .from('purchased_interactions')
+        .select('id')
+        .eq('reference', reference)
+        .maybeSingle();
+      if (existingBoostPurchase) return;
+    }
+
     const days = getBoostDurationDays(normalizedPlanId);
     const until = new Date();
     until.setDate(until.getDate() + days);
+
+    await supabase.from('purchased_interactions').insert({
+      user_id: userId,
+      interaction_type: 'BOOST',
+      target_id: null,
+      reference,
+      price_amount: getExpectedAmountForPurchase({ type: 'BOOST', planId: normalizedPlanId }) || PRICES.BOOST_1D,
+    });
+
     await supabase.from('profiles').update({ boosted_until: until.toISOString() }).eq('id', userId);
     return;
   }
@@ -444,14 +539,20 @@ const applyPurchasedEntitlement = async ({ userId, planId, type, targetId, refer
 // --- PAYSTACK ---
 
 app.post('/api/payments/initialize', requireAuth, async (req, res) => {
-  const { planId, amount, type, targetId, paymentMethod } = req.body;
+  const { planId, type, targetId, paymentMethod } = req.body;
   const email = req.authUser.email || `${req.user.id}@yamo.app`;
   const normalizedType = String(type || '').toUpperCase();
+  const normalizedPlanId = String(planId || '').toUpperCase();
   const normalizedPaymentMethod = String(paymentMethod || 'CARD').toUpperCase();
-  const roundedAmount = Math.round(Number(amount || 0) * 100);
+  const expectedAmount = getExpectedAmountForPurchase({ type: normalizedType, planId: normalizedPlanId });
+  const roundedAmount = Math.round(Number(expectedAmount || 0) * 100);
 
-  if (!Number.isFinite(roundedAmount) || roundedAmount <= 0) {
-    return res.status(400).json({ error: 'invalid_amount' });
+  if (!PAYSTACK_SECRET_KEY) {
+    return res.status(500).json({ error: 'paystack_not_configured' });
+  }
+
+  if (!Number.isFinite(roundedAmount) || roundedAmount <= 0 || expectedAmount === null) {
+    return res.status(400).json({ error: 'invalid_purchase_payload' });
   }
 
   const payload = {
@@ -461,7 +562,7 @@ app.post('/api/payments/initialize', requireAuth, async (req, res) => {
     callback_url: PAYSTACK_CALLBACK_URL,
     metadata: {
       userId: req.user.id,
-      planId,
+      planId: normalizedPlanId || null,
       type: normalizedType,
       targetId: targetId || null,
       paymentMethod: normalizedPaymentMethod,
@@ -477,17 +578,53 @@ app.post('/api/payments/initialize', requireAuth, async (req, res) => {
     const response = await axios.post('https://api.paystack.co/transaction/initialize', payload, {
       headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
     });
-    res.json(response.data.data);
-  } catch (e) { res.status(500).json({ error: 'paystack_init_failed' }); }
+    return res.json(response.data.data);
+  } catch (error) {
+    if (normalizedPaymentMethod === 'MOBILE_MONEY' && shouldFallbackFromMobileMoney(error)) {
+      try {
+        const fallbackPayload = { ...payload };
+        delete fallbackPayload.channels;
+        const fallbackResponse = await axios.post('https://api.paystack.co/transaction/initialize', fallbackPayload, {
+          headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
+        });
+        return res.json(fallbackResponse.data.data);
+      } catch (fallbackError) {
+        return res.status(500).json({
+          error: extractPaystackError(fallbackError),
+          code: 'paystack_init_failed',
+        });
+      }
+    }
+
+    return res.status(500).json({
+      error: extractPaystackError(error),
+      code: 'paystack_init_failed',
+    });
+  }
 });
 
 app.get('/api/payments/verify', requireAuth, async (req, res) => {
   const { reference } = req.query;
   try {
+    if (!PAYSTACK_SECRET_KEY) {
+      return res.status(500).json({ error: 'paystack_not_configured' });
+    }
+
     const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, { headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` } });
     const data = response.data.data;
     if (data.status === 'success') {
       const { userId, planId, type, targetId } = data.metadata || {};
+      if (!userId || userId !== req.user.id) {
+        return res.status(403).json({ error: 'payment_user_mismatch' });
+      }
+
+      const expectedAmount = getExpectedAmountForPurchase({ type, planId });
+      const expectedMinorUnits = Math.round(Number(expectedAmount || 0) * 100);
+      const paidMinorUnits = Number(data.amount || 0);
+      if (expectedAmount === null || !Number.isFinite(paidMinorUnits) || paidMinorUnits !== expectedMinorUnits) {
+        return res.status(400).json({ error: 'payment_amount_mismatch' });
+      }
+
       await applyPurchasedEntitlement({
         userId,
         planId,
@@ -566,7 +703,11 @@ app.post('/api/payments/apple-verify', requireAuth, async (req, res) => {
 
 app.get('/api/matchmaking/suggestions', requireAuth, async (req, res) => {
   const me = req.user;
-  const { limit = 40, minAge = 18, maxAge = 100, gender } = req.query;
+  const { limit = 40, minAge = 18, maxAge = 100, gender, city = '', maxDistanceKm } = req.query;
+  const cityFilter = String(city || '').trim().toLowerCase();
+  const maxDistance = Number.isFinite(parseFloat(maxDistanceKm))
+    ? Math.max(1, parseFloat(maxDistanceKm))
+    : null;
 
   let query = supabase.from('profiles')
     .select('*')
@@ -583,7 +724,42 @@ app.get('/api/matchmaking/suggestions', requireAuth, async (req, res) => {
   const { data: candidates, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
 
+  const candidateIds = (candidates || []).map((candidate) => candidate.id).filter(Boolean);
+  const incomingSuperLikesByCandidate = new Set();
+  if (candidateIds.length > 0) {
+    const { data: incomingSuperLikes } = await supabase
+      .from('likes')
+      .select('liker_id')
+      .eq('liked_id', me.id)
+      .eq('is_super_like', true)
+      .in('liker_id', candidateIds);
+
+    for (const row of (incomingSuperLikes || [])) {
+      if (row?.liker_id) incomingSuperLikesByCandidate.add(row.liker_id);
+    }
+  }
+
   const suggestions = (candidates || []).map(c => {
+    const distanceKm = getDistanceKm(
+      Number(me.latitude),
+      Number(me.longitude),
+      Number(c.latitude),
+      Number(c.longitude)
+    );
+
+    if (cityFilter) {
+      const candidateCity = String(c.city || '').trim().toLowerCase();
+      if (candidateCity !== cityFilter) {
+        return null;
+      }
+    }
+
+    if (maxDistance !== null) {
+      if (distanceKm === null || distanceKm > maxDistance) {
+        return null;
+      }
+    }
+
     // Scoring logic
     let score = (c.is_vip ? 200 : (c.is_premium ? 50 : 0)) + (c.city === me.city ? 15 : 0);
 
@@ -592,8 +768,13 @@ app.get('/api/matchmaking/suggestions', requireAuth, async (req, res) => {
       score += 500;
     }
 
-    return { ...c, score };
-  }).sort((a, b) => b.score - a.score);
+    return {
+      ...c,
+      score,
+      distance_km: distanceKm,
+      super_liked_me: incomingSuperLikesByCandidate.has(c.id),
+    };
+  }).filter(Boolean).sort((a, b) => b.score - a.score);
 
   res.json({ suggestions: suggestions.slice(0, parseInt(limit)) });
 });
@@ -603,7 +784,7 @@ app.post('/api/matchmaking/swipe', requireAuth, async (req, res) => {
   const me = req.user;
 
   if (direction === 'LEFT') {
-    return res.json({ matched: false });
+    return res.json({ matched: false, matchId: null });
   }
 
   // Product decision: all authenticated users can like and match.
@@ -628,8 +809,55 @@ app.post('/api/matchmaking/swipe', requireAuth, async (req, res) => {
   }
 
   await supabase.from('likes').upsert({ liker_id: me.id, liked_id: targetUserId, is_super_like: !!isSuperLike });
-  const { data: match } = await supabase.from('likes').select('*').eq('liker_id', targetUserId).eq('liked_id', me.id).maybeSingle();
-  res.json({ matched: !!match });
+  const { data: reciprocalLike } = await supabase
+    .from('likes')
+    .select('*')
+    .eq('liker_id', targetUserId)
+    .eq('liked_id', me.id)
+    .maybeSingle();
+
+  if (!reciprocalLike) {
+    return res.json({ matched: false, matchId: null });
+  }
+
+  const [userOneId, userTwoId] = [me.id, targetUserId].sort();
+  const { data: existingMatch } = await supabase
+    .from('matches')
+    .select('id')
+    .eq('user_one_id', userOneId)
+    .eq('user_two_id', userTwoId)
+    .maybeSingle();
+
+  if (existingMatch?.id) {
+    return res.json({ matched: true, matchId: existingMatch.id });
+  }
+
+  const { data: createdMatch, error: createMatchError } = await supabase
+    .from('matches')
+    .insert({ user_one_id: userOneId, user_two_id: userTwoId, status: 'ACTIVE' })
+    .select('id')
+    .single();
+
+  if (createMatchError) {
+    if (String(createMatchError.code || '') === '23505') {
+      const { data: raceMatch } = await supabase
+        .from('matches')
+        .select('id')
+        .eq('user_one_id', userOneId)
+        .eq('user_two_id', userTwoId)
+        .maybeSingle();
+      if (raceMatch?.id) {
+        return res.json({ matched: true, matchId: raceMatch.id });
+      }
+    }
+    return res.status(500).json({ error: 'match_creation_failed' });
+  }
+
+  if (!createdMatch?.id) {
+    return res.status(500).json({ error: 'match_creation_failed' });
+  }
+
+  return res.json({ matched: true, matchId: createdMatch.id });
 });
 
 app.get('/api/likes/quota', requireAuth, async (_req, res) => {
@@ -642,6 +870,80 @@ app.get('/api/likes/quota', requireAuth, async (_req, res) => {
 });
 
 // --- MESSAGES & STATUTS ---
+
+app.post('/api/messages/direct-thread', requireAuth, async (req, res) => {
+  const me = req.user;
+  const { targetUserId } = req.body;
+
+  if (!targetUserId || String(targetUserId) === String(me.id)) {
+    return res.status(400).json({ error: 'invalid_target' });
+  }
+
+  const { data: targetUser } = await supabase
+    .from('profiles')
+    .select('id, suspended_at')
+    .eq('id', targetUserId)
+    .maybeSingle();
+  if (!targetUser || targetUser.suspended_at) {
+    return res.status(404).json({ error: 'target_not_found' });
+  }
+
+  const [userOneId, userTwoId] = [me.id, targetUserId].sort();
+  const { data: existingMatch } = await supabase
+    .from('matches')
+    .select('id')
+    .eq('user_one_id', userOneId)
+    .eq('user_two_id', userTwoId)
+    .maybeSingle();
+
+  if (existingMatch?.id) {
+    return res.json({ matchId: existingMatch.id, unlocked: true });
+  }
+
+  const hasStandard = hasStandardAccess(me);
+  let hasPurchasedDirectMessage = false;
+  if (!hasStandard) {
+    const { data: purchased } = await supabase
+      .from('purchased_interactions')
+      .select('id')
+      .eq('user_id', me.id)
+      .eq('interaction_type', 'DIRECT_MESSAGE')
+      .eq('target_id', targetUserId)
+      .maybeSingle();
+    hasPurchasedDirectMessage = !!purchased;
+  }
+
+  if (!hasStandard && !hasPurchasedDirectMessage) {
+    return res.status(403).json({ error: 'payment_required', amount: PRICES.DIRECT_MESSAGE });
+  }
+
+  const { data: createdMatch, error: createMatchError } = await supabase
+    .from('matches')
+    .insert({ user_one_id: userOneId, user_two_id: userTwoId, status: 'ACTIVE' })
+    .select('id')
+    .single();
+
+  if (createMatchError) {
+    if (String(createMatchError.code || '') === '23505') {
+      const { data: raceMatch } = await supabase
+        .from('matches')
+        .select('id')
+        .eq('user_one_id', userOneId)
+        .eq('user_two_id', userTwoId)
+        .maybeSingle();
+      if (raceMatch?.id) {
+        return res.json({ matchId: raceMatch.id, unlocked: true });
+      }
+    }
+    return res.status(500).json({ error: 'direct_thread_creation_failed' });
+  }
+
+  if (!createdMatch?.id) {
+    return res.status(500).json({ error: 'direct_thread_creation_failed' });
+  }
+
+  return res.json({ matchId: createdMatch.id, unlocked: true });
+});
 
 app.post('/api/messages/send', requireAuth, async (req, res) => {
   const { matchId, content, recipientId, messageType, mediaPath } = req.body;
@@ -712,11 +1014,16 @@ app.post('/api/boosts/initialize', requireAuth, async (req, res) => {
       email,
       amount: amount * 100,
       currency: 'XOF',
-      callback_url: 'yamo://payment-callback',
+      callback_url: PAYSTACK_CALLBACK_URL,
       metadata: { userId: req.user.id, type: 'BOOST', planId }
     }, { headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` } });
     res.json(response.data.data);
-  } catch (e) { res.status(500).json({ error: 'paystack_init_failed' }); }
+  } catch (error) {
+    res.status(500).json({
+      error: extractPaystackError(error),
+      code: 'paystack_init_failed',
+    });
+  }
 });
 
 app.get('/api/boosts/verify', requireAuth, async (req, res) => {
@@ -886,14 +1193,17 @@ app.post('/api/statuses', requireAuth, async (req, res) => {
   res.json(data);
 });
 
-app.get('/api/super-likes/received', requireAuth, async (req, res) => {
+const handleSuperLikesReceived = async (req, res) => {
   const { data, error } = await supabase.from('super_likes')
     .select('*, profiles:sender_id(name, photos, age, bio)')
     .eq('recipient_id', req.user.id)
     .order('created_at', { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
-});
+};
+
+app.get('/api/super-likes/received', requireAuth, handleSuperLikesReceived);
+app.get('/api/premium/likes-received', requireAuth, handleSuperLikesReceived);
 
 app.post('/api/super-likes/:id/respond', requireAuth, async (req, res) => {
   const { action } = req.body; // 'ACCEPT' or 'DECLINE'
@@ -1492,12 +1802,29 @@ adminRouter.post('/privacy-requests/:id/resolve', async (req, res) => {
 
 adminRouter.get('/reports', async (req, res) => {
   const rawStatus = req.query.status;
-  let query = supabase.from('reports').select('*, reporter:reporter_id(id, name), reported_user:reported_user_id(id, name)').order('created_at', { ascending: false });
+  let query = supabase.from('reports').select('*').order('created_at', { ascending: false });
   if (rawStatus) {
     query = query.eq('status', normalizeReportStatusForDb(rawStatus));
   }
   const { data, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
+
+  const profileIds = [
+    ...new Set(
+      (data || [])
+        .flatMap((item) => [item.reporter_id, item.reported_user_id])
+        .filter(Boolean)
+    ),
+  ];
+  let profilesById = {};
+  if (profileIds.length > 0) {
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, name')
+      .in('id', profileIds);
+    if (profilesError) return res.status(500).json({ error: profilesError.message });
+    profilesById = Object.fromEntries((profiles || []).map((profile) => [profile.id, profile]));
+  }
 
   const reports = (data || []).map((item) => ({
     id: item.id,
@@ -1506,8 +1833,16 @@ adminRouter.get('/reports', async (req, res) => {
     target_type: 'PROFILE',
     description: item.details || item.reason || '',
     created_at: item.created_at,
-    reporter: item.reporter ? { id: item.reporter.id, name: item.reporter.name, email: null } : null,
-    reported_user: item.reported_user ? { id: item.reported_user.id, name: item.reported_user.name, email: null } : null,
+    reporter: item.reporter_id ? {
+      id: item.reporter_id,
+      name: profilesById[item.reporter_id]?.name || 'Utilisateur',
+      email: null,
+    } : null,
+    reported_user: item.reported_user_id ? {
+      id: item.reported_user_id,
+      name: profilesById[item.reported_user_id]?.name || 'Utilisateur',
+      email: null,
+    } : null,
   }));
   res.json({ reports });
 });
@@ -1529,15 +1864,35 @@ adminRouter.get('/photo-reviews', async (req, res) => {
 
   const { data, error, count } = await supabase
     .from('photo_review_queue')
-    .select('*, user:user_id(id, name)', { count: 'exact' })
+    .select('*', { count: 'exact' })
     .eq('status', status)
     .order('created_at', { ascending: true })
     .range(from, to);
   if (error) return res.status(500).json({ error: error.message });
 
+  const userIds = [...new Set((data || []).map((item) => item.user_id).filter(Boolean))];
+  let profilesById = {};
+  if (userIds.length > 0) {
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, name')
+      .in('id', userIds);
+    if (profilesError) return res.status(500).json({ error: profilesError.message });
+    profilesById = Object.fromEntries((profiles || []).map((profile) => [profile.id, profile]));
+  }
+
+  const reviews = (data || []).map((item) => ({
+    ...item,
+    user: item.user_id ? {
+      id: item.user_id,
+      name: profilesById[item.user_id]?.name || 'Utilisateur',
+      email: null,
+    } : null,
+  }));
+
   const safeCount = count || 0;
   res.json({
-    reviews: data || [],
+    reviews,
     page,
     hasMore: page * limit < safeCount,
   });
@@ -1571,11 +1926,22 @@ adminRouter.get('/kyc/requests', async (req, res) => {
   const status = String(req.query.status || 'ALL').toUpperCase();
   let query = supabase
     .from('kyc_verifications')
-    .select('*, user:user_id(id, name, is_verified, is_premium, suspended_at, photos)')
+    .select('*')
     .order('created_at', { ascending: false });
   if (status !== 'ALL') query = query.eq('status', status);
   const { data, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
+
+  const userIds = [...new Set((data || []).map((item) => item.user_id).filter(Boolean))];
+  let profilesById = {};
+  if (userIds.length > 0) {
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, name, is_verified, is_premium, suspended_at, photos')
+      .in('id', userIds);
+    if (profilesError) return res.status(500).json({ error: profilesError.message });
+    profilesById = Object.fromEntries((profiles || []).map((profile) => [profile.id, profile]));
+  }
 
   const requests = (data || []).map((item) => ({
     id: item.id,
@@ -1589,13 +1955,13 @@ adminRouter.get('/kyc/requests', async (req, res) => {
     document_back_url: item.document_back_url || null,
     selfie_url: item.selfie_url || null,
     user: {
-      id: item.user?.id || item.user_id,
-      name: item.user?.name || 'Utilisateur',
+      id: profilesById[item.user_id]?.id || item.user_id,
+      name: profilesById[item.user_id]?.name || 'Utilisateur',
       email: null,
-      is_verified: !!item.user?.is_verified,
-      is_premium: !!item.user?.is_premium,
-      suspended_at: item.user?.suspended_at || null,
-      photo: Array.isArray(item.user?.photos) ? (item.user.photos[0] || null) : null,
+      is_verified: !!profilesById[item.user_id]?.is_verified,
+      is_premium: !!profilesById[item.user_id]?.is_premium,
+      suspended_at: profilesById[item.user_id]?.suspended_at || null,
+      photo: Array.isArray(profilesById[item.user_id]?.photos) ? (profilesById[item.user_id].photos[0] || null) : null,
     },
   }));
   res.json({ requests });

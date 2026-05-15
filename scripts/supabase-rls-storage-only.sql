@@ -55,6 +55,46 @@ CREATE POLICY "Users can delete their own photos."
     )
   );
 
+-- BUCKET: statuses
+-- Format attendu : user_id/filename
+DROP POLICY IF EXISTS "Authenticated users can read statuses media." ON storage.objects;
+CREATE POLICY "Authenticated users can read statuses media."
+  ON storage.objects FOR SELECT
+  TO authenticated
+  USING (
+    bucket_id = 'statuses'
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can upload statuses media to their own folder." ON storage.objects;
+CREATE POLICY "Users can upload statuses media to their own folder."
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    bucket_id = 'statuses'
+    and auth.uid()::text = (storage.foldername(name))[1]
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can delete their own statuses media." ON storage.objects;
+CREATE POLICY "Users can delete their own statuses media."
+  ON storage.objects FOR DELETE
+  TO authenticated
+  USING (
+    bucket_id = 'statuses'
+    and auth.uid()::text = (storage.foldername(name))[1]
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.suspended_at is null
+    )
+  );
+
 -- BUCKET: kyc-docs
 DROP POLICY IF EXISTS "Users can view their own KYC files." ON storage.objects;
 CREATE POLICY "Users can view their own KYC files."

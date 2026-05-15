@@ -49,7 +49,7 @@ const DirectMessagePurchaseModal: React.FC<Props> = ({
               {loading ? <ActivityIndicator color="#fff" /> : (
                 <>
                   <CreditCard color="#fff" size={20} />
-                  <Text style={styles.btnText}>Mobile Money (Paystack)</Text>
+                  <Text style={styles.btnText}>Mobile Money</Text>
                 </>
               )}
             </Pressable>
@@ -60,7 +60,7 @@ const DirectMessagePurchaseModal: React.FC<Props> = ({
                   <>
                     <Play color="#fff" size={20} fill="#fff" />
                     <Text style={styles.btnText}>
-                      {Platform.OS === 'ios' ? 'Carte bancaire (App Store)' : 'Carte bancaire (Google Play)'}
+                      {'Carte bancaire'}
                     </Text>
                   </>
                 )}

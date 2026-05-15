@@ -74,6 +74,16 @@ const ADMIN_SHORTCUTS: AdminShortcut[] = [
     description: 'Liste complète, suspension et vérification des profils.',
   },
   {
+    route: 'AdminModeration',
+    title: 'Modération & RGPD',
+    description: 'Signalements, revues photo et demandes confidentialité.',
+  },
+  {
+    route: 'AdminKyc',
+    title: 'Revues KYC',
+    description: 'Validation manuelle des pièces d’identité et selfies.',
+  },
+  {
     route: 'AdminAuditLogs',
     title: 'Audit Logs',
     description: 'Traçabilité des actions administratives sensibles.',

@@ -60,27 +60,22 @@ const MessagesScreen: React.FC = () => {
   );
 
   const unreadCount = adminNotifications.filter(isNotificationUnread).length;
+  const showAdminBox = loadingAdminNotifications || adminNotifications.length > 0;
 
-  const formatConversationTime = useCallback((value?: string) => {
+  const formatConversationDateTime = useCallback((value?: string) => {
     if (!value) return '';
 
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '';
-
-    const now = new Date();
-    const isSameDay = now.toDateString() === date.toDateString();
-
-    if (isSameDay) {
-      return date.toLocaleTimeString('fr-FR', {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    }
-
-    return date.toLocaleDateString('fr-FR', {
+    const datePart = date.toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: '2-digit',
     });
+    const timePart = date.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    return `${datePart} ${timePart}`;
   }, []);
 
   const recentMatches = useMemo(() => {
@@ -170,44 +165,49 @@ const MessagesScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.adminBox}>
-          <View style={styles.adminBoxHeader}>
-            <Text style={styles.adminBoxTitle}>Notifications admin</Text>
-            {unreadCount > 0 ? (
-              <View style={styles.adminUnreadBadge}>
-                <Text style={styles.adminUnreadBadgeText}>{unreadCount}</Text>
-              </View>
-            ) : null}
-          </View>
-          {unreadCount > 0 ? (
-            <Pressable style={styles.adminMarkAllButton} onPress={() => void markAllAsRead()} disabled={markingAllAsRead}>
-              <Text style={styles.adminMarkAllButtonText}>{markingAllAsRead ? '...' : 'Tout marquer lu'}</Text>
-            </Pressable>
-          ) : null}
-          {loadingAdminNotifications ? (
-            <Text style={styles.adminBoxEmpty}>Chargement...</Text>
-          ) : adminNotifications.length === 0 ? (
-            <Text style={styles.adminBoxEmpty}>Aucune notification administrative.</Text>
-          ) : (
-            <View style={styles.adminList}>
-              {adminNotifications.map((notification) => (
-                <Pressable key={notification.id} style={[styles.adminItem, isNotificationUnread(notification) && styles.adminItemUnread]} onPress={() => void markNotificationAsRead(notification.id)}>
-                  <Text style={styles.adminItemTitle}>
-                    {notification.metadata?.title || notification.event_name || 'Information administrateur'}
-                  </Text>
-                  <Text style={styles.adminItemMessage}>
-                    {notification.metadata?.message || 'Message non disponible.'}
-                  </Text>
-                  <Text style={styles.adminItemDate}>
-                    {new Date(notification.metadata?.sent_at || notification.created_at).toLocaleString('fr-FR')}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Messages</Text>
+          <Text style={styles.headerSubtitle}>Retrouvez vos matchs et conversations</Text>
         </View>
 
-        <Text style={styles.title}>Matchs Récents</Text>
+        {showAdminBox ? (
+          <View style={styles.adminBox}>
+            <View style={styles.adminBoxHeader}>
+              <Text style={styles.adminBoxTitle}>Notifications admin</Text>
+              {unreadCount > 0 ? (
+                <View style={styles.adminUnreadBadge}>
+                  <Text style={styles.adminUnreadBadgeText}>{unreadCount}</Text>
+                </View>
+              ) : null}
+            </View>
+            {unreadCount > 0 ? (
+              <Pressable style={styles.adminMarkAllButton} onPress={() => void markAllAsRead()} disabled={markingAllAsRead}>
+                <Text style={styles.adminMarkAllButtonText}>{markingAllAsRead ? '...' : 'Tout marquer lu'}</Text>
+              </Pressable>
+            ) : null}
+            {loadingAdminNotifications ? (
+              <Text style={styles.adminBoxEmpty}>Chargement...</Text>
+            ) : (
+              <View style={styles.adminList}>
+                {adminNotifications.map((notification) => (
+                  <Pressable key={notification.id} style={[styles.adminItem, isNotificationUnread(notification) && styles.adminItemUnread]} onPress={() => void markNotificationAsRead(notification.id)}>
+                    <Text style={styles.adminItemTitle}>
+                      {notification.metadata?.title || notification.event_name || 'Information administrateur'}
+                    </Text>
+                    <Text style={styles.adminItemMessage}>
+                      {notification.metadata?.message || 'Message non disponible.'}
+                    </Text>
+                    <Text style={styles.adminItemDate}>
+                      {new Date(notification.metadata?.sent_at || notification.created_at).toLocaleString('fr-FR')}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </View>
+        ) : null}
+
+        <Text style={styles.title}>Matchs récents</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.matchesRow}>
           {recentMatches.length === 0 && (
             <View style={styles.empty}>
@@ -248,7 +248,7 @@ const MessagesScreen: React.FC = () => {
                 </Text>
               </View>
               <View style={styles.rowMeta}>
-                <Text style={styles.rowTime}>{formatConversationTime(lastActivityAt)}</Text>
+                <Text style={styles.rowTime}>{formatConversationDateTime(lastActivityAt)}</Text>
                 {conversationUnreadCount > 0 && (
                   <View style={styles.badge}>
                     <Text style={styles.badgeText}>{conversationUnreadCount}</Text>
@@ -261,6 +261,11 @@ const MessagesScreen: React.FC = () => {
             <Text style={styles.emptyList}>Aucune conversation pour le moment.</Text>
           )}
         </View>
+
+        <View style={styles.securityCard}>
+          <Text style={styles.securityTitle}>Vos messages sont protégés</Text>
+          <Text style={styles.securityText}>Yamo veille à votre confidentialité.</Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -269,17 +274,34 @@ const MessagesScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: '#f6efeb',
   },
   content: {
-    padding: 20,
-    gap: 16,
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 24,
+    gap: 14,
+  },
+  header: {
+    paddingHorizontal: 2,
+    marginBottom: 2,
+  },
+  headerTitle: {
+    fontSize: 31,
+    fontWeight: '900',
+    color: '#251f1b',
+  },
+  headerSubtitle: {
+    marginTop: 4,
+    fontSize: 14,
+    color: '#6b625d',
+    fontWeight: '500',
   },
   adminBox: {
-    backgroundColor: '#fff',
+    backgroundColor: '#f1e4d6',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 16,
+    borderColor: '#e7d5c3',
+    borderRadius: 18,
     padding: 14,
     gap: 10,
   },
@@ -289,15 +311,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   adminBoxTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
-    color: COLORS.ink,
+    color: '#3a312c',
   },
   adminUnreadBadge: {
     minWidth: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#de6464',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,
@@ -310,73 +332,79 @@ const styles = StyleSheet.create({
   adminMarkAllButton: {
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderColor: '#dbeafe',
-    backgroundColor: '#eff6ff',
+    borderColor: '#edcfa7',
+    backgroundColor: '#f5d7af',
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   adminMarkAllButtonText: {
-    color: '#1d4ed8',
+    color: '#5d4430',
     fontSize: 11,
     fontWeight: '700',
   },
   adminBoxEmpty: {
-    color: COLORS.muted,
+    color: '#756c67',
     fontSize: 12,
   },
   adminList: {
     gap: 8,
   },
   adminItem: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#f8f1ea',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#e8d8ca',
     borderRadius: 12,
     padding: 10,
     gap: 4,
   },
   adminItemUnread: {
-    borderColor: '#93c5fd',
-    backgroundColor: '#eff6ff',
+    borderColor: '#efb8b8',
+    backgroundColor: '#fdeeee',
   },
   adminItemTitle: {
-    color: COLORS.ink,
+    color: '#2f2925',
     fontWeight: '700',
     fontSize: 13,
   },
   adminItemMessage: {
-    color: COLORS.ink,
+    color: '#4f4742',
     fontSize: 12,
   },
   adminItemDate: {
-    color: COLORS.muted,
+    color: '#837b75',
     fontSize: 11,
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
-    color: COLORS.ink,
+    color: '#2c2622',
   },
   matchesRow: {
-    gap: 16,
-    paddingVertical: 8,
+    gap: 14,
+    paddingVertical: 6,
   },
   matchItem: {
     alignItems: 'center',
-    gap: 6,
+    gap: 7,
+    backgroundColor: '#f5eae1',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#ead8ca',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   matchAvatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 62,
+    height: 62,
+    borderRadius: 31,
     borderWidth: 2,
-    borderColor: COLORS.primary,
+    borderColor: '#df6767',
   },
   matchName: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
-    color: COLORS.ink,
+    color: '#2d2723',
   },
   matchNameRow: {
     flexDirection: 'row',
@@ -384,45 +412,49 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   empty: {
-    padding: 20,
-    borderRadius: 16,
-    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: '#f4e7db',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#e8d8c8',
   },
   emptyText: {
-    color: COLORS.muted,
+    color: '#7c736e',
+    fontWeight: '600',
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
-    color: COLORS.ink,
+    color: '#2c2622',
   },
   list: {
-    gap: 12,
+    gap: 10,
   },
   row: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 18,
+    backgroundColor: '#f3e9e1',
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#ebdcd0',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
   rowAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 18,
   },
   rowText: {
     flex: 1,
-    gap: 4,
+    gap: 5,
   },
   rowName: {
-    fontWeight: '700',
-    color: COLORS.ink,
+    fontWeight: '800',
+    color: '#211c19',
+    fontSize: 16,
   },
   rowNameRow: {
     flexDirection: 'row',
@@ -430,23 +462,23 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   rowMessage: {
-    fontSize: 12,
-    color: COLORS.muted,
+    fontSize: 13,
+    color: '#5f5752',
   },
   rowMeta: {
     alignItems: 'flex-end',
-    gap: 6,
+    gap: 8,
   },
   rowTime: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#94a3b8',
+    color: '#8e847e',
   },
   badge: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: COLORS.primary,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#de6464',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 5,
@@ -457,9 +489,30 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   emptyList: {
-    color: COLORS.muted,
+    color: '#7a716b',
     textAlign: 'center',
-    paddingVertical: 20,
+    paddingVertical: 18,
+    fontWeight: '600',
+  },
+  securityCard: {
+    marginTop: 6,
+    backgroundColor: '#dfe8e1',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#cedad1',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  securityTitle: {
+    fontSize: 21,
+    fontWeight: '800',
+    color: '#1f2f25',
+  },
+  securityText: {
+    marginTop: 2,
+    color: '#355544',
+    fontSize: 15,
+    fontWeight: '500',
   },
 });
 

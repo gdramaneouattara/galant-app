@@ -68,27 +68,52 @@ const StatusScreen: React.FC = () => {
     fetchStatuses();
   }, []);
 
+  const getPublishStatusErrorMessage = (error: any) => {
+    const raw = String(error?.message || '').toLowerCase();
+    if (raw.includes('subscription_required')) {
+      return 'Publication réservée aux utilisateurs éligibles (essai actif ou premium).';
+    }
+    if (raw.includes('permission')) {
+      return "Permission média refusée. Autorisez l'accès à la galerie.";
+    }
+    if (raw.includes('bucket') || raw.includes('storage') || raw.includes('row-level security') || raw.includes('rls')) {
+      return 'Le stockage Stories n’est pas correctement autorisé (bucket/policies).';
+    }
+    return "Impossible de publier le statut.";
+  };
+
   const pickStatusMedia = async () => {
+    if (uploading) return;
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permission.status !== 'granted') {
+      Alert.alert('Permission requise', "Autorisez l'accès à la galerie pour publier un statut.");
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
       aspect: [9, 16],
-      quality: 0.7,
+      quality: 0.8,
     });
 
     if (!result.canceled && result.assets[0].uri) {
-      const uri = result.assets[0].uri;
-      const type = result.assets[0].type === 'video' ? 'VIDEO' : 'IMAGE';
+      const asset = result.assets[0];
+      const uri = asset.uri;
+      const type = asset.type === 'video' ? 'VIDEO' : 'IMAGE';
 
       setUploading(true);
       try {
-        const fileExt = uri.split('.').pop();
+        const fileName = asset.fileName || uri.split('/').pop() || `${Date.now()}`;
+        const fileExt = fileName.includes('.') ? fileName.split('.').pop() : (type === 'VIDEO' ? 'mp4' : 'jpg');
+        const mimeType = asset.mimeType || (type === 'VIDEO' ? 'video/mp4' : 'image/jpeg');
         const path = `${currentUser?.id}/${Date.now()}.${fileExt}`;
         await uploadArrayBufferToBucket({
           bucket: 'statuses',
           path,
           uri,
-          contentType: type === 'VIDEO' ? 'video/mp4' : 'image/jpeg'
+          contentType: mimeType
         });
 
         await apiRequest('/api/statuses', {
@@ -97,19 +122,31 @@ const StatusScreen: React.FC = () => {
           body: JSON.stringify({ mediaUrl: path, type, content: '' })
         });
         fetchStatuses();
-      } catch (e) {
-        Alert.alert('Erreur', "Impossible de publier le statut.");
+      } catch (e: any) {
+        Alert.alert('Erreur', getPublishStatusErrorMessage(e));
       } finally {
         setUploading(false);
       }
     }
   };
 
+  const formatPublishedAt = (value?: string) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const datePart = date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+    const timePart = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    return `${datePart} ${timePart}`;
+  };
+
   const renderStatusItem = ({ item }: { item: Status }) => (
     <Pressable style={styles.statusCard} onPress={() => setSelectedStatus(item)}>
       <Image source={{ uri: resolvedUrls[item.media_url] || item.profiles.photos[0] }} style={styles.statusPreview} />
       <View style={styles.statusInfo}>
-        <Text style={styles.statusName} numberOfLines={1}>{item.profiles.name}</Text>
+        <View style={styles.statusMetaText}>
+          <Text style={styles.statusName} numberOfLines={1}>{item.profiles.name}</Text>
+          <Text style={styles.statusDateTime}>{formatPublishedAt(item.created_at)}</Text>
+        </View>
         {item.message_type === 'VIDEO' && <Play size={12} color="#fff" fill="#fff" />}
       </View>
     </Pressable>
@@ -140,11 +177,17 @@ const StatusScreen: React.FC = () => {
         <View style={styles.modal}>
           <Pressable style={styles.closeModal} onPress={() => setSelectedStatus(null)}><X color="#fff" size={32} /></Pressable>
           {selectedStatus && (
-            selectedStatus.message_type === 'VIDEO' ? (
-              <VideoPlayer uri={resolvedUrls[selectedStatus.media_url]} style={styles.fullMedia} />
-            ) : (
-              <Image source={{ uri: resolvedUrls[selectedStatus.media_url] }} style={styles.fullMedia} resizeMode="contain" />
-            )
+            <>
+              {selectedStatus.message_type === 'VIDEO' ? (
+                <VideoPlayer uri={resolvedUrls[selectedStatus.media_url]} style={styles.fullMedia} />
+              ) : (
+                <Image source={{ uri: resolvedUrls[selectedStatus.media_url] }} style={styles.fullMedia} resizeMode="contain" />
+              )}
+              <View style={styles.modalMeta}>
+                <Text style={styles.modalMetaName}>{selectedStatus.profiles.name}</Text>
+                <Text style={styles.modalMetaDate}>{formatPublishedAt(selectedStatus.created_at)}</Text>
+              </View>
+            </>
           )}
         </View>
       </Modal>
@@ -159,11 +202,16 @@ const styles = StyleSheet.create({
   list: { padding: 10 },
   statusCard: { flex: 1, margin: 5, aspectRatio: 9/16, borderRadius: 16, overflow: 'hidden', backgroundColor: '#f1f5f9' },
   statusPreview: { width: '100%', height: '100%' },
-  statusInfo: { position: 'absolute', bottom: 10, left: 10, right: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  statusInfo: { position: 'absolute', bottom: 10, left: 10, right: 10, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  statusMetaText: { flex: 1, paddingRight: 8 },
   statusName: { color: '#fff', fontSize: 12, fontWeight: '800', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 },
+  statusDateTime: { color: '#f8fafc', fontSize: 10, fontWeight: '700', marginTop: 2, textShadowColor: 'rgba(0,0,0,0.55)', textShadowRadius: 4 },
   modal: { flex: 1, backgroundColor: '#000', justifyContent: 'center' },
   closeModal: { position: 'absolute', top: 50, right: 20, zIndex: 10 },
   fullMedia: { width: '100%', height: '80%' },
+  modalMeta: { position: 'absolute', left: 16, right: 16, bottom: 24, backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
+  modalMetaName: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  modalMetaDate: { color: '#e2e8f0', fontSize: 12, fontWeight: '600', marginTop: 2 },
   empty: { flex: 1, alignItems: 'center', marginTop: 100 },
   emptyText: { color: COLORS.muted }
 });

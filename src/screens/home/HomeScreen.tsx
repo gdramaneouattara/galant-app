@@ -21,10 +21,11 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import * as IAP from 'react-native-iap';
-import { Heart, MapPin, SlidersHorizontal, Star, X, PlayCircle } from 'lucide-react-native';
+import { Heart, MapPin, SlidersHorizontal, Star, X, PlayCircle, MessageCircle } from 'lucide-react-native';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
+import { IAP_EXPO_GO_MESSAGE, isExpoGo } from '../../lib/iapRuntime';
 import type { RootStackParamList } from '../../navigation/MainNavigator';
 import ProfileBadges from '../../components/ProfileBadges';
 import SuperLikePurchaseModal from '../../components/SuperLikePurchaseModal';
@@ -43,7 +44,19 @@ type Suggestion = {
   is_verified: boolean;
   is_premium: boolean;
   boosted_until: string | null;
+  super_liked_me?: boolean;
   score: number;
+  distance_km?: number | null;
+};
+
+type SwipeResponse = {
+  matched: boolean;
+  matchId?: string | null;
+};
+
+type MatchModalState = {
+  user: Suggestion;
+  matchId: string;
 };
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -55,7 +68,7 @@ const HomeScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [swiping, setSwiping] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [matchUser, setMatchUser] = useState<Suggestion | null>(null);
+  const [matchModal, setMatchModal] = useState<MatchModalState | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showSuperLikeModal, setShowSuperLikeModal] = useState(false);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
@@ -64,11 +77,14 @@ const HomeScreen: React.FC = () => {
     gender: 'ALL',
     minAge: 18,
     maxAge: 50,
+    city: '',
+    maxDistanceKm: 100,
   });
 
   const swipePosition = useRef(new Animated.ValueXY()).current;
 
   useEffect(() => {
+    if (isExpoGo) return;
     IAP.initConnection().catch(() => {});
     return () => { IAP.endConnection().catch(() => {}); };
   }, []);
@@ -77,7 +93,16 @@ const HomeScreen: React.FC = () => {
     if (!currentUser) return;
     try {
       setLoading(true);
-      const query = `?gender=${filters.gender}&minAge=${filters.minAge}&maxAge=${filters.maxAge}`;
+      const params = new URLSearchParams({
+        gender: filters.gender,
+        minAge: String(filters.minAge),
+        maxAge: String(filters.maxAge),
+        maxDistanceKm: String(filters.maxDistanceKm),
+      });
+      if (filters.city.trim()) {
+        params.set('city', filters.city.trim());
+      }
+      const query = `?${params.toString()}`;
       const response = await apiRequest<{ suggestions: Suggestion[] }>(`/api/matchmaking/suggestions${query}`, { requireAuth: true });
       setSuggestions(response.suggestions || []);
     } catch (_error) {
@@ -97,12 +122,14 @@ const HomeScreen: React.FC = () => {
     if (!targetProfile || swiping) return;
     try {
       setSwiping(true);
-      const response = await apiRequest<{ matched: boolean }>('/api/matchmaking/swipe', {
+      const response = await apiRequest<SwipeResponse>('/api/matchmaking/swipe', {
         method: 'POST',
         requireAuth: true,
         body: JSON.stringify({ targetUserId: targetProfile.id, direction, isSuperLike: isSuper })
       });
-      if (response.matched) setMatchUser(targetProfile);
+      if (response.matched && response.matchId) {
+        setMatchModal({ user: targetProfile, matchId: response.matchId });
+      }
       setSuggestions(prev => prev.filter(p => p.id !== targetProfile.id));
     } catch (e: any) {
       if (isSuper && e.message === 'premium_required_for_super_like') {
@@ -128,6 +155,10 @@ const HomeScreen: React.FC = () => {
 
   const handleSuperLikePurchaseGoogle = async () => {
     if (!suggestions[0]) return;
+    if (isExpoGo) {
+      Alert.alert('Achat indisponible', IAP_EXPO_GO_MESSAGE);
+      return;
+    }
     try {
       setPurchaseLoading(true);
       const purchase: any = await IAP.requestPurchase({ sku: 'super_like_1' });
@@ -204,6 +235,11 @@ const HomeScreen: React.FC = () => {
 
   const currentProfile = suggestions[0];
 
+  const openDirectMessage = () => {
+    if (!currentProfile) return;
+    navigation.navigate('Chat', { userId: currentProfile.id });
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
@@ -234,11 +270,20 @@ const HomeScreen: React.FC = () => {
               <View style={styles.cardInfo}>
                 <View style={styles.nameRow}>
                   <Text style={styles.name}>{currentProfile.name}, {currentProfile.age}</Text>
+                  {currentProfile.super_liked_me ? (
+                    <View style={styles.superLikeReceivedPill}>
+                      <Star size={12} color="#fff" fill="#fff" />
+                      <Text style={styles.superLikeReceivedPillText}>Super Like reçu</Text>
+                    </View>
+                  ) : null}
                   <ProfileBadges user={currentProfile} />
                 </View>
                 <View style={styles.locRow}>
                   <MapPin size={14} color="#fff" />
-                  <Text style={styles.locText}>{currentProfile.city || 'À proximité'}</Text>
+                  <Text style={styles.locText}>
+                    {currentProfile.city || 'À proximité'}
+                    {typeof currentProfile.distance_km === 'number' ? ` • ${currentProfile.distance_km.toFixed(1)} km` : ''}
+                  </Text>
                 </View>
               </View>
             </ImageBackground>
@@ -250,6 +295,9 @@ const HomeScreen: React.FC = () => {
 
       <View style={styles.actions}>
         <Pressable style={[styles.actionBtn, styles.btnNo]} onPress={() => handleSwipe('LEFT')}><X color={COLORS.primary} size={28} /></Pressable>
+        <Pressable style={[styles.actionBtn, styles.btnMessage]} onPress={openDirectMessage}>
+          <MessageCircle color="#fff" size={24} />
+        </Pressable>
         <Pressable style={[styles.actionBtn, styles.btnStar]} onPress={() => handleSwipe('RIGHT', true)}><Star color="#fff" size={24} fill="#fff" /></Pressable>
         <Pressable style={[styles.actionBtn, styles.btnYes]} onPress={() => handleSwipe('RIGHT')}><Heart color="#fff" size={30} fill="#fff" /></Pressable>
       </View>
@@ -307,6 +355,24 @@ const HomeScreen: React.FC = () => {
                 />
               </View>
 
+              <Text style={styles.filterLabel}>Ville</Text>
+              <TextInput
+                style={styles.textInput}
+                value={filters.city}
+                onChangeText={(v) => setFilters({ ...filters, city: v })}
+                placeholder="Ex: Abidjan"
+                autoCapitalize="words"
+              />
+
+              <Text style={styles.filterLabel}>Distance max : {filters.maxDistanceKm} km</Text>
+              <TextInput
+                style={styles.textInput}
+                keyboardType="numeric"
+                value={String(filters.maxDistanceKm)}
+                onChangeText={(v) => setFilters({ ...filters, maxDistanceKm: Math.max(1, parseInt(v, 10) || 1) })}
+                placeholder="Ex: 50"
+              />
+
               <Pressable style={styles.applyBtn} onPress={() => setShowFilters(false)}>
                 <Text style={styles.applyBtnText}>Appliquer les filtres</Text>
               </Pressable>
@@ -315,12 +381,19 @@ const HomeScreen: React.FC = () => {
         </View>
       </Modal>
 
-      {matchUser && (
+      {matchModal && (
         <Modal visible transparent animationType="fade">
           <View style={styles.matchOverlay}>
             <Text style={styles.matchTitle}>C'est un Match !</Text>
-            <Text style={styles.matchSub}>Vous et {matchUser.name} vous plaisez.</Text>
-            <Pressable style={styles.matchBtn} onPress={() => setMatchUser(null)}>
+            <Text style={styles.matchSub}>Vous et {matchModal.user.name} vous plaisez.</Text>
+            <Pressable
+              style={styles.matchBtn}
+              onPress={() => {
+                const { user, matchId } = matchModal;
+                setMatchModal(null);
+                navigation.navigate('Chat', { userId: user.id, matchId });
+              }}
+            >
               <Text style={styles.matchBtnText}>Continuer</Text>
             </Pressable>
           </View>
@@ -345,11 +418,22 @@ const styles = StyleSheet.create({
   cardInfo: { gap: 4 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   name: { color: '#fff', fontSize: 24, fontWeight: '900', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 },
+  superLikeReceivedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(245,158,11,0.92)',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  superLikeReceivedPillText: { color: '#fff', fontSize: 10, fontWeight: '800' },
   locRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   locText: { color: '#fff', fontWeight: '600' },
   actions: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 20, paddingBottom: 30 },
   actionBtn: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: '#f1f5f9' },
   btnNo: { borderColor: '#f1f5f9' },
+  btnMessage: { backgroundColor: '#0ea5e9', borderColor: '#0ea5e9' },
   btnStar: { backgroundColor: '#f59e0b', borderColor: '#f59e0b' },
   btnYes: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -366,6 +450,7 @@ const styles = StyleSheet.create({
   filterChipTextActive: { color: '#fff' },
   ageInputs: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   ageInput: { flex: 1, backgroundColor: '#f1f5f9', borderRadius: 12, padding: 12, fontSize: 16, fontWeight: '700', textAlign: 'center' },
+  textInput: { backgroundColor: '#f1f5f9', borderRadius: 12, padding: 12, fontSize: 16, fontWeight: '600', color: COLORS.ink },
   ageDash: { fontWeight: '700', color: COLORS.muted },
   applyBtn: { backgroundColor: COLORS.primary, paddingVertical: 16, borderRadius: 16, alignItems: 'center', marginTop: 32 },
   applyBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },

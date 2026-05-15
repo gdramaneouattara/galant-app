@@ -9,12 +9,14 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Rocket, Star } from 'lucide-react-native';
 import { useApp } from '../../state/AppContext';
 import { COLORS } from '../../data/mock';
 import { apiRequest } from '../../lib/api';
 import ProfileBadges from '../../components/ProfileBadges';
+import type { RootStackParamList } from '../../navigation/MainNavigator';
 
 type DiscoverSuggestion = {
   id: string;
@@ -36,9 +38,12 @@ type DiscoverResponse = {
   suggestions: DiscoverSuggestion[];
 };
 
+type Nav = NativeStackNavigationProp<RootStackParamList>;
+
 const MATCHMAKING_LIMIT = 80;
 
 const DiscoverGridScreen: React.FC = () => {
+  const navigation = useNavigation<Nav>();
   const { currentUser } = useApp();
   const [profiles, setProfiles] = useState<DiscoverSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
@@ -96,7 +101,11 @@ const DiscoverGridScreen: React.FC = () => {
             const coverPhoto = profile.photos?.[0]
               || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=640&auto=format&fit=crop';
             return (
-              <View key={profile.id} style={styles.card}>
+              <Pressable
+                key={profile.id}
+                style={styles.card}
+                onPress={() => navigation.navigate('Chat', { userId: profile.id })}
+              >
                 <Image source={{ uri: coverPhoto }} style={styles.photo} />
 
                 <View style={styles.badgesOverlay}>
@@ -130,7 +139,7 @@ const DiscoverGridScreen: React.FC = () => {
                   </Text>
                   <Text style={styles.scoreText}>Score {Math.round(profile.score)}</Text>
                 </View>
-              </View>
+              </Pressable>
             );
           })}
         </ScrollView>

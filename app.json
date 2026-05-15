@@ -4,7 +4,7 @@
     "slug": "yamo-app",
     "scheme": "yamo",
     "version": "0.1.0",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "orientation": "portrait",
     "icon": "./assets/icon-1024.png",
     "userInterfaceStyle": "light",
@@ -45,7 +45,12 @@
         "READ_MEDIA_AUDIO",
         "com.android.vending.BILLING"
       ],
-      "package": "com.konan.yamo"
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon-1024.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.konan.yamo",
+      "versionCode": 7
     },
     "platforms": [
       "ios",
@@ -63,7 +68,7 @@
         "expo-build-properties",
         {
         "android": {
-          "minSdkVersion": 23,
+          "minSdkVersion": 24,
           "buildToolsVersion": "35.0.0",
           "compileSdkVersion": 35,
           "targetSdkVersion": 35,

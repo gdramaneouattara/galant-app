@@ -32,7 +32,9 @@ export type RootStackParamList = {
   MainTabs: undefined;
   AdminStack: undefined;
   AdminUserList: undefined;
-  Chat: { userId: string; matchId: string };
+  AdminModeration: undefined;
+  AdminKyc: undefined;
+  Chat: { userId: string; matchId?: string };
   CommunityChat: { communityId: string; communityName: string };
   Premium: undefined;
   LikesReceived: undefined;
@@ -54,6 +56,8 @@ type UserTabParamList = {
 type AdminStackParamList = {
   AdminTabs: undefined;
   AdminUserList: undefined;
+  AdminModeration: undefined;
+  AdminKyc: undefined;
   AdminAuditLogs: undefined;
   AdminMessaging: undefined;
 };
@@ -116,6 +120,8 @@ const AdminStackNavigator = () => (
   >
     <AdminStack.Screen name="AdminTabs" component={AdminDashboardScreen} options={{ title: 'Dashboard' }} />
     <AdminStack.Screen name="AdminUserList" component={UserListScreen} options={{ title: 'Utilisateurs' }} />
+    <AdminStack.Screen name="AdminModeration" component={AdminModerationScreen} options={{ title: 'Modération & RGPD' }} />
+    <AdminStack.Screen name="AdminKyc" component={AdminKycScreen} options={{ title: 'Revues KYC' }} />
     <AdminStack.Screen name="AdminAuditLogs" component={AdminAuditLogScreen} options={{ title: 'Audit' }} />
     <AdminStack.Screen name="AdminMessaging" component={AdminMessagingScreen} options={{ title: 'Messages admin' }} />
   </AdminStack.Navigator>

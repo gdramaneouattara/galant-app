@@ -8,6 +8,7 @@ import * as IAP from 'react-native-iap';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
+import { IAP_EXPO_GO_MESSAGE, isExpoGo } from '../../lib/iapRuntime';
 
 const PLAN_AMOUNTS = {
   MONTHLY: parseInt(process.env.EXPO_PUBLIC_PLAN_MONTHLY_AMOUNT || '3000'),
@@ -77,6 +78,7 @@ const PremiumScreen: React.FC = () => {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isExpoGo) return;
     const initIAP = async () => {
       try {
         await IAP.initConnection();
@@ -129,6 +131,10 @@ const PremiumScreen: React.FC = () => {
   };
 
   const subscribeGooglePlay = async (plan: PremiumPlan) => {
+    if (isExpoGo) {
+      Alert.alert('Achat indisponible', IAP_EXPO_GO_MESSAGE);
+      return;
+    }
     if (loadingPlan) return;
     setLoadingPlan(plan.id);
     try {
@@ -211,7 +217,7 @@ const PremiumScreen: React.FC = () => {
                   ) : (
                     <>
                       <CreditCard size={18} color="#fff" />
-                      <Text style={styles.payBtnText}>Mobile Money (Paystack)</Text>
+                      <Text style={styles.payBtnText}>Mobile Money</Text>
                     </>
                   )}
                 </Pressable>
@@ -224,7 +230,7 @@ const PremiumScreen: React.FC = () => {
                   >
                     <Play size={18} color="#fff" fill="#fff" />
                     <Text style={styles.payBtnText}>
-                      {Platform.OS === 'ios' ? 'Carte bancaire (App Store)' : 'Carte bancaire (Google Play)'}
+                      {'Carte bancaire'}
                     </Text>
                   </Pressable>
                 )}

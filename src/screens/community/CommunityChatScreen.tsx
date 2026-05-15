@@ -317,6 +317,9 @@ const CommunityChatScreen: React.FC = () => {
     const isMine = item.sender_id === currentUser?.id;
     const profile = item.profiles;
     const resolvedMediaUrl = item.media_url ? resolvedMediaUrls[item.media_url] : null;
+    const hasText = !!item.content;
+    const hasImage = item.message_type === 'IMAGE' && !!resolvedMediaUrl;
+    const hasVideo = item.message_type === 'VIDEO' && !!resolvedMediaUrl;
 
     return (
       <View style={[styles.messageRow, isMine && styles.myMessageRow]}>
@@ -329,32 +332,44 @@ const CommunityChatScreen: React.FC = () => {
         <View style={[styles.bubble, isMine ? styles.myBubble : styles.theirBubble]}>
           {!isMine && <Text style={styles.senderName}>{profile?.name || 'Anonyme'}</Text>}
 
-          {item.message_type === 'TEXT' && (
+          {hasText && (
             <Text style={[styles.messageText, isMine && styles.myMessageText]}>{item.content}</Text>
           )}
 
-          {item.message_type === 'IMAGE' && resolvedMediaUrl && (
-            <Image source={{ uri: resolvedMediaUrl }} style={styles.mediaContent} resizeMode="cover" />
+          {hasImage && (
+            <Image source={{ uri: resolvedMediaUrl }} style={[styles.mediaContent, hasText && styles.mediaAfterText]} resizeMode="cover" />
           )}
 
-          {item.message_type === 'VIDEO' && resolvedMediaUrl && (
-            <VideoPlayer uri={resolvedMediaUrl} style={styles.videoContent} useNativeControls={true} />
+          {hasVideo && (
+            <VideoPlayer uri={resolvedMediaUrl} style={[styles.videoContent, hasText && styles.mediaAfterText]} useNativeControls={true} />
           )}
 
           <Text style={[styles.time, isMine && styles.myTime]}>
-            {new Date(item.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+            {formatMessageDateTime(item.created_at)}
           </Text>
         </View>
       </View>
     );
   };
 
+  const formatMessageDateTime = (value?: string) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const datePart = date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+    const timePart = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    return `${datePart} ${timePart}`;
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <ChevronLeft color={COLORS.ink} size={24} />
+          <ChevronLeft color="#2d2723" size={24} />
         </Pressable>
+        <View style={styles.headerAvatar}>
+          <Users color="#5d534d" size={20} />
+        </View>
         <View style={styles.headerInfo}>
           <Text style={styles.communityName}>{communityName}</Text>
           <Text style={styles.activeStatus}>{members.length || 0} membres</Text>
@@ -366,7 +381,23 @@ const CommunityChatScreen: React.FC = () => {
           }}
           style={styles.membersButton}
         >
-          <Users color={COLORS.ink} size={20} />
+          <Users color="#2d2723" size={18} />
+        </Pressable>
+      </View>
+
+      <View style={styles.communityCard}>
+        <View style={styles.communityCardText}>
+          <Text style={styles.communityCardTitle}>Espace communautaire</Text>
+          <Text style={styles.communityCardSub}>Discutez avec les membres du groupe en temps réel.</Text>
+        </View>
+        <Pressable
+          style={styles.communityCardBtn}
+          onPress={() => {
+            setMembersVisible(true);
+            void fetchMembers();
+          }}
+        >
+          <Text style={styles.communityCardBtnText}>Voir membres</Text>
         </Pressable>
       </View>
 
@@ -378,7 +409,6 @@ const CommunityChatScreen: React.FC = () => {
           data={messages}
           renderItem={renderMessage}
           keyExtractor={(item) => item.id}
-          inverted
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <View style={styles.empty}>
@@ -392,10 +422,10 @@ const CommunityChatScreen: React.FC = () => {
         <View style={styles.inputArea}>
           <View style={styles.mediaButtons}>
             <Pressable onPress={() => pickMedia('IMAGE')} style={styles.mediaBtn}>
-              <ImageIcon size={20} color={currentUser?.isPremium ? COLORS.primary : '#cbd5e1'} />
+              <ImageIcon size={20} color={currentUser?.isPremium ? COLORS.primary : '#c8bbb1'} />
             </Pressable>
             <Pressable onPress={() => pickMedia('VIDEO')} style={styles.mediaBtn}>
-              <Video size={20} color={currentUser?.isPremium ? COLORS.primary : '#cbd5e1'} />
+              <Video size={20} color={currentUser?.isPremium ? COLORS.primary : '#c8bbb1'} />
             </Pressable>
           </View>
 
@@ -404,7 +434,7 @@ const CommunityChatScreen: React.FC = () => {
             value={inputText}
             onChangeText={setInputText}
             placeholder="Écris un message..."
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor="#9a8f87"
             multiline
           />
 
@@ -537,35 +567,123 @@ const CommunityChatScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f8fafc' },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e2e8f0' },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  headerInfo: { marginLeft: 8, flex: 1 },
-  membersButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#f1f5f9' },
-  communityName: { fontSize: 18, fontWeight: '800', color: COLORS.ink },
-  activeStatus: { fontSize: 12, color: '#22c55e', fontWeight: '600' },
-  list: { padding: 16, gap: 16 },
-  messageRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
+  safe: { flex: 1, backgroundColor: '#f6efeb' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 10,
+    backgroundColor: '#f6efeb',
+  },
+  backBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#efe5dc',
+  },
+  headerInfo: { flex: 1 },
+  membersButton: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 17,
+  },
+  communityName: { fontSize: 17, fontWeight: '900', color: '#201b18' },
+  activeStatus: { fontSize: 13, color: '#6e655f', fontWeight: '500', marginTop: 1 },
+  communityCard: {
+    marginHorizontal: 14,
+    marginBottom: 8,
+    backgroundColor: '#efdfcb',
+    borderWidth: 1,
+    borderColor: '#ead4bb',
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  communityCardText: { flex: 1 },
+  communityCardTitle: { fontSize: 16, fontWeight: '800', color: '#2d2723' },
+  communityCardSub: { marginTop: 2, fontSize: 13, color: '#6f655f' },
+  communityCardBtn: {
+    backgroundColor: '#f3d4a8',
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  communityCardBtnText: { color: '#4e3a2a', fontWeight: '700', fontSize: 13 },
+  list: { paddingHorizontal: 14, paddingTop: 6, paddingBottom: 14 },
+  messageRow: { flexDirection: 'row', marginBottom: 12, alignItems: 'flex-end', gap: 8 },
   myMessageRow: { justifyContent: 'flex-end' },
-  miniAvatar: { width: 32, height: 32, borderRadius: 10, alignSelf: 'flex-end' },
-  bubble: { maxWidth: '80%', padding: 12, borderRadius: 20 },
-  myBubble: { backgroundColor: COLORS.primary, borderBottomRightRadius: 4 },
-  theirBubble: { backgroundColor: '#fff', borderBottomLeftRadius: 4, borderWidth: 1, borderColor: '#e2e8f0' },
-  senderName: { fontSize: 11, fontWeight: '800', color: COLORS.muted, marginBottom: 4 },
-  messageText: { fontSize: 15, color: COLORS.ink, lineHeight: 20 },
+  miniAvatar: { width: 34, height: 34, borderRadius: 17, alignSelf: 'flex-end' },
+  bubble: { maxWidth: '78%', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 22 },
+  myBubble: { backgroundColor: '#de6464', borderBottomRightRadius: 8 },
+  theirBubble: { backgroundColor: '#efe5dc', borderBottomLeftRadius: 8 },
+  senderName: { fontSize: 11, fontWeight: '800', color: '#7b6f68', marginBottom: 4 },
+  messageText: { fontSize: 14, color: '#221d1a', lineHeight: 20 },
   myMessageText: { color: '#fff' },
   mediaContent: { width: 240, height: 240, borderRadius: 12, marginTop: 4 },
   videoContent: { width: 240, height: 240, borderRadius: 12, marginBottom: 4 },
-  time: { fontSize: 10, color: 'rgba(0,0,0,0.4)', marginTop: 4, alignSelf: 'flex-end' },
-  myTime: { color: 'rgba(255,255,255,0.7)' },
+  mediaAfterText: { marginTop: 8 },
+  time: { fontSize: 11, color: '#877e78', marginTop: 6, alignSelf: 'flex-end' },
+  myTime: { color: '#ffe3e3' },
   empty: { flex: 1, alignItems: 'center', marginTop: 100 },
-  emptyText: { color: COLORS.muted, fontWeight: '600' },
-  inputArea: { flexDirection: 'row', alignItems: 'center', padding: 12, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#e2e8f0', gap: 10 },
+  emptyText: { color: '#6f655f', fontWeight: '600' },
+  inputArea: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    backgroundColor: '#f6efeb',
+    borderTopWidth: 1,
+    borderTopColor: '#e7dbd2',
+    gap: 8,
+  },
   mediaButtons: { flexDirection: 'row', gap: 8 },
-  mediaBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' },
-  input: { flex: 1, backgroundColor: '#f8fafc', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, fontSize: 15, color: COLORS.ink, maxHeight: 100 },
-  sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
-  sendBtnDisabled: { backgroundColor: '#cbd5e1' },
+  mediaBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f9ece8',
+    borderWidth: 1,
+    borderColor: '#efcec8',
+  },
+  input: {
+    flex: 1,
+    backgroundColor: '#f5efe9',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#e7d8cd',
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    maxHeight: 100,
+    fontSize: 15,
+    color: '#2a2420',
+  },
+  sendBtn: {
+    backgroundColor: '#de6464',
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendBtnDisabled: { opacity: 0.6 },
   premiumHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 6, backgroundColor: '#fffbeb' },
   premiumHintText: { fontSize: 11, color: '#b45309', fontWeight: '700' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.35)', justifyContent: 'flex-end' },

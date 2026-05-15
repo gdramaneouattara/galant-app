@@ -8,6 +8,7 @@ import * as IAP from 'react-native-iap';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
+import { IAP_EXPO_GO_MESSAGE, isExpoGo } from '../../lib/iapRuntime';
 
 const BOOST_PRICES = {
   '1D': parseInt(process.env.EXPO_PUBLIC_BOOST_1D_AMOUNT || '1000'),
@@ -67,6 +68,7 @@ const BoostScreen: React.FC = () => {
   const [activatingFree, setActivatingFree] = useState(false);
 
   useEffect(() => {
+    if (isExpoGo) return;
     IAP.initConnection().catch(() => {});
     return () => { IAP.endConnection().catch(() => {}); };
   }, []);
@@ -128,6 +130,10 @@ const BoostScreen: React.FC = () => {
   };
 
   const boostGooglePlay = async (plan: BoostPlan) => {
+    if (isExpoGo) {
+      Alert.alert('Achat indisponible', IAP_EXPO_GO_MESSAGE);
+      return;
+    }
     if (loadingPlan) return;
     setLoadingPlan(plan.id);
     try {
@@ -217,7 +223,7 @@ const BoostScreen: React.FC = () => {
                   disabled={!!loadingPlan}
                 >
                   <CreditCard size={18} color="#fff" />
-                  <Text style={styles.payBtnText}>Mobile Money (Paystack)</Text>
+                  <Text style={styles.payBtnText}>Mobile Money</Text>
                 </Pressable>
 
                 {Platform.OS !== 'web' && (
@@ -228,7 +234,7 @@ const BoostScreen: React.FC = () => {
                   >
                     <Play size={18} color="#fff" fill="#fff" />
                     <Text style={styles.payBtnText}>
-                      {Platform.OS === 'ios' ? 'Carte bancaire (App Store)' : 'Carte bancaire (Google Play)'}
+                      {'Carte bancaire'}
                     </Text>
                   </Pressable>
                 )}
