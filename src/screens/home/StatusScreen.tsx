@@ -39,6 +39,7 @@ const StatusScreen: React.FC = () => {
   const { currentUser } = useApp();
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [loading, setLoading] = useState(true);
+  const [locked, setLocked] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<Status | null>(null);
   const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
@@ -47,6 +48,7 @@ const StatusScreen: React.FC = () => {
     try {
       const data = await apiRequest<Status[]>('/api/statuses', { requireAuth: true });
       setStatuses(data || []);
+      setLocked(false);
 
       // Hydrate signed URLs
       for (const s of (data || [])) {
@@ -57,7 +59,11 @@ const StatusScreen: React.FC = () => {
           }
         }
       }
-    } catch (e) {
+    } catch (e: any) {
+      if (String(e?.message || '').toLowerCase().includes('subscription_required')) {
+        setLocked(true);
+        setStatuses([]);
+      }
       console.error(e);
     } finally {
       setLoading(false);
@@ -84,6 +90,12 @@ const StatusScreen: React.FC = () => {
 
   const pickStatusMedia = async () => {
     if (uploading) return;
+    if (locked) {
+      Alert.alert('Essai expiré', 'Passez à Premium pour publier des stories.');
+      // @ts-ignore
+      navigation.navigate('Premium');
+      return;
+    }
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permission.status !== 'granted') {
@@ -163,13 +175,28 @@ const StatusScreen: React.FC = () => {
       </View>
 
       <FlatList
-        data={statuses}
+        data={locked ? [] : statuses}
         renderItem={renderStatusItem}
         keyExtractor={item => item.id}
         numColumns={2}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
-          <View style={styles.empty}><Text style={styles.emptyText}>Aucun statut pour le moment.</Text></View>
+          <View style={styles.empty}>
+            {locked ? (
+              <>
+                <Text style={styles.emptyTitle}>Essai expiré</Text>
+                <Text style={styles.emptyText}>Passez à Premium pour accéder aux stories.</Text>
+                <Pressable style={styles.premiumBtn} onPress={() => {
+                  // @ts-ignore
+                  navigation.navigate('Premium');
+                }}>
+                  <Text style={styles.premiumBtnText}>Passer à Premium</Text>
+                </Pressable>
+              </>
+            ) : (
+              <Text style={styles.emptyText}>Aucun statut pour le moment.</Text>
+            )}
+          </View>
         }
       />
 
@@ -212,8 +239,17 @@ const styles = StyleSheet.create({
   modalMeta: { position: 'absolute', left: 16, right: 16, bottom: 24, backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   modalMetaName: { color: '#fff', fontSize: 14, fontWeight: '800' },
   modalMetaDate: { color: '#e2e8f0', fontSize: 12, fontWeight: '600', marginTop: 2 },
-  empty: { flex: 1, alignItems: 'center', marginTop: 100 },
-  emptyText: { color: COLORS.muted }
+  empty: { flex: 1, alignItems: 'center', marginTop: 100, paddingHorizontal: 24 },
+  emptyTitle: { color: '#7f1d1d', fontWeight: '900', fontSize: 20, marginBottom: 8 },
+  emptyText: { color: COLORS.muted, textAlign: 'center' },
+  premiumBtn: {
+    marginTop: 14,
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  premiumBtnText: { color: '#fff', fontWeight: '800' },
 });
 
 export default StatusScreen;

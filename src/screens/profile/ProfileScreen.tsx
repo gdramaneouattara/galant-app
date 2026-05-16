@@ -42,7 +42,7 @@ const ProfileScreen: React.FC = () => {
   const isBoosted = currentUser.boosted_until && new Date(currentUser.boosted_until) > new Date();
   const boostedUntilDate = isBoosted ? new Date(currentUser.boosted_until!) : null;
   const isInvisibleEligible = !!currentUser.invisible_mode_eligible;
-  const isInvisibleEnabled = !!currentUser.is_invisible && currentUser.isPremium && isInvisibleEligible;
+  const isInvisibleEnabled = !!currentUser.is_invisible && isInvisibleEligible;
   const invisibleModeDescription = isInvisibleEnabled
     ? 'Votre profil est masque dans la decouverte standard. Les matchs existants et actions directes restent accessibles.'
     : (isInvisibleEligible

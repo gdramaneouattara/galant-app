@@ -10,6 +10,16 @@ import { supabase } from '../lib/supabase';
 import { apiRequest } from '../lib/api';
 
 const INVISIBLE_MODE_ELIGIBLE_PLANS = new Set(['BIANNUAL', 'ANNUAL']);
+const TRIAL_DAYS = 7;
+
+const isMaleTrialActiveFromProfile = (profile: any): boolean => {
+  if (!profile || String(profile.gender || '').toUpperCase() !== 'MALE' || profile.is_premium) return false;
+  if (!profile.trial_started_at) return false;
+  const startedAt = new Date(profile.trial_started_at).getTime();
+  if (!Number.isFinite(startedAt)) return false;
+  const trialEnd = startedAt + TRIAL_DAYS * 24 * 60 * 60 * 1000;
+  return Date.now() < trialEnd;
+};
 
 type AppContextValue = {
   isAuthenticated: boolean;
@@ -99,7 +109,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   ): User => {
     const isPremium = options?.has_active_subscription ?? !!profile.is_premium;
-    const invisibleModeEligible = options?.invisible_mode_eligible ?? false;
+    const trialInvisibleEligible = isMaleTrialActiveFromProfile({
+      ...profile,
+      is_premium: isPremium,
+    });
+    const invisibleModeEligible = (options?.invisible_mode_eligible ?? false) || trialInvisibleEligible;
     return {
     id: profile.id,
     name: profile.name || 'Utilisateur',
@@ -121,7 +135,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     relationship_goal: profile.relationship_goal ?? null,
     last_active_at: profile.last_active_at ?? null,
     likes_count: profile.likes_count || 0,
-    is_invisible: !!profile.is_invisible && isPremium && invisibleModeEligible,
+    is_invisible: !!profile.is_invisible && invisibleModeEligible,
     is_admin: !!profile.is_admin,
     suspended_at: profile.suspended_at ?? null,
     photo_review_status: profile.photo_review_status ?? 'APPROVED',
@@ -198,20 +212,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return null;
         }
         const subscriptionState = await getCurrentSubscriptionState(resolvedUserId);
+        const trialInvisibleEligible = isMaleTrialActiveFromProfile(profile);
+        const invisibleEligibleNow = subscriptionState.invisible_mode_eligible || trialInvisibleEligible;
         const effectivePremium = subscriptionState.has_active_subscription;
         if (profile.is_premium !== effectivePremium) {
           const patch: { is_premium: boolean; is_invisible?: boolean } = { is_premium: effectivePremium };
-          if (!effectivePremium) patch.is_invisible = false;
+          if (!effectivePremium && !trialInvisibleEligible) patch.is_invisible = false;
           const { error: premiumSyncError } = await supabase
             .from('profiles')
             .update(patch)
             .eq('id', resolvedUserId);
           if (!premiumSyncError) {
             profile.is_premium = effectivePremium;
-            if (!effectivePremium) profile.is_invisible = false;
+            if (!effectivePremium && !trialInvisibleEligible) profile.is_invisible = false;
           }
         }
-        if (profile.is_invisible && !subscriptionState.invisible_mode_eligible) {
+        if (profile.is_invisible && !invisibleEligibleNow) {
           const { error: disableInvisibleError } = await supabase
             .from('profiles')
             .update({ is_invisible: false })
@@ -221,7 +237,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
         setLastError(null);
-        const mapped = mapProfileToUser(profile, subscriptionState);
+        const mapped = mapProfileToUser(profile, {
+          ...subscriptionState,
+          invisible_mode_eligible: invisibleEligibleNow,
+        });
         setCurrentUser(mapped);
         return mapped;
       }

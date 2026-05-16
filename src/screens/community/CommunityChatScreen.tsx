@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback, memo } from 'react';
 import {
   Alert,
   FlatList,
@@ -54,6 +54,58 @@ interface CommunityMember {
 type CommunityMembersResponse = {
   members: CommunityMember[];
 };
+
+type CommunityMessageItemProps = {
+  item: CommunityMessage;
+  isMine: boolean;
+  avatarUri: string;
+  senderName: string;
+  resolvedMediaUrl: string | null;
+  displayTime: string;
+};
+
+const CommunityMessageItem = memo<CommunityMessageItemProps>(({
+  item,
+  isMine,
+  avatarUri,
+  senderName,
+  resolvedMediaUrl,
+  displayTime,
+}) => {
+  const hasText = !!item.content;
+  const hasImage = item.message_type === 'IMAGE' && !!resolvedMediaUrl;
+  const hasVideo = item.message_type === 'VIDEO' && !!resolvedMediaUrl;
+
+  return (
+    <View style={[styles.messageRow, isMine && styles.myMessageRow]}>
+      {!isMine && (
+        <Image
+          source={{ uri: avatarUri }}
+          style={styles.miniAvatar}
+        />
+      )}
+      <View style={[styles.bubble, isMine ? styles.myBubble : styles.theirBubble]}>
+        {!isMine && <Text style={styles.senderName}>{senderName}</Text>}
+
+        {hasText && (
+          <Text style={[styles.messageText, isMine && styles.myMessageText]}>{item.content}</Text>
+        )}
+
+        {hasImage && (
+          <Image source={{ uri: resolvedMediaUrl! }} style={[styles.mediaContent, hasText && styles.mediaAfterText]} resizeMode="cover" />
+        )}
+
+        {hasVideo && (
+          <VideoPlayer uri={resolvedMediaUrl!} style={[styles.videoContent, hasText && styles.mediaAfterText]} useNativeControls={true} />
+        )}
+
+        <Text style={[styles.time, isMine && styles.myTime]}>
+          {displayTime}
+        </Text>
+      </View>
+    </View>
+  );
+});
 
 const ROLE_LABELS: Record<CommunityRole, string> = {
   MEMBER: 'Membre',
@@ -151,29 +203,36 @@ const CommunityChatScreen: React.FC = () => {
     let cancelled = false;
 
     const hydrateMediaUrls = async () => {
-      const mediaMessages = messages.filter((message) => (
-        (message.message_type === 'IMAGE' || message.message_type === 'VIDEO') && !!message.media_url
-      ));
+      const mediaPaths = Array.from(
+        new Set(
+          messages
+            .filter((message) => (message.message_type === 'IMAGE' || message.message_type === 'VIDEO') && !!message.media_url)
+            .map((message) => message.media_url as string)
+        )
+      );
+      const missingPaths = mediaPaths.filter((path) => !resolvedMediaUrls[path]);
+      if (missingPaths.length === 0) return;
 
-      for (const message of mediaMessages) {
-        const mediaPath = message.media_url as string;
-        if (resolvedMediaUrls[mediaPath]) continue;
-
-        if (/^https?:\/\//i.test(mediaPath)) {
-          if (!cancelled) {
-            setResolvedMediaUrls((prev) => ({ ...prev, [mediaPath]: mediaPath }));
+      const resolvedEntries = await Promise.all(
+        missingPaths.map(async (mediaPath) => {
+          if (/^https?:\/\//i.test(mediaPath)) {
+            return [mediaPath, mediaPath] as const;
           }
-          continue;
-        }
 
-        const { data, error } = await supabase.storage
-          .from('community-media')
-          .createSignedUrl(mediaPath, 3600);
+          const { data, error } = await supabase.storage
+            .from('community-media')
+            .createSignedUrl(mediaPath, 3600);
+          if (!error && data?.signedUrl) {
+            return [mediaPath, data.signedUrl] as const;
+          }
+          return null;
+        })
+      );
 
-        if (cancelled) return;
-        if (!error && data?.signedUrl) {
-          setResolvedMediaUrls((prev) => ({ ...prev, [mediaPath]: data.signedUrl }));
-        }
+      if (cancelled) return;
+      const nextMappings = Object.fromEntries(resolvedEntries.filter(Boolean) as Array<readonly [string, string]>);
+      if (Object.keys(nextMappings).length > 0) {
+        setResolvedMediaUrls((prev) => ({ ...prev, ...nextMappings }));
       }
     };
 
@@ -313,44 +372,24 @@ const CommunityChatScreen: React.FC = () => {
     );
   };
 
-  const renderMessage = ({ item }: { item: CommunityMessage }) => {
+  const renderMessage = useCallback(({ item }: { item: CommunityMessage }) => {
     const isMine = item.sender_id === currentUser?.id;
     const profile = item.profiles;
     const resolvedMediaUrl = item.media_url ? resolvedMediaUrls[item.media_url] : null;
-    const hasText = !!item.content;
-    const hasImage = item.message_type === 'IMAGE' && !!resolvedMediaUrl;
-    const hasVideo = item.message_type === 'VIDEO' && !!resolvedMediaUrl;
 
     return (
-      <View style={[styles.messageRow, isMine && styles.myMessageRow]}>
-        {!isMine && (
-          <Image
-            source={{ uri: profile?.photos?.[0] || 'https://via.placeholder.com/150' }}
-            style={styles.miniAvatar}
-          />
-        )}
-        <View style={[styles.bubble, isMine ? styles.myBubble : styles.theirBubble]}>
-          {!isMine && <Text style={styles.senderName}>{profile?.name || 'Anonyme'}</Text>}
-
-          {hasText && (
-            <Text style={[styles.messageText, isMine && styles.myMessageText]}>{item.content}</Text>
-          )}
-
-          {hasImage && (
-            <Image source={{ uri: resolvedMediaUrl }} style={[styles.mediaContent, hasText && styles.mediaAfterText]} resizeMode="cover" />
-          )}
-
-          {hasVideo && (
-            <VideoPlayer uri={resolvedMediaUrl} style={[styles.videoContent, hasText && styles.mediaAfterText]} useNativeControls={true} />
-          )}
-
-          <Text style={[styles.time, isMine && styles.myTime]}>
-            {formatMessageDateTime(item.created_at)}
-          </Text>
-        </View>
-      </View>
+      <CommunityMessageItem
+        item={item}
+        isMine={isMine}
+        avatarUri={profile?.photos?.[0] || 'https://via.placeholder.com/150'}
+        senderName={profile?.name || 'Anonyme'}
+        resolvedMediaUrl={resolvedMediaUrl || null}
+        displayTime={formatMessageDateTime(item.created_at)}
+      />
     );
-  };
+  }, [currentUser?.id, resolvedMediaUrls]);
+
+  const messageKeyExtractor = useCallback((item: CommunityMessage) => item.id, []);
 
   const formatMessageDateTime = (value?: string) => {
     if (!value) return '';
@@ -408,8 +447,13 @@ const CommunityChatScreen: React.FC = () => {
           ref={flatListRef}
           data={messages}
           renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
+          keyExtractor={messageKeyExtractor}
           contentContainerStyle={styles.list}
+          initialNumToRender={12}
+          maxToRenderPerBatch={12}
+          windowSize={7}
+          updateCellsBatchingPeriod={50}
+          removeClippedSubviews={Platform.OS === 'android'}
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={styles.emptyText}>Soyez le premier à poster !</Text>

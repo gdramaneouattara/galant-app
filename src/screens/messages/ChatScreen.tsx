@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, memo } from 'react';
 import {
   Alert,
   FlatList,
@@ -27,13 +27,69 @@ import { uploadArrayBufferToBucket } from '../../lib/storageUpload';
 import VideoPlayer from '../../components/VideoPlayer';
 import DirectMessagePurchaseModal from '../../components/DirectMessagePurchaseModal';
 
+type ChatMessage = {
+  id: string;
+  sender_id: string;
+  content?: string | null;
+  message_type: 'TEXT' | 'IMAGE' | 'VIDEO';
+  media_url?: string | null;
+  created_at?: string;
+  is_read?: boolean;
+};
+
+type ChatMessageItemProps = {
+  item: ChatMessage;
+  isMine: boolean;
+  avatarUri: string;
+  mediaUrl: string | null;
+  displayTime: string;
+};
+
+type DirectThreadTrialQuota = {
+  active: boolean;
+  limit: number;
+  used: number;
+  remaining: number;
+};
+
+const ChatMessageItem = memo<ChatMessageItemProps>(({ item, isMine, avatarUri, mediaUrl, displayTime }) => {
+  const hasText = !!item.content;
+  const hasImage = item.message_type === 'IMAGE' && !!mediaUrl;
+  const hasVideo = item.message_type === 'VIDEO' && !!mediaUrl;
+
+  return (
+    <View style={[styles.messageRow, isMine && styles.myMessageRow]}>
+      {!isMine && (
+        <Image
+          source={{ uri: avatarUri }}
+          style={styles.senderAvatar}
+        />
+      )}
+      <View style={[styles.bubble, isMine ? styles.myBubble : styles.theirBubble]}>
+        {hasText ? (
+          <Text style={[styles.messageText, isMine && styles.myMessageText]}>{item.content}</Text>
+        ) : null}
+        {hasImage && (
+          <Image source={{ uri: mediaUrl! }} style={[styles.imageContent, hasText && styles.mediaAfterText]} />
+        )}
+        {hasVideo && (
+          <VideoPlayer uri={mediaUrl!} style={[styles.videoContent, hasText && styles.mediaAfterText]} useNativeControls={true} />
+        )}
+        <Text style={[styles.messageMeta, isMine && styles.myMessageMeta]}>
+          {displayTime}{isMine ? ` • ${item.is_read ? 'Lu ✓✓' : 'Envoyé'}` : ''}
+        </Text>
+      </View>
+    </View>
+  );
+});
+
 const ChatScreen: React.FC = () => {
   const route = useRoute<any>();
   const navigation = useNavigation();
   const { currentUser, markMessagesAsRead } = useApp();
   const { userId, matchId: initialMatchId } = route.params;
 
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [sending, setSending] = useState(false);
   const [targetUser, setTargetUser] = useState<any>(null);
@@ -41,9 +97,14 @@ const ChatScreen: React.FC = () => {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [checkingUnlock, setCheckingUnlock] = useState(true);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [premiumRequired, setPremiumRequired] = useState(false);
+  const [directTrialQuotaReached, setDirectTrialQuotaReached] = useState(false);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const [mediaUploading, setMediaUploading] = useState(false);
   const [activeMatchId, setActiveMatchId] = useState<string | null>(initialMatchId || null);
+  const [directThreadTrialQuota, setDirectThreadTrialQuota] = useState<DirectThreadTrialQuota | null>(null);
+
+  const isMaleTrialEligible = currentUser?.gender === 'MALE' && !currentUser?.isPremium;
 
   useEffect(() => {
     if (isExpoGo) return;
@@ -60,17 +121,60 @@ const ChatScreen: React.FC = () => {
       });
       if (response?.matchId) {
         setActiveMatchId(response.matchId);
+        setPremiumRequired(false);
+        setDirectTrialQuotaReached(false);
+        if (isMaleTrialEligible) {
+          const quota = await apiRequest<DirectThreadTrialQuota>('/api/messages/direct-thread-quota', {
+            requireAuth: true,
+          });
+          setDirectThreadTrialQuota(quota);
+        }
         return response.matchId;
       }
       return null;
     } catch (error: any) {
-      if (String(error?.message || '').includes('payment_required')) {
+      if (String(error?.message || '').includes('subscription_required')) {
+        setPremiumRequired(true);
+        setDirectTrialQuotaReached(false);
         setIsUnlocked(false);
+        return null;
+      }
+      if (String(error?.message || '').includes('payment_required')) {
+        setDirectTrialQuotaReached(false);
+        setIsUnlocked(false);
+        return null;
+      }
+      if (String(error?.message || '').includes('direct_message_trial_quota_exceeded')) {
+        setIsUnlocked(false);
+        setPremiumRequired(false);
+        setDirectTrialQuotaReached(true);
+        setShowUnlockModal(true);
+        if (isMaleTrialEligible) {
+          const quota = await apiRequest<DirectThreadTrialQuota>('/api/messages/direct-thread-quota', {
+            requireAuth: true,
+          });
+          setDirectThreadTrialQuota(quota);
+        }
         return null;
       }
       throw error;
     }
-  }, [userId]);
+  }, [isMaleTrialEligible, userId]);
+
+  const loadDirectThreadTrialQuota = useCallback(async () => {
+    if (!isMaleTrialEligible) {
+      setDirectThreadTrialQuota(null);
+      return;
+    }
+    try {
+      const quota = await apiRequest<DirectThreadTrialQuota>('/api/messages/direct-thread-quota', {
+        requireAuth: true,
+      });
+      setDirectThreadTrialQuota(quota);
+    } catch {
+      setDirectThreadTrialQuota(null);
+    }
+  }, [isMaleTrialEligible]);
 
   const checkUnlockStatus = useCallback(async () => {
     try {
@@ -79,12 +183,21 @@ const ChatScreen: React.FC = () => {
         return;
       }
 
+      if (currentUser?.gender === 'MALE' && !currentUser?.isPremium) {
+        const startedAt = currentUser?.trial_started_at ? new Date(currentUser.trial_started_at).getTime() : NaN;
+        const trialActive = Number.isFinite(startedAt) && (Date.now() < (startedAt + 7 * 24 * 60 * 60 * 1000));
+        if (!trialActive) {
+          setIsUnlocked(false);
+          setPremiumRequired(true);
+          setDirectTrialQuotaReached(false);
+          return;
+        }
+      }
+
       // 1. Women always have standard access
       if (currentUser?.gender === 'FEMALE') {
         setIsUnlocked(true);
-        if (!activeMatchId) {
-          await ensureDirectThread();
-        }
+        setPremiumRequired(false);
         return;
       }
 
@@ -94,9 +207,7 @@ const ChatScreen: React.FC = () => {
         trialEnd.setDate(trialEnd.getDate() + 7);
         if (new Date() < trialEnd) {
           setIsUnlocked(true);
-          if (!activeMatchId) {
-            await ensureDirectThread();
-          }
+          setPremiumRequired(false);
           return;
         }
       }
@@ -104,9 +215,7 @@ const ChatScreen: React.FC = () => {
       // 3. Premium users have access
       if (currentUser?.isPremium) {
         setIsUnlocked(true);
-        if (!activeMatchId) {
-          await ensureDirectThread();
-        }
+        setPremiumRequired(false);
         return;
       }
 
@@ -115,6 +224,7 @@ const ChatScreen: React.FC = () => {
         const { data: match } = await supabase.from('matches').select('id').eq('id', activeMatchId).maybeSingle();
         if (match) {
           setIsUnlocked(true);
+          setPremiumRequired(false);
           return;
         }
       }
@@ -129,9 +239,7 @@ const ChatScreen: React.FC = () => {
 
       if (purchase) {
         setIsUnlocked(true);
-        if (!activeMatchId) {
-          await ensureDirectThread();
-        }
+        setPremiumRequired(false);
       } else {
         setIsUnlocked(false);
       }
@@ -140,7 +248,7 @@ const ChatScreen: React.FC = () => {
     } finally {
       setCheckingUnlock(false);
     }
-  }, [activeMatchId, userId, currentUser, ensureDirectThread]);
+  }, [activeMatchId, userId, currentUser]);
 
   const initiateDirectMessagePurchasePaystack = async () => {
     try {
@@ -240,6 +348,7 @@ const ChatScreen: React.FC = () => {
     fetchUser();
     fetchMessages();
     checkUnlockStatus();
+    void loadDirectThreadTrialQuota();
 
     if (!activeMatchId) return;
     const channel = supabase.channel(`chat_${activeMatchId}`)
@@ -249,21 +358,48 @@ const ChatScreen: React.FC = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [userId, activeMatchId, fetchMessages, checkUnlockStatus]);
+  }, [userId, activeMatchId, fetchMessages, checkUnlockStatus, loadDirectThreadTrialQuota]);
 
   useEffect(() => {
+    let cancelled = false;
+
     const hydrate = async () => {
-      for (const msg of messages) {
-        if (msg.media_url && !resolvedMediaUrls[msg.media_url]) {
-          const { data } = await supabase.storage.from('chat-media').createSignedUrl(msg.media_url, 3600);
-          if (data?.signedUrl) {
-            setResolvedMediaUrls(prev => ({ ...prev, [msg.media_url]: data.signedUrl }));
+      const mediaPaths = Array.from(
+        new Set(
+          messages
+            .map((msg) => msg.media_url || '')
+            .filter((path) => !!path)
+        )
+      );
+      const missingPaths = mediaPaths.filter((path) => !resolvedMediaUrls[path]);
+      if (missingPaths.length === 0) return;
+
+      const resolvedEntries = await Promise.all(
+        missingPaths.map(async (path) => {
+          if (/^https?:\/\//i.test(path)) {
+            return [path, path] as const;
           }
-        }
+          const { data } = await supabase.storage.from('chat-media').createSignedUrl(path, 3600);
+          if (data?.signedUrl) {
+            return [path, data.signedUrl] as const;
+          }
+          return null;
+        })
+      );
+
+      if (cancelled) return;
+      const nextMappings = Object.fromEntries(resolvedEntries.filter(Boolean) as Array<readonly [string, string]>);
+      if (Object.keys(nextMappings).length > 0) {
+        setResolvedMediaUrls((prev) => ({ ...prev, ...nextMappings }));
       }
     };
-    hydrate();
-  }, [messages]);
+
+    void hydrate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [messages, resolvedMediaUrls]);
 
   const handleSend = async (type = 'TEXT', mediaPath?: string) => {
     if (sending) return;
@@ -287,7 +423,10 @@ const ChatScreen: React.FC = () => {
       fetchMessages();
       setIsUnlocked(true);
     } catch (e: any) {
-      if (e.message.includes('payment_required')) {
+      if (e.message.includes('subscription_required')) {
+        setPremiumRequired(true);
+        Alert.alert('Essai expiré', 'Passez à Premium pour continuer à discuter.');
+      } else if (e.message.includes('payment_required')) {
         setShowUnlockModal(true);
       } else {
         Alert.alert('Erreur', e.message);
@@ -418,38 +557,21 @@ const ChatScreen: React.FC = () => {
     return delta >= 0 && delta < 5 * 60 * 1000;
   })();
 
-  const renderMessage = ({ item }: { item: any }) => {
+  const renderMessage = useCallback(({ item }: { item: ChatMessage }) => {
     const isMine = item.sender_id === currentUser?.id;
     const mediaUrl = item.media_url ? resolvedMediaUrls[item.media_url] : null;
-    const hasText = !!item.content;
-    const hasImage = item.message_type === 'IMAGE' && !!mediaUrl;
-    const hasVideo = item.message_type === 'VIDEO' && !!mediaUrl;
-
     return (
-      <View style={[styles.messageRow, isMine && styles.myMessageRow]}>
-        {!isMine && (
-          <Image
-            source={{ uri: targetUser?.photos?.[0] || 'https://placehold.co/80x80' }}
-            style={styles.senderAvatar}
-          />
-        )}
-        <View style={[styles.bubble, isMine ? styles.myBubble : styles.theirBubble]}>
-          {hasText ? (
-            <Text style={[styles.messageText, isMine && styles.myMessageText]}>{item.content}</Text>
-          ) : null}
-          {hasImage && (
-            <Image source={{ uri: mediaUrl }} style={[styles.imageContent, hasText && styles.mediaAfterText]} />
-          )}
-          {hasVideo && (
-            <VideoPlayer uri={mediaUrl} style={[styles.videoContent, hasText && styles.mediaAfterText]} useNativeControls={true} />
-          )}
-          <Text style={[styles.messageMeta, isMine && styles.myMessageMeta]}>
-            {formatMessageTime(item.created_at)}{isMine ? ` • ${item.is_read ? 'Lu ✓✓' : 'Envoyé'}` : ''}
-          </Text>
-        </View>
-      </View>
+      <ChatMessageItem
+        item={item}
+        isMine={isMine}
+        avatarUri={targetUser?.photos?.[0] || 'https://placehold.co/80x80'}
+        mediaUrl={mediaUrl || null}
+        displayTime={formatMessageTime(item.created_at)}
+      />
     );
-  };
+  }, [currentUser?.id, resolvedMediaUrls, targetUser?.photos]);
+
+  const keyExtractor = useCallback((item: ChatMessage) => item.id, []);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -486,11 +608,24 @@ const ChatScreen: React.FC = () => {
         </View>
       )}
 
+      {directThreadTrialQuota?.active ? (
+        <View style={styles.trialQuotaBanner}>
+          <Text style={styles.trialQuotaText}>
+            Messages directs d'essai: {directThreadTrialQuota.remaining}/{directThreadTrialQuota.limit} restants
+          </Text>
+        </View>
+      ) : null}
+
       <FlatList
         data={messages}
         renderItem={renderMessage}
-        keyExtractor={item => item.id}
+        keyExtractor={keyExtractor}
         contentContainerStyle={styles.list}
+        initialNumToRender={12}
+        maxToRenderPerBatch={12}
+        windowSize={7}
+        updateCellsBatchingPeriod={50}
+        removeClippedSubviews={Platform.OS === 'android'}
         ListFooterComponent={<View style={styles.securityCard}>
           <Text style={styles.securityTitle}>Vos messages sont protégés</Text>
           <Text style={styles.securitySub}>Yamo veille à votre sécurité et à votre confidentialité.</Text>
@@ -503,11 +638,29 @@ const ChatScreen: React.FC = () => {
             <Lock color={COLORS.primary} size={20} />
           </View>
           <View style={styles.unlockPromptTextWrap}>
-            <Text style={styles.unlockTitle}>Conversation verrouillée</Text>
-            <Text style={styles.unlockSub}>Débloquez ce chat pour envoyer vos messages et médias.</Text>
+            <Text style={styles.unlockTitle}>{premiumRequired ? 'Essai expiré' : 'Conversation verrouillée'}</Text>
+            <Text style={styles.unlockSub}>
+              {premiumRequired
+                ? 'Passez à Premium pour réactiver cette conversation.'
+                : (directTrialQuotaReached
+                  ? 'Vous avez utilisé vos 5 messages directs gratuits. Achetez un message direct pour continuer.'
+                  : 'Débloquez ce chat pour envoyer vos messages et médias.')}
+            </Text>
           </View>
-          <Pressable style={styles.unlockBtn} onPress={() => setShowUnlockModal(true)}>
-            <Text style={styles.unlockBtnText}>Débloquer</Text>
+          <Pressable
+            style={styles.unlockBtn}
+            onPress={() => {
+              if (premiumRequired) {
+                // @ts-ignore
+                navigation.navigate('Premium');
+              } else {
+                setShowUnlockModal(true);
+              }
+            }}
+          >
+            <Text style={styles.unlockBtnText}>
+              {premiumRequired ? 'Passer Premium' : (directTrialQuotaReached ? 'Acheter' : 'Débloquer')}
+            </Text>
           </Pressable>
         </View>
       ) : null}
@@ -649,6 +802,21 @@ const styles = StyleSheet.create({
     color: '#4e3a2a',
     fontWeight: '700',
     fontSize: 13,
+  },
+  trialQuotaBanner: {
+    marginHorizontal: 14,
+    marginBottom: 8,
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  trialQuotaText: {
+    color: '#166534',
+    fontWeight: '700',
+    fontSize: 12,
   },
   list: { paddingHorizontal: 14, paddingTop: 6, paddingBottom: 14 },
   unlockPrompt: {

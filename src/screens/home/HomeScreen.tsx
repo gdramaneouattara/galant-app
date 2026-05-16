@@ -61,6 +61,7 @@ type MatchModalState = {
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SWIPE_TRIGGER_DISTANCE = 110;
+const TRIAL_DAYS = 7;
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
@@ -68,6 +69,7 @@ const HomeScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [swiping, setSwiping] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [trialLocked, setTrialLocked] = useState(false);
   const [matchModal, setMatchModal] = useState<MatchModalState | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showSuperLikeModal, setShowSuperLikeModal] = useState(false);
@@ -82,6 +84,29 @@ const HomeScreen: React.FC = () => {
   });
 
   const swipePosition = useRef(new Animated.ValueXY()).current;
+
+  const trialInfo = useMemo(() => {
+    const isMale = currentUser?.gender === 'MALE';
+    if (!isMale || currentUser?.isPremium || !currentUser?.trial_started_at) {
+      return { eligible: false, active: false, daysRemaining: 0 };
+    }
+
+    const startedAt = new Date(currentUser.trial_started_at).getTime();
+    if (!Number.isFinite(startedAt)) {
+      return { eligible: true, active: false, daysRemaining: 0 };
+    }
+
+    const trialEndTs = startedAt + TRIAL_DAYS * 24 * 60 * 60 * 1000;
+    const remainingMs = trialEndTs - Date.now();
+    const daysRemaining = Math.max(0, Math.ceil(remainingMs / (24 * 60 * 60 * 1000)));
+    return { eligible: true, active: remainingMs > 0, daysRemaining };
+  }, [currentUser?.gender, currentUser?.isPremium, currentUser?.trial_started_at]);
+
+  useEffect(() => {
+    if (trialInfo.eligible && !trialInfo.active) {
+      setTrialLocked(true);
+    }
+  }, [trialInfo]);
 
   useEffect(() => {
     if (isExpoGo) return;
@@ -105,7 +130,11 @@ const HomeScreen: React.FC = () => {
       const query = `?${params.toString()}`;
       const response = await apiRequest<{ suggestions: Suggestion[] }>(`/api/matchmaking/suggestions${query}`, { requireAuth: true });
       setSuggestions(response.suggestions || []);
-    } catch (_error) {
+      setTrialLocked(false);
+    } catch (error: any) {
+      if (String(error?.message || '').includes('subscription_required')) {
+        setTrialLocked(true);
+      }
       setSuggestions([]);
     } finally {
       setLoading(false);
@@ -134,6 +163,9 @@ const HomeScreen: React.FC = () => {
     } catch (e: any) {
       if (isSuper && e.message === 'premium_required_for_super_like') {
         setShowSuperLikeModal(true);
+      } else if (String(e?.message || '').includes('subscription_required')) {
+        setTrialLocked(true);
+        Alert.alert('Essai expiré', 'Passez à Premium pour continuer à utiliser cette fonctionnalité.');
       } else {
         Alert.alert('Info', e.message);
       }
@@ -237,7 +269,20 @@ const HomeScreen: React.FC = () => {
 
   const openDirectMessage = () => {
     if (!currentProfile) return;
+    if (trialLocked) {
+      navigation.navigate('Premium');
+      return;
+    }
     navigation.navigate('Chat', { userId: currentProfile.id });
+  };
+
+  const openStatuses = () => {
+    if (trialLocked) {
+      Alert.alert('Essai expiré', 'Passez à Premium pour accéder de nouveau aux stories.');
+      navigation.navigate('Premium');
+      return;
+    }
+    navigation.navigate('Status');
   };
 
   return (
@@ -248,7 +293,7 @@ const HomeScreen: React.FC = () => {
           <Text style={styles.subtitle}>Découvre de nouvelles personnes</Text>
         </View>
         <View style={styles.headerActions}>
-          <Pressable style={styles.statusBtn} onPress={() => navigation.navigate('Status')}>
+          <Pressable style={styles.statusBtn} onPress={openStatuses}>
             <PlayCircle color={COLORS.primary} size={28} />
             <Text style={styles.statusBtnText}>Stories</Text>
           </Pressable>
@@ -258,9 +303,34 @@ const HomeScreen: React.FC = () => {
         </View>
       </View>
 
+      {trialInfo.eligible ? (
+        <View style={[styles.trialBanner, !trialInfo.active && styles.trialBannerExpired]}>
+          <Text style={[styles.trialBannerText, !trialInfo.active && styles.trialBannerTextExpired]}>
+            {trialInfo.active
+              ? `Essai gratuit actif • ${trialInfo.daysRemaining} jour(s) restant(s)`
+              : 'Essai gratuit expiré • Passez à Premium pour réactiver les fonctionnalités'}
+          </Text>
+          {!trialInfo.active ? (
+            <Pressable style={styles.trialBannerBtn} onPress={() => navigation.navigate('Premium')}>
+              <Text style={styles.trialBannerBtnText}>Premium</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+
       <View style={styles.body}>
         {loading ? (
           <ActivityIndicator color={COLORS.primary} size="large" style={{ flex: 1 }} />
+        ) : trialLocked ? (
+          <View style={styles.lockedCard}>
+            <Text style={styles.lockedTitle}>Essai terminé</Text>
+            <Text style={styles.lockedSub}>
+              Votre période d'essai de 7 jours est expirée. Passez à Premium pour reprendre la découverte, le chat et les stories.
+            </Text>
+            <Pressable style={styles.lockedBtn} onPress={() => navigation.navigate('Premium')}>
+              <Text style={styles.lockedBtnText}>Passer à Premium</Text>
+            </Pressable>
+          </View>
         ) : currentProfile ? (
           <Animated.View
             style={[styles.card, { transform: [{ translateX: swipePosition.x }, { rotate: swipePosition.x.interpolate({ inputRange: [-200, 0, 200], outputRange: ['-10deg', '0deg', '10deg'] }) }] }]}
@@ -411,8 +481,56 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 12, color: COLORS.muted },
   statusBtn: { alignItems: 'center' },
   statusBtnText: { fontSize: 10, fontWeight: '700', color: COLORS.primary, marginTop: 2 },
+  trialBanner: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 12,
+    backgroundColor: '#e0f2fe',
+    borderWidth: 1,
+    borderColor: '#bae6fd',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  trialBannerExpired: {
+    backgroundColor: '#fee2e2',
+    borderColor: '#fecaca',
+  },
+  trialBannerText: { flex: 1, fontSize: 12, fontWeight: '700', color: '#075985' },
+  trialBannerTextExpired: { color: '#991b1b' },
+  trialBannerBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: COLORS.primary,
+  },
+  trialBannerBtnText: { color: '#fff', fontSize: 12, fontWeight: '800' },
   filterBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, padding: 16 },
+  lockedCard: {
+    flex: 1,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    backgroundColor: '#fff5f5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 22,
+    gap: 12,
+  },
+  lockedTitle: { fontSize: 24, fontWeight: '900', color: '#7f1d1d' },
+  lockedSub: { fontSize: 14, color: '#7f1d1d', textAlign: 'center', lineHeight: 21 },
+  lockedBtn: {
+    marginTop: 6,
+    backgroundColor: COLORS.primary,
+    borderRadius: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  lockedBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
   card: { flex: 1, elevation: 5, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10 },
   cardImage: { flex: 1, justifyContent: 'flex-end', padding: 20 },
   cardInfo: { gap: 4 },
