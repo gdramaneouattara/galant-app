@@ -49,6 +49,7 @@ const QUOTAS = {
   MEN_3M_HIDE_SEEN_SECONDS: 7200,
   TRIAL_BOOST_SECONDS: 3600
 };
+const DIRECT_MESSAGE_TRIAL_LIMIT = 5;
 const PLAN_DURATIONS = { MONTHLY: 30, QUARTERLY: 90, BIANNUAL: 180, ANNUAL: 365 };
 const GOOGLE_ANDROID_PUBLISHER_SCOPE = 'https://www.googleapis.com/auth/androidpublisher';
 const GOOGLE_OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -119,10 +120,55 @@ const isTrialActive = (p) => {
   return new Date() < trialEnd;
 };
 
+const getTrialWindow = (p) => {
+  if (!p?.trial_started_at) return null;
+  const startedAt = new Date(p.trial_started_at);
+  if (Number.isNaN(startedAt.getTime())) return null;
+  const endsAt = new Date(startedAt);
+  endsAt.setDate(endsAt.getDate() + TRIAL_DAYS);
+  return { startedAt, endsAt };
+};
+
 const hasStandardAccess = (p) => {
   if (!p) return false;
   if (p.gender === 'FEMALE') return true;
   return isTrialActive(p) || p.is_premium;
+};
+
+const hasDirectMessagePurchase = async (userId, targetUserId) => {
+  if (!userId || !targetUserId) return false;
+  const { data } = await supabase
+    .from('purchased_interactions')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('interaction_type', 'DIRECT_MESSAGE')
+    .eq('target_id', targetUserId)
+    .maybeSingle();
+  return !!data;
+};
+
+const getTrialDirectMessageUsage = async (p) => {
+  if (!p || p.gender !== 'MALE') return { used: 0, limit: DIRECT_MESSAGE_TRIAL_LIMIT, remaining: 0, active: false };
+  const trial = getTrialWindow(p);
+  if (!trial) return { used: 0, limit: DIRECT_MESSAGE_TRIAL_LIMIT, remaining: 0, active: false };
+
+  const { data } = await supabase
+    .from('purchased_interactions')
+    .select('id', { count: 'exact' })
+    .eq('user_id', p.id)
+    .eq('interaction_type', 'DIRECT_MESSAGE')
+    .eq('provider', 'TRIAL')
+    .gte('created_at', trial.startedAt.toISOString())
+    .lt('created_at', trial.endsAt.toISOString());
+
+  const used = Number(data?.length || 0);
+  const remaining = Math.max(0, DIRECT_MESSAGE_TRIAL_LIMIT - used);
+  return {
+    used,
+    limit: DIRECT_MESSAGE_TRIAL_LIMIT,
+    remaining,
+    active: isTrialActive(p),
+  };
 };
 
 const getDailyUsage = async (userId, type) => {
@@ -725,6 +771,23 @@ app.get('/api/matchmaking/suggestions', requireAuth, async (req, res) => {
   if (error) return res.status(500).json({ error: error.message });
 
   const candidateIds = (candidates || []).map((candidate) => candidate.id).filter(Boolean);
+  const invisibleEligibleBySubscription = new Set();
+  if (candidateIds.length > 0) {
+    const { data: eligibleInvisibleSubs } = await supabase
+      .from('subscriptions')
+      .select('user_id, plan_id')
+      .in('user_id', candidateIds)
+      .eq('status', 'active')
+      .gt('current_period_end', new Date().toISOString());
+
+    for (const row of (eligibleInvisibleSubs || [])) {
+      const planId = String(row?.plan_id || '').toUpperCase();
+      if (row?.user_id && (planId === 'BIANNUAL' || planId === 'ANNUAL')) {
+        invisibleEligibleBySubscription.add(row.user_id);
+      }
+    }
+  }
+
   const incomingSuperLikesByCandidate = new Set();
   if (candidateIds.length > 0) {
     const { data: incomingSuperLikes } = await supabase
@@ -740,6 +803,17 @@ app.get('/api/matchmaking/suggestions', requireAuth, async (req, res) => {
   }
 
   const suggestions = (candidates || []).map(c => {
+    const trialInvisibleCandidate =
+      String(c?.gender || '').toUpperCase() === 'MALE' &&
+      !c?.is_premium &&
+      isTrialActive(c);
+    const hiddenByInvisibleMode =
+      !!c?.is_invisible &&
+      (trialInvisibleCandidate || invisibleEligibleBySubscription.has(c.id));
+    if (hiddenByInvisibleMode) {
+      return null;
+    }
+
     const distanceKm = getDistanceKm(
       Number(me.latitude),
       Number(me.longitude),
@@ -869,6 +943,21 @@ app.get('/api/likes/quota', requireAuth, async (_req, res) => {
   });
 });
 
+app.get('/api/messages/direct-thread-quota', requireAuth, async (req, res) => {
+  const me = req.user;
+  if (!me || me.gender !== 'MALE' || me.is_premium) {
+    return res.json({
+      active: false,
+      limit: DIRECT_MESSAGE_TRIAL_LIMIT,
+      used: 0,
+      remaining: DIRECT_MESSAGE_TRIAL_LIMIT,
+    });
+  }
+
+  const usage = await getTrialDirectMessageUsage(me);
+  return res.json(usage);
+});
+
 // --- MESSAGES & STATUTS ---
 
 app.post('/api/messages/direct-thread', requireAuth, async (req, res) => {
@@ -877,6 +966,13 @@ app.post('/api/messages/direct-thread', requireAuth, async (req, res) => {
 
   if (!targetUserId || String(targetUserId) === String(me.id)) {
     return res.status(400).json({ error: 'invalid_target' });
+  }
+
+  if (!hasStandardAccess(me)) {
+    const purchased = await hasDirectMessagePurchase(me.id, targetUserId);
+    if (!purchased) {
+      return res.status(403).json({ error: 'payment_required' });
+    }
   }
 
   const { data: targetUser } = await supabase
@@ -906,21 +1002,22 @@ app.post('/api/messages/direct-thread', requireAuth, async (req, res) => {
     return res.json({ matchId: existingMatch.id, unlocked: true });
   }
 
-  const hasStandard = hasStandardAccess(me);
-  let hasPurchasedDirectMessage = false;
-  if (!hasStandard) {
-    const { data: purchased } = await supabase
-      .from('purchased_interactions')
-      .select('id')
-      .eq('user_id', me.id)
-      .eq('interaction_type', 'DIRECT_MESSAGE')
-      .eq('target_id', targetUserId)
-      .maybeSingle();
-    hasPurchasedDirectMessage = !!purchased;
-  }
-
-  if (!hasStandard && !hasPurchasedDirectMessage) {
-    return res.status(403).json({ error: 'payment_required', amount: PRICES.DIRECT_MESSAGE });
+  const maleTrial = me.gender === 'MALE' && !me.is_premium && isTrialActive(me);
+  if (maleTrial) {
+    const usage = await getTrialDirectMessageUsage(me);
+    if (usage.remaining <= 0) {
+      const purchased = await hasDirectMessagePurchase(me.id, targetUserId);
+      if (purchased) {
+        // Paid direct message can bypass the free trial quota.
+      } else {
+      return res.status(403).json({
+        error: 'direct_message_trial_quota_exceeded',
+        used: usage.used,
+        limit: usage.limit,
+        remaining: usage.remaining,
+      });
+      }
+    }
   }
 
   const { data: createdMatch, error: createMatchError } = await supabase
@@ -946,6 +1043,18 @@ app.post('/api/messages/direct-thread', requireAuth, async (req, res) => {
 
   if (!createdMatch?.id) {
     return res.status(500).json({ error: 'direct_thread_creation_failed' });
+  }
+
+  if (maleTrial) {
+    await supabase.from('purchased_interactions').insert({
+      user_id: me.id,
+      interaction_type: 'DIRECT_MESSAGE',
+      target_id: targetUserId,
+      reference: null,
+      price_amount: 0,
+      currency: 'XOF',
+      provider: 'TRIAL',
+    });
   }
 
   return res.json({ matchId: createdMatch.id, unlocked: true });
@@ -1024,12 +1133,29 @@ app.post('/api/messages/block', requireAuth, async (req, res) => {
 app.post('/api/messages/send', requireAuth, async (req, res) => {
   const { matchId, content, recipientId, messageType, mediaPath } = req.body;
   const me = req.user;
-  const { data: match } = await supabase.from('matches').select('id, status').eq('id', matchId).maybeSingle();
+
+  const { data: match } = await supabase
+    .from('matches')
+    .select('id, status, user_one_id, user_two_id')
+    .eq('id', matchId)
+    .maybeSingle();
   if (match?.status === 'BLOCKED') return res.status(403).json({ error: 'conversation_blocked' });
   if (match?.status === 'UNMATCHED') return res.status(403).json({ error: 'conversation_unmatched' });
-  if (!match && !isTrialActive(me)) {
-    const { data: p } = await supabase.from('purchased_interactions').select('id').eq('user_id', me.id).eq('interaction_type', 'DIRECT_MESSAGE').eq('target_id', recipientId).maybeSingle();
-    if (!p) return res.status(403).json({ error: 'payment_required', amount: PRICES.DIRECT_MESSAGE });
+  if (!match) return res.status(403).json({ error: 'subscription_required' });
+
+  if (!hasStandardAccess(me)) {
+    const otherUserId = String(match.user_one_id) === String(me.id) ? match.user_two_id : match.user_one_id;
+    const explicitRecipientId = recipientId ? String(recipientId) : null;
+    const targetUserId = explicitRecipientId || String(otherUserId || '');
+
+    if (!targetUserId || targetUserId === String(me.id)) {
+      return res.status(403).json({ error: 'subscription_required' });
+    }
+
+    const purchased = await hasDirectMessagePurchase(me.id, targetUserId);
+    if (!purchased) {
+      return res.status(403).json({ error: 'subscription_required' });
+    }
   }
 
   const normalizedType = String(messageType || 'TEXT').toUpperCase();
@@ -1241,6 +1367,9 @@ app.post('/api/moderation/photos/check', requireAuth, async (req, res) => {
 
 app.get('/api/statuses', requireAuth, async (req, res) => {
   const me = req.user;
+  if (!hasStandardAccess(me)) {
+    return res.status(403).json({ error: 'subscription_required' });
+  }
   if (me.gender === 'MALE' && req.subscription?.plan_id === 'QUARTERLY') {
     const u = await getDailyUsage(me.id, 'STATUS_VIEW');
     if (u.usage_count >= QUOTAS.MEN_3M_STATUS_VIEWS) return res.status(403).json({ error: 'quota_exceeded' });

@@ -23,6 +23,14 @@ BEGIN
       AND s.status = 'active'
       AND upper(s.plan_id) IN ('BIANNUAL', 'ANNUAL')
       AND s.current_period_end > now()
+  ) OR exists (
+    SELECT 1
+    FROM public.profiles p
+    WHERE p.id = target_user_id
+      AND upper(coalesce(p.gender, '')) = 'MALE'
+      AND coalesce(p.is_premium, false) = false
+      AND p.trial_started_at IS NOT NULL
+      AND now() < (p.trial_started_at + interval '7 days')
   );
 END;
 $$;
