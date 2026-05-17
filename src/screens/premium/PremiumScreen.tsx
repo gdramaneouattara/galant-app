@@ -29,6 +29,9 @@ type PremiumPlan = {
   isBest?: boolean;
 };
 
+type PlanKey = 'MONTHLY' | 'QUARTERLY' | 'BIANNUAL' | 'ANNUAL';
+type PlanAvailability = Record<PlanKey, string>;
+
 const PREMIUM_PLANS: PremiumPlan[] = [
   {
     id: 'MONTHLY',
@@ -69,6 +72,42 @@ const PREMIUM_PLANS: PremiumPlan[] = [
     savings: '17%',
     icon: (props) => <Gem {...props} />,
     description: 'Mode invisible inclus.',
+  },
+];
+
+const PLAN_COMPARISON: Array<{ feature: string; availability: PlanAvailability }> = [
+  {
+    feature: 'Suggestions + Swipe',
+    availability: { MONTHLY: 'Oui', QUARTERLY: 'Oui', BIANNUAL: 'Oui', ANNUAL: 'Oui' },
+  },
+  {
+    feature: 'Messages après match',
+    availability: { MONTHLY: 'Oui', QUARTERLY: 'Oui', BIANNUAL: 'Oui', ANNUAL: 'Oui' },
+  },
+  {
+    feature: 'Messages directs hors match',
+    availability: { MONTHLY: 'Oui', QUARTERLY: 'Oui', BIANNUAL: 'Oui', ANNUAL: 'Oui' },
+  },
+  {
+    feature: 'Stories (lecture + publication)',
+    availability: { MONTHLY: 'Oui', QUARTERLY: 'Oui', BIANNUAL: 'Oui', ANNUAL: 'Oui' },
+  },
+  {
+    feature: 'Mode invisible',
+    availability: { MONTHLY: 'Non', QUARTERLY: 'Non', BIANNUAL: 'Oui', ANNUAL: 'Oui' },
+  },
+  {
+    feature: 'Création de communauté',
+    availability: { MONTHLY: 'Non', QUARTERLY: 'Non', BIANNUAL: 'Oui', ANNUAL: 'Oui' },
+  },
+  {
+    feature: 'Limites spéciales',
+    availability: {
+      MONTHLY: 'Aucune',
+      QUARTERLY: 'Stories/masquage vus limités',
+      BIANNUAL: 'Aucune',
+      ANNUAL: 'Aucune',
+    },
   },
 ];
 
@@ -238,6 +277,29 @@ const PremiumScreen: React.FC = () => {
             </View>
           ))}
         </View>
+
+        <View style={styles.comparisonCard}>
+          <Text style={styles.comparisonTitle}>Comparatif des plans</Text>
+          <Text style={styles.comparisonSubtitle}>Services accessibles pour les utilisateurs Premium homme.</Text>
+
+          <View style={styles.comparisonHeaderRow}>
+            <Text style={[styles.comparisonCell, styles.featureHeaderCell]}>Service</Text>
+            <Text style={styles.comparisonPlanHeader}>1M</Text>
+            <Text style={styles.comparisonPlanHeader}>3M</Text>
+            <Text style={styles.comparisonPlanHeader}>6M</Text>
+            <Text style={styles.comparisonPlanHeader}>1A</Text>
+          </View>
+
+          {PLAN_COMPARISON.map((item) => (
+            <View key={item.feature} style={styles.comparisonRow}>
+              <Text style={[styles.comparisonCell, styles.featureCell]}>{item.feature}</Text>
+              <Text style={styles.comparisonValueCell}>{item.availability.MONTHLY}</Text>
+              <Text style={styles.comparisonValueCell}>{item.availability.QUARTERLY}</Text>
+              <Text style={styles.comparisonValueCell}>{item.availability.BIANNUAL}</Text>
+              <Text style={styles.comparisonValueCell}>{item.availability.ANNUAL}</Text>
+            </View>
+          ))}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -324,6 +386,64 @@ const styles = StyleSheet.create({
   },
   payBtnText: {
     color: '#fff', fontWeight: '700', fontSize: 14,
+  },
+  comparisonCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    padding: 14,
+    gap: 10,
+  },
+  comparisonTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: COLORS.ink,
+  },
+  comparisonSubtitle: {
+    fontSize: 12,
+    color: COLORS.muted,
+  },
+  comparisonHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+    paddingBottom: 8,
+  },
+  comparisonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+    paddingVertical: 8,
+  },
+  comparisonCell: {
+    fontSize: 12,
+    color: '#0f172a',
+  },
+  featureHeaderCell: {
+    flex: 1,
+    fontWeight: '800',
+  },
+  featureCell: {
+    flex: 1,
+    fontWeight: '600',
+    paddingRight: 6,
+  },
+  comparisonPlanHeader: {
+    width: 38,
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#334155',
+  },
+  comparisonValueCell: {
+    width: 38,
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#475569',
   },
 });
 
