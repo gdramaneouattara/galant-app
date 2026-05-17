@@ -968,13 +968,6 @@ app.post('/api/messages/direct-thread', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'invalid_target' });
   }
 
-  if (!hasStandardAccess(me)) {
-    const purchased = await hasDirectMessagePurchase(me.id, targetUserId);
-    if (!purchased) {
-      return res.status(403).json({ error: 'payment_required' });
-    }
-  }
-
   const { data: targetUser } = await supabase
     .from('profiles')
     .select('id, suspended_at')
@@ -1000,6 +993,16 @@ app.post('/api/messages/direct-thread', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'conversation_unmatched' });
     }
     return res.json({ matchId: existingMatch.id, unlocked: true });
+  }
+
+  // Direct thread creation is pay-per-action for:
+  // - premium users (all premium plans)
+  // - users without standard access
+  if (me.is_premium || !hasStandardAccess(me)) {
+    const purchased = await hasDirectMessagePurchase(me.id, targetUserId);
+    if (!purchased) {
+      return res.status(403).json({ error: 'payment_required' });
+    }
   }
 
   const maleTrial = me.gender === 'MALE' && !me.is_premium && isTrialActive(me);
