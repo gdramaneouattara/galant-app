@@ -135,6 +135,20 @@ const hasStandardAccess = (p) => {
   return isTrialActive(p) || p.is_premium;
 };
 
+const hasInvisiblePremiumAccessForPlan = (planId) => {
+  const normalized = String(planId || '').toUpperCase();
+  return normalized === 'BIANNUAL' || normalized === 'ANNUAL';
+};
+
+const isHiddenByInvisibleMode = (profile, hasInvisiblePremiumAccess = false) => {
+  if (!profile || !profile.is_invisible) return false;
+  const trialInvisibleCandidate =
+    String(profile.gender || '').toUpperCase() === 'MALE' &&
+    !profile.is_premium &&
+    isTrialActive(profile);
+  return trialInvisibleCandidate || hasInvisiblePremiumAccess;
+};
+
 const hasDirectMessagePurchase = async (userId, targetUserId) => {
   if (!userId || !targetUserId) return false;
   const { data } = await supabase
@@ -781,13 +795,13 @@ app.get('/api/matchmaking/suggestions', requireAuth, async (req, res) => {
       .gt('current_period_end', new Date().toISOString());
 
     for (const row of (eligibleInvisibleSubs || [])) {
-      const planId = String(row?.plan_id || '').toUpperCase();
-      if (row?.user_id && (planId === 'BIANNUAL' || planId === 'ANNUAL')) {
+      if (row?.user_id && hasInvisiblePremiumAccessForPlan(row?.plan_id)) {
         invisibleEligibleBySubscription.add(row.user_id);
       }
     }
   }
 
+  const candidateById = new Map((candidates || []).map((candidate) => [candidate.id, candidate]));
   const incomingSuperLikesByCandidate = new Set();
   if (candidateIds.length > 0) {
     const { data: incomingSuperLikes } = await supabase
@@ -798,18 +812,24 @@ app.get('/api/matchmaking/suggestions', requireAuth, async (req, res) => {
       .in('liker_id', candidateIds);
 
     for (const row of (incomingSuperLikes || [])) {
-      if (row?.liker_id) incomingSuperLikesByCandidate.add(row.liker_id);
+      const likerId = row?.liker_id;
+      if (!likerId) continue;
+      const likerProfile = candidateById.get(likerId);
+      const hiddenByInvisible = isHiddenByInvisibleMode(
+        likerProfile,
+        invisibleEligibleBySubscription.has(likerId)
+      );
+      if (!hiddenByInvisible) {
+        incomingSuperLikesByCandidate.add(likerId);
+      }
     }
   }
 
   const suggestions = (candidates || []).map(c => {
-    const trialInvisibleCandidate =
-      String(c?.gender || '').toUpperCase() === 'MALE' &&
-      !c?.is_premium &&
-      isTrialActive(c);
-    const hiddenByInvisibleMode =
-      !!c?.is_invisible &&
-      (trialInvisibleCandidate || invisibleEligibleBySubscription.has(c.id));
+    const hiddenByInvisibleMode = isHiddenByInvisibleMode(
+      c,
+      invisibleEligibleBySubscription.has(c.id)
+    );
     if (hiddenByInvisibleMode) {
       return null;
     }
@@ -856,6 +876,24 @@ app.get('/api/matchmaking/suggestions', requireAuth, async (req, res) => {
 app.post('/api/matchmaking/swipe', requireAuth, async (req, res) => {
   const { targetUserId, direction, isSuperLike } = req.body;
   const me = req.user;
+  const safeTargetUserId = String(targetUserId || '').trim();
+
+  if (!safeTargetUserId || safeTargetUserId === String(me.id)) {
+    return res.status(400).json({ error: 'invalid_target' });
+  }
+
+  const { data: targetProfile, error: targetProfileError } = await supabase
+    .from('profiles')
+    .select('id, gender, is_premium, is_invisible, trial_started_at, suspended_at')
+    .eq('id', safeTargetUserId)
+    .maybeSingle();
+  if (targetProfileError) return res.status(500).json({ error: targetProfileError.message });
+  if (!targetProfile || targetProfile.suspended_at) {
+    return res.status(404).json({ error: 'target_not_found' });
+  }
+
+  const meHasInvisiblePremiumAccess = hasInvisiblePremiumAccessForPlan(req.subscription?.plan_id);
+  const meHiddenByInvisibleMode = isHiddenByInvisibleMode(me, meHasInvisiblePremiumAccess);
 
   if (direction === 'LEFT') {
     return res.json({ matched: false, matchId: null });
@@ -876,17 +914,23 @@ app.post('/api/matchmaking/swipe', requireAuth, async (req, res) => {
     }
 
     if (!free) {
-      const { data: p } = await supabase.from('purchased_interactions').select('id').eq('user_id', me.id).eq('interaction_type', 'SUPER_LIKE').eq('target_id', targetUserId).maybeSingle();
+      const { data: p } = await supabase.from('purchased_interactions').select('id').eq('user_id', me.id).eq('interaction_type', 'SUPER_LIKE').eq('target_id', safeTargetUserId).maybeSingle();
       if (!p) return res.status(403).json({ error: 'premium_required_for_super_like' });
     }
     await incrementUsage(me.id, 'SUPER_LIKE');
   }
 
-  await supabase.from('likes').upsert({ liker_id: me.id, liked_id: targetUserId, is_super_like: !!isSuperLike });
+  await supabase.from('likes').upsert({ liker_id: me.id, liked_id: safeTargetUserId, is_super_like: !!isSuperLike });
+
+  // Complete anonymous mode: liking while invisible never triggers an immediate match.
+  if (meHiddenByInvisibleMode) {
+    return res.json({ matched: false, matchId: null, invisible_like: true });
+  }
+
   const { data: reciprocalLike } = await supabase
     .from('likes')
     .select('*')
-    .eq('liker_id', targetUserId)
+    .eq('liker_id', safeTargetUserId)
     .eq('liked_id', me.id)
     .maybeSingle();
 
@@ -894,7 +938,24 @@ app.post('/api/matchmaking/swipe', requireAuth, async (req, res) => {
     return res.json({ matched: false, matchId: null });
   }
 
-  const [userOneId, userTwoId] = [me.id, targetUserId].sort();
+  // If reciprocal liker is hidden by invisible mode, keep the like discreet (no auto-match).
+  let targetHasInvisiblePremiumAccess = false;
+  if (targetProfile?.is_premium) {
+    const { data: targetSub } = await supabase
+      .from('subscriptions')
+      .select('plan_id')
+      .eq('user_id', safeTargetUserId)
+      .eq('status', 'active')
+      .gt('current_period_end', new Date().toISOString())
+      .maybeSingle();
+    targetHasInvisiblePremiumAccess = hasInvisiblePremiumAccessForPlan(targetSub?.plan_id);
+  }
+  const targetHiddenByInvisibleMode = isHiddenByInvisibleMode(targetProfile, targetHasInvisiblePremiumAccess);
+  if (targetHiddenByInvisibleMode) {
+    return res.json({ matched: false, matchId: null, invisible_like: true });
+  }
+
+  const [userOneId, userTwoId] = [me.id, safeTargetUserId].sort();
   const { data: existingMatch } = await supabase
     .from('matches')
     .select('id')
@@ -1188,6 +1249,13 @@ app.post('/api/messages/send', requireAuth, async (req, res) => {
 app.post('/api/messages/mark-read', requireAuth, async (req, res) => {
   const { matchId } = req.body;
   const me = req.user;
+  const meHasInvisiblePremiumAccess = hasInvisiblePremiumAccessForPlan(req.subscription?.plan_id);
+  const meHiddenByInvisibleMode = isHiddenByInvisibleMode(me, meHasInvisiblePremiumAccess);
+
+  if (meHiddenByInvisibleMode) {
+    // Complete anonymous mode: no read receipt update when invisible mode is active.
+    return res.json({ stealth: true });
+  }
 
   if (req.subscription?.plan_id === 'QUARTERLY') {
     const u = await getDailyUsage(me.id, 'HIDE_SEEN');
@@ -1378,8 +1446,46 @@ app.get('/api/statuses', requireAuth, async (req, res) => {
     if (u.usage_count >= QUOTAS.MEN_3M_STATUS_VIEWS) return res.status(403).json({ error: 'quota_exceeded' });
     await incrementUsage(me.id, 'STATUS_VIEW');
   }
-  const { data } = await supabase.from('statuses').select('*, profiles(name, photos, gender)').gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false });
-  res.json(data);
+  const { data } = await supabase
+    .from('statuses')
+    .select('*, profiles(id, name, photos, gender, is_invisible, is_premium, trial_started_at)')
+    .gt('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false });
+
+  const rows = data || [];
+  const hiddenAuthorIds = [...new Set(
+    rows
+      .filter((row) => row?.profiles?.id && row?.profiles?.is_invisible && row?.profiles?.id !== me.id)
+      .map((row) => row.profiles.id)
+  )];
+  const invisibleEligibleBySubscription = new Set();
+  if (hiddenAuthorIds.length > 0) {
+    const { data: authorSubs } = await supabase
+      .from('subscriptions')
+      .select('user_id, plan_id')
+      .in('user_id', hiddenAuthorIds)
+      .eq('status', 'active')
+      .gt('current_period_end', new Date().toISOString());
+
+    for (const row of (authorSubs || [])) {
+      if (row?.user_id && hasInvisiblePremiumAccessForPlan(row?.plan_id)) {
+        invisibleEligibleBySubscription.add(row.user_id);
+      }
+    }
+  }
+
+  const filtered = rows.filter((row) => {
+    const author = row?.profiles || null;
+    if (!author) return true;
+    if (String(author.id) === String(me.id)) return true;
+    const authorHidden = isHiddenByInvisibleMode(
+      author,
+      invisibleEligibleBySubscription.has(author.id)
+    );
+    return !authorHidden;
+  });
+
+  res.json(filtered);
 });
 
 app.post('/api/statuses', requireAuth, async (req, res) => {
@@ -1405,11 +1511,39 @@ app.post('/api/statuses', requireAuth, async (req, res) => {
 
 const handleSuperLikesReceived = async (req, res) => {
   const { data, error } = await supabase.from('super_likes')
-    .select('*, profiles:sender_id(name, photos, age, bio)')
+    .select('*, profiles:sender_id(id, name, photos, age, bio, is_invisible, gender, is_premium, trial_started_at)')
     .eq('recipient_id', req.user.id)
     .order('created_at', { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+
+  const rows = data || [];
+  const senderIds = [...new Set(rows.map((row) => row?.sender_id).filter(Boolean))];
+  const invisibleEligibleBySubscription = new Set();
+  if (senderIds.length > 0) {
+    const { data: senderSubs } = await supabase
+      .from('subscriptions')
+      .select('user_id, plan_id')
+      .in('user_id', senderIds)
+      .eq('status', 'active')
+      .gt('current_period_end', new Date().toISOString());
+
+    for (const row of (senderSubs || [])) {
+      if (row?.user_id && hasInvisiblePremiumAccessForPlan(row?.plan_id)) {
+        invisibleEligibleBySubscription.add(row.user_id);
+      }
+    }
+  }
+
+  const filtered = rows.filter((row) => {
+    const senderProfile = row?.profiles || null;
+    const senderId = row?.sender_id;
+    return !isHiddenByInvisibleMode(
+      senderProfile,
+      invisibleEligibleBySubscription.has(senderId)
+    );
+  });
+
+  res.json(filtered);
 };
 
 app.get('/api/super-likes/received', requireAuth, handleSuperLikesReceived);

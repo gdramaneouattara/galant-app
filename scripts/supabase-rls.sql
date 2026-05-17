@@ -45,7 +45,19 @@ CREATE POLICY "Profiles visibility" ON public.profiles
       auth.uid() = id
       OR (
         onboarding_completed = true
-        AND NOT (is_invisible = true AND public.has_invisible_mode_access(id))
+        AND (
+          NOT (is_invisible = true AND public.has_invisible_mode_access(id))
+          OR exists (
+            select 1
+            from public.matches m
+            where m.status = 'ACTIVE'
+              and (
+                (m.user_one_id = auth.uid() and m.user_two_id = profiles.id)
+                or
+                (m.user_two_id = auth.uid() and m.user_one_id = profiles.id)
+              )
+          )
+        )
       )
     )
   );
