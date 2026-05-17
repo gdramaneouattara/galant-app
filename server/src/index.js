@@ -140,6 +140,16 @@ const hasInvisiblePremiumAccessForPlan = (planId) => {
   return normalized === 'BIANNUAL' || normalized === 'ANNUAL';
 };
 
+const hasQuarterlyLimitedInvisibleAccess = (profile, planId) => {
+  const normalized = String(planId || '').toUpperCase();
+  return (
+    normalized === 'QUARTERLY' &&
+    !!profile?.is_premium &&
+    !!profile?.is_invisible &&
+    String(profile?.gender || '').toUpperCase() === 'MALE'
+  );
+};
+
 const isHiddenByInvisibleMode = (profile, hasInvisiblePremiumAccess = false) => {
   if (!profile || !profile.is_invisible) return false;
   const trialInvisibleCandidate =
@@ -893,7 +903,16 @@ app.post('/api/matchmaking/swipe', requireAuth, async (req, res) => {
   }
 
   const meHasInvisiblePremiumAccess = hasInvisiblePremiumAccessForPlan(req.subscription?.plan_id);
-  const meHiddenByInvisibleMode = isHiddenByInvisibleMode(me, meHasInvisiblePremiumAccess);
+  const meHasQuarterlyLimitedInvisible = hasQuarterlyLimitedInvisibleAccess(me, req.subscription?.plan_id);
+  let meQuarterlyInvisibleStealthAvailable = false;
+  if (meHasQuarterlyLimitedInvisible) {
+    const usage = await getDailyUsage(me.id, 'INVISIBLE_VIEW');
+    meQuarterlyInvisibleStealthAvailable = usage.usage_count < QUOTAS.MEN_3M_INVISIBLE_VIEWS;
+    await incrementUsage(me.id, 'INVISIBLE_VIEW');
+  }
+  const meHiddenByInvisibleMode =
+    isHiddenByInvisibleMode(me, meHasInvisiblePremiumAccess) ||
+    meQuarterlyInvisibleStealthAvailable;
 
   if (direction === 'LEFT') {
     return res.json({ matched: false, matchId: null });
@@ -940,6 +959,7 @@ app.post('/api/matchmaking/swipe', requireAuth, async (req, res) => {
 
   // If reciprocal liker is hidden by invisible mode, keep the like discreet (no auto-match).
   let targetHasInvisiblePremiumAccess = false;
+  let targetHasQuarterlyLimitedInvisibleStealth = false;
   if (targetProfile?.is_premium) {
     const { data: targetSub } = await supabase
       .from('subscriptions')
@@ -949,9 +969,13 @@ app.post('/api/matchmaking/swipe', requireAuth, async (req, res) => {
       .gt('current_period_end', new Date().toISOString())
       .maybeSingle();
     targetHasInvisiblePremiumAccess = hasInvisiblePremiumAccessForPlan(targetSub?.plan_id);
+    if (hasQuarterlyLimitedInvisibleAccess(targetProfile, targetSub?.plan_id)) {
+      const targetUsage = await getDailyUsage(safeTargetUserId, 'INVISIBLE_VIEW');
+      targetHasQuarterlyLimitedInvisibleStealth = targetUsage.usage_count < QUOTAS.MEN_3M_INVISIBLE_VIEWS;
+    }
   }
   const targetHiddenByInvisibleMode = isHiddenByInvisibleMode(targetProfile, targetHasInvisiblePremiumAccess);
-  if (targetHiddenByInvisibleMode) {
+  if (targetHiddenByInvisibleMode || targetHasQuarterlyLimitedInvisibleStealth) {
     return res.json({ matched: false, matchId: null, invisible_like: true });
   }
 
@@ -1257,7 +1281,11 @@ app.post('/api/messages/mark-read', requireAuth, async (req, res) => {
     return res.json({ stealth: true });
   }
 
-  if (req.subscription?.plan_id === 'QUARTERLY') {
+  if (
+    req.subscription?.plan_id === 'QUARTERLY' &&
+    String(me.gender || '').toUpperCase() === 'MALE' &&
+    !!me.is_invisible
+  ) {
     const u = await getDailyUsage(me.id, 'HIDE_SEEN');
     if (u.usage_seconds < QUOTAS.MEN_3M_HIDE_SEEN_SECONDS) {
       // Logic for hiding seen is usually handled by NOT updating is_read
@@ -1441,7 +1469,11 @@ app.get('/api/statuses', requireAuth, async (req, res) => {
   if (!hasStandardAccess(me)) {
     return res.status(403).json({ error: 'subscription_required' });
   }
-  if (me.gender === 'MALE' && req.subscription?.plan_id === 'QUARTERLY') {
+  if (
+    String(me.gender || '').toUpperCase() === 'MALE' &&
+    req.subscription?.plan_id === 'QUARTERLY' &&
+    !!me.is_invisible
+  ) {
     const u = await getDailyUsage(me.id, 'STATUS_VIEW');
     if (u.usage_count >= QUOTAS.MEN_3M_STATUS_VIEWS) return res.status(403).json({ error: 'quota_exceeded' });
     await incrementUsage(me.id, 'STATUS_VIEW');

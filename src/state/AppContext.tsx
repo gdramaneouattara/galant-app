@@ -109,11 +109,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   ): User => {
     const isPremium = options?.has_active_subscription ?? !!profile.is_premium;
+    const subscriptionPlanId = String(options?.subscription_plan_id || '').toUpperCase();
     const trialInvisibleEligible = isMaleTrialActiveFromProfile({
       ...profile,
       is_premium: isPremium,
     });
-    const invisibleModeEligible = (options?.invisible_mode_eligible ?? false) || trialInvisibleEligible;
+    const quarterlyInvisibleEligible =
+      subscriptionPlanId === 'QUARTERLY' &&
+      isPremium &&
+      String(profile.gender || '').toUpperCase() === 'MALE';
+    const invisibleModeEligible =
+      (options?.invisible_mode_eligible ?? false) ||
+      quarterlyInvisibleEligible ||
+      trialInvisibleEligible;
     return {
     id: profile.id,
     name: profile.name || 'Utilisateur',
@@ -213,7 +221,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         const subscriptionState = await getCurrentSubscriptionState(resolvedUserId);
         const trialInvisibleEligible = isMaleTrialActiveFromProfile(profile);
-        const invisibleEligibleNow = subscriptionState.invisible_mode_eligible || trialInvisibleEligible;
+        const planId = String(subscriptionState.subscription_plan_id || '').toUpperCase();
+        const quarterlyInvisibleEligible =
+          planId === 'QUARTERLY' &&
+          subscriptionState.has_active_subscription &&
+          String(profile.gender || '').toUpperCase() === 'MALE';
+        const invisibleEligibleNow =
+          subscriptionState.invisible_mode_eligible ||
+          quarterlyInvisibleEligible ||
+          trialInvisibleEligible;
         const effectivePremium = subscriptionState.has_active_subscription;
         if (profile.is_premium !== effectivePremium) {
           const patch: { is_premium: boolean; is_invisible?: boolean } = { is_premium: effectivePremium };
@@ -564,7 +580,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return false;
     }
     if (enabled && !currentUser.invisible_mode_eligible) {
-      setLastError("Le mode invisible est reserve aux abonnements 6 mois et 1 an.");
+      setLastError("Le mode invisible est reserve aux abonnements Homme 3 mois (limite), 6 mois et 1 an.");
       return false;
     }
 

@@ -43,13 +43,22 @@ const ProfileScreen: React.FC = () => {
   const boostedUntilDate = isBoosted ? new Date(currentUser.boosted_until!) : null;
   const isInvisibleEligible = !!currentUser.invisible_mode_eligible;
   const isInvisibleEnabled = !!currentUser.is_invisible && isInvisibleEligible;
+  const normalizedPlan = String(currentUser.subscription_plan_id || '').toUpperCase();
+  const hasQuarterlyLimitedInvisible =
+    normalizedPlan === 'QUARTERLY' &&
+    currentUser.isPremium &&
+    String(currentUser.gender || '').toUpperCase() === 'MALE';
   const invisibleModeDescription = isInvisibleEnabled
-    ? 'Votre profil est masque dans la decouverte standard. Les matchs existants et actions directes restent accessibles.'
+    ? (hasQuarterlyLimitedInvisible
+      ? 'Mode discret 3 mois actif: 20 profils/jour sans etre vu, 20 statuts/jour en discret, et masque du vu jusqu a 2h/jour.'
+      : 'Votre profil est masque dans la decouverte standard. Les matchs existants et actions directes restent accessibles.')
     : (isInvisibleEligible
-      ? 'Masquez votre profil dans la decouverte standard quand vous le souhaitez.'
+      ? (hasQuarterlyLimitedInvisible
+        ? 'Activez le mode discret 3 mois: 20 profils/jour sans etre vu, 20 statuts/jour en discret, et masque du vu jusqu a 2h/jour.'
+        : 'Masquez votre profil dans la decouverte standard quand vous le souhaitez.')
       : (currentUser.isPremium
-        ? 'Votre formule Premium actuelle n inclut pas le mode invisible. Passez en 6 mois ou 1 an.'
-        : 'Disponible uniquement sur les abonnements 6 mois et 1 an.'));
+        ? 'Votre formule Premium actuelle n inclut pas le mode invisible. Passez en Homme 3 mois (limite), 6 mois ou 1 an.'
+        : 'Disponible sur Homme 3 mois (limite), 6 mois et 1 an.'));
 
   const currentGoal = RELATIONSHIP_GOALS.find(g => g.id === currentUser.relationship_goal) || RELATIONSHIP_GOALS[0];
 

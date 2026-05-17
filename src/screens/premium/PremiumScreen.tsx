@@ -50,7 +50,7 @@ const PREMIUM_PLANS: PremiumPlan[] = [
     priceAmount: PLAN_AMOUNTS.QUARTERLY,
     savings: '0%',
     icon: (props) => <Gift {...props} />,
-    description: 'Formule trimestrielle (sans mode invisible).',
+    description: 'Mode invisible limite (Homme): profils/statuts discrets + vu masque temporaire.',
   },
   {
     id: 'BIANNUAL',
@@ -94,7 +94,7 @@ const PLAN_COMPARISON: Array<{ feature: string; availability: PlanAvailability }
   },
   {
     feature: 'Mode invisible',
-    availability: { MONTHLY: 'Non', QUARTERLY: 'Non', BIANNUAL: 'Oui', ANNUAL: 'Oui' },
+    availability: { MONTHLY: 'Non', QUARTERLY: 'Limité (Homme)', BIANNUAL: 'Oui', ANNUAL: 'Oui' },
   },
   {
     feature: 'Création de communauté',
@@ -104,7 +104,7 @@ const PLAN_COMPARISON: Array<{ feature: string; availability: PlanAvailability }
     feature: 'Limites spéciales',
     availability: {
       MONTHLY: 'Aucune',
-      QUARTERLY: 'Stories/masquage vus limités',
+      QUARTERLY: '20 profils/j + 20 statuts/j + vu masque 2h/j',
       BIANNUAL: 'Aucune',
       ANNUAL: 'Aucune',
     },
