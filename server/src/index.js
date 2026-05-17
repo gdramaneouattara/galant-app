@@ -1598,11 +1598,14 @@ app.post('/api/communities/create', requireAuth, async (req, res) => {
     if (isMissingRelationError(error)) return res.status(503).json({ error: 'community_schema_missing' });
     return res.status(500).json({ error: error.message });
   }
-  const { error: membershipInsertError } = await supabase.from('community_members').upsert({
-    community_id: community.id,
-    user_id: req.user.id,
-    role: 'ADMIN',
-  });
+  const { error: membershipInsertError } = await supabase.from('community_members').upsert(
+    {
+      community_id: community.id,
+      user_id: req.user.id,
+      role: 'ADMIN',
+    },
+    { onConflict: 'community_id,user_id' }
+  );
   if (membershipInsertError) {
     if (isMissingRelationError(membershipInsertError)) return res.status(503).json({ error: 'community_schema_missing' });
     return res.status(500).json({ error: membershipInsertError.message });
@@ -1618,11 +1621,22 @@ app.post('/api/communities/create', requireAuth, async (req, res) => {
 
 app.post('/api/communities/:communityId/join', requireAuth, async (req, res) => {
   const { communityId } = req.params;
-  const { error } = await supabase.from('community_members').upsert({
-    community_id: communityId,
-    user_id: req.user.id,
-    role: 'MEMBER',
-  });
+  const { data: community, error: communityError } = await supabase
+    .from('communities')
+    .select('id')
+    .eq('id', communityId)
+    .maybeSingle();
+  if (communityError) return res.status(500).json({ error: communityError.message });
+  if (!community) return res.status(404).json({ error: 'community_not_found' });
+
+  const { error } = await supabase.from('community_members').upsert(
+    {
+      community_id: communityId,
+      user_id: req.user.id,
+      role: 'MEMBER',
+    },
+    { onConflict: 'community_id,user_id' }
+  );
   if (error) {
     if (isMissingRelationError(error)) return res.status(503).json({ error: 'community_schema_missing' });
     return res.status(500).json({ error: error.message });

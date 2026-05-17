@@ -69,6 +69,7 @@ const CommunityScreen: React.FC = () => {
   }, []);
 
   const handleJoin = async (communityId: string) => {
+    if (joiningId) return;
     setJoiningId(communityId);
     try {
       await apiRequest(`/api/communities/${communityId}/join`, {
@@ -81,6 +82,22 @@ const CommunityScreen: React.FC = () => {
     } finally {
       setJoiningId(null);
     }
+  };
+
+  const confirmJoin = (communityId: string, communityName: string) => {
+    Alert.alert(
+      'Rejoindre la communauté',
+      `Touchez "Rejoindre" pour intégrer "${communityName}".`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Rejoindre',
+          onPress: () => {
+            void handleJoin(communityId);
+          },
+        },
+      ]
+    );
   };
 
   const handleCreate = async () => {
@@ -119,7 +136,7 @@ const CommunityScreen: React.FC = () => {
         if (item.is_member) {
           navigation.navigate('CommunityChat', { communityId: item.id, communityName: item.name });
         } else {
-          handleJoin(item.id);
+          confirmJoin(item.id, item.name);
         }
       }}
     >
@@ -160,18 +177,25 @@ const CommunityScreen: React.FC = () => {
       {loading ? (
         <ActivityIndicator style={{ flex: 1 }} color={COLORS.primary} />
       ) : (
-        <FlatList
-          data={communities}
-          renderItem={renderCommunity}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Users size={48} color="#e2e8f0" />
-              <Text style={styles.emptyText}>Aucune communauté pour le moment.</Text>
-            </View>
-          }
-        />
+        <>
+          <View style={styles.joinHint}>
+            <Text style={styles.joinHintText}>
+              Touchez une communauté pour la rejoindre. L’adhésion est immédiate après confirmation.
+            </Text>
+          </View>
+          <FlatList
+            data={communities}
+            renderItem={renderCommunity}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.list}
+            ListEmptyComponent={
+              <View style={styles.empty}>
+                <Users size={48} color="#e2e8f0" />
+                <Text style={styles.emptyText}>Aucune communauté pour le moment.</Text>
+              </View>
+            }
+          />
+        </>
       )}
 
       <Modal visible={showCreateModal} animationType="slide" transparent>
@@ -224,6 +248,17 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: '900', color: COLORS.ink },
   createBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
   createBtnLocked: { backgroundColor: '#cbd5e1' },
+  joinHint: {
+    marginHorizontal: 20,
+    marginBottom: 4,
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  joinHintText: { color: '#1d4ed8', fontSize: 12, fontWeight: '600' },
   list: { padding: 20, gap: 16 },
   card: { backgroundColor: '#fff', borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: '#e2e8f0' },
   cover: { width: '100%', height: 120 },
