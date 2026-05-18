@@ -57,8 +57,8 @@ const ProfileScreen: React.FC = () => {
         ? 'Activez le mode discret 3 mois: 20 profils/jour sans etre vu, 20 statuts/jour en discret, et masque du vu jusqu a 2h/jour.'
         : 'Masquez votre profil dans la decouverte standard quand vous le souhaitez.')
       : (currentUser.isPremium
-        ? 'Votre formule Premium actuelle n inclut pas le mode invisible. Passez en Homme 3 mois (limite), 6 mois ou 1 an.'
-        : 'Disponible sur Homme 3 mois (limite), 6 mois et 1 an.'));
+        ? 'Votre formule Premium actuelle n inclut pas le mode invisible. Passez en Femme 1 ou 3 mois, Homme 3 mois (limite), 6 mois ou 1 an.'
+        : 'Disponible sur Femme 1 ou 3 mois, Homme 3 mois (limite), 6 mois et 1 an.'));
 
   const currentGoal = RELATIONSHIP_GOALS.find(g => g.id === currentUser.relationship_goal) || RELATIONSHIP_GOALS[0];
 

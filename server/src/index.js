@@ -57,7 +57,10 @@ const googleAccessTokenCache = { token: null, expiresAt: 0 };
 const APPLE_AUDIENCE = 'appstoreconnect-v1';
 const APPLE_PROD_TRANSACTION_URL = 'https://api.storekit.itunes.apple.com/inApps/v1/transactions';
 const APPLE_SANDBOX_TRANSACTION_URL = 'https://api.storekit-sandbox.itunes.apple.com/inApps/v1/transactions';
+const APPLE_PROD_SUBSCRIPTIONS_URL = 'https://api.storekit.itunes.apple.com/inApps/v1/subscriptions';
+const APPLE_SANDBOX_SUBSCRIPTIONS_URL = 'https://api.storekit-sandbox.itunes.apple.com/inApps/v1/subscriptions';
 const appleTokenCache = { token: null, expiresAt: 0 };
+const SUBSCRIPTION_RENEWAL_REFRESH_COOLDOWN_MS = 5 * 60 * 1000;
 
 const allowedOrigins = ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean);
 app.use(cors({ origin: (origin, cb) => (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) ? cb(null, true) : cb(new Error('CORS_ERROR')) }));
@@ -75,7 +78,10 @@ const requireAuth = async (req, res, next) => {
     const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
     if (!profile) return res.status(403).json({ error: 'profile_not_found' });
 
-    const { data: sub } = await supabase.from('subscriptions').select('*').eq('user_id', user.id).eq('status', 'active').gt('current_period_end', new Date().toISOString()).maybeSingle();
+    let sub = await getLatestActiveSubscriptionForUser(user.id);
+    if (!sub) {
+      sub = await refreshSubscriptionAutoRenewalForUser(user.id);
+    }
 
     // Sync flags
     const isPremium = !!sub;
@@ -135,9 +141,14 @@ const hasStandardAccess = (p) => {
   return isTrialActive(p) || p.is_premium;
 };
 
-const hasInvisiblePremiumAccessForPlan = (planId) => {
+const hasInvisiblePremiumAccessForPlan = (profile, planId) => {
   const normalized = String(planId || '').toUpperCase();
-  return normalized === 'BIANNUAL' || normalized === 'ANNUAL';
+  if (normalized === 'BIANNUAL' || normalized === 'ANNUAL') return true;
+  return (
+    (normalized === 'MONTHLY' || normalized === 'QUARTERLY') &&
+    !!profile?.is_premium &&
+    String(profile?.gender || '').toUpperCase() === 'FEMALE'
+  );
 };
 
 const hasQuarterlyLimitedInvisibleAccess = (profile, planId) => {
@@ -215,6 +226,33 @@ const isMissingRelationError = (error) => {
   const code = String(error?.code || '').toUpperCase();
   const message = String(error?.message || '').toLowerCase();
   return code === '42P01' || message.includes('relation') || message.includes('does not exist');
+};
+
+const getLatestActiveSubscriptionForUser = async (userId) => {
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .gt('current_period_end', new Date().toISOString())
+    .order('current_period_end', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) return null;
+  return data || null;
+};
+
+const getLatestRenewableSubscriptionForUser = async (userId) => {
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', userId)
+    .in('payment_method', ['GOOGLE_PLAY', 'APPLE_STORE'])
+    .order('current_period_end', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) return null;
+  return data || null;
 };
 
 const normalizePrivacyStatusForClient = (value) => {
@@ -395,7 +433,7 @@ const getGoogleAccessToken = async () => {
   return accessToken;
 };
 
-const verifyGooglePlayPurchase = async ({ productId, purchaseToken, type }) => {
+const verifyGooglePlayPurchase = async ({ productId, purchaseToken, type, allowInactive = false }) => {
   if (!ANDROID_PACKAGE_NAME) {
     return { valid: false, reason: 'android_package_name_missing' };
   }
@@ -418,8 +456,16 @@ const verifyGooglePlayPurchase = async ({ productId, purchaseToken, type }) => {
     const expiry = Number(payload.expiryTimeMillis || 0);
     const isExpired = Number.isFinite(expiry) && expiry > 0 && expiry <= Date.now();
     const isCanceled = payload.cancelReason !== undefined && payload.cancelReason !== null;
-    if (isExpired || isCanceled) return { valid: false, reason: 'subscription_not_active' };
-    return { valid: true, payload };
+    const isActive = !isExpired;
+    if (!allowInactive && (isExpired || isCanceled)) return { valid: false, reason: 'subscription_not_active' };
+    return {
+      valid: true,
+      payload,
+      isActive,
+      expiresAt: Number.isFinite(expiry) && expiry > 0 ? new Date(expiry).toISOString() : null,
+      autoRenewing: payload.autoRenewing === true,
+      canceled: isCanceled,
+    };
   }
 
   if (Number(payload.purchaseState) !== 0) {
@@ -501,7 +547,7 @@ const fetchAppleTransactionPayload = async (transactionId) => {
   return { valid: false, reason: 'apple_transaction_not_found' };
 };
 
-const verifyApplePurchase = async ({ transactionId, productId, type }) => {
+const verifyApplePurchase = async ({ transactionId, productId, type, allowInactive = false }) => {
   if (!transactionId || !productId) {
     return { valid: false, reason: 'apple_purchase_payload_missing' };
   }
@@ -523,29 +569,180 @@ const verifyApplePurchase = async ({ transactionId, productId, type }) => {
   const normalizedType = String(type || '').toUpperCase();
   if (normalizedType === 'PREMIUM') {
     const expiresAtMs = Number(payload.expiresDate || 0);
-    if (Number.isFinite(expiresAtMs) && expiresAtMs > 0 && expiresAtMs <= Date.now()) {
+    const isExpired = Number.isFinite(expiresAtMs) && expiresAtMs > 0 && expiresAtMs <= Date.now();
+    if (!allowInactive && isExpired) {
       return { valid: false, reason: 'apple_subscription_expired' };
     }
+    return {
+      valid: true,
+      payload,
+      isActive: !isExpired,
+      expiresAt: Number.isFinite(expiresAtMs) && expiresAtMs > 0 ? new Date(expiresAtMs).toISOString() : null,
+      autoRenewing: null,
+      canceled: !!payload.revocationDate,
+    };
   }
 
   return { valid: true, payload };
 };
 
-const applyPurchasedEntitlement = async ({ userId, planId, type, targetId, reference, paymentMethod }) => {
+const fetchAppleSubscriptionState = async (originalTransactionId) => {
+  if (!originalTransactionId) return { valid: false, reason: 'apple_original_transaction_missing' };
+  const token = await getAppleAccessToken();
+  const encodedOriginalId = encodeURIComponent(originalTransactionId);
+  const endpoints = [APPLE_PROD_SUBSCRIPTIONS_URL, APPLE_SANDBOX_SUBSCRIPTIONS_URL];
+
+  for (const baseUrl of endpoints) {
+    try {
+      const response = await axios.get(`${baseUrl}/${encodedOriginalId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const groups = response?.data?.data || [];
+      let latestExpiryMs = 0;
+      let autoRenewing = null;
+
+      for (const group of groups) {
+        const lastTransactions = group?.lastTransactions || [];
+        for (const transaction of lastTransactions) {
+          const txPayload = decodeJwsPayload(transaction?.signedTransactionInfo || '');
+          const renewalPayload = decodeJwsPayload(transaction?.signedRenewalInfo || '');
+          const expiryMs = Number(txPayload?.expiresDate || 0);
+          if (Number.isFinite(expiryMs) && expiryMs > latestExpiryMs) {
+            latestExpiryMs = expiryMs;
+          }
+          if (renewalPayload && typeof renewalPayload.autoRenewStatus !== 'undefined') {
+            autoRenewing = Number(renewalPayload.autoRenewStatus) === 1;
+          }
+        }
+      }
+
+      if (latestExpiryMs > 0) {
+        return {
+          valid: true,
+          expiresAt: new Date(latestExpiryMs).toISOString(),
+          isActive: latestExpiryMs > Date.now(),
+          autoRenewing,
+        };
+      }
+    } catch (_error) {
+      // Try next endpoint (prod/sandbox).
+    }
+  }
+
+  return { valid: false, reason: 'apple_subscription_lookup_failed' };
+};
+
+const refreshSubscriptionAutoRenewalForUser = async (userId) => {
+  const latest = await getLatestRenewableSubscriptionForUser(userId);
+  if (!latest) return null;
+
+  const lastVerifiedTs = latest.last_verified_at ? new Date(latest.last_verified_at).getTime() : 0;
+  if (Number.isFinite(lastVerifiedTs) && lastVerifiedTs > 0 && (Date.now() - lastVerifiedTs) < SUBSCRIPTION_RENEWAL_REFRESH_COOLDOWN_MS) {
+    return await getLatestActiveSubscriptionForUser(userId);
+  }
+
+  let nextStatus = String(latest.status || '').toLowerCase() === 'active' ? 'active' : 'expired';
+  let nextEnd = latest.current_period_end || null;
+  let nextAutoRenewing = latest.auto_renewing ?? null;
+
+  if (latest.payment_method === 'GOOGLE_PLAY' && latest.external_product_id && latest.external_purchase_token) {
+    const google = await verifyGooglePlayPurchase({
+      productId: latest.external_product_id,
+      purchaseToken: latest.external_purchase_token,
+      type: 'PREMIUM',
+      allowInactive: true,
+    });
+    if (google.valid) {
+      nextEnd = google.expiresAt || nextEnd;
+      nextStatus = google.isActive ? 'active' : 'expired';
+      nextAutoRenewing = google.autoRenewing;
+    }
+  } else if (latest.payment_method === 'APPLE_STORE') {
+    let appleState = null;
+    if (latest.external_original_transaction_id) {
+      appleState = await fetchAppleSubscriptionState(latest.external_original_transaction_id);
+    } else if (latest.external_transaction_id && latest.external_product_id) {
+      appleState = await verifyApplePurchase({
+        transactionId: latest.external_transaction_id,
+        productId: latest.external_product_id,
+        type: 'PREMIUM',
+        allowInactive: true,
+      });
+    }
+    if (appleState?.valid) {
+      nextEnd = appleState.expiresAt || nextEnd;
+      nextStatus = appleState.isActive ? 'active' : 'expired';
+      nextAutoRenewing = typeof appleState.autoRenewing === 'boolean' ? appleState.autoRenewing : nextAutoRenewing;
+    }
+  }
+
+  const primaryPatch = {
+    status: nextStatus,
+    current_period_end: nextEnd,
+    auto_renewing: nextAutoRenewing,
+    last_verified_at: new Date().toISOString(),
+  };
+  const { error: primaryUpdateError } = await supabase
+    .from('subscriptions')
+    .update(primaryPatch)
+    .eq('id', latest.id);
+  if (primaryUpdateError) {
+    await supabase
+      .from('subscriptions')
+      .update({
+        status: nextStatus,
+        current_period_end: nextEnd,
+      })
+      .eq('id', latest.id);
+  }
+
+  if (nextStatus === 'active' && nextEnd && new Date(nextEnd).getTime() > Date.now()) {
+    return await getLatestActiveSubscriptionForUser(userId);
+  }
+  return null;
+};
+
+const applyPurchasedEntitlement = async ({ userId, planId, type, targetId, reference, paymentMethod, purchaseMeta = {} }) => {
   const normalizedType = String(type || '').toUpperCase();
   const normalizedPlanId = String(planId || '').toUpperCase();
 
   if (normalizedType === 'PREMIUM') {
     const days = PLAN_DURATIONS[normalizedPlanId] || 30;
-    const end = new Date();
+    const now = new Date();
+    const latestActive = await getLatestActiveSubscriptionForUser(userId);
+    const start = latestActive?.current_period_end && new Date(latestActive.current_period_end).getTime() > now.getTime()
+      ? new Date(latestActive.current_period_end)
+      : now;
+    const end = new Date(start);
     end.setDate(end.getDate() + days);
-    await supabase.from('subscriptions').insert({
+
+    const payload = {
       user_id: userId,
       plan_id: normalizedPlanId || 'MONTHLY',
       status: 'active',
+      current_period_start: start.toISOString(),
       current_period_end: end.toISOString(),
       payment_method: paymentMethod || null,
-    });
+      external_product_id: purchaseMeta.productId || null,
+      external_purchase_token: purchaseMeta.purchaseToken || null,
+      external_transaction_id: purchaseMeta.transactionId || null,
+      external_original_transaction_id: purchaseMeta.originalTransactionId || null,
+      auto_renewing: typeof purchaseMeta.autoRenewing === 'boolean' ? purchaseMeta.autoRenewing : null,
+      last_verified_at: new Date().toISOString(),
+    };
+
+    const { error: insertWithMetaError } = await supabase.from('subscriptions').insert(payload);
+    if (insertWithMetaError) {
+      // Backward compatibility when metadata columns are not yet migrated.
+      await supabase.from('subscriptions').insert({
+        user_id: userId,
+        plan_id: normalizedPlanId || 'MONTHLY',
+        status: 'active',
+        current_period_start: start.toISOString(),
+        current_period_end: end.toISOString(),
+        payment_method: paymentMethod || null,
+      });
+    }
     await supabase.from('profiles').update({ is_premium: true }).eq('id', userId);
     return;
   }
@@ -714,7 +911,7 @@ app.post('/api/payments/google-verify', requireAuth, async (req, res) => {
   const userId = req.user.id;
   const normalizedType = String(type || '').toUpperCase();
   const normalizedPlanId = String(planId || '').toUpperCase();
-  const safeReference = String(purchaseToken || '').slice(0, 50);
+  const safeReference = String(purchaseToken || '');
 
   try {
     if (!purchaseToken || !productId) {
@@ -733,6 +930,11 @@ app.post('/api/payments/google-verify', requireAuth, async (req, res) => {
       targetId,
       reference: safeReference,
       paymentMethod: 'GOOGLE_PLAY',
+      purchaseMeta: {
+        productId,
+        purchaseToken,
+        autoRenewing: verification.autoRenewing,
+      },
     });
 
     res.json({ status: 'success' });
@@ -746,7 +948,7 @@ app.post('/api/payments/apple-verify', requireAuth, async (req, res) => {
   const userId = req.user.id;
   const normalizedType = String(type || '').toUpperCase();
   const normalizedPlanId = String(planId || '').toUpperCase();
-  const safeReference = String(transactionId || '').slice(0, 50);
+  const safeReference = String(transactionId || '');
 
   try {
     const verification = await verifyApplePurchase({ transactionId, productId, type: normalizedType });
@@ -761,6 +963,12 @@ app.post('/api/payments/apple-verify', requireAuth, async (req, res) => {
       targetId,
       reference: safeReference,
       paymentMethod: 'APPLE_STORE',
+      purchaseMeta: {
+        productId,
+        transactionId,
+        originalTransactionId: verification?.payload?.originalTransactionId || verification?.payload?.transactionId || transactionId,
+        autoRenewing: typeof verification?.autoRenewing === 'boolean' ? verification.autoRenewing : null,
+      },
     });
 
     res.json({ status: 'success' });
@@ -794,6 +1002,7 @@ app.get('/api/matchmaking/suggestions', requireAuth, async (req, res) => {
   const { data: candidates, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
 
+  const candidateById = new Map((candidates || []).map((candidate) => [candidate.id, candidate]));
   const candidateIds = (candidates || []).map((candidate) => candidate.id).filter(Boolean);
   const invisibleEligibleBySubscription = new Set();
   if (candidateIds.length > 0) {
@@ -805,13 +1014,12 @@ app.get('/api/matchmaking/suggestions', requireAuth, async (req, res) => {
       .gt('current_period_end', new Date().toISOString());
 
     for (const row of (eligibleInvisibleSubs || [])) {
-      if (row?.user_id && hasInvisiblePremiumAccessForPlan(row?.plan_id)) {
+      if (row?.user_id && hasInvisiblePremiumAccessForPlan(candidateById.get(row.user_id), row?.plan_id)) {
         invisibleEligibleBySubscription.add(row.user_id);
       }
     }
   }
 
-  const candidateById = new Map((candidates || []).map((candidate) => [candidate.id, candidate]));
   const incomingSuperLikesByCandidate = new Set();
   if (candidateIds.length > 0) {
     const { data: incomingSuperLikes } = await supabase
@@ -902,7 +1110,7 @@ app.post('/api/matchmaking/swipe', requireAuth, async (req, res) => {
     return res.status(404).json({ error: 'target_not_found' });
   }
 
-  const meHasInvisiblePremiumAccess = hasInvisiblePremiumAccessForPlan(req.subscription?.plan_id);
+  const meHasInvisiblePremiumAccess = hasInvisiblePremiumAccessForPlan(me, req.subscription?.plan_id);
   const meHasQuarterlyLimitedInvisible = hasQuarterlyLimitedInvisibleAccess(me, req.subscription?.plan_id);
   let meQuarterlyInvisibleStealthAvailable = false;
   if (meHasQuarterlyLimitedInvisible) {
@@ -967,8 +1175,10 @@ app.post('/api/matchmaking/swipe', requireAuth, async (req, res) => {
       .eq('user_id', safeTargetUserId)
       .eq('status', 'active')
       .gt('current_period_end', new Date().toISOString())
+      .order('current_period_end', { ascending: false })
+      .limit(1)
       .maybeSingle();
-    targetHasInvisiblePremiumAccess = hasInvisiblePremiumAccessForPlan(targetSub?.plan_id);
+    targetHasInvisiblePremiumAccess = hasInvisiblePremiumAccessForPlan(targetProfile, targetSub?.plan_id);
     if (hasQuarterlyLimitedInvisibleAccess(targetProfile, targetSub?.plan_id)) {
       const targetUsage = await getDailyUsage(safeTargetUserId, 'INVISIBLE_VIEW');
       targetHasQuarterlyLimitedInvisibleStealth = targetUsage.usage_count < QUOTAS.MEN_3M_INVISIBLE_VIEWS;
@@ -1026,6 +1236,30 @@ app.get('/api/likes/quota', requireAuth, async (_req, res) => {
     remaining: null,
     resetAt: null,
   });
+});
+
+app.post('/api/subscriptions/sync', requireAuth, async (req, res) => {
+  try {
+    const activeSub = await getLatestActiveSubscriptionForUser(req.user.id) || await refreshSubscriptionAutoRenewalForUser(req.user.id);
+    const isPremium = !!activeSub;
+    const isVip = isPremium && ['BIANNUAL', 'ANNUAL'].includes(String(activeSub?.plan_id || '').toUpperCase());
+
+    if (req.user.is_premium !== isPremium || req.user.is_vip !== isVip) {
+      await supabase
+        .from('profiles')
+        .update({ is_premium: isPremium, is_vip: isVip })
+        .eq('id', req.user.id);
+    }
+
+    res.json({
+      active: isPremium,
+      plan_id: activeSub?.plan_id || null,
+      current_period_end: activeSub?.current_period_end || null,
+      auto_renewing: typeof activeSub?.auto_renewing === 'boolean' ? activeSub.auto_renewing : null,
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'subscription_sync_failed' });
+  }
 });
 
 app.get('/api/messages/direct-thread-quota', requireAuth, async (req, res) => {
@@ -1273,7 +1507,7 @@ app.post('/api/messages/send', requireAuth, async (req, res) => {
 app.post('/api/messages/mark-read', requireAuth, async (req, res) => {
   const { matchId } = req.body;
   const me = req.user;
-  const meHasInvisiblePremiumAccess = hasInvisiblePremiumAccessForPlan(req.subscription?.plan_id);
+  const meHasInvisiblePremiumAccess = hasInvisiblePremiumAccessForPlan(me, req.subscription?.plan_id);
   const meHiddenByInvisibleMode = isHiddenByInvisibleMode(me, meHasInvisiblePremiumAccess);
 
   if (meHiddenByInvisibleMode) {
@@ -1500,7 +1734,7 @@ app.get('/api/statuses', requireAuth, async (req, res) => {
       .gt('current_period_end', new Date().toISOString());
 
     for (const row of (authorSubs || [])) {
-      if (row?.user_id && hasInvisiblePremiumAccessForPlan(row?.plan_id)) {
+      if (row?.user_id && hasInvisiblePremiumAccessForPlan(rows.find((item) => item?.profiles?.id === row.user_id)?.profiles, row?.plan_id)) {
         invisibleEligibleBySubscription.add(row.user_id);
       }
     }
@@ -1560,7 +1794,7 @@ const handleSuperLikesReceived = async (req, res) => {
       .gt('current_period_end', new Date().toISOString());
 
     for (const row of (senderSubs || [])) {
-      if (row?.user_id && hasInvisiblePremiumAccessForPlan(row?.plan_id)) {
+      if (row?.user_id && hasInvisiblePremiumAccessForPlan(rows.find((item) => item?.profiles?.id === row.user_id)?.profiles, row?.plan_id)) {
         invisibleEligibleBySubscription.add(row.user_id);
       }
     }

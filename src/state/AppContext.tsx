@@ -118,8 +118,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       subscriptionPlanId === 'QUARTERLY' &&
       isPremium &&
       String(profile.gender || '').toUpperCase() === 'MALE';
+    const monthlyFemaleInvisibleEligible =
+      subscriptionPlanId === 'MONTHLY' &&
+      isPremium &&
+      String(profile.gender || '').toUpperCase() === 'FEMALE';
+    const quarterlyFemaleInvisibleEligible =
+      subscriptionPlanId === 'QUARTERLY' &&
+      isPremium &&
+      String(profile.gender || '').toUpperCase() === 'FEMALE';
     const invisibleModeEligible =
       (options?.invisible_mode_eligible ?? false) ||
+      monthlyFemaleInvisibleEligible ||
+      quarterlyFemaleInvisibleEligible ||
       quarterlyInvisibleEligible ||
       trialInvisibleEligible;
     return {
@@ -198,6 +208,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const resolvedUserId = userId ?? session?.user?.id;
     if (!resolvedUserId) return null;
     try {
+      try {
+        await apiRequest('/api/subscriptions/sync', {
+          method: 'POST',
+          requireAuth: true,
+        });
+      } catch (_syncError) {
+        // Non-blocking: continue local refresh even if backend sync is unavailable.
+      }
+
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -226,8 +245,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           planId === 'QUARTERLY' &&
           subscriptionState.has_active_subscription &&
           String(profile.gender || '').toUpperCase() === 'MALE';
+        const monthlyFemaleInvisibleEligible =
+          planId === 'MONTHLY' &&
+          subscriptionState.has_active_subscription &&
+          String(profile.gender || '').toUpperCase() === 'FEMALE';
+        const quarterlyFemaleInvisibleEligible =
+          planId === 'QUARTERLY' &&
+          subscriptionState.has_active_subscription &&
+          String(profile.gender || '').toUpperCase() === 'FEMALE';
         const invisibleEligibleNow =
           subscriptionState.invisible_mode_eligible ||
+          monthlyFemaleInvisibleEligible ||
+          quarterlyFemaleInvisibleEligible ||
           quarterlyInvisibleEligible ||
           trialInvisibleEligible;
         const effectivePremium = subscriptionState.has_active_subscription;
@@ -580,7 +609,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return false;
     }
     if (enabled && !currentUser.invisible_mode_eligible) {
-      setLastError("Le mode invisible est reserve aux abonnements Homme 3 mois (limite), 6 mois et 1 an.");
+      setLastError("Le mode invisible est reserve aux abonnements Femme 1/3 mois, Homme 3 mois (limite), 6 mois et 1 an.");
       return false;
     }
 

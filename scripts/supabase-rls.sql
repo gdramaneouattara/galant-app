@@ -19,9 +19,17 @@ RETURNS boolean LANGUAGE plpgsql STABLE AS $$
 BEGIN
   RETURN exists (
     SELECT 1 FROM public.subscriptions s
+    join public.profiles p_sub on p_sub.id = s.user_id
     WHERE s.user_id = target_user_id
       AND s.status = 'active'
-      AND upper(s.plan_id) IN ('BIANNUAL', 'ANNUAL')
+      AND (
+        upper(s.plan_id) IN ('BIANNUAL', 'ANNUAL')
+        OR (
+          upper(s.plan_id) in ('MONTHLY', 'QUARTERLY')
+          AND upper(coalesce(p_sub.gender, '')) = 'FEMALE'
+          AND coalesce(p_sub.is_premium, false) = true
+        )
+      )
       AND s.current_period_end > now()
   ) OR exists (
     SELECT 1
