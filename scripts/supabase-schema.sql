@@ -166,6 +166,36 @@ create table if not exists public.super_likes (
   check (sender_id <> recipient_id)
 );
 
+-- Reports (Block/Report moderation pipeline)
+create table if not exists public.reports (
+  id uuid primary key default gen_random_uuid(),
+  reporter_id uuid references public.profiles(id) on delete set null,
+  reported_user_id uuid references public.profiles(id) on delete set null,
+  reason text not null default 'GENERAL' check (
+    reason in (
+      'GENERAL',
+      'FAKE_PROFILE',
+      'HARASSMENT',
+      'SPAM',
+      'SCAM',
+      'INAPPROPRIATE_CONTENT',
+      'VIOLENCE',
+      'OTHER'
+    )
+  ),
+  details text,
+  status text not null default 'PENDING' check (status in ('PENDING', 'INVESTIGATING', 'RESOLVED', 'DISMISSED')),
+  reviewed_by uuid references public.profiles(id) on delete set null,
+  reviewed_at timestamp with time zone,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now(),
+  check (reporter_id is null or reported_user_id is null or reporter_id <> reported_user_id)
+);
+
+create index if not exists reports_reporter_id_idx on public.reports (reporter_id);
+create index if not exists reports_reported_user_id_idx on public.reports (reported_user_id);
+create index if not exists reports_status_idx on public.reports (status);
+
 -- Privacy Requests
 create table if not exists public.privacy_requests (
   id uuid primary key default gen_random_uuid(),

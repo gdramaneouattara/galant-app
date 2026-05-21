@@ -10,6 +10,7 @@ ALTER TABLE IF EXISTS public.communities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.community_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.community_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.super_likes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.admin_audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.kyc_verifications ENABLE ROW LEVEL SECURITY;
 
@@ -101,6 +102,45 @@ CREATE POLICY "Users view own purchases" ON public.purchased_interactions
 DROP POLICY IF EXISTS "Users view own subscriptions" ON public.subscriptions;
 CREATE POLICY "Users view own subscriptions" ON public.subscriptions
   FOR SELECT TO authenticated USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can create reports" ON public.reports;
+CREATE POLICY "Users can create reports" ON public.reports
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    reporter_id = auth.uid()
+    AND reported_user_id <> auth.uid()
+  );
+
+DROP POLICY IF EXISTS "Users can read own reports" ON public.reports;
+CREATE POLICY "Users can read own reports" ON public.reports
+  FOR SELECT TO authenticated
+  USING (reporter_id = auth.uid());
+
+DROP POLICY IF EXISTS "Admins can read all reports" ON public.reports;
+CREATE POLICY "Admins can read all reports" ON public.reports
+  FOR SELECT TO authenticated
+  USING (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can update reports" ON public.reports;
+CREATE POLICY "Admins can update reports" ON public.reports
+  FOR UPDATE TO authenticated
+  USING (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+    )
+  )
+  WITH CHECK (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.is_admin = true and p.suspended_at is null
+    )
+  );
 
 -- 5. Security Trigger (Protecting Admin & Premium flags)
 CREATE OR REPLACE FUNCTION public.prevent_sensitive_profile_updates()

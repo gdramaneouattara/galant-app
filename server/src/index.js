@@ -51,6 +51,16 @@ const QUOTAS = {
 };
 const DIRECT_MESSAGE_TRIAL_LIMIT = 5;
 const PLAN_DURATIONS = { MONTHLY: 30, QUARTERLY: 90, BIANNUAL: 180, ANNUAL: 365 };
+const ALLOWED_REPORT_REASONS = new Set([
+  'GENERAL',
+  'FAKE_PROFILE',
+  'HARASSMENT',
+  'SPAM',
+  'SCAM',
+  'INAPPROPRIATE_CONTENT',
+  'VIOLENCE',
+  'OTHER',
+]);
 const GOOGLE_ANDROID_PUBLISHER_SCOPE = 'https://www.googleapis.com/auth/androidpublisher';
 const GOOGLE_OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const googleAccessTokenCache = { token: null, expiresAt: 0 };
@@ -1385,11 +1395,15 @@ app.post('/api/messages/direct-thread', requireAuth, async (req, res) => {
 app.post('/api/messages/report', requireAuth, async (req, res) => {
   const me = req.user;
   const reportedUserId = String(req.body?.reportedUserId || '').trim();
-  const reason = String(req.body?.reason || '').trim() || 'GENERAL';
-  const details = String(req.body?.details || '').trim() || null;
+  const reason = String(req.body?.reason || '').trim().toUpperCase() || 'GENERAL';
+  const detailsRaw = String(req.body?.details || '').trim();
+  const details = detailsRaw ? detailsRaw.slice(0, 1000) : null;
 
   if (!reportedUserId || reportedUserId === String(me.id)) {
     return res.status(400).json({ error: 'invalid_target' });
+  }
+  if (!ALLOWED_REPORT_REASONS.has(reason)) {
+    return res.status(400).json({ error: 'invalid_reason' });
   }
 
   const { data: targetUser } = await supabase
@@ -1398,6 +1412,21 @@ app.post('/api/messages/report', requireAuth, async (req, res) => {
     .eq('id', reportedUserId)
     .maybeSingle();
   if (!targetUser) return res.status(404).json({ error: 'target_not_found' });
+
+  const { data: existingOpen } = await supabase
+    .from('reports')
+    .select('id, status')
+    .eq('reporter_id', me.id)
+    .eq('reported_user_id', reportedUserId)
+    .eq('reason', reason)
+    .in('status', ['PENDING', 'INVESTIGATING'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingOpen?.id) {
+    return res.json({ success: true, duplicated: true, reportId: existingOpen.id });
+  }
 
   const { error } = await supabase.from('reports').insert({
     reporter_id: me.id,
