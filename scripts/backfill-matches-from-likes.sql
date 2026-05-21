@@ -27,3 +27,8 @@ on conflict (user_one_id, user_two_id) do nothing;
 --
 -- Nombre total de matchs:
 -- select count(*) from public.matches;
+
+-- Correctif ponctuel: retirer les droits admin d'un compte utilisateur.
+update public.profiles
+set is_admin = false
+where id = '6eac0fb7-c0bd-4911-b630-2540bb495565';

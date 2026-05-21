@@ -77,5 +77,16 @@ begin
 end
 $$;
 
-commit;
+-- 7) Cleanup duplicated RLS policies (safe/idempotent).
+-- Profiles
+drop policy if exists "Users insert own profile" on public.profiles;
+drop policy if exists "Users update own profile" on public.profiles;
+drop policy if exists "Profiles are viewable by all authenticated users." on public.profiles;
 
+-- Reports
+drop policy if exists "Users can create reports." on public.reports;
+drop policy if exists "Users can view their own reports." on public.reports;
+drop policy if exists "Admins can view all reports." on public.reports;
+drop policy if exists "Admins can review reports." on public.reports;
+
+commit;
