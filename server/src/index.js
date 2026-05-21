@@ -1452,6 +1452,45 @@ app.post('/api/messages/block', requireAuth, async (req, res) => {
   res.json({ success: true, blocked: true, matchId: createdMatch?.id || null });
 });
 
+app.post('/api/messages/unblock', requireAuth, async (req, res) => {
+  const me = req.user;
+  const blockedUserId = String(req.body?.blockedUserId || '').trim();
+  if (!blockedUserId || blockedUserId === String(me.id)) {
+    return res.status(400).json({ error: 'invalid_target' });
+  }
+
+  const { data: targetUser } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', blockedUserId)
+    .maybeSingle();
+  if (!targetUser) return res.status(404).json({ error: 'target_not_found' });
+
+  const [userOneId, userTwoId] = [me.id, blockedUserId].sort();
+  const { data: existingMatch } = await supabase
+    .from('matches')
+    .select('id, status')
+    .eq('user_one_id', userOneId)
+    .eq('user_two_id', userTwoId)
+    .maybeSingle();
+
+  if (!existingMatch?.id) {
+    return res.status(404).json({ error: 'conversation_not_found' });
+  }
+
+  if (existingMatch.status !== 'BLOCKED') {
+    return res.json({ success: true, status: existingMatch.status, matchId: existingMatch.id });
+  }
+
+  const { error: updateError } = await supabase
+    .from('matches')
+    .update({ status: 'ACTIVE' })
+    .eq('id', existingMatch.id);
+  if (updateError) return res.status(500).json({ error: updateError.message });
+
+  res.json({ success: true, status: 'ACTIVE', matchId: existingMatch.id });
+});
+
 app.post('/api/messages/send', requireAuth, async (req, res) => {
   const { matchId, content, recipientId, messageType, mediaPath } = req.body;
   const me = req.user;

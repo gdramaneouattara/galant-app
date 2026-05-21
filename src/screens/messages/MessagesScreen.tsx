@@ -263,8 +263,8 @@ const MessagesScreen: React.FC = () => {
         </View>
 
         <View style={styles.securityCard}>
-          <Text style={styles.securityTitle}>Vos messages sont protégés</Text>
-          <Text style={styles.securityText}>Yamo veille à votre confidentialité.</Text>
+          <Text style={styles.securityTitle}>Messages protégés</Text>
+          <Text style={styles.securitySub}>Yamo veille à votre sécurité et confidentialité.</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -496,23 +496,23 @@ const styles = StyleSheet.create({
   },
   securityCard: {
     marginTop: 6,
-    backgroundColor: '#dfe8e1',
-    borderRadius: 18,
+    backgroundColor: '#dce9df',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#cedad1',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderColor: '#cad8ce',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
   },
   securityTitle: {
-    fontSize: 21,
     fontWeight: '800',
-    color: '#1f2f25',
+    color: '#1f3328',
+    fontSize: 12,
   },
-  securityText: {
-    marginTop: 2,
-    color: '#355544',
-    fontSize: 15,
-    fontWeight: '500',
+  securitySub: {
+    marginTop: 1,
+    color: '#406150',
+    fontSize: 11,
+    lineHeight: 14,
   },
 });
 

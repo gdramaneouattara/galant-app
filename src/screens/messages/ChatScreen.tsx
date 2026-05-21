@@ -4,6 +4,7 @@ import {
   FlatList,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   SafeAreaView,
@@ -103,6 +104,8 @@ const ChatScreen: React.FC = () => {
   const [mediaUploading, setMediaUploading] = useState(false);
   const [activeMatchId, setActiveMatchId] = useState<string | null>(initialMatchId || null);
   const [directThreadTrialQuota, setDirectThreadTrialQuota] = useState<DirectThreadTrialQuota | null>(null);
+  const [isConversationBlocked, setIsConversationBlocked] = useState(false);
+  const [showSafetyMenu, setShowSafetyMenu] = useState(false);
 
   const isMaleTrialEligible = currentUser?.gender === 'MALE' && !currentUser?.isPremium;
 
@@ -123,6 +126,7 @@ const ChatScreen: React.FC = () => {
         setActiveMatchId(response.matchId);
         setPremiumRequired(false);
         setDirectTrialQuotaReached(false);
+        setIsConversationBlocked(false);
         if (isMaleTrialEligible) {
           const quota = await apiRequest<DirectThreadTrialQuota>('/api/messages/direct-thread-quota', {
             requireAuth: true,
@@ -155,6 +159,12 @@ const ChatScreen: React.FC = () => {
           });
           setDirectThreadTrialQuota(quota);
         }
+        return null;
+      }
+      if (String(error?.message || '').includes('conversation_blocked')) {
+        setIsConversationBlocked(true);
+        setIsUnlocked(false);
+        setPremiumRequired(false);
         return null;
       }
       throw error;
@@ -221,8 +231,15 @@ const ChatScreen: React.FC = () => {
 
       // 4. Check if match exists
       if (activeMatchId) {
-        const { data: match } = await supabase.from('matches').select('id').eq('id', activeMatchId).maybeSingle();
+        const { data: match } = await supabase.from('matches').select('id, status').eq('id', activeMatchId).maybeSingle();
         if (match) {
+          if (match.status === 'BLOCKED') {
+            setIsConversationBlocked(true);
+            setIsUnlocked(false);
+            setPremiumRequired(false);
+            return;
+          }
+          setIsConversationBlocked(false);
           setIsUnlocked(true);
           setPremiumRequired(false);
           return;
@@ -238,9 +255,11 @@ const ChatScreen: React.FC = () => {
         .maybeSingle();
 
       if (purchase) {
+        setIsConversationBlocked(false);
         setIsUnlocked(true);
         setPremiumRequired(false);
       } else {
+        setIsConversationBlocked(false);
         setIsUnlocked(false);
       }
     } catch (e) {
@@ -485,6 +504,7 @@ const ChatScreen: React.FC = () => {
 
   const submitReport = async (reason: string) => {
     try {
+      setShowSafetyMenu(false);
       await apiRequest('/api/messages/report', {
         method: 'POST',
         requireAuth: true,
@@ -500,7 +520,7 @@ const ChatScreen: React.FC = () => {
     }
   };
 
-  const confirmBlockUser = () => {
+  const blockUser = () => {
     Alert.alert(
       'Bloquer cet utilisateur ?',
       "Vous ne pourrez plus échanger avec ce profil tant que le blocage est actif.",
@@ -511,11 +531,14 @@ const ChatScreen: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             try {
+              setShowSafetyMenu(false);
               await apiRequest('/api/messages/block', {
                 method: 'POST',
                 requireAuth: true,
                 body: JSON.stringify({ blockedUserId: userId }),
               });
+              setIsConversationBlocked(true);
+              setIsUnlocked(false);
               Alert.alert('Utilisateur bloqué', 'Le blocage est actif.');
               navigation.goBack();
             } catch (error: any) {
@@ -527,18 +550,38 @@ const ChatScreen: React.FC = () => {
     );
   };
 
-  const openSafetyMenu = () => {
+  const unblockUser = () => {
     Alert.alert(
-      'Sécurité',
-      'Choisissez une action',
+      'Débloquer cet utilisateur ?',
+      'Vous pourrez à nouveau échanger avec ce profil.',
       [
         { text: 'Annuler', style: 'cancel' },
-        { text: 'Signaler - Harcèlement', onPress: () => void submitReport('HARASSMENT') },
-        { text: 'Signaler - Faux profil', onPress: () => void submitReport('FAKE_PROFILE') },
-        { text: 'Signaler - Contenu inapproprié', onPress: () => void submitReport('INAPPROPRIATE_CONTENT') },
-        { text: 'Bloquer', style: 'destructive', onPress: confirmBlockUser },
+        {
+          text: 'Débloquer',
+          onPress: async () => {
+            try {
+              setShowSafetyMenu(false);
+              const response = await apiRequest<{ success: boolean; status: string; matchId: string | null }>('/api/messages/unblock', {
+                method: 'POST',
+                requireAuth: true,
+                body: JSON.stringify({ blockedUserId: userId }),
+              });
+              if (response?.matchId) setActiveMatchId(response.matchId);
+              setIsConversationBlocked(false);
+              setPremiumRequired(false);
+              await checkUnlockStatus();
+              Alert.alert('Utilisateur débloqué', 'Le blocage a été retiré.');
+            } catch (error: any) {
+              Alert.alert('Erreur', error?.message || 'Impossible de débloquer cet utilisateur.');
+            }
+          },
+        },
       ]
     );
+  };
+
+  const openSafetyMenu = () => {
+    setShowSafetyMenu(true);
   };
 
   const formatMessageTime = (value?: string) => {
@@ -627,8 +670,8 @@ const ChatScreen: React.FC = () => {
         updateCellsBatchingPeriod={50}
         removeClippedSubviews={Platform.OS === 'android'}
         ListFooterComponent={<View style={styles.securityCard}>
-          <Text style={styles.securityTitle}>Vos messages sont protégés</Text>
-          <Text style={styles.securitySub}>Yamo veille à votre sécurité et à votre confidentialité.</Text>
+          <Text style={styles.securityTitle}>Messages protégés</Text>
+          <Text style={styles.securitySub}>Yamo veille à votre sécurité et confidentialité.</Text>
         </View>}
       />
 
@@ -640,17 +683,21 @@ const ChatScreen: React.FC = () => {
           <View style={styles.unlockPromptTextWrap}>
             <Text style={styles.unlockTitle}>{premiumRequired ? 'Essai expiré' : 'Conversation verrouillée'}</Text>
             <Text style={styles.unlockSub}>
-              {premiumRequired
+              {isConversationBlocked
+                ? 'Cette conversation est bloquée. Utilisez le menu sécurité pour débloquer.'
+                : (premiumRequired
                 ? 'Passez à Premium pour réactiver cette conversation.'
                 : (directTrialQuotaReached
                   ? 'Vous avez utilisé vos 5 messages directs gratuits. Achetez un message direct pour continuer.'
-                  : 'Débloquez ce chat pour envoyer vos messages et médias.')}
+                  : 'Débloquez ce chat pour envoyer vos messages et médias.'))}
             </Text>
           </View>
           <Pressable
             style={styles.unlockBtn}
             onPress={() => {
-              if (premiumRequired) {
+              if (isConversationBlocked) {
+                setShowSafetyMenu(true);
+              } else if (premiumRequired) {
                 // @ts-ignore
                 navigation.navigate('Premium');
               } else {
@@ -658,8 +705,8 @@ const ChatScreen: React.FC = () => {
               }
             }}
           >
-            <Text style={styles.unlockBtnText}>
-              {premiumRequired ? 'Passer Premium' : (directTrialQuotaReached ? 'Acheter' : 'Débloquer')}
+          <Text style={styles.unlockBtnText}>
+              {isConversationBlocked ? 'Gérer' : (premiumRequired ? 'Passer Premium' : (directTrialQuotaReached ? 'Acheter' : 'Débloquer'))}
             </Text>
           </Pressable>
         </View>
@@ -679,10 +726,14 @@ const ChatScreen: React.FC = () => {
             onChangeText={setInputText}
             placeholder={isUnlocked ? "Écris un message..." : "Conversation verrouillée"}
             multiline
-            editable={isUnlocked}
+            editable={isUnlocked && !isConversationBlocked}
           />
           <Pressable
             onPress={() => {
+              if (isConversationBlocked) {
+                setShowSafetyMenu(true);
+                return;
+              }
               if (!isUnlocked) {
                 setShowUnlockModal(true);
                 return;
@@ -705,6 +756,41 @@ const ChatScreen: React.FC = () => {
         loading={purchaseLoading}
         userName={targetUser?.name}
       />
+
+      <Modal
+        visible={showSafetyMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSafetyMenu(false)}
+      >
+        <Pressable style={styles.safetyOverlay} onPress={() => setShowSafetyMenu(false)}>
+          <Pressable style={styles.safetySheet} onPress={() => {}}>
+            <Text style={styles.safetyTitle}>Sécurité</Text>
+            <Text style={styles.safetySubtitle}>Choisissez une action</Text>
+
+            <Pressable style={styles.safetyAction} onPress={() => void submitReport('FAKE_PROFILE')}>
+              <Text style={styles.safetyActionText}>Signaler faux profil</Text>
+            </Pressable>
+            <Pressable style={styles.safetyAction} onPress={() => void submitReport('HARASSMENT')}>
+              <Text style={styles.safetyActionText}>Signaler harcèlement</Text>
+            </Pressable>
+
+            {isConversationBlocked ? (
+              <Pressable style={[styles.safetyAction, styles.safetyPrimaryAction]} onPress={unblockUser}>
+                <Text style={[styles.safetyActionText, styles.safetyPrimaryActionText]}>Débloquer</Text>
+              </Pressable>
+            ) : (
+              <Pressable style={[styles.safetyAction, styles.safetyDangerAction]} onPress={blockUser}>
+                <Text style={[styles.safetyActionText, styles.safetyDangerActionText]}>Bloquer</Text>
+              </Pressable>
+            )}
+
+            <Pressable style={styles.safetyCancelAction} onPress={() => setShowSafetyMenu(false)}>
+              <Text style={styles.safetyCancelActionText}>Annuler</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -893,19 +979,89 @@ const styles = StyleSheet.create({
     backgroundColor: '#dfe8e1',
     borderWidth: 1,
     borderColor: '#cad8ce',
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
   },
   securityTitle: {
     fontWeight: '800',
     color: '#1f3328',
-    fontSize: 15,
+    fontSize: 12,
   },
   securitySub: {
-    marginTop: 2,
+    marginTop: 1,
     color: '#406150',
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  safetyOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 22,
+  },
+  safetySheet: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: '#ece3dc',
+  },
+  safetyTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#2d2723',
+  },
+  safetySubtitle: {
+    marginTop: 2,
+    marginBottom: 10,
+    fontSize: 12,
+    color: '#7f7268',
+  },
+  safetyAction: {
+    minHeight: 42,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#efe4db',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    backgroundColor: '#fff',
+  },
+  safetyActionText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#2d2723',
+  },
+  safetyDangerAction: {
+    backgroundColor: '#fff5f5',
+    borderColor: '#f5cccc',
+  },
+  safetyDangerActionText: {
+    color: '#b42318',
+  },
+  safetyPrimaryAction: {
+    backgroundColor: '#eefaf2',
+    borderColor: '#b7e4c2',
+  },
+  safetyPrimaryActionText: {
+    color: '#166534',
+  },
+  safetyCancelAction: {
+    minHeight: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  safetyCancelActionText: {
     fontSize: 13,
+    color: '#6c625b',
+    fontWeight: '700',
   },
   inputArea: {
     flexDirection: 'row',
