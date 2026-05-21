@@ -5,6 +5,9 @@ ALTER TABLE IF EXISTS public.subscriptions
   ADD COLUMN IF NOT EXISTS external_product_id text;
 
 ALTER TABLE IF EXISTS public.subscriptions
+  ADD COLUMN IF NOT EXISTS payment_method text default 'PAYSTACK';
+
+ALTER TABLE IF EXISTS public.subscriptions
   ADD COLUMN IF NOT EXISTS external_purchase_token text;
 
 ALTER TABLE IF EXISTS public.subscriptions
@@ -22,3 +25,6 @@ ALTER TABLE IF EXISTS public.subscriptions
 CREATE INDEX IF NOT EXISTS subscriptions_user_status_end_idx
   ON public.subscriptions (user_id, status, current_period_end DESC);
 
+UPDATE public.subscriptions
+SET payment_method = 'PAYSTACK'
+WHERE payment_method IS NULL;

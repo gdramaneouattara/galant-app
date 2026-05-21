@@ -15,37 +15,55 @@ ALTER TABLE IF EXISTS public.admin_audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.kyc_verifications ENABLE ROW LEVEL SECURITY;
 
 -- 1. Helper function for invisible mode
-CREATE OR REPLACE FUNCTION public.has_invisible_mode_access(target_user_id uuid)
-RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+-- IMPORTANT: do not query public.profiles from this function, otherwise
+-- "Profiles visibility" policy can recurse infinitely on profiles SELECT.
+-- Drop legacy policies first because they may depend on old function signatures.
+DROP POLICY IF EXISTS "Users can update their own profile." ON public.profiles;
+DROP POLICY IF EXISTS "Users update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Profiles are viewable by all authenticated users." ON public.profiles;
+DROP POLICY IF EXISTS "Profiles visibility" ON public.profiles;
+
+DROP FUNCTION IF EXISTS public.has_invisible_mode_access(uuid);
+DROP FUNCTION IF EXISTS public.has_invisible_mode_access(uuid, text, boolean, timestamptz);
+
+CREATE OR REPLACE FUNCTION public.has_invisible_mode_access(
+  target_user_id uuid,
+  target_gender text,
+  target_is_premium boolean,
+  target_trial_started_at timestamptz
+)
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   RETURN exists (
-    SELECT 1 FROM public.subscriptions s
-    join public.profiles p_sub on p_sub.id = s.user_id
+    SELECT 1
+    FROM public.subscriptions s
     WHERE s.user_id = target_user_id
       AND s.status = 'active'
+      AND s.current_period_end > now()
       AND (
         upper(s.plan_id) IN ('BIANNUAL', 'ANNUAL')
         OR (
           upper(s.plan_id) in ('MONTHLY', 'QUARTERLY')
-          AND upper(coalesce(p_sub.gender, '')) = 'FEMALE'
-          AND coalesce(p_sub.is_premium, false) = true
+          AND upper(coalesce(target_gender, '')) = 'FEMALE'
+          AND coalesce(target_is_premium, false) = true
         )
       )
-      AND s.current_period_end > now()
-  ) OR exists (
-    SELECT 1
-    FROM public.profiles p
-    WHERE p.id = target_user_id
-      AND upper(coalesce(p.gender, '')) = 'MALE'
-      AND coalesce(p.is_premium, false) = false
-      AND p.trial_started_at IS NOT NULL
-      AND now() < (p.trial_started_at + interval '7 days')
+  )
+  OR (
+    upper(coalesce(target_gender, '')) = 'MALE'
+    AND coalesce(target_is_premium, false) = false
+    AND target_trial_started_at IS NOT NULL
+    AND now() < (target_trial_started_at + interval '7 days')
   );
 END;
 $$;
 
 -- 2. Profiles Policies
-DROP POLICY IF EXISTS "Profiles visibility" ON public.profiles;
 CREATE POLICY "Profiles visibility" ON public.profiles
   FOR SELECT TO authenticated
   USING (
@@ -55,7 +73,15 @@ CREATE POLICY "Profiles visibility" ON public.profiles
       OR (
         onboarding_completed = true
         AND (
-          NOT (is_invisible = true AND public.has_invisible_mode_access(id))
+          NOT (
+            is_invisible = true
+            AND public.has_invisible_mode_access(
+              id,
+              gender,
+              coalesce(is_premium, false),
+              trial_started_at
+            )
+          )
           OR exists (
             select 1
             from public.matches m
@@ -71,7 +97,6 @@ CREATE POLICY "Profiles visibility" ON public.profiles
     )
   );
 
-DROP POLICY IF EXISTS "Users update own profile" ON public.profiles;
 CREATE POLICY "Users update own profile" ON public.profiles
   FOR UPDATE TO authenticated
   USING (auth.uid() = id)
