@@ -14,6 +14,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { ChevronLeft, Plus, X, Play } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as VideoThumbnails from 'expo-video-thumbnails';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
@@ -43,6 +44,7 @@ const StatusScreen: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<Status | null>(null);
   const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
+  const [videoPreviewUrls, setVideoPreviewUrls] = useState<Record<string, string>>({});
 
   const fetchStatuses = useCallback(async () => {
     try {
@@ -69,6 +71,31 @@ const StatusScreen: React.FC = () => {
       setLoading(false);
     }
   }, [resolvedUrls]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const buildVideoPreviews = async () => {
+      for (const item of statuses) {
+        if (item.message_type !== 'VIDEO') continue;
+        const key = item.media_url;
+        const sourceUrl = resolvedUrls[key];
+        if (!key || !sourceUrl || videoPreviewUrls[key]) continue;
+        try {
+          const { uri } = await VideoThumbnails.getThumbnailAsync(sourceUrl, { time: 1000 });
+          if (!cancelled && uri) {
+            setVideoPreviewUrls(prev => ({ ...prev, [key]: uri }));
+          }
+        } catch (_e) {
+          // Keep fallback rendering below if thumbnail extraction fails.
+        }
+      }
+    };
+
+    void buildVideoPreviews();
+    return () => {
+      cancelled = true;
+    };
+  }, [statuses, resolvedUrls, videoPreviewUrls]);
 
   useEffect(() => {
     fetchStatuses();
@@ -153,7 +180,17 @@ const StatusScreen: React.FC = () => {
 
   const renderStatusItem = ({ item }: { item: Status }) => (
     <Pressable style={styles.statusCard} onPress={() => setSelectedStatus(item)}>
-      <Image source={{ uri: resolvedUrls[item.media_url] || item.profiles.photos[0] }} style={styles.statusPreview} />
+      {item.message_type === 'VIDEO' ? (
+        videoPreviewUrls[item.media_url] ? (
+          <Image source={{ uri: videoPreviewUrls[item.media_url] }} style={styles.statusPreview} />
+        ) : (
+          <View style={[styles.statusPreview, styles.videoPreviewFallback]}>
+            <Play size={26} color="#fff" fill="#fff" />
+          </View>
+        )
+      ) : (
+        <Image source={{ uri: resolvedUrls[item.media_url] || item.profiles.photos[0] }} style={styles.statusPreview} />
+      )}
       <View style={styles.statusInfo}>
         <View style={styles.statusMetaText}>
           <Text style={styles.statusName} numberOfLines={1}>{item.profiles.name}</Text>
@@ -229,6 +266,7 @@ const styles = StyleSheet.create({
   list: { padding: 10 },
   statusCard: { flex: 1, margin: 5, aspectRatio: 9/16, borderRadius: 16, overflow: 'hidden', backgroundColor: '#f1f5f9' },
   statusPreview: { width: '100%', height: '100%' },
+  videoPreviewFallback: { backgroundColor: '#94a3b8', alignItems: 'center', justifyContent: 'center' },
   statusInfo: { position: 'absolute', bottom: 10, left: 10, right: 10, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   statusMetaText: { flex: 1, paddingRight: 8 },
   statusName: { color: '#fff', fontSize: 12, fontWeight: '800', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 },
