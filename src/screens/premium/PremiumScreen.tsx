@@ -40,7 +40,7 @@ const PREMIUM_PLANS: PremiumPlan[] = [
     priceText: `${PLAN_AMOUNTS.MONTHLY} F CFA`,
     priceAmount: PLAN_AMOUNTS.MONTHLY,
     icon: (props) => <Package {...props} />,
-    description: 'Accès complet pour un mois (sans mode invisible).',
+    description: 'Accès premium 1 mois (message direct hors match via achat ponctuel).',
   },
   {
     id: 'QUARTERLY',
@@ -50,7 +50,7 @@ const PREMIUM_PLANS: PremiumPlan[] = [
     priceAmount: PLAN_AMOUNTS.QUARTERLY,
     savings: '0%',
     icon: (props) => <Gift {...props} />,
-    description: 'Mode invisible limite (Homme): profils/statuts discrets + vu masque temporaire.',
+    description: 'Mode invisible limité (Homme) + message direct hors match via achat ponctuel.',
   },
   {
     id: 'BIANNUAL',
@@ -60,7 +60,7 @@ const PREMIUM_PLANS: PremiumPlan[] = [
     priceAmount: PLAN_AMOUNTS.BIANNUAL,
     savings: '17%',
     icon: (props) => <Crown {...props} />,
-    description: 'Mode invisible inclus.',
+    description: 'Mode invisible inclus + message direct hors match via achat ponctuel.',
     isBest: true,
   },
   {
@@ -71,7 +71,7 @@ const PREMIUM_PLANS: PremiumPlan[] = [
     priceAmount: PLAN_AMOUNTS.ANNUAL,
     savings: '17%',
     icon: (props) => <Gem {...props} />,
-    description: 'Mode invisible inclus.',
+    description: 'Mode invisible inclus + message direct hors match via achat ponctuel.',
   },
 ];
 
@@ -86,7 +86,12 @@ const PLAN_COMPARISON: Array<{ feature: string; availability: PlanAvailability }
   },
   {
     feature: 'Messages directs hors match',
-    availability: { MONTHLY: 'Oui', QUARTERLY: 'Oui', BIANNUAL: 'Oui', ANNUAL: 'Oui' },
+    availability: {
+      MONTHLY: 'Achat',
+      QUARTERLY: 'Achat',
+      BIANNUAL: 'Achat',
+      ANNUAL: 'Achat',
+    },
   },
   {
     feature: 'Stories (lecture + publication)',
