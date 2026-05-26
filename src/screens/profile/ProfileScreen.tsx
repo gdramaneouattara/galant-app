@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Pressable,
@@ -13,11 +14,14 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronRight, Crown, EyeOff, Heart, LogOut, Rocket, Settings, ShieldCheck, Trophy, Coffee, Users, X } from 'lucide-react-native';
+import { Camera, ChevronRight, Crown, EyeOff, Heart, LogOut, Rocket, Settings, ShieldCheck, Trophy, Coffee, Users, X } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useApp } from '../../state/AppContext';
 import { COLORS } from '../../data/mock';
 import type { RootStackParamList } from '../../navigation/MainNavigator';
 import { apiRequest } from '../../lib/api';
+import { supabase } from '../../lib/supabase';
+import { uploadArrayBufferToBucket } from '../../lib/storageUpload';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -34,6 +38,7 @@ const ProfileScreen: React.FC = () => {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [exportingData, setExportingData] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
+  const [updatingProfilePhoto, setUpdatingProfilePhoto] = useState(false);
 
   if (!currentUser) {
     return null;
@@ -74,6 +79,71 @@ const ProfileScreen: React.FC = () => {
   const handleGoalUpdate = (goalId: string) => {
     updateCurrentUser({ relationship_goal: goalId });
     setShowGoalModal(false);
+  };
+
+  const changeProfilePhoto = async () => {
+    if (updatingProfilePhoto) return;
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permission.status !== 'granted') {
+      Alert.alert('Permission requise', "Autorisez l'accès à la galerie pour modifier votre photo de profil.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.9,
+    });
+
+    if (result.canceled || !result.assets?.[0]?.uri) return;
+
+    try {
+      setUpdatingProfilePhoto(true);
+      const asset = result.assets[0];
+      const uri = asset.uri;
+      const fileName = asset.fileName || uri.split('/').pop() || `${Date.now()}.jpg`;
+      const ext = (fileName.includes('.') ? fileName.split('.').pop() : 'jpg') || 'jpg';
+      const mimeType = asset.mimeType || 'image/jpeg';
+      const path = `${currentUser.id}/profile-${Date.now()}.${ext}`;
+
+      await uploadArrayBufferToBucket({
+        bucket: 'photos',
+        path,
+        uri,
+        contentType: mimeType,
+      });
+
+      const { data: publicUrlData } = supabase.storage.from('photos').getPublicUrl(path);
+      const publicUrl = publicUrlData?.publicUrl;
+      if (!publicUrl) {
+        throw new Error("Impossible d'obtenir l'URL de la nouvelle photo.");
+      }
+
+      const moderation = await apiRequest<{ status?: string; violations?: Array<{ flags?: string[] }> }>(
+        '/api/moderation/photos/check',
+        {
+          method: 'POST',
+          requireAuth: true,
+          body: JSON.stringify({ photoUrls: [publicUrl] }),
+        }
+      );
+
+      if (String(moderation?.status || '').toUpperCase() === 'REJECTED') {
+        Alert.alert('Photo refusée', "Cette photo ne respecte pas les règles. Choisissez une autre photo.");
+        return;
+      }
+
+      const existing = Array.isArray(currentUser.photos) ? [...currentUser.photos] : [];
+      const nextPhotos = existing.length > 0 ? [publicUrl, ...existing.slice(1)] : [publicUrl];
+      updateCurrentUser({ photos: nextPhotos.slice(0, 6) });
+      Alert.alert('Succès', 'Votre photo de profil a été mise à jour.');
+    } catch (error: any) {
+      Alert.alert('Erreur', error?.message || "Impossible de modifier la photo de profil.");
+    } finally {
+      setUpdatingProfilePhoto(false);
+    }
   };
 
   const exportPersonalData = async () => {
@@ -134,9 +204,17 @@ const ProfileScreen: React.FC = () => {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <View style={styles.photoWrap}>
+          <Pressable style={styles.photoWrap} onPress={() => { void changeProfilePhoto(); }} disabled={updatingProfilePhoto}>
             <Image source={{ uri: currentUser.photos[0] }} style={styles.photo} />
-          </View>
+            <View style={styles.photoEditBtn}>
+              {updatingProfilePhoto ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Camera size={14} color="#fff" />
+              )}
+            </View>
+          </Pressable>
+          <Text style={styles.photoHint}>Touchez la photo pour la modifier</Text>
           <View style={styles.nameRow}>
             <Text style={styles.name}>{currentUser.name}, {currentUser.age}</Text>
             {currentUser.isVerified ? (
@@ -371,6 +449,25 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     color: COLORS.ink,
+  },
+  photoEditBtn: {
+    position: 'absolute',
+    right: 6,
+    bottom: 6,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  photoHint: {
+    marginTop: -4,
+    fontSize: 11,
+    color: COLORS.muted,
+    fontWeight: '600',
   },
   verifiedBadge: {
     flexDirection: 'row',
