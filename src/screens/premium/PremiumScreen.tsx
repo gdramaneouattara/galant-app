@@ -120,12 +120,43 @@ const PremiumScreen: React.FC = () => {
   const navigation = useNavigation();
   const { refreshCurrentUser } = useApp();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [androidOfferTokenBySku, setAndroidOfferTokenBySku] = useState<Record<string, string>>({});
+
+  const loadAndroidSubscriptionOffers = async (): Promise<Record<string, string>> => {
+    if (Platform.OS !== 'android') return {};
+
+    const subscriptions: any[] = await IAP.getSubscriptions({
+      skus: PREMIUM_PLANS.map((plan) => plan.sku),
+    } as any);
+
+    const tokenMap: Record<string, string> = {};
+    for (const sub of subscriptions || []) {
+      const sku = String(sub?.productId || sub?.sku || '');
+      if (!sku) continue;
+
+      const offerDetails: any[] = sub?.subscriptionOfferDetailsAndroid || [];
+      if (!Array.isArray(offerDetails) || offerDetails.length === 0) continue;
+
+      const preferredOffer =
+        offerDetails.find((offer) => Array.isArray(offer?.offerTags) && offer.offerTags.length === 0) ||
+        offerDetails[0];
+      const offerToken = String(preferredOffer?.offerToken || '');
+      if (offerToken) {
+        tokenMap[sku] = offerToken;
+      }
+    }
+    return tokenMap;
+  };
 
   useEffect(() => {
     if (isExpoGo) return;
     const initIAP = async () => {
       try {
         await IAP.initConnection();
+        if (Platform.OS === 'android') {
+          const offerMap = await loadAndroidSubscriptionOffers();
+          setAndroidOfferTokenBySku(offerMap);
+        }
       } catch (err) {
         console.warn('IAP Init Error', err);
       }
@@ -182,7 +213,32 @@ const PremiumScreen: React.FC = () => {
     if (loadingPlan) return;
     setLoadingPlan(plan.id);
     try {
-      const purchase: any = await IAP.requestSubscription({ sku: plan.sku });
+      let purchasePayload: any = { sku: plan.sku };
+      if (Platform.OS === 'android') {
+        let offerToken = androidOfferTokenBySku[plan.sku];
+        if (!offerToken) {
+          const refreshedOffers = await loadAndroidSubscriptionOffers();
+          if (Object.keys(refreshedOffers).length > 0) {
+            setAndroidOfferTokenBySku((prev) => ({ ...prev, ...refreshedOffers }));
+          }
+          offerToken = refreshedOffers[plan.sku];
+        }
+
+        if (!offerToken) {
+          Alert.alert(
+            'Erreur Google Play',
+            "Aucune offre d'abonnement Google Play trouvée pour ce plan. Vérifiez le base plan et l'offre active."
+          );
+          return;
+        }
+
+        purchasePayload = {
+          sku: plan.sku,
+          subscriptionOffers: [{ sku: plan.sku, offerToken }],
+        };
+      }
+
+      const purchase: any = await IAP.requestSubscription(purchasePayload);
       const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;
       if (purchaseItem) {
         const verifyPath = Platform.OS === 'ios' ? '/api/payments/apple-verify' : '/api/payments/google-verify';
