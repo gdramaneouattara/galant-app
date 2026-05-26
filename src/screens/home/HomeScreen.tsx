@@ -193,7 +193,11 @@ const HomeScreen: React.FC = () => {
     }
     try {
       setPurchaseLoading(true);
-      const purchase: any = await IAP.requestPurchase({ sku: 'super_like_1' });
+      const purchasePayload = Platform.select({
+        ios: { sku: 'super_like_1' },
+        android: { skus: ['super_like_1'] },
+      }) as any;
+      const purchase: any = await IAP.requestPurchase(purchasePayload);
       const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;
       if (purchaseItem) {
         const verifyPath = Platform.OS === 'ios' ? '/api/payments/apple-verify' : '/api/payments/google-verify';

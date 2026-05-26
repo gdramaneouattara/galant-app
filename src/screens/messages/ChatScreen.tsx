@@ -311,7 +311,11 @@ const ChatScreen: React.FC = () => {
     }
     try {
       setPurchaseLoading(true);
-      const purchase: any = await IAP.requestPurchase({ sku: 'direct_message_1' });
+      const purchasePayload = Platform.select({
+        ios: { sku: 'direct_message_1' },
+        android: { skus: ['direct_message_1'] },
+      }) as any;
+      const purchase: any = await IAP.requestPurchase(purchasePayload);
       const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;
       if (purchaseItem) {
         const verifyPath = Platform.OS === 'ios' ? '/api/payments/apple-verify' : '/api/payments/google-verify';

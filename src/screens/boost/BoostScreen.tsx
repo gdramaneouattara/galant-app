@@ -152,7 +152,11 @@ const BoostScreen: React.FC = () => {
     if (loadingPlan) return;
     setLoadingPlan(plan.id);
     try {
-      const purchase: any = await IAP.requestPurchase({ sku: plan.sku });
+      const purchasePayload = Platform.select({
+        ios: { sku: plan.sku },
+        android: { skus: [plan.sku] },
+      }) as any;
+      const purchase: any = await IAP.requestPurchase(purchasePayload);
       const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;
       if (purchaseItem) {
         const verifyPath = Platform.OS === 'ios' ? '/api/payments/apple-verify' : '/api/payments/google-verify';
