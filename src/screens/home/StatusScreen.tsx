@@ -191,6 +191,12 @@ const StatusScreen: React.FC = () => {
       ) : (
         <Image source={{ uri: resolvedUrls[item.media_url] || item.profiles.photos[0] }} style={styles.statusPreview} />
       )}
+      <View style={styles.statusAuthorChip}>
+        <Image
+          source={{ uri: item.profiles.photos?.[0] || 'https://placehold.co/80x80' }}
+          style={styles.statusAuthorAvatar}
+        />
+      </View>
       <View style={styles.statusInfo}>
         <View style={styles.statusMetaText}>
           <Text style={styles.statusName} numberOfLines={1}>{item.profiles.name}</Text>
@@ -267,6 +273,21 @@ const styles = StyleSheet.create({
   statusCard: { flex: 1, margin: 5, aspectRatio: 9/16, borderRadius: 16, overflow: 'hidden', backgroundColor: '#f1f5f9' },
   statusPreview: { width: '100%', height: '100%' },
   videoPreviewFallback: { backgroundColor: '#94a3b8', alignItems: 'center', justifyContent: 'center' },
+  statusAuthorChip: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    borderRadius: 999,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: 'rgba(255,255,255,0.45)',
+    padding: 1,
+  },
+  statusAuthorAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+  },
   statusInfo: { position: 'absolute', bottom: 10, left: 10, right: 10, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   statusMetaText: { flex: 1, paddingRight: 8 },
   statusName: { color: '#fff', fontSize: 12, fontWeight: '800', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 },
