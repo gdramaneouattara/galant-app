@@ -67,6 +67,21 @@ const BoostScreen: React.FC = () => {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [activatingFree, setActivatingFree] = useState(false);
 
+  const isMaleTrialActive = (() => {
+    if (!currentUser) return false;
+    if (String(currentUser.gender || '').toUpperCase() !== 'MALE') return false;
+    if (currentUser.isPremium) return false;
+    if (!currentUser.trial_started_at) return false;
+    const startedAt = new Date(currentUser.trial_started_at).getTime();
+    if (!Number.isFinite(startedAt)) return false;
+    const trialEndsAt = startedAt + 7 * 24 * 60 * 60 * 1000;
+    return Date.now() < trialEndsAt;
+  })();
+
+  const canSeeFreeBoostCard =
+    (String(currentUser?.gender || '').toUpperCase() === 'FEMALE' && !!currentUser?.isPremium) ||
+    isMaleTrialActive;
+
   useEffect(() => {
     if (isExpoGo) return;
     IAP.initConnection().catch(() => {});
@@ -178,7 +193,7 @@ const BoostScreen: React.FC = () => {
         </View>
 
         {/* Free Boost Block */}
-        {(currentUser?.isPremium || (currentUser?.gender === 'MALE')) && (
+        {canSeeFreeBoostCard && (
           <Pressable
             style={[styles.freeBoostCard, activatingFree && { opacity: 0.7 }]}
             onPress={handleFreeBoost}
