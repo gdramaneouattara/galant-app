@@ -992,6 +992,12 @@ app.post('/api/payments/apple-verify', requireAuth, async (req, res) => {
 app.get('/api/matchmaking/suggestions', requireAuth, async (req, res) => {
   const me = req.user;
   const { limit = 40, minAge = 18, maxAge = 100, gender, city = '', maxDistanceKm } = req.query;
+  const meGender = String(me?.gender || '').toUpperCase();
+  const meGoal = String(me?.relationship_goal || '').toUpperCase();
+  const oppositeGenderForSerious =
+    meGoal === 'SERIOUS'
+      ? (meGender === 'MALE' ? 'FEMALE' : meGender === 'FEMALE' ? 'MALE' : null)
+      : null;
   const cityFilter = String(city || '').trim().toLowerCase();
   const maxDistance = Number.isFinite(parseFloat(maxDistanceKm))
     ? Math.max(1, parseFloat(maxDistanceKm))
@@ -1005,7 +1011,9 @@ app.get('/api/matchmaking/suggestions', requireAuth, async (req, res) => {
     .gte('age', parseInt(minAge))
     .lte('age', parseInt(maxAge));
 
-  if (gender && gender !== 'ALL') {
+  if (oppositeGenderForSerious) {
+    query = query.eq('gender', oppositeGenderForSerious);
+  } else if (gender && gender !== 'ALL') {
     query = query.eq('gender', gender);
   }
 
