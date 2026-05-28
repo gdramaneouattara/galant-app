@@ -204,15 +204,8 @@ const ChatScreen: React.FC = () => {
         }
       }
 
-      // 1. Women always have standard access
-      if (currentUser?.gender === 'FEMALE') {
-        setIsUnlocked(true);
-        setPremiumRequired(false);
-        return;
-      }
-
-      // 2. Men during 7-day trial have complete access
-      if (currentUser?.trial_started_at) {
+      // 1. Men during 7-day trial have complete access
+      if (currentUser?.gender === 'MALE' && !currentUser?.isPremium && currentUser?.trial_started_at) {
         const trialEnd = new Date(currentUser.trial_started_at);
         trialEnd.setDate(trialEnd.getDate() + 7);
         if (new Date() < trialEnd) {
@@ -222,14 +215,7 @@ const ChatScreen: React.FC = () => {
         }
       }
 
-      // 3. Premium users have access
-      if (currentUser?.isPremium) {
-        setIsUnlocked(true);
-        setPremiumRequired(false);
-        return;
-      }
-
-      // 4. Check if match exists
+      // 2. Check if match exists
       if (activeMatchId) {
         const { data: match } = await supabase.from('matches').select('id, status').eq('id', activeMatchId).maybeSingle();
         if (match) {
@@ -246,7 +232,7 @@ const ChatScreen: React.FC = () => {
         }
       }
 
-      // 5. Check if interaction purchased
+      // 3. Check if interaction purchased
       const { data: purchase } = await supabase.from('purchased_interactions')
         .select('id')
         .eq('user_id', currentUser?.id)

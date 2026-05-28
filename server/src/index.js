@@ -1335,7 +1335,11 @@ app.post('/api/messages/direct-thread', requireAuth, async (req, res) => {
   // Direct thread creation is pay-per-action for:
   // - premium users (all premium plans)
   // - users without standard access
-  if (me.is_premium || !hasStandardAccess(me)) {
+  // - women on free tier (no more free direct-thread outside a match)
+  const isFreeTierFemale =
+    String(me.gender || '').toUpperCase() === 'FEMALE' &&
+    !me.is_premium;
+  if (me.is_premium || !hasStandardAccess(me) || isFreeTierFemale) {
     const purchased = await hasDirectMessagePurchase(me.id, targetUserId);
     if (!purchased) {
       return res.status(403).json({ error: 'payment_required' });
