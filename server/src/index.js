@@ -357,6 +357,12 @@ const getExpectedAmountForPurchase = ({ type, planId }) => {
   return null;
 };
 
+const isPremiumPlanLockedForFemale = (profile, planId) => {
+  const normalizedGender = String(profile?.gender || '').toUpperCase();
+  const normalizedPlanId = String(planId || '').toUpperCase();
+  return normalizedGender === 'FEMALE' && ['QUARTERLY', 'BIANNUAL', 'ANNUAL'].includes(normalizedPlanId);
+};
+
 const extractPaystackError = (error) => {
   const payload = error?.response?.data;
   if (typeof payload?.message === 'string' && payload.message.trim()) {
@@ -717,6 +723,17 @@ const applyPurchasedEntitlement = async ({ userId, planId, type, targetId, refer
   const normalizedPlanId = String(planId || '').toUpperCase();
 
   if (normalizedType === 'PREMIUM') {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, gender')
+      .eq('id', userId)
+      .maybeSingle();
+    if (isPremiumPlanLockedForFemale(profile, normalizedPlanId)) {
+      const err = new Error('female_premium_plan_restricted');
+      err.code = 'female_premium_plan_restricted';
+      throw err;
+    }
+
     const days = PLAN_DURATIONS[normalizedPlanId] || 30;
     const now = new Date();
     const latestActive = await getLatestActiveSubscriptionForUser(userId);
@@ -832,6 +849,10 @@ app.post('/api/payments/initialize', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'invalid_purchase_payload' });
   }
 
+  if (normalizedType === 'PREMIUM' && isPremiumPlanLockedForFemale(req.user, normalizedPlanId)) {
+    return res.status(403).json({ error: 'female_premium_plan_restricted' });
+  }
+
   const payload = {
     email,
     amount: roundedAmount,
@@ -902,14 +923,21 @@ app.get('/api/payments/verify', requireAuth, async (req, res) => {
         return res.status(400).json({ error: 'payment_amount_mismatch' });
       }
 
-      await applyPurchasedEntitlement({
-        userId,
-        planId,
-        type,
-        targetId,
-        reference,
-        paymentMethod: 'PAYSTACK',
-      });
+      try {
+        await applyPurchasedEntitlement({
+          userId,
+          planId,
+          type,
+          targetId,
+          reference,
+          paymentMethod: 'PAYSTACK',
+        });
+      } catch (entitlementError) {
+        if (entitlementError?.code === 'female_premium_plan_restricted') {
+          return res.status(403).json({ error: 'female_premium_plan_restricted' });
+        }
+        throw entitlementError;
+      }
       return res.json({ status: 'active', reference });
     }
     res.json({ status: data.status });
@@ -933,19 +961,26 @@ app.post('/api/payments/google-verify', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'invalid_google_purchase', reason: verification.reason || 'verification_failed' });
     }
 
-    await applyPurchasedEntitlement({
-      userId,
-      planId: normalizedPlanId,
-      type: normalizedType || (String(productId).includes('premium') ? 'PREMIUM' : ''),
-      targetId,
-      reference: safeReference,
-      paymentMethod: 'GOOGLE_PLAY',
-      purchaseMeta: {
-        productId,
-        purchaseToken,
-        autoRenewing: verification.autoRenewing,
-      },
-    });
+    try {
+      await applyPurchasedEntitlement({
+        userId,
+        planId: normalizedPlanId,
+        type: normalizedType || (String(productId).includes('premium') ? 'PREMIUM' : ''),
+        targetId,
+        reference: safeReference,
+        paymentMethod: 'GOOGLE_PLAY',
+        purchaseMeta: {
+          productId,
+          purchaseToken,
+          autoRenewing: verification.autoRenewing,
+        },
+      });
+    } catch (entitlementError) {
+      if (entitlementError?.code === 'female_premium_plan_restricted') {
+        return res.status(403).json({ error: 'female_premium_plan_restricted' });
+      }
+      throw entitlementError;
+    }
 
     res.json({ status: 'success' });
   } catch (e) {
@@ -966,20 +1001,27 @@ app.post('/api/payments/apple-verify', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'invalid_apple_purchase', reason: verification.reason || 'verification_failed' });
     }
 
-    await applyPurchasedEntitlement({
-      userId,
-      planId: normalizedPlanId,
-      type: normalizedType,
-      targetId,
-      reference: safeReference,
-      paymentMethod: 'APPLE_STORE',
-      purchaseMeta: {
-        productId,
-        transactionId,
-        originalTransactionId: verification?.payload?.originalTransactionId || verification?.payload?.transactionId || transactionId,
-        autoRenewing: typeof verification?.autoRenewing === 'boolean' ? verification.autoRenewing : null,
-      },
-    });
+    try {
+      await applyPurchasedEntitlement({
+        userId,
+        planId: normalizedPlanId,
+        type: normalizedType,
+        targetId,
+        reference: safeReference,
+        paymentMethod: 'APPLE_STORE',
+        purchaseMeta: {
+          productId,
+          transactionId,
+          originalTransactionId: verification?.payload?.originalTransactionId || verification?.payload?.transactionId || transactionId,
+          autoRenewing: typeof verification?.autoRenewing === 'boolean' ? verification.autoRenewing : null,
+        },
+      });
+    } catch (entitlementError) {
+      if (entitlementError?.code === 'female_premium_plan_restricted') {
+        return res.status(403).json({ error: 'female_premium_plan_restricted' });
+      }
+      throw entitlementError;
+    }
 
     res.json({ status: 'success' });
   } catch (e) {

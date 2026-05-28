@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, Platform, ActivityIndicator } from 'react-native';
-import { Crown, Gem, Gift, Package, LucideProps, CreditCard, Play } from 'lucide-react-native';
+import { Crown, Gem, Gift, Package, LucideProps, CreditCard, Play, Lock } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
@@ -118,9 +118,11 @@ const PLAN_COMPARISON: Array<{ feature: string; availability: PlanAvailability }
 
 const PremiumScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { refreshCurrentUser } = useApp();
+  const { refreshCurrentUser, currentUser } = useApp();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [androidOfferTokenBySku, setAndroidOfferTokenBySku] = useState<Record<string, string>>({});
+  const isFemaleUser = String(currentUser?.gender || '').toUpperCase() === 'FEMALE';
+  const isPlanLockedForFemale = (planId: string) => isFemaleUser && planId !== 'MONTHLY';
 
   const loadAndroidSubscriptionOffers = async (): Promise<Record<string, string>> => {
     if (Platform.OS !== 'android') return {};
@@ -168,6 +170,10 @@ const PremiumScreen: React.FC = () => {
   }, []);
 
   const subscribePaystack = async (plan: PremiumPlan) => {
+    if (isPlanLockedForFemale(plan.id)) {
+      Alert.alert('Plan verrouillé', "Ce plan n'est pas disponible pour ce profil. Seul l'abonnement 1 mois est autorisé.");
+      return;
+    }
     if (loadingPlan) return;
     setLoadingPlan(plan.id);
 
@@ -206,6 +212,10 @@ const PremiumScreen: React.FC = () => {
   };
 
   const subscribeGooglePlay = async (plan: PremiumPlan) => {
+    if (isPlanLockedForFemale(plan.id)) {
+      Alert.alert('Plan verrouillé', "Ce plan n'est pas disponible pour ce profil. Seul l'abonnement 1 mois est autorisé.");
+      return;
+    }
     if (isExpoGo) {
       Alert.alert('Achat indisponible', IAP_EXPO_GO_MESSAGE);
       return;
@@ -279,64 +289,72 @@ const PremiumScreen: React.FC = () => {
         </View>
 
         <View style={styles.plans}>
-          {PREMIUM_PLANS.map((plan) => (
-            <View key={plan.id} style={[styles.planCard, plan.isBest && styles.bestPlanCard]}>
-              {plan.isBest && (
+          {PREMIUM_PLANS.map((plan) => {
+            const lockedForFemale = isPlanLockedForFemale(plan.id);
+            return (
+            <View key={plan.id} style={[styles.planCard, plan.isBest && !lockedForFemale && styles.bestPlanCard, lockedForFemale && styles.lockedPlanCard]}>
+              {plan.isBest && !lockedForFemale && (
                 <View style={styles.bestBadge}>
                   <Text style={styles.bestBadgeText}>MEILLEUR CHOIX</Text>
                 </View>
               )}
 
               <View style={styles.planHeader}>
-                <View style={[styles.planIcon, plan.isBest && styles.bestPlanIcon]}>
-                  {plan.icon({ color: plan.isBest ? '#fff' : '#f59e0b', size: 28 })}
+                <View style={[styles.planIcon, plan.isBest && !lockedForFemale && styles.bestPlanIcon]}>
+                  {plan.icon({ color: plan.isBest && !lockedForFemale ? '#fff' : '#f59e0b', size: 28 })}
                 </View>
                 <View style={styles.planDetails}>
-                  <Text style={[styles.planName, plan.isBest && styles.bestPlanText]}>{plan.name}</Text>
-                  <Text style={[styles.planPrice, plan.isBest && styles.bestPlanText]}>{plan.priceText}</Text>
+                  <Text style={[styles.planName, plan.isBest && !lockedForFemale && styles.bestPlanText]}>{plan.name}</Text>
+                  <Text style={[styles.planPrice, plan.isBest && !lockedForFemale && styles.bestPlanText]}>{plan.priceText}</Text>
                 </View>
                 {plan.savings && (
-                  <Text style={[styles.planSavings, plan.isBest && styles.bestPlanSavings]}>
+                  <Text style={[styles.planSavings, plan.isBest && !lockedForFemale && styles.bestPlanSavings]}>
                     -{plan.savings}
                   </Text>
                 )}
               </View>
 
-              <Text style={[styles.planDescription, plan.isBest && styles.bestPlanText]}>
+              <Text style={[styles.planDescription, plan.isBest && !lockedForFemale && styles.bestPlanText]}>
                 {plan.description}
               </Text>
+              {lockedForFemale ? (
+                <View style={styles.lockedPlanNotice}>
+                  <Lock size={14} color="#92400e" />
+                  <Text style={styles.lockedPlanNoticeText}>Plan verrouillé pour ce profil</Text>
+                </View>
+              ) : null}
 
               <View style={styles.buttonGroup}>
                 <Pressable
-                  style={[styles.payBtn, styles.paystackBtn]}
+                  style={[styles.payBtn, styles.paystackBtn, lockedForFemale && styles.disabledPayBtn]}
                   onPress={() => subscribePaystack(plan)}
-                  disabled={!!loadingPlan}
+                  disabled={!!loadingPlan || lockedForFemale}
                 >
-                  {loadingPlan === plan.id ? (
+                  {loadingPlan === plan.id && !lockedForFemale ? (
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
                     <>
                       <CreditCard size={18} color="#fff" />
-                      <Text style={styles.payBtnText}>Mobile Money</Text>
+                      <Text style={styles.payBtnText}>{lockedForFemale ? 'Verrouillé' : 'Mobile Money'}</Text>
                     </>
                   )}
                 </Pressable>
 
                 {Platform.OS !== 'web' && (
                   <Pressable
-                    style={[styles.payBtn, styles.googleBtn]}
+                    style={[styles.payBtn, styles.googleBtn, lockedForFemale && styles.disabledPayBtn]}
                     onPress={() => subscribeGooglePlay(plan)}
-                    disabled={!!loadingPlan}
+                    disabled={!!loadingPlan || lockedForFemale}
                   >
                     <Play size={18} color="#fff" fill="#fff" />
                     <Text style={styles.payBtnText}>
-                      {'Carte bancaire'}
+                      {lockedForFemale ? 'Verrouillé' : 'Carte bancaire'}
                     </Text>
                   </Pressable>
                 )}
               </View>
             </View>
-          ))}
+          )})}
         </View>
 
         <View style={styles.comparisonCard}>
@@ -430,6 +448,24 @@ const styles = StyleSheet.create({
   planDescription: {
     fontSize: 13, color: COLORS.muted, lineHeight: 18,
   },
+  lockedPlanCard: {
+    borderColor: '#fcd34d',
+    backgroundColor: '#fffbeb',
+  },
+  lockedPlanNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#fef3c7',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  lockedPlanNoticeText: {
+    color: '#92400e',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   bestPlanText: {
     color: '#fff',
   },
@@ -444,6 +480,9 @@ const styles = StyleSheet.create({
   },
   googleBtn: {
     backgroundColor: '#000',
+  },
+  disabledPayBtn: {
+    backgroundColor: '#94a3b8',
   },
   payBtnText: {
     color: '#fff', fontWeight: '700', fontSize: 14,
