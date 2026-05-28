@@ -85,7 +85,15 @@ def hasReleaseSigningConfig =
  */
 def jscFlavor = 'org.webkit:android-jsc:+'
 
-apply from: new File(["node", "--print", "require('path').dirname(require.resolve('@sentry/react-native/package.json'))"].execute().text.trim(), "sentry.gradle")
+// Avoid hard build failures from Sentry Gradle script on local release builds.
+// Re-enable with: -PsentryApply=true (or by setting SENTRY_AUTH_TOKEN).
+def sentryPackageDir = ["node", "--print", "require('path').dirname(require.resolve('@sentry/react-native/package.json'))"].execute().text.trim()
+def shouldApplySentryGradle = (findProperty('sentryApply') ?: false).toBoolean() || (System.getenv('SENTRY_AUTH_TOKEN') != null)
+if (shouldApplySentryGradle) {
+    apply from: new File(sentryPackageDir, "sentry.gradle")
+} else {
+    println("Sentry Gradle integration disabled for this build (set -PsentryApply=true to enable).")
+}
 
 android {
     ndkVersion rootProject.ext.ndkVersion
@@ -99,7 +107,7 @@ missingDimensionStrategy "store", "play"
         applicationId 'com.konan.yamo'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 8
+        versionCode 12
         versionName "0.1.0"
     }
     signingConfigs {

@@ -70,5 +70,8 @@
         "listUnknownPackages": false
       }
     }
+  },
+  "volta": {
+    "node": "20.19.0"
   }
 }

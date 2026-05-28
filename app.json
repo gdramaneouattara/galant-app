@@ -50,7 +50,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.konan.yamo",
-      "versionCode": 8
+      "versionCode": 12
     },
     "platforms": [
       "ios",
