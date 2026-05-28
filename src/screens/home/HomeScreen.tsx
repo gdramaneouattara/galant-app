@@ -324,18 +324,20 @@ const HomeScreen: React.FC = () => {
 
       <View style={styles.quickActions}>
         <Pressable style={styles.quickActionBtn} onPress={() => navigation.navigate('Premium')}>
-          <View style={styles.quickActionIconWrap}>
-            <Crown color="#b45309" size={18} />
+          <View style={styles.quickActionRow}>
+            <View style={styles.quickActionIconWrap}>
+              <Crown color="#b45309" size={14} />
+            </View>
+            <Text style={styles.quickActionTitle}>Abonnements</Text>
           </View>
-          <Text style={styles.quickActionTitle}>Abonnements</Text>
-          <Text style={styles.quickActionSub}>Mettre à niveau</Text>
         </Pressable>
         <Pressable style={styles.quickActionBtn} onPress={() => navigation.navigate('Boost')}>
-          <View style={styles.quickActionIconWrap}>
-            <Rocket color="#0ea5e9" size={18} />
+          <View style={styles.quickActionRow}>
+            <View style={styles.quickActionIconWrap}>
+              <Rocket color="#0ea5e9" size={14} />
+            </View>
+            <Text style={styles.quickActionTitle}>Boosts</Text>
           </View>
-          <Text style={styles.quickActionTitle}>Boosts</Text>
-          <Text style={styles.quickActionSub}>Booster mon profil</Text>
         </Pressable>
       </View>
 
@@ -531,31 +533,35 @@ const styles = StyleSheet.create({
   trialBannerBtnText: { color: '#fff', fontSize: 12, fontWeight: '800' },
   quickActions: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     gap: 10,
     paddingHorizontal: 16,
-    marginTop: 6,
-    marginBottom: 8,
+    marginTop: 2,
+    marginBottom: 2,
   },
   quickActionBtn: {
-    flex: 1,
-    borderRadius: 14,
+    width: '48%',
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     backgroundColor: '#f8fafc',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  quickActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   quickActionIconWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
   },
-  quickActionTitle: { color: COLORS.ink, fontSize: 14, fontWeight: '900' },
-  quickActionSub: { color: COLORS.muted, fontSize: 11, fontWeight: '700', marginTop: 2 },
+  quickActionTitle: { color: COLORS.ink, fontSize: 11, fontWeight: '900' },
   filterBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, padding: 16 },
   lockedCard: {
