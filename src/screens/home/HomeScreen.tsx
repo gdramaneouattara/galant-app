@@ -21,7 +21,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import * as IAP from 'react-native-iap';
-import { Heart, MapPin, SlidersHorizontal, Star, X, PlayCircle, MessageCircle } from 'lucide-react-native';
+import { Heart, MapPin, SlidersHorizontal, Star, X, PlayCircle, MessageCircle, Crown, Rocket } from 'lucide-react-native';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
@@ -322,6 +322,23 @@ const HomeScreen: React.FC = () => {
         </View>
       ) : null}
 
+      <View style={styles.quickActions}>
+        <Pressable style={styles.quickActionBtn} onPress={() => navigation.navigate('Premium')}>
+          <View style={styles.quickActionIconWrap}>
+            <Crown color="#b45309" size={18} />
+          </View>
+          <Text style={styles.quickActionTitle}>Abonnements</Text>
+          <Text style={styles.quickActionSub}>Mettre à niveau</Text>
+        </Pressable>
+        <Pressable style={styles.quickActionBtn} onPress={() => navigation.navigate('Boost')}>
+          <View style={styles.quickActionIconWrap}>
+            <Rocket color="#0ea5e9" size={18} />
+          </View>
+          <Text style={styles.quickActionTitle}>Boosts</Text>
+          <Text style={styles.quickActionSub}>Booster mon profil</Text>
+        </Pressable>
+      </View>
+
       <View style={styles.body}>
         {loading ? (
           <ActivityIndicator color={COLORS.primary} size="large" style={{ flex: 1 }} />
@@ -512,6 +529,33 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   trialBannerBtnText: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  quickActions: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 16,
+    marginTop: 6,
+    marginBottom: 8,
+  },
+  quickActionBtn: {
+    flex: 1,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    backgroundColor: '#f8fafc',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  quickActionIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  quickActionTitle: { color: COLORS.ink, fontSize: 14, fontWeight: '900' },
+  quickActionSub: { color: COLORS.muted, fontSize: 11, fontWeight: '700', marginTop: 2 },
   filterBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, padding: 16 },
   lockedCard: {
