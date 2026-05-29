@@ -52,6 +52,7 @@ type DirectThreadTrialQuota = {
   used: number;
   remaining: number;
 };
+const DIRECT_MESSAGE_SKU = 'direct_message_1';
 
 const ChatMessageItem = memo<ChatMessageItemProps>(({ item, isMine, avatarUri, mediaUrl, displayTime }) => {
   const hasText = !!item.content;
@@ -106,14 +107,25 @@ const ChatScreen: React.FC = () => {
   const [directThreadTrialQuota, setDirectThreadTrialQuota] = useState<DirectThreadTrialQuota | null>(null);
   const [isConversationBlocked, setIsConversationBlocked] = useState(false);
   const [showSafetyMenu, setShowSafetyMenu] = useState(false);
+  const [availableProductIds, setAvailableProductIds] = useState<Set<string>>(new Set());
 
   const isMaleTrialEligible = currentUser?.gender === 'MALE' && !currentUser?.isPremium;
 
+  const loadAndroidConsumables = useCallback(async (): Promise<Set<string>> => {
+    if (Platform.OS !== 'android' || isExpoGo) return new Set();
+    const products: any[] = await IAP.getProducts({ skus: [DIRECT_MESSAGE_SKU] });
+    const ids = new Set((products || []).map((item) => String(item?.productId || item?.sku || '')).filter(Boolean));
+    setAvailableProductIds(ids);
+    return ids;
+  }, []);
+
   useEffect(() => {
     if (isExpoGo) return;
-    IAP.initConnection().catch(() => {});
+    IAP.initConnection()
+      .then(() => loadAndroidConsumables().catch(() => {}))
+      .catch(() => {});
     return () => { IAP.endConnection().catch(() => {}); };
-  }, []);
+  }, [loadAndroidConsumables]);
 
   const ensureDirectThread = useCallback(async () => {
     try {
@@ -297,9 +309,20 @@ const ChatScreen: React.FC = () => {
     }
     try {
       setPurchaseLoading(true);
+      let resolvedIds = availableProductIds;
+      if (Platform.OS === 'android' && !resolvedIds.has(DIRECT_MESSAGE_SKU)) {
+        resolvedIds = await loadAndroidConsumables();
+      }
+      if (Platform.OS === 'android' && !resolvedIds.has(DIRECT_MESSAGE_SKU)) {
+        Alert.alert(
+          'Erreur Google Play',
+          "Le produit Message Direct n'est pas disponible sur Google Play pour ce build. Vérifie l'ID produit, l'activation et le compte testeur."
+        );
+        return;
+      }
       const purchasePayload = Platform.select({
-        ios: { sku: 'direct_message_1' },
-        android: { skus: ['direct_message_1'] },
+        ios: { sku: DIRECT_MESSAGE_SKU },
+        android: { skus: [DIRECT_MESSAGE_SKU] },
       }) as any;
       const purchase: any = await IAP.requestPurchase(purchasePayload);
       const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;

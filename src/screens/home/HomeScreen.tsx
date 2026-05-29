@@ -62,6 +62,7 @@ type MatchModalState = {
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SWIPE_TRIGGER_DISTANCE = 110;
 const TRIAL_DAYS = 7;
+const SUPER_LIKE_SKU = 'super_like_1';
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
@@ -74,6 +75,7 @@ const HomeScreen: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showSuperLikeModal, setShowSuperLikeModal] = useState(false);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [availableProductIds, setAvailableProductIds] = useState<Set<string>>(new Set());
 
   const [filters, setFilters] = useState({
     gender: 'ALL',
@@ -84,6 +86,15 @@ const HomeScreen: React.FC = () => {
   });
 
   const swipePosition = useRef(new Animated.ValueXY()).current;
+
+  const loadAndroidConsumables = useCallback(async (): Promise<Set<string>> => {
+    if (Platform.OS !== 'android' || isExpoGo) return new Set();
+    const skus = [SUPER_LIKE_SKU];
+    const products: any[] = await IAP.getProducts({ skus });
+    const ids = new Set((products || []).map((item) => String(item?.productId || item?.sku || '')).filter(Boolean));
+    setAvailableProductIds(ids);
+    return ids;
+  }, []);
 
   const trialInfo = useMemo(() => {
     const isMale = currentUser?.gender === 'MALE';
@@ -110,9 +121,11 @@ const HomeScreen: React.FC = () => {
 
   useEffect(() => {
     if (isExpoGo) return;
-    IAP.initConnection().catch(() => {});
+    IAP.initConnection()
+      .then(() => loadAndroidConsumables().catch(() => {}))
+      .catch(() => {});
     return () => { IAP.endConnection().catch(() => {}); };
-  }, []);
+  }, [loadAndroidConsumables]);
 
   const fetchSuggestions = useCallback(async () => {
     if (!currentUser) return;
@@ -193,9 +206,20 @@ const HomeScreen: React.FC = () => {
     }
     try {
       setPurchaseLoading(true);
+      let resolvedIds = availableProductIds;
+      if (Platform.OS === 'android' && !resolvedIds.has(SUPER_LIKE_SKU)) {
+        resolvedIds = await loadAndroidConsumables();
+      }
+      if (Platform.OS === 'android' && !resolvedIds.has(SUPER_LIKE_SKU)) {
+        Alert.alert(
+          'Erreur Google Play',
+          "Le produit Super Like n'est pas disponible sur Google Play pour ce build. Vérifie l'ID produit, l'activation et le compte testeur."
+        );
+        return;
+      }
       const purchasePayload = Platform.select({
-        ios: { sku: 'super_like_1' },
-        android: { skus: ['super_like_1'] },
+        ios: { sku: SUPER_LIKE_SKU },
+        android: { skus: [SUPER_LIKE_SKU] },
       }) as any;
       const purchase: any = await IAP.requestPurchase(purchasePayload);
       const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;

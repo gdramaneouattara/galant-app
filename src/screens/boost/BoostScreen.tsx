@@ -66,6 +66,7 @@ const BoostScreen: React.FC = () => {
   const { currentUser, refreshCurrentUser, activateBoost } = useApp();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [activatingFree, setActivatingFree] = useState(false);
+  const [availableProductIds, setAvailableProductIds] = useState<Set<string>>(new Set());
 
   const isMaleTrialActive = (() => {
     if (!currentUser) return false;
@@ -82,9 +83,20 @@ const BoostScreen: React.FC = () => {
     (String(currentUser?.gender || '').toUpperCase() === 'FEMALE' && !!currentUser?.isPremium) ||
     isMaleTrialActive;
 
+  const loadAndroidBoostProducts = async (): Promise<Set<string>> => {
+    if (Platform.OS !== 'android' || isExpoGo) return new Set();
+    const skus = BOOST_PLANS.map((plan) => plan.sku);
+    const products: any[] = await IAP.getProducts({ skus });
+    const ids = new Set((products || []).map((item) => String(item?.productId || item?.sku || '')).filter(Boolean));
+    setAvailableProductIds(ids);
+    return ids;
+  };
+
   useEffect(() => {
     if (isExpoGo) return;
-    IAP.initConnection().catch(() => {});
+    IAP.initConnection()
+      .then(() => loadAndroidBoostProducts().catch(() => {}))
+      .catch(() => {});
     return () => { IAP.endConnection().catch(() => {}); };
   }, []);
 
@@ -152,6 +164,18 @@ const BoostScreen: React.FC = () => {
     if (loadingPlan) return;
     setLoadingPlan(plan.id);
     try {
+      let resolvedIds = availableProductIds;
+      if (Platform.OS === 'android' && !resolvedIds.has(plan.sku)) {
+        resolvedIds = await loadAndroidBoostProducts();
+      }
+      if (Platform.OS === 'android' && !resolvedIds.has(plan.sku)) {
+        Alert.alert(
+          'Erreur Google Play',
+          "Ce produit n'est pas disponible sur Google Play pour ce build. Vérifie l'ID produit, l'activation, et le compte testeur."
+        );
+        return;
+      }
+
       const purchasePayload = Platform.select({
         ios: { sku: plan.sku },
         android: { skus: [plan.sku] },
