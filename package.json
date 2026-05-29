@@ -16,7 +16,6 @@
     "create:bucket": "node scripts/create-supabase-bucket.mjs photos",
     "create:bucket:kyc": "node scripts/create-supabase-bucket.mjs kyc-docs",
     "create:bucket:chat": "node scripts/create-supabase-bucket.mjs chat-media",
-    "setup:test-users": "node scripts/setup-test-users.mjs",
     "supabase:init": "powershell -ExecutionPolicy Bypass -File scripts/apply-supabase-init.ps1",
     "supabase:init:force": "powershell -ExecutionPolicy Bypass -File scripts/apply-supabase-init.ps1 -AllowErrors",
     "supabase:rls": "powershell -ExecutionPolicy Bypass -File scripts/apply-rls.ps1",
