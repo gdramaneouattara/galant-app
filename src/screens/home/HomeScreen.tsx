@@ -62,7 +62,7 @@ type MatchModalState = {
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SWIPE_TRIGGER_DISTANCE = 110;
 const TRIAL_DAYS = 7;
-const SUPER_LIKE_SKU = 'super_like_1';
+const SUPER_LIKE_SKU = 'super_like';
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
