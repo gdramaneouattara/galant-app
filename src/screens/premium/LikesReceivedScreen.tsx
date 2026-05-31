@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { Check, Star, X } from 'lucide-react-native';
+import { Check, Heart, Star, X } from 'lucide-react-native';
 import { apiRequest } from '../../lib/api';
 import { COLORS } from '../../data/mock';
 
@@ -60,6 +60,8 @@ const LikesReceivedScreen: React.FC = () => {
   const [selectedSuperLike, setSelectedSuperLike] = useState<SuperLikeRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [respondingId, setRespondingId] = useState<string | null>(null);
+  const [likingId, setLikingId] = useState<string | null>(null);
+  const [likedUserIds, setLikedUserIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
 
   const fetchSuperLikes = useCallback(async () => {
@@ -159,6 +161,36 @@ const LikesReceivedScreen: React.FC = () => {
     }
   };
 
+  const likeProfile = async (row: SuperLikeRow) => {
+    const targetUserId = row?.user?.id;
+    if (!targetUserId || likingId) return;
+    try {
+      setLikingId(targetUserId);
+      const payload = await apiRequest<{ matched?: boolean }>('/api/matchmaking/swipe', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({
+          targetUserId,
+          direction: 'RIGHT',
+        }),
+      });
+      setLikedUserIds((prev) => {
+        const next = new Set(prev);
+        next.add(targetUserId);
+        return next;
+      });
+      if (payload?.matched) {
+        Alert.alert('Match 🎉', `Vous et ${row.user.name} vous plaisez mutuellement.`);
+      } else {
+        Alert.alert('Like envoyé', `Votre like a été envoyé à ${row.user.name}.`);
+      }
+    } catch (err: any) {
+      Alert.alert('Erreur', err?.message || 'Impossible de liker ce profil pour le moment.');
+    } finally {
+      setLikingId(null);
+    }
+  };
+
   const renderStatusPill = (status: SuperLikeStatus) => {
     if (status === 'ACCEPTED') {
       return (
@@ -231,7 +263,18 @@ const LikesReceivedScreen: React.FC = () => {
                   <Text style={styles.meta}>Tarif payé : {row.price_amount} {row.currency}</Text>
                   <View style={styles.actionsRow}>
                     <Pressable style={styles.secondaryButton} onPress={() => setSelectedSuperLike(row)}>
-                      <Text style={styles.secondaryButtonText}>Voir le profil</Text>
+                      <Text style={styles.secondaryButtonText}>Ouvrir fiche</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[
+                        styles.likeButton,
+                        likedUserIds.has(row.user.id) && styles.likeButtonDone,
+                        likingId === row.user.id && styles.buttonDisabled,
+                      ]}
+                      onPress={() => { void likeProfile(row); }}
+                      disabled={likedUserIds.has(row.user.id) || likingId === row.user.id}
+                    >
+                      <Heart size={16} color="#fff" fill="#fff" />
                     </Pressable>
                     {row.status === 'PENDING' ? (
                       <>
@@ -306,6 +349,17 @@ const LikesReceivedScreen: React.FC = () => {
                 </Text>
                 {selectedSuperLike.status === 'PENDING' ? (
                   <View style={styles.modalActions}>
+                    <Pressable
+                      style={[
+                        styles.likeButton,
+                        likedUserIds.has(selectedSuperLike.user.id) && styles.likeButtonDone,
+                        likingId === selectedSuperLike.user.id && styles.buttonDisabled,
+                      ]}
+                      onPress={() => { void likeProfile(selectedSuperLike); }}
+                      disabled={likedUserIds.has(selectedSuperLike.user.id) || likingId === selectedSuperLike.user.id}
+                    >
+                      <Heart size={18} color="#fff" fill="#fff" />
+                    </Pressable>
                     <Pressable
                       style={[styles.primaryButton, respondingId === selectedSuperLike.id && styles.buttonDisabled]}
                       onPress={() => { void respondToSuperLike(selectedSuperLike, 'ACCEPT'); }}
@@ -466,6 +520,18 @@ const styles = StyleSheet.create({
     color: COLORS.ink,
     fontWeight: '700',
     fontSize: 12,
+  },
+  likeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#ef4444',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  likeButtonDone: {
+    backgroundColor: '#16a34a',
   },
   primaryButton: {
     borderRadius: 10,

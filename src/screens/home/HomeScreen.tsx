@@ -59,6 +59,11 @@ type MatchModalState = {
   matchId: string;
 };
 
+type SuperLikeInboxRow = {
+  id: string;
+  status?: 'PENDING' | 'ACCEPTED' | 'IGNORED' | string;
+};
+
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SWIPE_TRIGGER_DISTANCE = 110;
 const TRIAL_DAYS = 7;
@@ -76,6 +81,7 @@ const HomeScreen: React.FC = () => {
   const [showSuperLikeModal, setShowSuperLikeModal] = useState(false);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const [availableProductIds, setAvailableProductIds] = useState<Set<string>>(new Set());
+  const [likesInboxCount, setLikesInboxCount] = useState(0);
 
   const [filters, setFilters] = useState({
     gender: 'ALL',
@@ -154,10 +160,23 @@ const HomeScreen: React.FC = () => {
     }
   }, [currentUser, filters]);
 
+  const fetchLikesInboxCount = useCallback(async () => {
+    if (!currentUser) return;
+    try {
+      const payload = await apiRequest<SuperLikeInboxRow[]>('/api/super-likes/received', { requireAuth: true });
+      const rows = Array.isArray(payload) ? payload : [];
+      const pendingCount = rows.filter((row) => String(row?.status || '').toUpperCase() === 'PENDING').length;
+      setLikesInboxCount(pendingCount);
+    } catch {
+      setLikesInboxCount(0);
+    }
+  }, [currentUser]);
+
   useFocusEffect(
     useCallback(() => {
       void fetchSuggestions();
-    }, [fetchSuggestions])
+      void fetchLikesInboxCount();
+    }, [fetchSuggestions, fetchLikesInboxCount])
   );
 
   const handleSwipe = async (direction: 'LEFT' | 'RIGHT', isSuper = false, targetProfile = suggestions[0]) => {
@@ -363,6 +382,19 @@ const HomeScreen: React.FC = () => {
             <Text style={styles.quickActionTitle}>Boosts</Text>
           </View>
         </Pressable>
+        <Pressable style={styles.quickActionBtn} onPress={() => navigation.navigate('LikesReceived')}>
+          <View style={styles.quickActionRow}>
+            <View style={styles.quickActionIconWrap}>
+              <Star color="#f59e0b" size={14} />
+            </View>
+            <Text style={styles.quickActionTitle}>Likes reçus</Text>
+            {likesInboxCount > 0 ? (
+              <View style={styles.quickActionCountPill}>
+                <Text style={styles.quickActionCountText}>{likesInboxCount}</Text>
+              </View>
+            ) : null}
+          </View>
+        </Pressable>
       </View>
 
       <View style={styles.body}>
@@ -564,7 +596,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   quickActionBtn: {
-    width: '48%',
+    flex: 1,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e2e8f0',
@@ -586,6 +618,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   quickActionTitle: { color: COLORS.ink, fontSize: 11, fontWeight: '900' },
+  quickActionCountPill: {
+    marginLeft: 'auto',
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 5,
+    borderRadius: 9,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickActionCountText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '900',
+  },
   filterBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, padding: 16 },
   lockedCard: {
