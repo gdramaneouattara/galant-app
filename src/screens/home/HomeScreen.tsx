@@ -67,7 +67,15 @@ type SuperLikeInboxRow = {
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SWIPE_TRIGGER_DISTANCE = 110;
 const TRIAL_DAYS = 7;
-const SUPER_LIKE_SKU = 'super_like';
+const SUPER_LIKE_SKU = String(process.env.EXPO_PUBLIC_SUPER_LIKE_SKU || 'super_like').trim();
+
+const isSkuNotFoundError = (error: any) => {
+  const message = String(error?.message || '').toLowerCase();
+  return message.includes('sku was not found')
+    || message.includes('fetch products first')
+    || message.includes('getitem')
+    || message.includes('getitems');
+};
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
@@ -133,7 +141,12 @@ const HomeScreen: React.FC = () => {
   useEffect(() => {
     if (isExpoGo) return;
     IAP.initConnection()
-      .then(() => loadAndroidConsumables().catch(() => {}))
+      .then(async () => {
+        if (Platform.OS === 'android') {
+          try { await IAP.flushFailedPurchasesCachedAsPendingAndroid(); } catch {}
+        }
+        await loadAndroidConsumables().catch(() => {});
+      })
       .catch(() => {});
     return () => { IAP.endConnection().catch(() => {}); };
   }, [loadAndroidConsumables]);
@@ -237,15 +250,31 @@ const HomeScreen: React.FC = () => {
       if (Platform.OS === 'android' && !resolvedIds.has(SUPER_LIKE_SKU)) {
         Alert.alert(
           'Erreur Google Play',
-          "Le produit Super Like n'est pas disponible sur Google Play pour ce build. Vérifie l'ID produit, l'activation et le compte testeur."
+          `Le produit Super Like (${SUPER_LIKE_SKU}) n'est pas disponible sur Google Play pour ce build. Vérifie l'ID produit, l'activation et le compte testeur.`
         );
         return;
       }
-      const purchasePayload = Platform.select({
+      const requestPayload = Platform.select({
         ios: { sku: SUPER_LIKE_SKU },
         android: { skus: [SUPER_LIKE_SKU] },
       }) as any;
-      const purchase: any = await IAP.requestPurchase(purchasePayload);
+
+      const requestPurchaseWithRetry = async () => {
+        try {
+          return await IAP.requestPurchase(requestPayload);
+        } catch (error: any) {
+          if (Platform.OS === 'android' && isSkuNotFoundError(error)) {
+            const refreshedIds = await loadAndroidConsumables();
+            if (!refreshedIds.has(SUPER_LIKE_SKU)) {
+              throw new Error(`Le produit ${SUPER_LIKE_SKU} reste introuvable sur Google Play.`);
+            }
+            return await IAP.requestPurchase(requestPayload);
+          }
+          throw error;
+        }
+      };
+
+      const purchase: any = await requestPurchaseWithRetry();
       const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;
       if (purchaseItem) {
         const verifyPath = Platform.OS === 'ios' ? '/api/payments/apple-verify' : '/api/payments/google-verify';
@@ -266,7 +295,16 @@ const HomeScreen: React.FC = () => {
         void fetchSuggestions();
       }
     } catch (err: any) {
-      if (err.code !== 'E_USER_CANCELLED') Alert.alert('Erreur', err.message);
+      if (err.code !== 'E_USER_CANCELLED') {
+        if (Platform.OS === 'android' && isSkuNotFoundError(err)) {
+          Alert.alert(
+            'Erreur Google Play',
+            `SKU introuvable pour Super Like (${SUPER_LIKE_SKU}). Vérifie que le produit est actif, que l'app vient du Play Store (track test/prod) et que le compte testeur est bien autorisé.`
+          );
+        } else {
+          Alert.alert('Erreur', err.message);
+        }
+      }
     } finally {
       setPurchaseLoading(false);
     }
