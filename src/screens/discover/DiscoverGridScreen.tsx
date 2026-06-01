@@ -193,14 +193,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+    flexDirection: 'column',
     padding: 10,
     gap: 10,
   },
   card: {
-    width: '45%',
+    width: '100%',
     aspectRatio: 3 / 4,
     borderRadius: 24,
     overflow: 'hidden',

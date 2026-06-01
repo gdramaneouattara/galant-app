@@ -257,7 +257,7 @@ const ProfileScreen: React.FC = () => {
             <View style={styles.rowIcon}>
               <Trophy size={18} color={COLORS.muted} />
             </View>
-            <Text style={styles.rowLabel}>Voir le Classement</Text>
+            <Text style={styles.rowLabel}>Profils suggérés</Text>
             <ChevronRight size={18} color="#cbd5f5" />
           </Pressable>
 
