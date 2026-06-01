@@ -1,9 +1,10 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Image,
   Modal,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -11,10 +12,15 @@ import {
   Text,
   View,
 } from 'react-native';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
+import * as IAP from 'react-native-iap';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Check, Heart, Star, X } from 'lucide-react-native';
 import { apiRequest } from '../../lib/api';
 import { COLORS } from '../../data/mock';
+import SuperLikePurchaseModal from '../../components/SuperLikePurchaseModal';
+import { IAP_EXPO_GO_MESSAGE, isExpoGo } from '../../lib/iapRuntime';
 
 type SuperLikeStatus = 'PENDING' | 'ACCEPTED' | 'IGNORED';
 
@@ -48,21 +54,57 @@ type SuperLikeRow = {
   };
 };
 
+type SwipeResponse = {
+  matched?: boolean;
+  matchId?: string | null;
+};
+
 const STATUS_PRIORITY: Record<SuperLikeStatus, number> = {
   PENDING: 0,
   ACCEPTED: 1,
   IGNORED: 2,
 };
 
+const SUPER_LIKE_SKU = String(process.env.EXPO_PUBLIC_SUPER_LIKE_SKU || 'super_like').trim();
+
+const isSkuNotFoundError = (error: any) => {
+  const message = String(error?.message || '').toLowerCase();
+  return message.includes('sku was not found')
+    || message.includes('fetch products first')
+    || message.includes('getitem')
+    || message.includes('getitems');
+};
+
 const LikesReceivedScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const [superLikes, setSuperLikes] = useState<SuperLikeRow[]>([]);
   const [selectedSuperLike, setSelectedSuperLike] = useState<SuperLikeRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [likingId, setLikingId] = useState<string | null>(null);
+  const [superLikingId, setSuperLikingId] = useState<string | null>(null);
   const [likedUserIds, setLikedUserIds] = useState<Set<string>>(new Set());
+  const [superLikedUserIds, setSuperLikedUserIds] = useState<Set<string>>(new Set());
+  const [showSuperLikePurchaseModal, setShowSuperLikePurchaseModal] = useState(false);
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [availableProductIds, setAvailableProductIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+
+  const loadAndroidConsumables = useCallback(async (): Promise<Set<string>> => {
+    if (Platform.OS !== 'android' || isExpoGo) return new Set();
+    const products: any[] = await IAP.getProducts({ skus: [SUPER_LIKE_SKU] });
+    const ids = new Set((products || []).map((item) => String(item?.productId || item?.sku || '')).filter(Boolean));
+    setAvailableProductIds(ids);
+    return ids;
+  }, []);
+
+  useEffect(() => {
+    if (isExpoGo) return;
+    IAP.initConnection()
+      .then(() => loadAndroidConsumables().catch(() => {}))
+      .catch(() => {});
+    return () => { IAP.endConnection().catch(() => {}); };
+  }, [loadAndroidConsumables]);
 
   const fetchSuperLikes = useCallback(async () => {
     try {
@@ -102,6 +144,20 @@ const LikesReceivedScreen: React.FC = () => {
       void fetchSuperLikes();
     }, [fetchSuperLikes])
   );
+
+  const promptOpenChat = (row: SuperLikeRow, matchId?: string | null) => {
+    Alert.alert(
+      'Match 🎉',
+      `Vous et ${row.user.name} vous plaisez mutuellement. Ouvrir le chat ?`,
+      [
+        { text: 'Plus tard', style: 'cancel' },
+        {
+          text: 'Ouvrir le chat',
+          onPress: () => navigation.navigate('Chat', { userId: row.user.id, matchId: matchId || undefined }),
+        },
+      ]
+    );
+  };
 
   const respondToSuperLike = async (row: SuperLikeRow, action: 'ACCEPT' | 'IGNORE') => {
     if (respondingId) return;
@@ -166,7 +222,7 @@ const LikesReceivedScreen: React.FC = () => {
     if (!targetUserId || likingId) return;
     try {
       setLikingId(targetUserId);
-      const payload = await apiRequest<{ matched?: boolean }>('/api/matchmaking/swipe', {
+      const payload = await apiRequest<SwipeResponse>('/api/matchmaking/swipe', {
         method: 'POST',
         requireAuth: true,
         body: JSON.stringify({
@@ -180,7 +236,7 @@ const LikesReceivedScreen: React.FC = () => {
         return next;
       });
       if (payload?.matched) {
-        Alert.alert('Match 🎉', `Vous et ${row.user.name} vous plaisez mutuellement.`);
+        promptOpenChat(row, payload?.matchId || null);
       } else {
         Alert.alert('Like envoyé', `Votre like a été envoyé à ${row.user.name}.`);
       }
@@ -188,6 +244,155 @@ const LikesReceivedScreen: React.FC = () => {
       Alert.alert('Erreur', err?.message || 'Impossible de liker ce profil pour le moment.');
     } finally {
       setLikingId(null);
+    }
+  };
+
+  const sendPaidSuperLikeAndTryMatch = async (row: SuperLikeRow) => {
+    const targetUserId = row?.user?.id;
+    if (!targetUserId) return;
+    let payload = await apiRequest<SwipeResponse>('/api/matchmaking/swipe', {
+      method: 'POST',
+      requireAuth: true,
+      body: JSON.stringify({
+        targetUserId,
+        direction: 'RIGHT',
+        isSuperLike: true,
+      }),
+    });
+
+    if (!payload?.matched && row.status === 'PENDING') {
+      try {
+        const acceptPayload = await apiRequest<any>(`/api/super-likes/${row.id}/respond`, {
+          method: 'POST',
+          requireAuth: true,
+          body: JSON.stringify({ action: 'ACCEPT' }),
+        });
+        setSuperLikes((prev) => prev.map((item) => (
+          item.id === row.id
+            ? {
+              ...item,
+              status: 'ACCEPTED',
+              responded_at: acceptPayload?.superLike?.responded_at || new Date().toISOString(),
+            }
+            : item
+        )));
+        if (selectedSuperLike?.id === row.id) {
+          setSelectedSuperLike((prev) => (
+            prev ? { ...prev, status: 'ACCEPTED', responded_at: acceptPayload?.superLike?.responded_at || new Date().toISOString() } : prev
+          ));
+        }
+        payload = await apiRequest<SwipeResponse>('/api/matchmaking/swipe', {
+          method: 'POST',
+          requireAuth: true,
+          body: JSON.stringify({
+            targetUserId,
+            direction: 'RIGHT',
+            isSuperLike: true,
+          }),
+        });
+      } catch {
+        // keep default behavior if auto-accept/retry fails
+      }
+    }
+
+    setSuperLikedUserIds((prev) => {
+      const next = new Set(prev);
+      next.add(targetUserId);
+      return next;
+    });
+    if (payload?.matched) {
+      promptOpenChat(row, payload?.matchId || null);
+    } else {
+      Alert.alert('Super Like envoyé', `Votre Super Like a été envoyé à ${row.user.name}.`);
+    }
+  };
+
+  const handleSuperLikePurchasePaystack = async (row: SuperLikeRow) => {
+    const targetUserId = row?.user?.id;
+    if (!targetUserId || purchaseLoading || superLikingId) return;
+    try {
+      setPurchaseLoading(true);
+      setSuperLikingId(targetUserId);
+      const init = await apiRequest<{ authorization_url: string; reference: string }>(
+        '/api/payments/initialize',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            amount: parseInt(process.env.EXPO_PUBLIC_SUPER_LIKE_AMOUNT || '500', 10),
+            type: 'SUPER_LIKE',
+            targetId: targetUserId,
+            paymentMethod: 'MOBILE_MONEY',
+          }),
+          requireAuth: true,
+        }
+      );
+      const redirectUrl = Linking.createURL('paystack');
+      await WebBrowser.openAuthSessionAsync(init.authorization_url, redirectUrl);
+      const verify = await apiRequest<{ status: string }>(`/api/payments/verify?reference=${init.reference}`, { requireAuth: true });
+      if (verify.status === 'active') {
+        await sendPaidSuperLikeAndTryMatch(row);
+      }
+    } catch (err: any) {
+      Alert.alert('Erreur', err?.message || 'Impossible d’envoyer un Super Like pour le moment.');
+    } finally {
+      setPurchaseLoading(false);
+      setSuperLikingId(null);
+      setShowSuperLikePurchaseModal(false);
+    }
+  };
+
+  const handleSuperLikePurchaseGoogle = async (row: SuperLikeRow) => {
+    const targetUserId = row?.user?.id;
+    if (!targetUserId || purchaseLoading || superLikingId) return;
+    if (isExpoGo) {
+      Alert.alert('Achat indisponible', IAP_EXPO_GO_MESSAGE);
+      return;
+    }
+    try {
+      setPurchaseLoading(true);
+      setSuperLikingId(targetUserId);
+      let resolvedIds = availableProductIds;
+      if (Platform.OS === 'android' && !resolvedIds.has(SUPER_LIKE_SKU)) {
+        resolvedIds = await loadAndroidConsumables();
+      }
+      if (Platform.OS === 'android' && !resolvedIds.has(SUPER_LIKE_SKU)) {
+        Alert.alert('Erreur Google Play', `Le produit Super Like (${SUPER_LIKE_SKU}) n'est pas disponible pour ce build.`);
+        return;
+      }
+      const purchasePayload = Platform.select({
+        ios: { sku: SUPER_LIKE_SKU },
+        android: { skus: [SUPER_LIKE_SKU] },
+      }) as any;
+      const purchase: any = await IAP.requestPurchase(purchasePayload);
+      const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;
+      if (purchaseItem) {
+        const verifyPath = Platform.OS === 'ios' ? '/api/payments/apple-verify' : '/api/payments/google-verify';
+        await apiRequest(verifyPath, {
+          method: 'POST',
+          body: JSON.stringify({
+            productId: purchaseItem.productId,
+            type: 'SUPER_LIKE',
+            targetId: targetUserId,
+            purchaseToken: purchaseItem.purchaseToken,
+            transactionId: purchaseItem.transactionId || purchaseItem.originalTransactionIdentifierIOS,
+          }),
+          requireAuth: true,
+        });
+        await IAP.finishTransaction({ purchase: purchaseItem, isConsumable: true });
+        await sendPaidSuperLikeAndTryMatch(row);
+      }
+    } catch (err: any) {
+      if (err?.code !== 'E_USER_CANCELLED') {
+        if (Platform.OS === 'android' && isSkuNotFoundError(err)) {
+          Alert.alert('Erreur Google Play', `SKU introuvable pour Super Like (${SUPER_LIKE_SKU}).`);
+        } else {
+          Alert.alert('Erreur', err?.message || 'Achat Google Play non finalisé.');
+        }
+      }
+    } finally {
+      setPurchaseLoading(false);
+      setSuperLikingId(null);
+      setShowSuperLikePurchaseModal(false);
     }
   };
 
@@ -276,6 +481,20 @@ const LikesReceivedScreen: React.FC = () => {
                     >
                       <Heart size={16} color="#fff" fill="#fff" />
                     </Pressable>
+                    <Pressable
+                      style={[
+                        styles.superLikePaidButton,
+                        superLikedUserIds.has(row.user.id) && styles.superLikePaidButtonDone,
+                        superLikingId === row.user.id && styles.buttonDisabled,
+                      ]}
+                      onPress={() => {
+                        setSelectedSuperLike(row);
+                        setShowSuperLikePurchaseModal(true);
+                      }}
+                      disabled={superLikedUserIds.has(row.user.id) || superLikingId === row.user.id}
+                    >
+                      <Star size={16} color="#fff" fill="#fff" />
+                    </Pressable>
                     {row.status === 'PENDING' ? (
                       <>
                         <Pressable
@@ -345,21 +564,33 @@ const LikesReceivedScreen: React.FC = () => {
                   ))}
                 </View>
                 <Text style={styles.modalHint}>
-                  L’acceptation n’ouvre pas de chat automatiquement. Les règles actuelles de messagerie restent inchangées.
+                  Vous pouvez liker en retour ou envoyer un Super Like payant pour augmenter les chances de match et ouvrir le chat.
                 </Text>
-                {selectedSuperLike.status === 'PENDING' ? (
-                  <View style={styles.modalActions}>
-                    <Pressable
-                      style={[
-                        styles.likeButton,
-                        likedUserIds.has(selectedSuperLike.user.id) && styles.likeButtonDone,
-                        likingId === selectedSuperLike.user.id && styles.buttonDisabled,
-                      ]}
-                      onPress={() => { void likeProfile(selectedSuperLike); }}
-                      disabled={likedUserIds.has(selectedSuperLike.user.id) || likingId === selectedSuperLike.user.id}
-                    >
-                      <Heart size={18} color="#fff" fill="#fff" />
-                    </Pressable>
+                <View style={styles.modalActions}>
+                  <Pressable
+                    style={[
+                      styles.likeButton,
+                      likedUserIds.has(selectedSuperLike.user.id) && styles.likeButtonDone,
+                      likingId === selectedSuperLike.user.id && styles.buttonDisabled,
+                    ]}
+                    onPress={() => { void likeProfile(selectedSuperLike); }}
+                    disabled={likedUserIds.has(selectedSuperLike.user.id) || likingId === selectedSuperLike.user.id}
+                  >
+                    <Heart size={18} color="#fff" fill="#fff" />
+                  </Pressable>
+                  <Pressable
+                    style={[
+                      styles.superLikePaidButton,
+                      superLikedUserIds.has(selectedSuperLike.user.id) && styles.superLikePaidButtonDone,
+                      superLikingId === selectedSuperLike.user.id && styles.buttonDisabled,
+                    ]}
+                    onPress={() => setShowSuperLikePurchaseModal(true)}
+                    disabled={superLikedUserIds.has(selectedSuperLike.user.id) || superLikingId === selectedSuperLike.user.id}
+                  >
+                    <Star size={16} color="#fff" fill="#fff" />
+                  </Pressable>
+                  {selectedSuperLike.status === 'PENDING' ? (
+                    <>
                     <Pressable
                       style={[styles.primaryButton, respondingId === selectedSuperLike.id && styles.buttonDisabled]}
                       onPress={() => { void respondToSuperLike(selectedSuperLike, 'ACCEPT'); }}
@@ -375,13 +606,27 @@ const LikesReceivedScreen: React.FC = () => {
                     >
                       <Text style={styles.ghostDangerButtonText}>Ignorer</Text>
                     </Pressable>
-                  </View>
-                ) : null}
+                    </>
+                  ) : null}
+                </View>
               </>
             ) : null}
           </View>
         </View>
       </Modal>
+
+      <SuperLikePurchaseModal
+        visible={showSuperLikePurchaseModal}
+        onClose={() => setShowSuperLikePurchaseModal(false)}
+        onPurchasePaystack={() => {
+          if (selectedSuperLike) void handleSuperLikePurchasePaystack(selectedSuperLike);
+        }}
+        onPurchaseGoogle={() => {
+          if (selectedSuperLike) void handleSuperLikePurchaseGoogle(selectedSuperLike);
+        }}
+        loading={purchaseLoading}
+        userName={selectedSuperLike?.user?.name}
+      />
     </SafeAreaView>
   );
 };
@@ -531,6 +776,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   likeButtonDone: {
+    backgroundColor: '#16a34a',
+  },
+  superLikePaidButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f59e0b',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  superLikePaidButtonDone: {
     backgroundColor: '#16a34a',
   },
   primaryButton: {
