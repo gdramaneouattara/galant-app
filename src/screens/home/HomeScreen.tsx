@@ -182,6 +182,10 @@ const HomeScreen: React.FC = () => {
 
   const fetchLikesInboxCount = useCallback(async () => {
     if (!currentUser) return;
+    if (!currentUser.isPremium) {
+      setLikesInboxCount(0);
+      return;
+    }
     try {
       const payload = await apiRequest<LikeInboxRow[]>('/api/likes/received', { requireAuth: true });
       const rows = Array.isArray(payload) ? payload : [];
@@ -427,7 +431,17 @@ const HomeScreen: React.FC = () => {
             <Text style={styles.quickActionTitle}>Boosts</Text>
           </View>
         </Pressable>
-        <Pressable style={styles.quickActionBtn} onPress={() => navigation.navigate('LikesInbox')}>
+        <Pressable
+          style={styles.quickActionBtn}
+          onPress={() => {
+            if (!currentUser?.isPremium) {
+              Alert.alert('Premium requis', 'Passez à Premium pour voir qui vous a liké.');
+              navigation.navigate('Premium');
+              return;
+            }
+            navigation.navigate('LikesInbox');
+          }}
+        >
           <View style={styles.quickActionRow}>
             <View style={styles.quickActionIconWrap}>
               <Heart color="#dc2626" size={14} />

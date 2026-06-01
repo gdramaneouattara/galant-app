@@ -2130,6 +2130,10 @@ const handleSuperLikesReceived = async (req, res) => {
 };
 
 const handleLikesReceived = async (req, res) => {
+  if (!req.user?.is_premium) {
+    return res.status(403).json({ error: 'subscription_required' });
+  }
+
   const { data: rows, error } = await supabase
     .from('likes')
     .select('liker_id, liked_id, created_at, is_super_like')

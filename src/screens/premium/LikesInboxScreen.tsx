@@ -15,6 +15,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Heart, X } from 'lucide-react-native';
 import { apiRequest } from '../../lib/api';
 import { COLORS } from '../../data/mock';
+import { useApp } from '../../state/AppContext';
 
 type LikeInboxRow = {
   liker_id: string;
@@ -39,6 +40,7 @@ type LikeInboxRow = {
 
 const LikesInboxScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { currentUser } = useApp();
   const [likes, setLikes] = useState<LikeInboxRow[]>([]);
   const [selectedLike, setSelectedLike] = useState<LikeInboxRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,6 +48,12 @@ const LikesInboxScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchLikesInbox = useCallback(async () => {
+    if (!currentUser?.isPremium) {
+      setLikes([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
     try {
       setLoading(true);
       const payload = await apiRequest<LikeInboxRow[]>('/api/likes/received', {
@@ -59,7 +67,7 @@ const LikesInboxScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentUser?.isPremium]);
 
   useFocusEffect(
     useCallback(() => {
@@ -133,6 +141,20 @@ const LikesInboxScreen: React.FC = () => {
       </View>
     );
   };
+
+  if (!currentUser?.isPremium) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.lockedWrap}>
+          <Text style={styles.title}>Boîte Likes reçus</Text>
+          <Text style={styles.lockedText}>Cette boîte est réservée aux abonnés Premium.</Text>
+          <Pressable style={styles.lockedBtn} onPress={() => navigation.navigate('Premium' as never)}>
+            <Text style={styles.lockedBtnText}>Passer à Premium</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -503,6 +525,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     flexWrap: 'wrap',
+  },
+  lockedWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    gap: 10,
+  },
+  lockedText: {
+    color: COLORS.muted,
+    textAlign: 'center',
+  },
+  lockedBtn: {
+    borderRadius: 10,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  lockedBtnText: {
+    color: '#fff',
+    fontWeight: '800',
   },
 });
 
