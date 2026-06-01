@@ -26,6 +26,7 @@ drop policy if exists "Users can update their own profile." on public.profiles;
 -- Drop helper function signatures to avoid duplicate overloads.
 drop function if exists public.has_invisible_mode_access(uuid);
 drop function if exists public.has_invisible_mode_access(uuid, text, boolean, timestamptz);
+drop function if exists public.has_active_match_with(uuid);
 
 create or replace function public.has_invisible_mode_access(
   target_user_id uuid,
@@ -64,6 +65,27 @@ begin
 end;
 $$;
 
+create or replace function public.has_active_match_with(target_user_id uuid)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  return exists (
+    select 1
+    from public.matches m
+    where m.status = 'ACTIVE'
+      and (
+        (m.user_one_id = auth.uid() and m.user_two_id = target_user_id)
+        or
+        (m.user_two_id = auth.uid() and m.user_one_id = target_user_id)
+      )
+  );
+end;
+$$;
+
 create policy "Profiles visibility" on public.profiles
   for select to authenticated
   using (
@@ -73,25 +95,17 @@ create policy "Profiles visibility" on public.profiles
       or (
         onboarding_completed = true
         and (
-          not (
-            is_invisible = true
-            and public.has_invisible_mode_access(
-              id,
-              gender,
-              coalesce(is_premium, false),
-              trial_started_at
-            )
+          -- Profil non invisible
+          coalesce(is_invisible, false) = false
+          -- Profil invisible mais non éligible à l'option invisible premium
+          or not public.has_invisible_mode_access(
+            id,
+            gender,
+            coalesce(is_premium, false),
+            trial_started_at
           )
-          or exists (
-            select 1
-            from public.matches m
-            where m.status = 'ACTIVE'
-              and (
-                (m.user_one_id = auth.uid() and m.user_two_id = profiles.id)
-                or
-                (m.user_two_id = auth.uid() and m.user_one_id = profiles.id)
-              )
-          )
+          -- Toujours visible pour un utilisateur déjà en match actif
+          or public.has_active_match_with(id)
         )
       )
     )

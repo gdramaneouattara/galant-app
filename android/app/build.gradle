@@ -66,11 +66,6 @@ react {
  * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
  */
 def enableProguardInReleaseBuilds = (findProperty('android.enableProguardInReleaseBuilds') ?: false).toBoolean()
-def hasReleaseSigningConfig =
-        project.hasProperty('MYAPP_UPLOAD_STORE_FILE') &&
-        project.hasProperty('MYAPP_UPLOAD_STORE_PASSWORD') &&
-        project.hasProperty('MYAPP_UPLOAD_KEY_ALIAS') &&
-        project.hasProperty('MYAPP_UPLOAD_KEY_PASSWORD')
 
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
@@ -85,15 +80,7 @@ def hasReleaseSigningConfig =
  */
 def jscFlavor = 'org.webkit:android-jsc:+'
 
-// Avoid hard build failures from Sentry Gradle script on local release builds.
-// Re-enable with: -PsentryApply=true (or by setting SENTRY_AUTH_TOKEN).
-def sentryPackageDir = ["node", "--print", "require('path').dirname(require.resolve('@sentry/react-native/package.json'))"].execute().text.trim()
-def shouldApplySentryGradle = (findProperty('sentryApply') ?: false).toBoolean() || (System.getenv('SENTRY_AUTH_TOKEN') != null)
-if (shouldApplySentryGradle) {
-    apply from: new File(sentryPackageDir, "sentry.gradle")
-} else {
-    println("Sentry Gradle integration disabled for this build (set -PsentryApply=true to enable).")
-}
+apply from: new File(["node", "--print", "require('path').dirname(require.resolve('@sentry/react-native/package.json'))"].execute().text.trim(), "sentry.gradle")
 
 android {
     ndkVersion rootProject.ext.ndkVersion
@@ -117,29 +104,15 @@ missingDimensionStrategy "store", "play"
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
-        release {
-            if (hasReleaseSigningConfig) {
-                storeFile file(MYAPP_UPLOAD_STORE_FILE)
-                storePassword MYAPP_UPLOAD_STORE_PASSWORD
-                keyAlias MYAPP_UPLOAD_KEY_ALIAS
-                keyPassword MYAPP_UPLOAD_KEY_PASSWORD
-            }
-        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            if (hasReleaseSigningConfig) {
-                signingConfig signingConfigs.release
-            } else {
-                throw new GradleException(
-                        "Release signing is not configured. Set MYAPP_UPLOAD_STORE_FILE, " +
-                        "MYAPP_UPLOAD_STORE_PASSWORD, MYAPP_UPLOAD_KEY_ALIAS, and " +
-                        "MYAPP_UPLOAD_KEY_PASSWORD in ~/.gradle/gradle.properties."
-                )
-            }
+            // Caution! In production, you need to generate your own keystore file.
+            // see https://reactnative.dev/docs/signed-apk-android.
+            signingConfig signingConfigs.debug
             shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
