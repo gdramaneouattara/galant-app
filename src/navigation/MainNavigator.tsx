@@ -12,6 +12,7 @@ import ChatScreen from '../screens/messages/ChatScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import PremiumScreen from '../screens/premium/PremiumScreen';
 import LikesReceivedScreen from '../screens/premium/LikesReceivedScreen';
+import LikesInboxScreen from '../screens/premium/LikesInboxScreen';
 import VerifyScreen from '../screens/verify/VerifyScreen';
 import BoostScreen from '../screens/boost/BoostScreen';
 import DiscoverGridScreen from '../screens/discover/DiscoverGridScreen';
@@ -38,6 +39,7 @@ export type RootStackParamList = {
   CommunityChat: { communityId: string; communityName: string };
   Premium: undefined;
   LikesReceived: undefined;
+  LikesInbox: undefined;
   Verify: undefined;
   Boost: undefined;
   DiscoverGrid: undefined;
@@ -148,6 +150,7 @@ const MainNavigator: React.FC = () => {
             <RootStack.Screen name="CommunityChat" component={CommunityChatScreen} />
             <RootStack.Screen name="Premium" component={PremiumScreen} />
             <RootStack.Screen name="LikesReceived" component={LikesReceivedScreen} />
+            <RootStack.Screen name="LikesInbox" component={LikesInboxScreen} />
             <RootStack.Screen name="Verify" component={VerifyScreen} />
             <RootStack.Screen name="Boost" component={BoostScreen} />
             <RootStack.Screen name="DiscoverGrid" component={DiscoverGridScreen} />

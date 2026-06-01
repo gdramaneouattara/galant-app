@@ -2129,6 +2129,96 @@ const handleSuperLikesReceived = async (req, res) => {
   res.json(filtered);
 };
 
+const handleLikesReceived = async (req, res) => {
+  const { data: rows, error } = await supabase
+    .from('likes')
+    .select('liker_id, liked_id, created_at, is_super_like')
+    .eq('liked_id', req.user.id)
+    .or('is_super_like.eq.false,is_super_like.is.null')
+    .order('created_at', { ascending: false });
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  const likesRows = rows || [];
+  const likerIds = [...new Set(likesRows.map((row) => row?.liker_id).filter(Boolean))];
+  if (likerIds.length === 0) {
+    return res.json([]);
+  }
+
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id, name, age, gender, city, country, bio, photos, interests, is_verified, is_premium, relationship_goal, is_invisible, trial_started_at')
+    .in('id', likerIds)
+    .is('suspended_at', null)
+    .eq('onboarding_completed', true);
+  if (profilesError) return res.status(500).json({ error: profilesError.message });
+
+  const profileById = new Map((profiles || []).map((profile) => [profile.id, profile]));
+  const visibleLikerIds = (profiles || []).map((profile) => profile.id);
+  if (visibleLikerIds.length === 0) {
+    return res.json([]);
+  }
+
+  const invisibleEligibleBySubscription = new Set();
+  const { data: senderSubs } = await supabase
+    .from('subscriptions')
+    .select('user_id, plan_id')
+    .in('user_id', visibleLikerIds)
+    .eq('status', 'active')
+    .gt('current_period_end', new Date().toISOString());
+
+  for (const row of (senderSubs || [])) {
+    if (row?.user_id && hasInvisiblePremiumAccessForPlan(profileById.get(row.user_id), row?.plan_id)) {
+      invisibleEligibleBySubscription.add(row.user_id);
+    }
+  }
+
+  const { data: mySentLikes, error: mySentLikesError } = await supabase
+    .from('likes')
+    .select('liked_id')
+    .eq('liker_id', req.user.id)
+    .in('liked_id', visibleLikerIds);
+  if (mySentLikesError) return res.status(500).json({ error: mySentLikesError.message });
+  const likedBackIds = new Set((mySentLikes || []).map((row) => row?.liked_id).filter(Boolean));
+
+  const { data: myMatches, error: myMatchesError } = await supabase
+    .from('matches')
+    .select('user_one_id, user_two_id')
+    .eq('status', 'ACTIVE')
+    .or(`user_one_id.eq.${req.user.id},user_two_id.eq.${req.user.id}`);
+  if (myMatchesError) return res.status(500).json({ error: myMatchesError.message });
+
+  const matchedIds = new Set();
+  for (const match of (myMatches || [])) {
+    if (match?.user_one_id === req.user.id && match?.user_two_id) matchedIds.add(match.user_two_id);
+    if (match?.user_two_id === req.user.id && match?.user_one_id) matchedIds.add(match.user_one_id);
+  }
+
+  const filtered = likesRows
+    .filter((row) => {
+      const likerId = row?.liker_id;
+      const likerProfile = profileById.get(likerId);
+      if (!likerProfile) return false;
+      return !isHiddenByInvisibleMode(
+        likerProfile,
+        invisibleEligibleBySubscription.has(likerId)
+      );
+    })
+    .map((row) => {
+      const likerProfile = profileById.get(row.liker_id);
+      return {
+        liker_id: row.liker_id,
+        created_at: row.created_at,
+        liked_back: likedBackIds.has(row.liker_id),
+        is_matched: matchedIds.has(row.liker_id),
+        user: likerProfile,
+      };
+    });
+
+  res.json(filtered);
+};
+
+app.get('/api/likes/received', requireAuth, handleLikesReceived);
 app.get('/api/super-likes/received', requireAuth, handleSuperLikesReceived);
 app.get('/api/premium/likes-received', requireAuth, handleSuperLikesReceived);
 

@@ -58,7 +58,7 @@ type AdminStats = {
 
 type AdminDestination = Exclude<
   keyof RootStackParamList,
-  'AuthFlow' | 'ResetPassword' | 'MainTabs' | 'AdminStack' | 'Chat' | 'CommunityChat' | 'Premium' | 'LikesReceived' | 'Verify' | 'Boost' | 'DiscoverGrid'
+  'AuthFlow' | 'ResetPassword' | 'MainTabs' | 'AdminStack' | 'Chat' | 'CommunityChat' | 'Premium' | 'LikesReceived' | 'LikesInbox' | 'Verify' | 'Boost' | 'DiscoverGrid'
 >;
 
 type AdminShortcut = {

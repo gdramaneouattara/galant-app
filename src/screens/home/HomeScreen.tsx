@@ -59,9 +59,11 @@ type MatchModalState = {
   matchId: string;
 };
 
-type SuperLikeInboxRow = {
-  id: string;
-  status?: 'PENDING' | 'ACCEPTED' | 'IGNORED' | string;
+type LikeInboxRow = {
+  liker_id: string;
+  created_at: string;
+  liked_back?: boolean;
+  is_matched?: boolean;
 };
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -181,9 +183,9 @@ const HomeScreen: React.FC = () => {
   const fetchLikesInboxCount = useCallback(async () => {
     if (!currentUser) return;
     try {
-      const payload = await apiRequest<SuperLikeInboxRow[]>('/api/super-likes/received', { requireAuth: true });
+      const payload = await apiRequest<LikeInboxRow[]>('/api/likes/received', { requireAuth: true });
       const rows = Array.isArray(payload) ? payload : [];
-      const pendingCount = rows.filter((row) => String(row?.status || '').toUpperCase() === 'PENDING').length;
+      const pendingCount = rows.filter((row) => !row?.liked_back && !row?.is_matched).length;
       setLikesInboxCount(pendingCount);
     } catch {
       setLikesInboxCount(0);
@@ -425,10 +427,10 @@ const HomeScreen: React.FC = () => {
             <Text style={styles.quickActionTitle}>Boosts</Text>
           </View>
         </Pressable>
-        <Pressable style={styles.quickActionBtn} onPress={() => navigation.navigate('LikesReceived')}>
+        <Pressable style={styles.quickActionBtn} onPress={() => navigation.navigate('LikesInbox')}>
           <View style={styles.quickActionRow}>
             <View style={styles.quickActionIconWrap}>
-              <Star color="#f59e0b" size={14} />
+              <Heart color="#dc2626" size={14} />
             </View>
             <Text style={styles.quickActionTitle}>Likes reçus</Text>
             {likesInboxCount > 0 ? (
