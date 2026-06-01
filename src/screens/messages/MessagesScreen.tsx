@@ -20,6 +20,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 type AdminNotification = {
   id: string;
+  event_type?: string;
   event_name: string;
   is_read?: boolean;
   metadata: {
@@ -173,7 +174,7 @@ const MessagesScreen: React.FC = () => {
         {showAdminBox ? (
           <View style={styles.adminBox}>
             <View style={styles.adminBoxHeader}>
-              <Text style={styles.adminBoxTitle}>Notifications admin</Text>
+              <Text style={styles.adminBoxTitle}>Notifications</Text>
               {unreadCount > 0 ? (
                 <View style={styles.adminUnreadBadge}>
                   <Text style={styles.adminUnreadBadgeText}>{unreadCount}</Text>

@@ -121,6 +121,18 @@ create table if not exists public.statuses (
   expires_at timestamp with time zone default (now() + interval '24 hours')
 );
 
+-- Story/Status likes
+create table if not exists public.status_likes (
+  id uuid primary key default gen_random_uuid(),
+  status_id uuid not null references public.statuses(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  created_at timestamp with time zone default now(),
+  unique (status_id, user_id)
+);
+
+create index if not exists status_likes_status_id_idx on public.status_likes (status_id);
+create index if not exists status_likes_user_id_idx on public.status_likes (user_id);
+
 -- Communities
 create table if not exists public.communities (
   id uuid primary key default gen_random_uuid(),

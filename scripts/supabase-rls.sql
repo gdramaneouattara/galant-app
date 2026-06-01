@@ -6,6 +6,7 @@ ALTER TABLE IF EXISTS public.daily_usage ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.matches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.statuses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.status_likes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.communities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.community_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.community_messages ENABLE ROW LEVEL SECURITY;
@@ -187,3 +188,36 @@ DROP TRIGGER IF EXISTS tr_prevent_sensitive_updates ON public.profiles;
 CREATE TRIGGER tr_prevent_sensitive_updates
 BEFORE UPDATE ON public.profiles
 FOR EACH ROW EXECUTE FUNCTION public.prevent_sensitive_profile_updates();
+
+-- 6. Story Likes Policies
+DROP POLICY IF EXISTS "Users can view status likes." ON public.status_likes;
+CREATE POLICY "Users can view status likes." ON public.status_likes
+  FOR SELECT TO authenticated
+  USING (
+    exists (
+      select 1 from public.statuses s
+      where s.id = status_likes.status_id
+        and (
+          s.expires_at > now()
+          or s.user_id = auth.uid()
+        )
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can like statuses." ON public.status_likes;
+CREATE POLICY "Users can like statuses." ON public.status_likes
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.statuses s
+      where s.id = status_likes.status_id
+        and s.expires_at > now()
+        and s.user_id <> auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can unlike their own status likes." ON public.status_likes;
+CREATE POLICY "Users can unlike their own status likes." ON public.status_likes
+  FOR DELETE TO authenticated
+  USING (auth.uid() = user_id);

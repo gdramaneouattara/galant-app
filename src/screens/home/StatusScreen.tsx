@@ -5,6 +5,7 @@ import {
   Image,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -12,7 +13,7 @@ import {
   Modal,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ChevronLeft, Plus, X, Play } from 'lucide-react-native';
+import { ChevronLeft, Plus, X, Play, Heart } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as VideoThumbnails from 'expo-video-thumbnails';
 import { COLORS } from '../../data/mock';
@@ -29,9 +30,22 @@ interface Status {
   media_url: string;
   message_type: 'TEXT' | 'IMAGE' | 'VIDEO';
   created_at: string;
+  likes_count?: number;
+  liked_by_me?: boolean;
   profiles: {
+    id?: string;
     name: string;
     photos: string[];
+  };
+}
+
+interface StatusLiker {
+  user_id: string;
+  created_at: string;
+  profile: {
+    id: string;
+    name: string;
+    photo: string | null;
   };
 }
 
@@ -42,9 +56,15 @@ const StatusScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [locked, setLocked] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<Status | null>(null);
+  const [selectedStatusId, setSelectedStatusId] = useState<string | null>(null);
   const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
   const [videoPreviewUrls, setVideoPreviewUrls] = useState<Record<string, string>>({});
+  const [likeLoadingByStatusId, setLikeLoadingByStatusId] = useState<Record<string, boolean>>({});
+  const [likersModalVisible, setLikersModalVisible] = useState(false);
+  const [likersLoading, setLikersLoading] = useState(false);
+  const [likers, setLikers] = useState<StatusLiker[]>([]);
+
+  const selectedStatus = statuses.find((item) => item.id === selectedStatusId) || null;
 
   const fetchStatuses = useCallback(async () => {
     try {
@@ -179,7 +199,7 @@ const StatusScreen: React.FC = () => {
   };
 
   const renderStatusItem = ({ item }: { item: Status }) => (
-    <Pressable style={styles.statusCard} onPress={() => setSelectedStatus(item)}>
+    <Pressable style={styles.statusCard} onPress={() => setSelectedStatusId(item.id)}>
       {item.message_type === 'VIDEO' ? (
         videoPreviewUrls[item.media_url] ? (
           <Image source={{ uri: videoPreviewUrls[item.media_url] }} style={styles.statusPreview} />
@@ -197,6 +217,21 @@ const StatusScreen: React.FC = () => {
           style={styles.statusAuthorAvatar}
         />
       </View>
+      <Pressable
+        style={[styles.statusLikeButton, item.liked_by_me ? styles.statusLikeButtonActive : null]}
+        disabled={!!likeLoadingByStatusId[item.id] || String(item.user_id) === String(currentUser?.id)}
+        onPress={(event) => {
+          event.stopPropagation?.();
+          void handleToggleLike(item);
+        }}
+      >
+        <Heart
+          size={13}
+          color={item.liked_by_me ? '#22c55e' : '#ef4444'}
+          fill={item.liked_by_me ? '#22c55e' : 'transparent'}
+        />
+        <Text style={styles.statusLikeCount}>{Number(item.likes_count || 0)}</Text>
+      </Pressable>
       <View style={styles.statusInfo}>
         <View style={styles.statusMetaText}>
           <Text style={styles.statusName} numberOfLines={1}>{item.profiles.name}</Text>
@@ -206,6 +241,68 @@ const StatusScreen: React.FC = () => {
       </View>
     </Pressable>
   );
+
+  const patchStatusInList = (statusId: string, patch: Partial<Status>) => {
+    setStatuses((prev) => prev.map((status) => (
+      status.id === statusId ? { ...status, ...patch } : status
+    )));
+  };
+
+  const handleToggleLike = async (status: Status) => {
+    const statusId = String(status.id || '').trim();
+    if (!statusId || !currentUser) return;
+    if (String(status.user_id) === String(currentUser.id)) return;
+    if (likeLoadingByStatusId[statusId]) return;
+
+    const currentlyLiked = !!status.liked_by_me;
+    const previousCount = Number(status.likes_count || 0);
+    const optimisticCount = currentlyLiked ? Math.max(0, previousCount - 1) : previousCount + 1;
+    patchStatusInList(statusId, {
+      liked_by_me: !currentlyLiked,
+      likes_count: optimisticCount,
+    });
+
+    setLikeLoadingByStatusId((prev) => ({ ...prev, [statusId]: true }));
+    try {
+      await apiRequest(`/api/statuses/${statusId}/like`, {
+        method: currentlyLiked ? 'DELETE' : 'POST',
+        requireAuth: true,
+      });
+    } catch (error: any) {
+      patchStatusInList(statusId, {
+        liked_by_me: currentlyLiked,
+        likes_count: previousCount,
+      });
+      Alert.alert('Erreur', String(error?.message || 'Impossible de mettre à jour le like.'));
+    } finally {
+      setLikeLoadingByStatusId((prev) => {
+        const next = { ...prev };
+        delete next[statusId];
+        return next;
+      });
+    }
+  };
+
+  const openLikersModal = async (status: Status) => {
+    if (!currentUser) return;
+    if (String(status.user_id) !== String(currentUser.id)) return;
+
+    setLikersModalVisible(true);
+    setLikersLoading(true);
+    setLikers([]);
+
+    try {
+      const payload = await apiRequest<{ likes: StatusLiker[] }>(`/api/statuses/${status.id}/likes`, {
+        requireAuth: true,
+      });
+      setLikers(payload?.likes || []);
+    } catch (error: any) {
+      Alert.alert('Erreur', String(error?.message || 'Impossible de charger les likes de la story.'));
+      setLikers([]);
+    } finally {
+      setLikersLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -245,7 +342,7 @@ const StatusScreen: React.FC = () => {
 
       <Modal visible={!!selectedStatus} transparent animationType="fade">
         <View style={styles.modal}>
-          <Pressable style={styles.closeModal} onPress={() => setSelectedStatus(null)}><X color="#fff" size={32} /></Pressable>
+          <Pressable style={styles.closeModal} onPress={() => setSelectedStatusId(null)}><X color="#fff" size={32} /></Pressable>
           {selectedStatus && (
             <>
               {selectedStatus.message_type === 'VIDEO' ? (
@@ -256,9 +353,63 @@ const StatusScreen: React.FC = () => {
               <View style={styles.modalMeta}>
                 <Text style={styles.modalMetaName}>{selectedStatus.profiles.name}</Text>
                 <Text style={styles.modalMetaDate}>{formatPublishedAt(selectedStatus.created_at)}</Text>
+                <View style={styles.modalActionsRow}>
+                  <Pressable
+                    style={[styles.modalLikeAction, selectedStatus.liked_by_me ? styles.modalLikeActionActive : null]}
+                    disabled={!!likeLoadingByStatusId[selectedStatus.id] || String(selectedStatus.user_id) === String(currentUser?.id)}
+                    onPress={() => { void handleToggleLike(selectedStatus); }}
+                  >
+                    <Heart
+                      size={16}
+                      color={selectedStatus.liked_by_me ? '#22c55e' : '#ef4444'}
+                      fill={selectedStatus.liked_by_me ? '#22c55e' : 'transparent'}
+                    />
+                    <Text style={styles.modalLikeActionText}>{Number(selectedStatus.likes_count || 0)}</Text>
+                  </Pressable>
+                  {String(selectedStatus.user_id) === String(currentUser?.id) ? (
+                    <Pressable style={styles.modalLikersButton} onPress={() => { void openLikersModal(selectedStatus); }}>
+                      <Text style={styles.modalLikersButtonText}>Voir les likes</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
               </View>
             </>
           )}
+        </View>
+      </Modal>
+
+      <Modal visible={likersModalVisible} transparent animationType="slide" onRequestClose={() => setLikersModalVisible(false)}>
+        <View style={styles.likersModalOverlay}>
+          <View style={styles.likersModalSheet}>
+            <View style={styles.likersHeader}>
+              <Text style={styles.likersTitle}>Personnes ayant aimé</Text>
+              <Pressable onPress={() => setLikersModalVisible(false)}>
+                <X size={20} color={COLORS.ink} />
+              </Pressable>
+            </View>
+            {likersLoading ? (
+              <View style={styles.likersLoading}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
+                <Text style={styles.likersLoadingText}>Chargement...</Text>
+              </View>
+            ) : (
+              <ScrollView contentContainerStyle={styles.likersList}>
+                {likers.length === 0 ? (
+                  <Text style={styles.likersEmpty}>Aucun like pour le moment.</Text>
+                ) : (
+                  likers.map((entry) => (
+                    <View key={`${entry.user_id}-${entry.created_at}`} style={styles.likerRow}>
+                      <Image source={{ uri: entry.profile.photo || 'https://placehold.co/80x80' }} style={styles.likerAvatar} />
+                      <View style={styles.likerTextBlock}>
+                        <Text style={styles.likerName}>{entry.profile.name}</Text>
+                        <Text style={styles.likerDate}>{formatPublishedAt(entry.created_at)}</Text>
+                      </View>
+                    </View>
+                  ))
+                )}
+              </ScrollView>
+            )}
+          </View>
         </View>
       </Modal>
     </SafeAreaView>
@@ -288,6 +439,26 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
   },
+  statusLikeButton: {
+    position: 'absolute',
+    top: 10,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+  },
+  statusLikeButtonActive: {
+    backgroundColor: 'rgba(220,252,231,0.95)',
+  },
+  statusLikeCount: {
+    color: COLORS.ink,
+    fontSize: 11,
+    fontWeight: '800',
+  },
   statusInfo: { position: 'absolute', bottom: 10, left: 10, right: 10, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   statusMetaText: { flex: 1, paddingRight: 8 },
   statusName: { color: '#fff', fontSize: 12, fontWeight: '800', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 },
@@ -298,6 +469,108 @@ const styles = StyleSheet.create({
   modalMeta: { position: 'absolute', left: 16, right: 16, bottom: 24, backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   modalMetaName: { color: '#fff', fontSize: 14, fontWeight: '800' },
   modalMetaDate: { color: '#e2e8f0', fontSize: 12, fontWeight: '600', marginTop: 2 },
+  modalActionsRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  modalLikeAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  modalLikeActionActive: {
+    backgroundColor: 'rgba(220,252,231,0.95)',
+  },
+  modalLikeActionText: {
+    color: '#0f172a',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  modalLikersButton: {
+    borderRadius: 999,
+    backgroundColor: 'rgba(15,23,42,0.8)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  modalLikersButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  likersModalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  likersModalSheet: {
+    minHeight: '45%',
+    maxHeight: '70%',
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  likersHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  likersTitle: {
+    color: COLORS.ink,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  likersLoading: {
+    paddingVertical: 24,
+    alignItems: 'center',
+    gap: 8,
+  },
+  likersLoadingText: {
+    color: COLORS.muted,
+    fontWeight: '700',
+  },
+  likersList: {
+    paddingTop: 10,
+    paddingBottom: 20,
+    gap: 10,
+  },
+  likersEmpty: {
+    color: COLORS.muted,
+    textAlign: 'center',
+    marginTop: 12,
+    fontWeight: '700',
+  },
+  likerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 6,
+  },
+  likerAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+  },
+  likerTextBlock: {
+    flex: 1,
+  },
+  likerName: {
+    color: COLORS.ink,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  likerDate: {
+    color: COLORS.muted,
+    fontSize: 12,
+    marginTop: 1,
+  },
   empty: { flex: 1, alignItems: 'center', marginTop: 100, paddingHorizontal: 24 },
   emptyTitle: { color: '#7f1d1d', fontWeight: '900', fontSize: 20, marginBottom: 8 },
   emptyText: { color: COLORS.muted, textAlign: 'center' },

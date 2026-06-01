@@ -45,6 +45,7 @@ CREATE POLICY "Users can view their own purchases."
 
 -- RLS: Statuses (Updated for Men viewing / Women posting)
 ALTER TABLE IF EXISTS public.statuses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.status_likes ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Anyone can view active statuses." ON public.statuses;
 CREATE POLICY "Anyone can view active statuses."
@@ -78,5 +79,38 @@ CREATE POLICY "Women can post statuses."
 DROP POLICY IF EXISTS "Users can delete their own statuses." ON public.statuses;
 CREATE POLICY "Users can delete their own statuses."
   ON public.statuses FOR DELETE
+  TO authenticated
+  USING (auth.uid() = user_id);
+
+-- RLS: Status likes
+DROP POLICY IF EXISTS "Users can view status likes." ON public.status_likes;
+CREATE POLICY "Users can view status likes."
+  ON public.status_likes FOR SELECT
+  TO authenticated
+  USING (
+    exists (
+      select 1 from public.statuses s
+      where s.id = status_likes.status_id
+        and (s.expires_at > now() or s.user_id = auth.uid())
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can like statuses." ON public.status_likes;
+CREATE POLICY "Users can like statuses."
+  ON public.status_likes FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.statuses s
+      where s.id = status_likes.status_id
+        and s.expires_at > now()
+        and s.user_id <> auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can unlike their own status likes." ON public.status_likes;
+CREATE POLICY "Users can unlike their own status likes."
+  ON public.status_likes FOR DELETE
   TO authenticated
   USING (auth.uid() = user_id);

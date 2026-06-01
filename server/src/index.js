@@ -71,6 +71,7 @@ const APPLE_PROD_SUBSCRIPTIONS_URL = 'https://api.storekit.itunes.apple.com/inAp
 const APPLE_SANDBOX_SUBSCRIPTIONS_URL = 'https://api.storekit-sandbox.itunes.apple.com/inApps/v1/subscriptions';
 const appleTokenCache = { token: null, expiresAt: 0 };
 const SUBSCRIPTION_RENEWAL_REFRESH_COOLDOWN_MS = 5 * 60 * 1000;
+const STORY_LIKE_NOTIFICATION_DEDUP_MS = 60 * 1000;
 
 const allowedOrigins = ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean);
 app.use(cors({ origin: (origin, cb) => (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) ? cb(null, true) : cb(new Error('CORS_ERROR')) }));
@@ -236,6 +237,56 @@ const isMissingRelationError = (error) => {
   const code = String(error?.code || '').toUpperCase();
   const message = String(error?.message || '').toLowerCase();
   return code === '42P01' || message.includes('relation') || message.includes('does not exist');
+};
+
+const createStoryLikeNotificationIfNeeded = async ({ recipientId, storyId, likerProfile }) => {
+  if (!recipientId || !storyId || !likerProfile?.id) return;
+  if (String(recipientId) === String(likerProfile.id)) return;
+
+  const dedupSinceIso = new Date(Date.now() - STORY_LIKE_NOTIFICATION_DEDUP_MS).toISOString();
+  const dedupFilter = {
+    story_id: String(storyId),
+    liker_id: String(likerProfile.id),
+  };
+
+  const { data: existingRows, error: existingError } = await supabase
+    .from('events')
+    .select('id')
+    .eq('user_id', recipientId)
+    .eq('event_type', 'STORY_NOTIFICATION')
+    .eq('event_name', 'STORY_LIKED')
+    .gte('created_at', dedupSinceIso)
+    .contains('metadata', dedupFilter)
+    .limit(1);
+
+  if (existingError) {
+    if (isMissingRelationError(existingError)) return;
+    return;
+  }
+
+  if ((existingRows || []).length > 0) return;
+
+  const likerName = String(likerProfile.name || 'Un utilisateur');
+  const likerPhoto = Array.isArray(likerProfile.photos) ? (likerProfile.photos[0] || null) : null;
+
+  const { error: insertError } = await supabase.from('events').insert({
+    user_id: recipientId,
+    event_type: 'STORY_NOTIFICATION',
+    event_name: 'STORY_LIKED',
+    metadata: {
+      title: 'Story likée',
+      message: `${likerName} a aimé votre story.`,
+      story_id: String(storyId),
+      liker_id: String(likerProfile.id),
+      liker_name: likerName,
+      liker_photo: likerPhoto,
+      is_read: false,
+    },
+  });
+
+  if (insertError && isMissingRelationError(insertError)) {
+    return;
+  }
 };
 
 const getLatestActiveSubscriptionForUser = async (userId) => {
@@ -1873,7 +1924,38 @@ app.get('/api/statuses', requireAuth, async (req, res) => {
     return !authorHidden;
   });
 
-  res.json(filtered);
+  const likesCountByStatusId = {};
+  const likedByMeStatusIds = new Set();
+  const statusIds = filtered.map((row) => row?.id).filter(Boolean);
+
+  if (statusIds.length > 0) {
+    const { data: likeRows, error: likesError } = await supabase
+      .from('status_likes')
+      .select('status_id, user_id')
+      .in('status_id', statusIds);
+
+    if (!likesError) {
+      for (const row of (likeRows || [])) {
+        const statusId = row?.status_id;
+        const likerId = row?.user_id;
+        if (!statusId || !likerId) continue;
+        likesCountByStatusId[statusId] = (likesCountByStatusId[statusId] || 0) + 1;
+        if (String(likerId) === String(me.id)) {
+          likedByMeStatusIds.add(statusId);
+        }
+      }
+    } else if (!isMissingRelationError(likesError)) {
+      return res.status(500).json({ error: likesError.message });
+    }
+  }
+
+  const payload = filtered.map((row) => ({
+    ...row,
+    likes_count: likesCountByStatusId[row.id] || 0,
+    liked_by_me: likedByMeStatusIds.has(row.id),
+  }));
+
+  res.json(payload);
 });
 
 app.post('/api/statuses', requireAuth, async (req, res) => {
@@ -1895,6 +1977,119 @@ app.post('/api/statuses', requireAuth, async (req, res) => {
 
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
+});
+
+app.post('/api/statuses/:id/like', requireAuth, async (req, res) => {
+  const me = req.user;
+  const statusId = String(req.params.id || '').trim();
+  if (!statusId) return res.status(400).json({ error: 'invalid_status_id' });
+
+  const { data: statusRow, error: statusError } = await supabase
+    .from('statuses')
+    .select('id, user_id, expires_at')
+    .eq('id', statusId)
+    .maybeSingle();
+
+  if (statusError) return res.status(500).json({ error: statusError.message });
+  if (!statusRow) return res.status(404).json({ error: 'status_not_found' });
+  if (new Date(statusRow.expires_at) <= new Date()) return res.status(404).json({ error: 'status_expired' });
+  if (String(statusRow.user_id) === String(me.id)) return res.status(400).json({ error: 'cannot_like_own_status' });
+
+  const { error: likeError } = await supabase
+    .from('status_likes')
+    .upsert(
+      { status_id: statusId, user_id: me.id },
+      { onConflict: 'status_id,user_id', ignoreDuplicates: true }
+    );
+  if (likeError) {
+    if (isMissingRelationError(likeError)) {
+      return res.status(503).json({ error: 'story_likes_schema_missing' });
+    }
+    return res.status(500).json({ error: likeError.message });
+  }
+
+  await createStoryLikeNotificationIfNeeded({
+    recipientId: statusRow.user_id,
+    storyId: statusId,
+    likerProfile: me,
+  });
+
+  res.json({ success: true });
+});
+
+app.delete('/api/statuses/:id/like', requireAuth, async (req, res) => {
+  const me = req.user;
+  const statusId = String(req.params.id || '').trim();
+  if (!statusId) return res.status(400).json({ error: 'invalid_status_id' });
+
+  const { error } = await supabase
+    .from('status_likes')
+    .delete()
+    .eq('status_id', statusId)
+    .eq('user_id', me.id);
+
+  if (error) {
+    if (isMissingRelationError(error)) {
+      return res.status(503).json({ error: 'story_likes_schema_missing' });
+    }
+    return res.status(500).json({ error: error.message });
+  }
+  res.json({ success: true });
+});
+
+app.get('/api/statuses/:id/likes', requireAuth, async (req, res) => {
+  const me = req.user;
+  const statusId = String(req.params.id || '').trim();
+  const limit = Math.max(1, Math.min(100, Number(req.query.limit || 50)));
+  if (!statusId) return res.status(400).json({ error: 'invalid_status_id' });
+
+  const { data: statusRow, error: statusError } = await supabase
+    .from('statuses')
+    .select('id, user_id')
+    .eq('id', statusId)
+    .maybeSingle();
+  if (statusError) return res.status(500).json({ error: statusError.message });
+  if (!statusRow) return res.status(404).json({ error: 'status_not_found' });
+  if (String(statusRow.user_id) !== String(me.id)) return res.status(403).json({ error: 'forbidden' });
+
+  const { data: likesRows, error: likesError } = await supabase
+    .from('status_likes')
+    .select('user_id, created_at')
+    .eq('status_id', statusId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (likesError) {
+    if (isMissingRelationError(likesError)) {
+      return res.json({ likes: [], count: 0 });
+    }
+    return res.status(500).json({ error: likesError.message });
+  }
+
+  const likerIds = [...new Set((likesRows || []).map((row) => row?.user_id).filter(Boolean))];
+  const profilesById = {};
+  if (likerIds.length > 0) {
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, name, photos')
+      .in('id', likerIds);
+    if (profilesError) return res.status(500).json({ error: profilesError.message });
+    for (const profile of (profiles || [])) {
+      profilesById[profile.id] = profile;
+    }
+  }
+
+  const likes = (likesRows || []).map((row) => ({
+    user_id: row.user_id,
+    created_at: row.created_at,
+    profile: {
+      id: row.user_id,
+      name: profilesById[row.user_id]?.name || 'Utilisateur',
+      photo: Array.isArray(profilesById[row.user_id]?.photos) ? (profilesById[row.user_id].photos[0] || null) : null,
+    },
+  }));
+
+  res.json({ likes, count: likes.length });
 });
 
 const handleSuperLikesReceived = async (req, res) => {
@@ -2001,8 +2196,8 @@ app.get('/api/notifications/admin', requireAuth, async (req, res) => {
   const limit = Math.max(1, Math.min(100, Number(req.query.limit || 20)));
   const { data, error } = await supabase
     .from('events')
-    .select('id, event_name, metadata, created_at')
-    .eq('event_type', 'ADMIN_NOTIFICATION')
+    .select('id, event_type, event_name, metadata, created_at')
+    .in('event_type', ['ADMIN_NOTIFICATION', 'STORY_NOTIFICATION'])
     .eq('user_id', req.user.id)
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -2047,7 +2242,7 @@ app.post('/api/notifications/admin/read-all', requireAuth, async (req, res) => {
   const { data, error } = await supabase
     .from('events')
     .select('id, metadata')
-    .eq('event_type', 'ADMIN_NOTIFICATION')
+    .in('event_type', ['ADMIN_NOTIFICATION', 'STORY_NOTIFICATION'])
     .eq('user_id', req.user.id);
   if (error) return res.status(500).json({ error: error.message });
 
