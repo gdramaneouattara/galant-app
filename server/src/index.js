@@ -2071,23 +2071,59 @@ app.get('/api/statuses/:id/likes', requireAuth, async (req, res) => {
   if (likerIds.length > 0) {
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, name, photos')
+      .select('id, name, age, gender, city, country, bio, photos, interests, is_verified, is_premium, relationship_goal, suspended_at, onboarding_completed')
       .in('id', likerIds);
     if (profilesError) return res.status(500).json({ error: profilesError.message });
     for (const profile of (profiles || [])) {
+      if (profile?.suspended_at || !profile?.onboarding_completed) continue;
       profilesById[profile.id] = profile;
     }
+  }
+
+  const visibleLikerIds = Object.keys(profilesById);
+  const { data: mySentLikes, error: sentLikesError } = visibleLikerIds.length > 0
+    ? await supabase
+      .from('likes')
+      .select('liked_id')
+      .eq('liker_id', me.id)
+      .in('liked_id', visibleLikerIds)
+    : { data: [], error: null };
+  if (sentLikesError) return res.status(500).json({ error: sentLikesError.message });
+  const likedBackIds = new Set((mySentLikes || []).map((row) => row?.liked_id).filter(Boolean));
+
+  const { data: myMatches, error: myMatchesError } = await supabase
+    .from('matches')
+    .select('user_one_id, user_two_id')
+    .eq('status', 'ACTIVE')
+    .or(`user_one_id.eq.${me.id},user_two_id.eq.${me.id}`);
+  if (myMatchesError) return res.status(500).json({ error: myMatchesError.message });
+
+  const matchedIds = new Set();
+  for (const match of (myMatches || [])) {
+    if (String(match?.user_one_id) === String(me.id) && match?.user_two_id) matchedIds.add(match.user_two_id);
+    if (String(match?.user_two_id) === String(me.id) && match?.user_one_id) matchedIds.add(match.user_one_id);
   }
 
   const likes = (likesRows || []).map((row) => ({
     user_id: row.user_id,
     created_at: row.created_at,
+    liked_back: likedBackIds.has(row.user_id),
+    is_matched: matchedIds.has(row.user_id),
     profile: {
       id: row.user_id,
       name: profilesById[row.user_id]?.name || 'Utilisateur',
-      photo: Array.isArray(profilesById[row.user_id]?.photos) ? (profilesById[row.user_id].photos[0] || null) : null,
+      age: profilesById[row.user_id]?.age ?? null,
+      gender: profilesById[row.user_id]?.gender || null,
+      city: profilesById[row.user_id]?.city || null,
+      country: profilesById[row.user_id]?.country || null,
+      bio: profilesById[row.user_id]?.bio || '',
+      photos: Array.isArray(profilesById[row.user_id]?.photos) ? profilesById[row.user_id].photos : [],
+      interests: Array.isArray(profilesById[row.user_id]?.interests) ? profilesById[row.user_id].interests : [],
+      is_verified: !!profilesById[row.user_id]?.is_verified,
+      is_premium: !!profilesById[row.user_id]?.is_premium,
+      relationship_goal: profilesById[row.user_id]?.relationship_goal || null,
     },
-  }));
+  })).filter((row) => !!profilesById[row.user_id]);
 
   res.json({ likes, count: likes.length });
 });
