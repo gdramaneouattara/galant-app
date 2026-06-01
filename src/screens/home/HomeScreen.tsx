@@ -78,6 +78,7 @@ const HomeScreen: React.FC = () => {
   const [trialLocked, setTrialLocked] = useState(false);
   const [matchModal, setMatchModal] = useState<MatchModalState | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [showFemaleOfferDetails, setShowFemaleOfferDetails] = useState(false);
   const [showSuperLikeModal, setShowSuperLikeModal] = useState(false);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const [availableProductIds, setAvailableProductIds] = useState<Set<string>>(new Set());
@@ -118,6 +119,10 @@ const HomeScreen: React.FC = () => {
     const daysRemaining = Math.max(0, Math.ceil(remainingMs / (24 * 60 * 60 * 1000)));
     return { eligible: true, active: remainingMs > 0, daysRemaining };
   }, [currentUser?.gender, currentUser?.isPremium, currentUser?.trial_started_at]);
+
+  const isFemaleFreePlan = useMemo(() => {
+    return String(currentUser?.gender || '').toUpperCase() === 'FEMALE' && !currentUser?.isPremium;
+  }, [currentUser?.gender, currentUser?.isPremium]);
 
   useEffect(() => {
     if (trialInfo.eligible && !trialInfo.active) {
@@ -397,6 +402,16 @@ const HomeScreen: React.FC = () => {
         </Pressable>
       </View>
 
+      {isFemaleFreePlan ? (
+        <View style={styles.offerBanner}>
+          <Text style={styles.offerBannerTitle}>Votre offre actuelle</Text>
+          <Text style={styles.offerBannerSub}>Forfait Gratuit Femme actif</Text>
+          <Pressable style={styles.offerBannerBtn} onPress={() => setShowFemaleOfferDetails(true)}>
+            <Text style={styles.offerBannerBtnText}>Voir les détails</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
       <View style={styles.body}>
         {loading ? (
           <ActivityIndicator color={COLORS.primary} size="large" style={{ flex: 1 }} />
@@ -530,6 +545,31 @@ const HomeScreen: React.FC = () => {
         </View>
       </Modal>
 
+      <Modal visible={showFemaleOfferDetails} transparent animationType="fade" onRequestClose={() => setShowFemaleOfferDetails(false)}>
+        <View style={styles.offerDetailsOverlay}>
+          <View style={styles.offerDetailsCard}>
+            <View style={styles.offerDetailsHeader}>
+              <Text style={styles.offerDetailsTitle}>Offre gratuite femme</Text>
+              <Pressable onPress={() => setShowFemaleOfferDetails(false)}>
+                <X size={20} color={COLORS.ink} />
+              </Pressable>
+            </View>
+
+            <Text style={styles.offerDetailsSectionTitle}>Inclus gratuitement</Text>
+            <Text style={styles.offerDetailsLine}>• Découverte des profils</Text>
+            <Text style={styles.offerDetailsLine}>• Likes et matchs</Text>
+            <Text style={styles.offerDetailsLine}>• Stories</Text>
+            <Text style={styles.offerDetailsLine}>• Messages avec les profils déjà matchés</Text>
+
+            <Text style={[styles.offerDetailsSectionTitle, { marginTop: 12 }]}>Fonctionnalités payantes</Text>
+            <Text style={styles.offerDetailsLine}>• Message direct hors match (achat ponctuel)</Text>
+            <Text style={styles.offerDetailsLine}>• Super Like (achat ponctuel)</Text>
+            <Text style={styles.offerDetailsLine}>• Boost profil (achat ponctuel)</Text>
+            <Text style={styles.offerDetailsLine}>• Abonnement Premium</Text>
+          </View>
+        </View>
+      </Modal>
+
       {matchModal && (
         <Modal visible transparent animationType="fade">
           <View style={styles.matchOverlay}>
@@ -633,6 +673,42 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '900',
   },
+  offerBanner: {
+    marginHorizontal: 16,
+    marginTop: 6,
+    marginBottom: 2,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#fecdd3',
+    backgroundColor: '#fff1f2',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  offerBannerTitle: {
+    color: '#9f1239',
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  offerBannerSub: {
+    flex: 1,
+    color: '#4c0519',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  offerBannerBtn: {
+    borderRadius: 999,
+    backgroundColor: '#e11d48',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  offerBannerBtnText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '800',
+  },
   filterBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, padding: 16 },
   lockedCard: {
@@ -701,7 +777,42 @@ const styles = StyleSheet.create({
   matchTitle: { fontSize: 42, fontWeight: '900', color: '#fff' },
   matchSub: { fontSize: 18, color: '#fff', textAlign: 'center', paddingHorizontal: 40 },
   matchBtn: { backgroundColor: '#fff', paddingHorizontal: 40, paddingVertical: 15, borderRadius: 30 },
-  matchBtnText: { color: COLORS.primary, fontWeight: '900', fontSize: 16 }
+  matchBtnText: { color: COLORS.primary, fontWeight: '900', fontSize: 16 },
+  offerDetailsOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(2,6,23,0.45)',
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+  },
+  offerDetailsCard: {
+    borderRadius: 18,
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  offerDetailsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  offerDetailsTitle: {
+    color: COLORS.ink,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  offerDetailsSectionTitle: {
+    color: '#7f1d1d',
+    fontSize: 13,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+  offerDetailsLine: {
+    color: COLORS.ink,
+    fontSize: 13,
+    lineHeight: 20,
+    fontWeight: '600',
+  },
 });
 
 export default HomeScreen;
