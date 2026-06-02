@@ -459,7 +459,7 @@ const HomeScreen: React.FC = () => {
       {isFemaleFreePlan ? (
         <View style={styles.offerBanner}>
           <Text style={styles.offerBannerTitle}>Votre offre actuelle</Text>
-          <Text style={styles.offerBannerSub}>Forfait Gratuit Femme actif</Text>
+          <Text style={styles.offerBannerSub}>Forfait gratuit</Text>
           <Pressable style={styles.offerBannerBtn} onPress={() => setShowFemaleOfferDetails(true)}>
             <Text style={styles.offerBannerBtnText}>Voir les détails</Text>
           </Pressable>
@@ -603,7 +603,7 @@ const HomeScreen: React.FC = () => {
         <View style={styles.offerDetailsOverlay}>
           <View style={styles.offerDetailsCard}>
             <View style={styles.offerDetailsHeader}>
-              <Text style={styles.offerDetailsTitle}>Offre gratuite femme</Text>
+              <Text style={styles.offerDetailsTitle}>Forfait gratuit (femmes)</Text>
               <Pressable onPress={() => setShowFemaleOfferDetails(false)}>
                 <X size={20} color={COLORS.ink} />
               </Pressable>
@@ -620,6 +620,12 @@ const HomeScreen: React.FC = () => {
             <Text style={styles.offerDetailsLine}>• Super Like (achat ponctuel)</Text>
             <Text style={styles.offerDetailsLine}>• Boost profil (achat ponctuel)</Text>
             <Text style={styles.offerDetailsLine}>• Abonnement Premium</Text>
+
+            <Text style={[styles.offerDetailsSectionTitle, { marginTop: 12 }]}>Abonnement Premium (femmes)</Text>
+            <Text style={styles.offerDetailsLine}>• Jusqu'à 10 Super Likes gratuits par jour</Text>
+            <Text style={styles.offerDetailsLine}>• Mode invisible inclus selon le forfait Premium choisi</Text>
+            <Text style={styles.offerDetailsLine}>• Badge Premium affiché sur le profil</Text>
+            <Text style={styles.offerDetailsLine}>• Accès continu aux avantages Premium tant que l'abonnement est actif</Text>
           </View>
         </View>
       </Modal>
