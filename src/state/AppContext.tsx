@@ -57,6 +57,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [loading, setLoading] = useState(true);
   const matchChannelsRef = useRef<RealtimeChannel[]>([]);
   const matchesChannelRef = useRef<RealtimeChannel | null>(null);
+  const profileChannelRef = useRef<RealtimeChannel | null>(null);
   const pushTokenRef = useRef<string | null>(null);
 
   const getCurrentSubscriptionState = async (userId: string) => {
@@ -450,6 +451,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setMatches([]);
           setMessages([]);
           clearMatchChannels();
+          if (profileChannelRef.current) {
+            supabase.removeChannel(profileChannelRef.current);
+            profileChannelRef.current = null;
+          }
           if (matchesChannelRef.current) {
             supabase.removeChannel(matchesChannelRef.current);
             matchesChannelRef.current = null;
@@ -523,6 +528,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     matchesChannelRef.current = channel;
   }, [session?.user?.id]);
 
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    if (profileChannelRef.current) {
+      supabase.removeChannel(profileChannelRef.current);
+    }
+
+    const uid = session.user.id;
+    const channel = supabase
+      .channel(`profile_${uid}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${uid}` },
+        (payload) => {
+          const profile = payload.new as {
+            is_verified?: boolean;
+            photo_review_status?: string | null;
+          };
+
+          setCurrentUser((prev) => {
+            if (!prev || prev.id !== uid) return prev;
+            return {
+              ...prev,
+              isVerified: !!profile.is_verified,
+              photo_review_status: profile.photo_review_status ?? prev.photo_review_status,
+            };
+          });
+        }
+      )
+      .subscribe();
+
+    profileChannelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (profileChannelRef.current === channel) {
+        profileChannelRef.current = null;
+      }
+    };
+  }, [session?.user?.id]);
+
   const login = (user: User) => {
     setCurrentUser(user);
   };
@@ -535,6 +580,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setMatches([]);
     setMessages([]);
     clearMatchChannels();
+    if (profileChannelRef.current) {
+      supabase.removeChannel(profileChannelRef.current);
+      profileChannelRef.current = null;
+    }
     if (matchesChannelRef.current) {
       supabase.removeChannel(matchesChannelRef.current);
       matchesChannelRef.current = null;

@@ -49,7 +49,6 @@ const QUOTAS = {
   MEN_3M_HIDE_SEEN_SECONDS: 7200,
   TRIAL_BOOST_SECONDS: 3600
 };
-const DIRECT_MESSAGE_TRIAL_LIMIT = 5;
 const PLAN_DURATIONS = { MONTHLY: 30, QUARTERLY: 90, BIANNUAL: 180, ANNUAL: 365 };
 const ALLOWED_REPORT_REASONS = new Set([
   'GENERAL',
@@ -137,15 +136,6 @@ const isTrialActive = (p) => {
   return new Date() < trialEnd;
 };
 
-const getTrialWindow = (p) => {
-  if (!p?.trial_started_at) return null;
-  const startedAt = new Date(p.trial_started_at);
-  if (Number.isNaN(startedAt.getTime())) return null;
-  const endsAt = new Date(startedAt);
-  endsAt.setDate(endsAt.getDate() + TRIAL_DAYS);
-  return { startedAt, endsAt };
-};
-
 const hasStandardAccess = (p) => {
   if (!p) return false;
   if (p.gender === 'FEMALE') return true;
@@ -191,30 +181,6 @@ const hasDirectMessagePurchase = async (userId, targetUserId) => {
     .eq('target_id', targetUserId)
     .maybeSingle();
   return !!data;
-};
-
-const getTrialDirectMessageUsage = async (p) => {
-  if (!p || p.gender !== 'MALE') return { used: 0, limit: DIRECT_MESSAGE_TRIAL_LIMIT, remaining: 0, active: false };
-  const trial = getTrialWindow(p);
-  if (!trial) return { used: 0, limit: DIRECT_MESSAGE_TRIAL_LIMIT, remaining: 0, active: false };
-
-  const { data } = await supabase
-    .from('purchased_interactions')
-    .select('id', { count: 'exact' })
-    .eq('user_id', p.id)
-    .eq('interaction_type', 'DIRECT_MESSAGE')
-    .eq('provider', 'TRIAL')
-    .gte('created_at', trial.startedAt.toISOString())
-    .lt('created_at', trial.endsAt.toISOString());
-
-  const used = Number(data?.length || 0);
-  const remaining = Math.max(0, DIRECT_MESSAGE_TRIAL_LIMIT - used);
-  return {
-    used,
-    limit: DIRECT_MESSAGE_TRIAL_LIMIT,
-    remaining,
-    active: isTrialActive(p),
-  };
 };
 
 const getDailyUsage = async (userId, type) => {
@@ -1373,21 +1339,6 @@ app.post('/api/subscriptions/sync', requireAuth, async (req, res) => {
   }
 });
 
-app.get('/api/messages/direct-thread-quota', requireAuth, async (req, res) => {
-  const me = req.user;
-  if (!me || me.gender !== 'MALE' || me.is_premium) {
-    return res.json({
-      active: false,
-      limit: DIRECT_MESSAGE_TRIAL_LIMIT,
-      used: 0,
-      remaining: DIRECT_MESSAGE_TRIAL_LIMIT,
-    });
-  }
-
-  const usage = await getTrialDirectMessageUsage(me);
-  return res.json(usage);
-});
-
 // --- MESSAGES & STATUTS ---
 
 app.post('/api/messages/direct-thread', requireAuth, async (req, res) => {
@@ -1439,24 +1390,6 @@ app.post('/api/messages/direct-thread', requireAuth, async (req, res) => {
     }
   }
 
-  const maleTrial = me.gender === 'MALE' && !me.is_premium && isTrialActive(me);
-  if (maleTrial) {
-    const usage = await getTrialDirectMessageUsage(me);
-    if (usage.remaining <= 0) {
-      const purchased = await hasDirectMessagePurchase(me.id, targetUserId);
-      if (purchased) {
-        // Paid direct message can bypass the free trial quota.
-      } else {
-      return res.status(403).json({
-        error: 'direct_message_trial_quota_exceeded',
-        used: usage.used,
-        limit: usage.limit,
-        remaining: usage.remaining,
-      });
-      }
-    }
-  }
-
   const { data: createdMatch, error: createMatchError } = await supabase
     .from('matches')
     .insert({ user_one_id: userOneId, user_two_id: userTwoId, status: 'ACTIVE' })
@@ -1480,18 +1413,6 @@ app.post('/api/messages/direct-thread', requireAuth, async (req, res) => {
 
   if (!createdMatch?.id) {
     return res.status(500).json({ error: 'direct_thread_creation_failed' });
-  }
-
-  if (maleTrial) {
-    await supabase.from('purchased_interactions').insert({
-      user_id: me.id,
-      interaction_type: 'DIRECT_MESSAGE',
-      target_id: targetUserId,
-      reference: null,
-      price_amount: 0,
-      currency: 'XOF',
-      provider: 'TRIAL',
-    });
   }
 
   return res.json({ matchId: createdMatch.id, unlocked: true });
@@ -2166,7 +2087,7 @@ const handleSuperLikesReceived = async (req, res) => {
 };
 
 const handleLikesReceived = async (req, res) => {
-  if (!req.user?.is_premium) {
+  if (!req.user?.is_premium && !isTrialActive(req.user)) {
     return res.status(403).json({ error: 'subscription_required' });
   }
 

@@ -46,12 +46,6 @@ type ChatMessageItemProps = {
   displayTime: string;
 };
 
-type DirectThreadTrialQuota = {
-  active: boolean;
-  limit: number;
-  used: number;
-  remaining: number;
-};
 const DIRECT_MESSAGE_SKU = 'direct_message_1';
 
 const ChatMessageItem = memo<ChatMessageItemProps>(({ item, isMine, avatarUri, mediaUrl, displayTime }) => {
@@ -100,16 +94,12 @@ const ChatScreen: React.FC = () => {
   const [checkingUnlock, setCheckingUnlock] = useState(true);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [premiumRequired, setPremiumRequired] = useState(false);
-  const [directTrialQuotaReached, setDirectTrialQuotaReached] = useState(false);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const [mediaUploading, setMediaUploading] = useState(false);
   const [activeMatchId, setActiveMatchId] = useState<string | null>(initialMatchId || null);
-  const [directThreadTrialQuota, setDirectThreadTrialQuota] = useState<DirectThreadTrialQuota | null>(null);
   const [isConversationBlocked, setIsConversationBlocked] = useState(false);
   const [showSafetyMenu, setShowSafetyMenu] = useState(false);
   const [availableProductIds, setAvailableProductIds] = useState<Set<string>>(new Set());
-
-  const isMaleTrialEligible = currentUser?.gender === 'MALE' && !currentUser?.isPremium;
 
   const loadAndroidConsumables = useCallback(async (): Promise<Set<string>> => {
     if (Platform.OS !== 'android' || isExpoGo) return new Set();
@@ -137,40 +127,18 @@ const ChatScreen: React.FC = () => {
       if (response?.matchId) {
         setActiveMatchId(response.matchId);
         setPremiumRequired(false);
-        setDirectTrialQuotaReached(false);
         setIsConversationBlocked(false);
-        if (isMaleTrialEligible) {
-          const quota = await apiRequest<DirectThreadTrialQuota>('/api/messages/direct-thread-quota', {
-            requireAuth: true,
-          });
-          setDirectThreadTrialQuota(quota);
-        }
         return response.matchId;
       }
       return null;
     } catch (error: any) {
       if (String(error?.message || '').includes('subscription_required')) {
         setPremiumRequired(true);
-        setDirectTrialQuotaReached(false);
         setIsUnlocked(false);
         return null;
       }
       if (String(error?.message || '').includes('payment_required')) {
-        setDirectTrialQuotaReached(false);
         setIsUnlocked(false);
-        return null;
-      }
-      if (String(error?.message || '').includes('direct_message_trial_quota_exceeded')) {
-        setIsUnlocked(false);
-        setPremiumRequired(false);
-        setDirectTrialQuotaReached(true);
-        setShowUnlockModal(true);
-        if (isMaleTrialEligible) {
-          const quota = await apiRequest<DirectThreadTrialQuota>('/api/messages/direct-thread-quota', {
-            requireAuth: true,
-          });
-          setDirectThreadTrialQuota(quota);
-        }
         return null;
       }
       if (String(error?.message || '').includes('conversation_blocked')) {
@@ -181,22 +149,7 @@ const ChatScreen: React.FC = () => {
       }
       throw error;
     }
-  }, [isMaleTrialEligible, userId]);
-
-  const loadDirectThreadTrialQuota = useCallback(async () => {
-    if (!isMaleTrialEligible) {
-      setDirectThreadTrialQuota(null);
-      return;
-    }
-    try {
-      const quota = await apiRequest<DirectThreadTrialQuota>('/api/messages/direct-thread-quota', {
-        requireAuth: true,
-      });
-      setDirectThreadTrialQuota(quota);
-    } catch {
-      setDirectThreadTrialQuota(null);
-    }
-  }, [isMaleTrialEligible]);
+  }, [userId]);
 
   const checkUnlockStatus = useCallback(async () => {
     try {
@@ -211,7 +164,6 @@ const ChatScreen: React.FC = () => {
         if (!trialActive) {
           setIsUnlocked(false);
           setPremiumRequired(true);
-          setDirectTrialQuotaReached(false);
           return;
         }
       }
@@ -380,8 +332,6 @@ const ChatScreen: React.FC = () => {
     fetchUser();
     fetchMessages();
     checkUnlockStatus();
-    void loadDirectThreadTrialQuota();
-
     if (!activeMatchId) return;
     const channel = supabase.channel(`chat_${activeMatchId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${activeMatchId}` }, () => {
@@ -390,7 +340,7 @@ const ChatScreen: React.FC = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [userId, activeMatchId, fetchMessages, checkUnlockStatus, loadDirectThreadTrialQuota]);
+  }, [userId, activeMatchId, fetchMessages, checkUnlockStatus]);
 
   useEffect(() => {
     let cancelled = false;
@@ -664,14 +614,6 @@ const ChatScreen: React.FC = () => {
         </View>
       )}
 
-      {directThreadTrialQuota?.active ? (
-        <View style={styles.trialQuotaBanner}>
-          <Text style={styles.trialQuotaText}>
-            Messages directs d'essai: {directThreadTrialQuota.remaining}/{directThreadTrialQuota.limit} restants
-          </Text>
-        </View>
-      ) : null}
-
       <FlatList
         data={messages}
         renderItem={renderMessage}
@@ -700,9 +642,7 @@ const ChatScreen: React.FC = () => {
                 ? 'Cette conversation est bloquée. Utilisez le menu sécurité pour débloquer.'
                 : (premiumRequired
                 ? 'Passez à Premium pour réactiver cette conversation.'
-                : (directTrialQuotaReached
-                  ? 'Vous avez utilisé vos 5 messages directs gratuits. Achetez un message direct pour continuer.'
-                  : 'Débloquez ce chat pour envoyer vos messages et médias.'))}
+                : 'Débloquez ce chat pour envoyer vos messages et médias.')}
             </Text>
           </View>
           <Pressable
@@ -719,7 +659,7 @@ const ChatScreen: React.FC = () => {
             }}
           >
           <Text style={styles.unlockBtnText}>
-              {isConversationBlocked ? 'Gérer' : (premiumRequired ? 'Passer Premium' : (directTrialQuotaReached ? 'Acheter' : 'Débloquer'))}
+              {isConversationBlocked ? 'Gérer' : (premiumRequired ? 'Passer Premium' : 'Débloquer')}
             </Text>
           </Pressable>
         </View>
@@ -901,21 +841,6 @@ const styles = StyleSheet.create({
     color: '#4e3a2a',
     fontWeight: '700',
     fontSize: 13,
-  },
-  trialQuotaBanner: {
-    marginHorizontal: 14,
-    marginBottom: 8,
-    backgroundColor: '#ecfdf5',
-    borderWidth: 1,
-    borderColor: '#bbf7d0',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  trialQuotaText: {
-    color: '#166534',
-    fontWeight: '700',
-    fontSize: 12,
   },
   list: { paddingHorizontal: 14, paddingTop: 6, paddingBottom: 14 },
   unlockPrompt: {

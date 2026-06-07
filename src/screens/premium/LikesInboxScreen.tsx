@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -38,6 +38,8 @@ type LikeInboxRow = {
   };
 };
 
+const TRIAL_DAYS = 7;
+
 const LikesInboxScreen: React.FC = () => {
   const navigation = useNavigation();
   const { currentUser } = useApp();
@@ -47,8 +49,25 @@ const LikesInboxScreen: React.FC = () => {
   const [likingId, setLikingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const trialInfo = useMemo(() => {
+    const isMale = currentUser?.gender === 'MALE';
+    if (!isMale || currentUser?.isPremium || !currentUser?.trial_started_at) {
+      return { active: false };
+    }
+
+    const startedAt = new Date(currentUser.trial_started_at).getTime();
+    if (!Number.isFinite(startedAt)) {
+      return { active: false };
+    }
+
+    const trialEndTs = startedAt + TRIAL_DAYS * 24 * 60 * 60 * 1000;
+    return { active: trialEndTs > Date.now() };
+  }, [currentUser?.gender, currentUser?.isPremium, currentUser?.trial_started_at]);
+
+  const canAccessLikesInbox = !!currentUser?.isPremium || trialInfo.active;
+
   const fetchLikesInbox = useCallback(async () => {
-    if (!currentUser?.isPremium) {
+    if (!canAccessLikesInbox) {
       setLikes([]);
       setLoading(false);
       setError(null);
@@ -67,7 +86,7 @@ const LikesInboxScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentUser?.isPremium]);
+  }, [canAccessLikesInbox]);
 
   useFocusEffect(
     useCallback(() => {
@@ -142,7 +161,7 @@ const LikesInboxScreen: React.FC = () => {
     );
   };
 
-  if (!currentUser?.isPremium) {
+  if (!canAccessLikesInbox) {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.lockedWrap}>

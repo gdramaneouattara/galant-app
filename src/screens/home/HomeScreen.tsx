@@ -130,6 +130,10 @@ const HomeScreen: React.FC = () => {
     return { eligible: true, active: remainingMs > 0, daysRemaining };
   }, [currentUser?.gender, currentUser?.isPremium, currentUser?.trial_started_at]);
 
+  const canAccessLikesInbox = useMemo(() => {
+    return !!currentUser?.isPremium || trialInfo.active;
+  }, [currentUser?.isPremium, trialInfo.active]);
+
   const isFemaleFreePlan = useMemo(() => {
     return String(currentUser?.gender || '').toUpperCase() === 'FEMALE' && !currentUser?.isPremium;
   }, [currentUser?.gender, currentUser?.isPremium]);
@@ -182,7 +186,7 @@ const HomeScreen: React.FC = () => {
 
   const fetchLikesInboxCount = useCallback(async () => {
     if (!currentUser) return;
-    if (!currentUser.isPremium) {
+    if (!canAccessLikesInbox) {
       setLikesInboxCount(0);
       return;
     }
@@ -194,7 +198,7 @@ const HomeScreen: React.FC = () => {
     } catch {
       setLikesInboxCount(0);
     }
-  }, [currentUser]);
+  }, [currentUser, canAccessLikesInbox]);
 
   useFocusEffect(
     useCallback(() => {
@@ -434,7 +438,7 @@ const HomeScreen: React.FC = () => {
         <Pressable
           style={styles.quickActionBtn}
           onPress={() => {
-            if (!currentUser?.isPremium) {
+            if (!canAccessLikesInbox) {
               Alert.alert('Premium requis', 'Passez à Premium pour voir qui vous a liké.');
               navigation.navigate('Premium');
               return;
