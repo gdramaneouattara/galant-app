@@ -116,7 +116,7 @@ const ROLE_LABELS: Record<CommunityRole, string> = {
 const CommunityChatScreen: React.FC = () => {
   const route = useRoute<any>();
   const navigation = useNavigation();
-  const { currentUser } = useApp();
+  const { currentUser, appResumeVersion } = useApp();
   const { communityId, communityName } = route.params;
 
   const [messages, setMessages] = useState<CommunityMessage[]>([]);
@@ -197,7 +197,7 @@ const CommunityChatScreen: React.FC = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [communityId]);
+  }, [communityId, appResumeVersion]);
 
   useEffect(() => {
     let cancelled = false;

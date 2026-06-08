@@ -36,7 +36,7 @@ type AdminNotification = {
 
 const MessagesScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
-  const { matches, users, currentUser, messages } = useApp();
+  const { matches, users, currentUser, messages, appResumeVersion } = useApp();
   const [adminNotifications, setAdminNotifications] = useState<AdminNotification[]>([]);
   const [loadingAdminNotifications, setLoadingAdminNotifications] = useState(false);
   const [markingAllAsRead, setMarkingAllAsRead] = useState(false);
@@ -160,7 +160,7 @@ const MessagesScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       void fetchAdminNotifications();
-    }, [fetchAdminNotifications])
+    }, [fetchAdminNotifications, appResumeVersion])
   );
 
   return (

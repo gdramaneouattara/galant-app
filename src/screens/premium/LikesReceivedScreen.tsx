@@ -21,6 +21,7 @@ import { apiRequest } from '../../lib/api';
 import { COLORS } from '../../data/mock';
 import SuperLikePurchaseModal from '../../components/SuperLikePurchaseModal';
 import { IAP_EXPO_GO_MESSAGE, isExpoGo } from '../../lib/iapRuntime';
+import { useApp } from '../../state/AppContext';
 
 type SuperLikeStatus = 'PENDING' | 'ACCEPTED' | 'IGNORED';
 
@@ -77,6 +78,7 @@ const isSkuNotFoundError = (error: any) => {
 
 const LikesReceivedScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const { appResumeVersion } = useApp();
   const [superLikes, setSuperLikes] = useState<SuperLikeRow[]>([]);
   const [selectedSuperLike, setSelectedSuperLike] = useState<SuperLikeRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -142,7 +144,7 @@ const LikesReceivedScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       void fetchSuperLikes();
-    }, [fetchSuperLikes])
+    }, [fetchSuperLikes, appResumeVersion])
   );
 
   const promptOpenChat = (row: SuperLikeRow, matchId?: string | null) => {

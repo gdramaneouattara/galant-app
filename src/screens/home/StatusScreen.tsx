@@ -80,7 +80,7 @@ const isSkuNotFoundError = (error: any) => {
 
 const StatusScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { currentUser } = useApp();
+  const { currentUser, appResumeVersion } = useApp();
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [loading, setLoading] = useState(true);
   const [locked, setLocked] = useState(false);
@@ -156,6 +156,12 @@ const StatusScreen: React.FC = () => {
   useEffect(() => {
     fetchStatuses();
   }, []);
+
+  useEffect(() => {
+    if (appResumeVersion > 0) {
+      fetchStatuses();
+    }
+  }, [appResumeVersion]);
 
   const loadAndroidConsumables = useCallback(async (): Promise<Set<string>> => {
     if (Platform.OS !== 'android' || isExpoGo) return new Set();

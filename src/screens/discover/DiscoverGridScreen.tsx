@@ -53,7 +53,7 @@ const MATCHMAKING_LIMIT = 80;
 const DiscoverGridScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<any>();
-  const { currentUser } = useApp();
+  const { currentUser, appResumeVersion } = useApp();
   const [profiles, setProfiles] = useState<DiscoverSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentUserRank, setCurrentUserRank] = useState<number | null>(null);
@@ -82,7 +82,7 @@ const DiscoverGridScreen: React.FC = () => {
       if (!currentUser) return () => {};
       void fetchGridSuggestions();
       return () => {};
-    }, [currentUser, fetchGridSuggestions])
+    }, [currentUser, fetchGridSuggestions, appResumeVersion])
   );
 
   if (!currentUser) return null;

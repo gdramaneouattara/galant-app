@@ -42,7 +42,7 @@ const DEFAULT_COMMUNITY_COVER = 'https://images.unsplash.com/photo-1511632765486
 
 const CommunityScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { currentUser } = useApp();
+  const { currentUser, appResumeVersion } = useApp();
   const [communities, setCommunities] = useState<Community[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -72,7 +72,7 @@ const CommunityScreen: React.FC = () => {
 
   useEffect(() => {
     fetchCommunities();
-  }, []);
+  }, [appResumeVersion]);
 
   const handleJoin = async (communityId: string) => {
     if (joiningId) return;

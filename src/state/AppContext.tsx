@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useMemo, useState, useEffect, useRef } from 'react';
 import { Session, RealtimeChannel } from '@supabase/supabase-js';
-import { Platform } from 'react-native';
+import { AppState, AppStateStatus, Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
@@ -11,6 +11,7 @@ import { apiRequest } from '../lib/api';
 
 const INVISIBLE_MODE_ELIGIBLE_PLANS = new Set(['BIANNUAL', 'ANNUAL']);
 const TRIAL_DAYS = 7;
+const APP_RESUME_REFRESH_COOLDOWN_MS = 3000;
 
 const isMaleTrialActiveFromProfile = (profile: any): boolean => {
   if (!profile || String(profile.gender || '').toUpperCase() !== 'MALE' || profile.is_premium) return false;
@@ -28,6 +29,7 @@ type AppContextValue = {
   users: User[];
   matches: Match[];
   messages: Message[];
+  appResumeVersion: number;
   lastError: string | null;
   clearError: () => void;
   login: (user: User) => void;
@@ -53,12 +55,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [users, setUsers] = useState<User[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
+  const [appResumeVersion, setAppResumeVersion] = useState(0);
   const [lastError, setLastError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const matchChannelsRef = useRef<RealtimeChannel[]>([]);
   const matchesChannelRef = useRef<RealtimeChannel | null>(null);
   const profileChannelRef = useRef<RealtimeChannel | null>(null);
   const pushTokenRef = useRef<string | null>(null);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const resumeRefreshInFlightRef = useRef(false);
+  const lastResumeRefreshAtRef = useRef(0);
 
   const getCurrentSubscriptionState = async (userId: string) => {
     const fallback = {
@@ -471,6 +477,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const refreshAppOnResume = async () => {
+      const now = Date.now();
+      if (resumeRefreshInFlightRef.current) return;
+      if ((now - lastResumeRefreshAtRef.current) < APP_RESUME_REFRESH_COOLDOWN_MS) return;
+
+      resumeRefreshInFlightRef.current = true;
+      lastResumeRefreshAtRef.current = now;
+
+      try {
+        const { data: { session: latestSession } } = await supabase.auth.getSession();
+        const uid = latestSession?.user?.id || session.user.id;
+        if (!uid) return;
+
+        if (latestSession) {
+          setSession(latestSession);
+        }
+
+        await updateLastActive(uid);
+        const refreshedUser = await refreshCurrentUser(uid);
+        if (refreshedUser) {
+          await refreshProfiles();
+          await refreshMatches(uid);
+          await registerPushToken(uid);
+          setAppResumeVersion((prev) => prev + 1);
+        }
+      } catch (_e) {
+        // Resume refresh is best-effort and must not interrupt the user.
+      } finally {
+        resumeRefreshInFlightRef.current = false;
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      const previousAppState = appStateRef.current;
+      appStateRef.current = nextAppState;
+
+      const returnedToForeground =
+        nextAppState === 'active' &&
+        (previousAppState === 'background' || previousAppState === 'inactive');
+
+      if (returnedToForeground) {
+        void refreshAppOnResume();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [session?.user?.id]);
+
+  useEffect(() => {
     refreshMessages();
     clearMatchChannels();
 
@@ -737,6 +796,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       users,
       matches,
       messages,
+      appResumeVersion,
       lastError,
       clearError,
       login,
@@ -753,7 +813,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       activateBoost,
       markMessagesAsRead
     }),
-    [session, currentUser, users, matches, messages, lastError]
+    [session, currentUser, users, matches, messages, appResumeVersion, lastError]
   );
 
   if (loading) {

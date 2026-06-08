@@ -82,7 +82,7 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({ item, isMine, avatarUri, m
 const ChatScreen: React.FC = () => {
   const route = useRoute<any>();
   const navigation = useNavigation();
-  const { currentUser, markMessagesAsRead } = useApp();
+  const { currentUser, markMessagesAsRead, appResumeVersion } = useApp();
   const { userId, matchId: initialMatchId } = route.params;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -340,7 +340,7 @@ const ChatScreen: React.FC = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [userId, activeMatchId, fetchMessages, checkUnlockStatus]);
+  }, [userId, activeMatchId, fetchMessages, checkUnlockStatus, appResumeVersion]);
 
   useEffect(() => {
     let cancelled = false;

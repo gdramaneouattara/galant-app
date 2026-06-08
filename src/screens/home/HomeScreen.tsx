@@ -82,7 +82,7 @@ const isSkuNotFoundError = (error: any) => {
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
-  const { currentUser } = useApp();
+  const { currentUser, appResumeVersion } = useApp();
   const [loading, setLoading] = useState(true);
   const [swiping, setSwiping] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -205,7 +205,7 @@ const HomeScreen: React.FC = () => {
     useCallback(() => {
       void fetchSuggestions();
       void fetchLikesInboxCount();
-    }, [fetchSuggestions, fetchLikesInboxCount])
+    }, [fetchSuggestions, fetchLikesInboxCount, appResumeVersion])
   );
 
   const handleSwipe = async (direction: 'LEFT' | 'RIGHT', isSuper = false, targetProfile = suggestions[0]) => {

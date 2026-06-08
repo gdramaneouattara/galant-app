@@ -42,7 +42,7 @@ const TRIAL_DAYS = 7;
 
 const LikesInboxScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { currentUser } = useApp();
+  const { currentUser, appResumeVersion } = useApp();
   const [likes, setLikes] = useState<LikeInboxRow[]>([]);
   const [selectedLike, setSelectedLike] = useState<LikeInboxRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,7 +91,7 @@ const LikesInboxScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       void fetchLikesInbox();
-    }, [fetchLikesInbox])
+    }, [fetchLikesInbox, appResumeVersion])
   );
 
   const likeBack = async (row: LikeInboxRow) => {

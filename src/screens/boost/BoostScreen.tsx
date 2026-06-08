@@ -64,7 +64,7 @@ const BOOST_PLANS: BoostPlan[] = [
 
 const BoostScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { currentUser, refreshCurrentUser, activateBoost } = useApp();
+  const { currentUser, refreshCurrentUser, activateBoost, appResumeVersion } = useApp();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [activatingFree, setActivatingFree] = useState(false);
   const [availableProductIds, setAvailableProductIds] = useState<Set<string>>(new Set());
@@ -105,7 +105,7 @@ const BoostScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       void refreshCurrentUser();
-    }, [refreshCurrentUser])
+    }, [refreshCurrentUser, appResumeVersion])
   );
 
   const showActiveBoostMessage = () => {
