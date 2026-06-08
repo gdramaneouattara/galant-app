@@ -608,7 +608,15 @@ const ChatScreen: React.FC = () => {
             <Text style={styles.profileCardTitle}>Profil vérifié</Text>
             <Text style={styles.profileCardSub}>Conversation sécurisée avec ce membre</Text>
           </View>
-          <Pressable style={styles.profileCardBtn}>
+          <Pressable
+            style={styles.profileCardBtn}
+            onPress={() => {
+              if (targetUser) {
+                // @ts-ignore
+                navigation.navigate('ProfileDetail', { profile: targetUser });
+              }
+            }}
+          >
             <Text style={styles.profileCardBtnText}>Voir le profil</Text>
           </Pressable>
         </View>

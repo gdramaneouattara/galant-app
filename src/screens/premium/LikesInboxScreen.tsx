@@ -64,7 +64,8 @@ const LikesInboxScreen: React.FC = () => {
     return { active: trialEndTs > Date.now() };
   }, [currentUser?.gender, currentUser?.isPremium, currentUser?.trial_started_at]);
 
-  const canAccessLikesInbox = !!currentUser?.isPremium || trialInfo.active;
+  const isFemaleFreePlan = String(currentUser?.gender || '').toUpperCase() === 'FEMALE' && !currentUser?.isPremium;
+  const canAccessLikesInbox = !!currentUser?.isPremium || trialInfo.active || isFemaleFreePlan;
 
   const fetchLikesInbox = useCallback(async () => {
     if (!canAccessLikesInbox) {
@@ -221,7 +222,7 @@ const LikesInboxScreen: React.FC = () => {
                   <Text style={styles.meta}>{row.user.city || 'Ville non renseignée'}</Text>
                   <Text style={styles.meta}>Reçu le {new Date(row.created_at).toLocaleString('fr-FR')}</Text>
                   <View style={styles.actionsRow}>
-                    <Pressable style={styles.secondaryButton} onPress={() => setSelectedLike(row)}>
+                    <Pressable style={styles.secondaryButton} onPress={() => (navigation as any).navigate('ProfileDetail', { profile: row.user })}>
                       <Text style={styles.secondaryButtonText}>Ouvrir fiche</Text>
                     </Pressable>
                     <Pressable

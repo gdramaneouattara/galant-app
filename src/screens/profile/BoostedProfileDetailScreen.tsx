@@ -34,6 +34,19 @@ type SwipeResponse = {
 
 const SUPER_LIKE_SKU = String(process.env.EXPO_PUBLIC_SUPER_LIKE_SKU || 'super_like').trim();
 const DIRECT_MESSAGE_SKU = String(process.env.EXPO_PUBLIC_DIRECT_MESSAGE_SKU || 'direct_message_1').trim();
+const PLACEHOLDER_PHOTO = 'https://placehold.co/900x1200';
+
+const GENDER_LABELS: Record<string, string> = {
+  MALE: 'Homme',
+  FEMALE: 'Femme',
+  OTHER: 'Autre',
+};
+
+const RELATIONSHIP_GOAL_LABELS: Record<string, string> = {
+  SERIOUS: 'Amour sérieux',
+  FRIENDSHIP: 'Amitié',
+  CASUAL: 'On verra bien',
+};
 
 const BoostedProfileDetailScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
@@ -46,10 +59,17 @@ const BoostedProfileDetailScreen: React.FC = () => {
   const [showSuperLikePurchaseModal, setShowSuperLikePurchaseModal] = useState(false);
   const [showDirectMessagePurchaseModal, setShowDirectMessagePurchaseModal] = useState(false);
   const [availableProductIds, setAvailableProductIds] = useState<Set<string>>(new Set());
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
   const targetUserId = String(profile?.id || '').trim();
-  const coverPhoto = profile?.photos?.[0] || 'https://placehold.co/900x1200';
+  const profilePhotos = (profile?.photos || []).filter((photo): photo is string => !!photo);
+  const coverPhoto = selectedPhoto || profilePhotos[0] || PLACEHOLDER_PHOTO;
   const isBoosted = !!(profile?.boosted_until && new Date(profile.boosted_until) > new Date());
+  const normalizedGender = String(profile?.gender || '').toUpperCase();
+  const normalizedGoal = String(profile?.relationship_goal || '').toUpperCase();
+  const genderLabel = GENDER_LABELS[normalizedGender] || profile?.gender || 'Non renseigné';
+  const relationshipGoalLabel = RELATIONSHIP_GOAL_LABELS[normalizedGoal] || profile?.relationship_goal || 'Non renseigné';
+  const ageLabel = typeof profile?.age === 'number' ? `${profile.age}` : null;
 
   const loadProducts = async (): Promise<Set<string>> => {
     if (Platform.OS !== 'android' || isExpoGo) return new Set();
@@ -67,6 +87,10 @@ const BoostedProfileDetailScreen: React.FC = () => {
       .catch(() => {});
     return () => { IAP.endConnection().catch(() => {}); };
   }, []);
+
+  useEffect(() => {
+    setSelectedPhoto(null);
+  }, [targetUserId]);
 
   const sendLike = async () => {
     if (!targetUserId || liking) return;
@@ -274,7 +298,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
           </Pressable>
           <View style={styles.heroOverlay}>
             <View style={styles.nameRow}>
-              <Text style={styles.name}>{profile.name}, {profile.age}</Text>
+              <Text style={styles.name}>{profile.name}{ageLabel ? `, ${ageLabel}` : ''}</Text>
               {!!profile.is_verified && (
                 <View style={styles.verifiedBadge}>
                   <ShieldCheck size={13} color="#fff" />
@@ -297,8 +321,63 @@ const BoostedProfileDetailScreen: React.FC = () => {
           ) : null}
         </View>
 
+        {profilePhotos.length > 1 ? (
+          <View style={styles.galleryCard}>
+            <Text style={styles.sectionTitle}>Photos</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.gallery}>
+              {profilePhotos.map((photo, index) => {
+                const active = photo === coverPhoto;
+                return (
+                  <Pressable
+                    key={`${photo}-${index}`}
+                    style={[styles.thumbnailWrap, active && styles.thumbnailWrapActive]}
+                    onPress={() => setSelectedPhoto(photo)}
+                  >
+                    <Image source={{ uri: photo }} style={styles.thumbnail} />
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        ) : null}
+
         <View style={styles.card}>
           <ProfileBadges user={{ ...profile, isVerified: profile.is_verified } as any} showLabels />
+          <Text style={styles.sectionTitle}>Identité</Text>
+          <View style={styles.infoGrid}>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Nom</Text>
+              <Text style={styles.infoValue}>{profile.name}</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Âge</Text>
+              <Text style={styles.infoValue}>{ageLabel ? `${ageLabel} ans` : 'Non renseigné'}</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Genre</Text>
+              <Text style={styles.infoValue}>{genderLabel}</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Ville</Text>
+              <Text style={styles.infoValue}>{profile.city || 'Non renseignée'}</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Pays</Text>
+              <Text style={styles.infoValue}>{profile.country || 'Non renseigné'}</Text>
+            </View>
+            {typeof profile.distance_km === 'number' ? (
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Distance</Text>
+                <Text style={styles.infoValue}>{profile.distance_km.toFixed(1)} km</Text>
+              </View>
+            ) : null}
+          </View>
+
+          <Text style={styles.sectionTitle}>Objectif de relation</Text>
+          <View style={styles.goalCard}>
+            <Text style={styles.goalText}>{relationshipGoalLabel}</Text>
+          </View>
+
           <Text style={styles.sectionTitle}>À propos</Text>
           <Text style={styles.bio}>{profile.bio || 'Ce membre n’a pas encore ajouté de bio.'}</Text>
 
@@ -408,7 +487,69 @@ const styles = StyleSheet.create({
     padding: 18,
     gap: 12,
   },
+  galleryCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 18,
+    gap: 12,
+  },
+  gallery: {
+    gap: 10,
+    paddingRight: 4,
+  },
+  thumbnailWrap: {
+    width: 78,
+    height: 96,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    overflow: 'hidden',
+    backgroundColor: '#f1f5f9',
+  },
+  thumbnailWrapActive: {
+    borderColor: COLORS.primary,
+  },
+  thumbnail: {
+    width: '100%',
+    height: '100%',
+  },
   sectionTitle: { fontSize: 16, fontWeight: '900', color: COLORS.ink, marginTop: 4 },
+  infoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  infoItem: {
+    width: '48%',
+    backgroundColor: '#f8fafc',
+    borderRadius: 16,
+    padding: 12,
+  },
+  infoLabel: {
+    color: COLORS.muted,
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  infoValue: {
+    marginTop: 4,
+    color: COLORS.ink,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  goalCard: {
+    backgroundColor: '#fef2f2',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  goalText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: '900',
+  },
   bio: { fontSize: 14, lineHeight: 21, color: COLORS.muted },
   interestsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   interestPill: {

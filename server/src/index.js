@@ -2107,7 +2107,10 @@ const handleSuperLikesReceived = async (req, res) => {
 };
 
 const handleLikesReceived = async (req, res) => {
-  if (!req.user?.is_premium && !isTrialActive(req.user)) {
+  const isFemaleFreePlan =
+    String(req.user?.gender || '').toUpperCase() === 'FEMALE' &&
+    !req.user?.is_premium;
+  if (!req.user?.is_premium && !isTrialActive(req.user) && !isFemaleFreePlan) {
     return res.status(403).json({ error: 'subscription_required' });
   }
 

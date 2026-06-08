@@ -469,7 +469,7 @@ const LikesReceivedScreen: React.FC = () => {
                   <Text style={styles.meta}>Reçu le {new Date(row.created_at).toLocaleString('fr-FR')}</Text>
                   <Text style={styles.meta}>Tarif payé : {row.price_amount} {row.currency}</Text>
                   <View style={styles.actionsRow}>
-                    <Pressable style={styles.secondaryButton} onPress={() => setSelectedSuperLike(row)}>
+                    <Pressable style={styles.secondaryButton} onPress={() => navigation.navigate('ProfileDetail', { profile: row.user })}>
                       <Text style={styles.secondaryButtonText}>Ouvrir fiche</Text>
                     </Pressable>
                     <Pressable

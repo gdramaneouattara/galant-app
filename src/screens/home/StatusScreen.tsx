@@ -671,8 +671,8 @@ const StatusScreen: React.FC = () => {
                         <Pressable
                           style={styles.likerOpenBtn}
                           onPress={() => {
-                            setSelectedLiker(entry);
-                            setLikerProfileModalVisible(true);
+                            setLikersModalVisible(false);
+                            (navigation as any).navigate('ProfileDetail', { profile: entry.profile });
                           }}
                         >
                           <Text style={styles.likerOpenBtnText}>Ouvrir fiche</Text>

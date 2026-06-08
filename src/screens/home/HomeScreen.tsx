@@ -131,13 +131,13 @@ const HomeScreen: React.FC = () => {
     return { eligible: true, active: remainingMs > 0, daysRemaining };
   }, [currentUser?.gender, currentUser?.isPremium, currentUser?.trial_started_at]);
 
-  const canAccessLikesInbox = useMemo(() => {
-    return !!currentUser?.isPremium || trialInfo.active;
-  }, [currentUser?.isPremium, trialInfo.active]);
-
   const isFemaleFreePlan = useMemo(() => {
     return String(currentUser?.gender || '').toUpperCase() === 'FEMALE' && !currentUser?.isPremium;
   }, [currentUser?.gender, currentUser?.isPremium]);
+
+  const canAccessLikesInbox = useMemo(() => {
+    return !!currentUser?.isPremium || trialInfo.active || isFemaleFreePlan;
+  }, [currentUser?.isPremium, trialInfo.active, isFemaleFreePlan]);
 
   useEffect(() => {
     if (trialInfo.eligible && !trialInfo.active) {

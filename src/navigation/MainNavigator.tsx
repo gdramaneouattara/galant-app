@@ -53,7 +53,7 @@ export type RootStackParamList = {
 export type ProfileDetailParam = {
   id: string;
   name: string;
-  age: number;
+  age?: number | null;
   gender?: string | null;
   bio?: string | null;
   city?: string | null;
@@ -65,6 +65,8 @@ export type ProfileDetailParam = {
   boosted_until?: string | null;
   relationship_goal?: string | null;
   distance_km?: number | null;
+  last_active_at?: string | null;
+  likes_count?: number | null;
 };
 
 type UserTabParamList = {
