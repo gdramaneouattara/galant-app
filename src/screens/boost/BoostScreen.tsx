@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, ActivityIndicator, Platform } from 'react-native';
 import { Rocket, Flame, ChevronsUp, Crown, LucideProps, CreditCard, Play } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import * as IAP from 'react-native-iap';
@@ -9,6 +9,7 @@ import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 import { IAP_EXPO_GO_MESSAGE, isExpoGo } from '../../lib/iapRuntime';
+import { getBoostActiveMessage, getBoostStatus } from '../../lib/boostStatus';
 
 const BOOST_PRICES = {
   '1D': parseInt(process.env.EXPO_PUBLIC_BOOST_1D_AMOUNT || '1000'),
@@ -67,6 +68,7 @@ const BoostScreen: React.FC = () => {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [activatingFree, setActivatingFree] = useState(false);
   const [availableProductIds, setAvailableProductIds] = useState<Set<string>>(new Set());
+  const boostStatus = getBoostStatus(currentUser?.boosted_until);
 
   const isMaleTrialActive = (() => {
     if (!currentUser) return false;
@@ -100,7 +102,21 @@ const BoostScreen: React.FC = () => {
     return () => { IAP.endConnection().catch(() => {}); };
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      void refreshCurrentUser();
+    }, [refreshCurrentUser])
+  );
+
+  const showActiveBoostMessage = () => {
+    const boostMessage = getBoostActiveMessage(currentUser?.boosted_until);
+    if (!boostMessage) return false;
+    Alert.alert('Boost actif', boostMessage);
+    return true;
+  };
+
   const handleFreeBoost = async () => {
+    if (showActiveBoostMessage()) return;
     try {
       setActivatingFree(true);
       const result = await activateBoost();
@@ -116,6 +132,7 @@ const BoostScreen: React.FC = () => {
   };
 
   const boostPaystack = async (plan: BoostPlan) => {
+    if (showActiveBoostMessage()) return;
     if (loadingPlan) return;
     setLoadingPlan(plan.id);
 
@@ -157,6 +174,7 @@ const BoostScreen: React.FC = () => {
   };
 
   const boostGooglePlay = async (plan: BoostPlan) => {
+    if (showActiveBoostMessage()) return;
     if (isExpoGo) {
       Alert.alert('Achat indisponible', IAP_EXPO_GO_MESSAGE);
       return;
@@ -219,6 +237,20 @@ const BoostScreen: React.FC = () => {
           <Text style={styles.title}>Boostez votre profil</Text>
           <Text style={styles.subtitle}>Soyez vu par plus de monde et obtenez plus de matchs !</Text>
         </View>
+
+        {boostStatus.active ? (
+          <Pressable style={styles.activeBoostCard} onPress={showActiveBoostMessage}>
+            <View style={styles.activeBoostIcon}>
+              <Rocket color="#fff" size={24} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.activeBoostTitle}>Votre profil est déjà boosté</Text>
+              <Text style={styles.activeBoostSub}>
+                Il reste environ {boostStatus.remainingLabel}. Touchez ici pour voir le détail.
+              </Text>
+            </View>
+          </Pressable>
+        ) : null}
 
         {/* Free Boost Block */}
         {canSeeFreeBoostCard && (
@@ -297,6 +329,10 @@ const styles = StyleSheet.create({
   heroIconWrap: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#8b5cf6', alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 26, fontWeight: '900', color: COLORS.ink, textAlign: 'center' },
   subtitle: { color: COLORS.muted, textAlign: 'center', fontSize: 15 },
+  activeBoostCard: { backgroundColor: '#f5f3ff', borderWidth: 1, borderColor: '#c4b5fd', borderRadius: 24, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  activeBoostIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#8b5cf6', alignItems: 'center', justifyContent: 'center' },
+  activeBoostTitle: { fontSize: 16, fontWeight: '900', color: '#4c1d95' },
+  activeBoostSub: { marginTop: 2, fontSize: 12, color: '#6d28d9', lineHeight: 17 },
   freeBoostCard: { backgroundColor: '#fff', borderWidth: 2, borderColor: COLORS.primary, borderRadius: 24, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },
   freeBoostIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
   freeBoostTitle: { fontSize: 16, fontWeight: '800', color: COLORS.ink },

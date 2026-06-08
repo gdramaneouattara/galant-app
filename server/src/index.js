@@ -350,10 +350,10 @@ const appendAdminAuditLog = async ({
   }
 };
 
-const getBoostDurationDays = (planId) => {
-  if (planId === '7D') return 7;
-  if (planId === '3D') return 3;
-  return 1;
+const getBoostDurationMs = (planId) => {
+  if (planId === '7D') return 7 * 24 * 60 * 60 * 1000;
+  if (planId === '3D') return 3 * 24 * 60 * 60 * 1000;
+  return 24 * 60 * 60 * 1000;
 };
 
 const getExpectedAmountForPurchase = ({ type, planId }) => {
@@ -801,9 +801,7 @@ const applyPurchasedEntitlement = async ({ userId, planId, type, targetId, refer
       if (existingBoostPurchase) return;
     }
 
-    const days = getBoostDurationDays(normalizedPlanId);
-    const until = new Date();
-    until.setDate(until.getDate() + days);
+    const until = new Date(Date.now() + getBoostDurationMs(normalizedPlanId));
 
     await supabase.from('purchased_interactions').insert({
       user_id: userId,
@@ -1051,6 +1049,7 @@ app.post('/api/payments/apple-verify', requireAuth, async (req, res) => {
 app.get('/api/matchmaking/suggestions', requireAuth, async (req, res) => {
   const me = req.user;
   const { limit = 40, minAge = 18, maxAge = 100, gender, city = '', maxDistanceKm } = req.query;
+  const includeSelf = String(req.query.includeSelf || '').toLowerCase() === 'true';
   const meGender = String(me?.gender || '').toUpperCase();
   const meGoal = String(me?.relationship_goal || '').toUpperCase();
   const oppositeGenderForSerious =
@@ -1163,9 +1162,34 @@ app.get('/api/matchmaking/suggestions', requireAuth, async (req, res) => {
       distance_km: distanceKm,
       super_liked_me: incomingSuperLikesByCandidate.has(c.id),
     };
-  }).filter(Boolean).sort((a, b) => b.score - a.score);
+  }).filter(Boolean);
 
-  res.json({ suggestions: suggestions.slice(0, parseInt(limit)) });
+  const selfBoostActive = !!(includeSelf && me.boosted_until && new Date(me.boosted_until) > new Date());
+  if (selfBoostActive) {
+    const selfScore = (me.is_vip ? 200 : (me.is_premium ? 50 : 0)) + 15 + 500;
+    suggestions.push({
+      ...me,
+      score: selfScore,
+      distance_km: 0,
+      super_liked_me: false,
+      current_user: true,
+    });
+  }
+
+  const rankedSuggestions = suggestions.sort((a, b) => b.score - a.score);
+  const selfRank = selfBoostActive
+    ? rankedSuggestions.findIndex((profile) => profile?.id === me.id) + 1
+    : null;
+  const parsedLimit = parseInt(limit);
+  const safeLimit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 40;
+  const limitedSuggestions = rankedSuggestions.slice(0, safeLimit);
+
+  if (selfBoostActive && !limitedSuggestions.some((profile) => profile?.id === me.id)) {
+    const selfSuggestion = rankedSuggestions.find((profile) => profile?.id === me.id);
+    if (selfSuggestion) limitedSuggestions.push(selfSuggestion);
+  }
+
+  res.json({ suggestions: limitedSuggestions, current_user_rank: selfRank });
 });
 
 app.post('/api/matchmaking/swipe', requireAuth, async (req, res) => {
@@ -1665,11 +1689,7 @@ app.get('/api/boosts/verify', requireAuth, async (req, res) => {
     if (data.status === 'success') {
       const { userId, planId } = data.metadata;
 
-      let durationSeconds = 86400; // 1 day
-      if (planId === '3D') durationSeconds = 86400 * 3;
-      if (planId === '7D') durationSeconds = 86400 * 7;
-
-      const boostedUntil = new Date(Date.now() + durationSeconds * 1000).toISOString();
+      const boostedUntil = new Date(Date.now() + getBoostDurationMs(String(planId || '').toUpperCase())).toISOString();
       await supabase.from('profiles').update({ boosted_until: boostedUntil }).eq('id', userId);
       // We don't incrementUsage for paid boosts as they are not quota-based
       return res.json({ status: 'active', boosted_until: boostedUntil });

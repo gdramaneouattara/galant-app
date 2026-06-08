@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import {
+  Alert,
   ActivityIndicator,
   Image,
   Pressable,
@@ -9,7 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Rocket, Star } from 'lucide-react-native';
 import { useApp } from '../../state/AppContext';
@@ -32,10 +33,12 @@ type DiscoverSuggestion = {
   last_active_at?: string | null;
   likes_count: number;
   distance_km: number | null;
+  current_user?: boolean;
 };
 
 type DiscoverResponse = {
   suggestions: DiscoverSuggestion[];
+  current_user_rank?: number | null;
 };
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -44,24 +47,30 @@ const MATCHMAKING_LIMIT = 80;
 
 const DiscoverGridScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
+  const route = useRoute<any>();
   const { currentUser } = useApp();
   const [profiles, setProfiles] = useState<DiscoverSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
+  const [currentUserRank, setCurrentUserRank] = useState<number | null>(null);
+  const includeSelf = !!route.params?.includeSelf;
 
   const fetchGridSuggestions = useCallback(async () => {
     try {
       setLoading(true);
+      const includeSelfParam = includeSelf ? '&includeSelf=true' : '';
       const response = await apiRequest<DiscoverResponse>(
-        `/api/matchmaking/suggestions?limit=${MATCHMAKING_LIMIT}`,
+        `/api/matchmaking/suggestions?limit=${MATCHMAKING_LIMIT}${includeSelfParam}`,
         { requireAuth: true }
       );
       setProfiles(response.suggestions || []);
+      setCurrentUserRank(response.current_user_rank ?? null);
     } catch (_error) {
       setProfiles([]);
+      setCurrentUserRank(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [includeSelf]);
 
   useFocusEffect(
     useCallback(() => {
@@ -78,7 +87,9 @@ const DiscoverGridScreen: React.FC = () => {
       <View style={styles.header}>
         <Text style={styles.title}>Grille Decouverte</Text>
         <Text style={styles.subtitle}>
-          {profiles.length} profils visibles simultanement
+          {includeSelf && currentUserRank
+            ? `Votre profil boosté est en position ${currentUserRank}`
+            : `${profiles.length} profils visibles simultanement`}
         </Text>
       </View>
 
@@ -103,8 +114,14 @@ const DiscoverGridScreen: React.FC = () => {
             return (
               <Pressable
                 key={profile.id}
-                style={styles.card}
-                onPress={() => navigation.navigate('Chat', { userId: profile.id })}
+                style={[styles.card, profile.current_user && styles.myCard]}
+                onPress={() => {
+                  if (profile.current_user) {
+                    Alert.alert('Votre position', 'Ceci est votre profil tel qu’il apparaît dans la grille des profils boostés.');
+                    return;
+                  }
+                  navigation.navigate('Chat', { userId: profile.id });
+                }}
               >
                 <Image source={{ uri: coverPhoto }} style={styles.photo} />
 
@@ -129,6 +146,12 @@ const DiscoverGridScreen: React.FC = () => {
                   </View>
                 ) : null}
 
+                {profile.current_user ? (
+                  <View style={styles.meBadge}>
+                    <Text style={styles.meBadgeText}>Vous</Text>
+                  </View>
+                ) : null}
+
                 <View style={styles.metaOverlay}>
                   <Text style={styles.name} numberOfLines={1}>
                     {profile.name}, {profile.age}
@@ -137,7 +160,9 @@ const DiscoverGridScreen: React.FC = () => {
                     {profile.city || 'Ville non renseignee'}
                     {typeof profile.distance_km === 'number' ? ` • ${profile.distance_km.toFixed(1)} km` : ''}
                   </Text>
-                  <Text style={styles.scoreText}>Score {Math.round(profile.score)}</Text>
+                  <Text style={styles.scoreText}>
+                    {profile.current_user ? 'Votre position boostée' : `Score ${Math.round(profile.score)}`}
+                  </Text>
                 </View>
               </Pressable>
             );
@@ -206,6 +231,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'transparent',
   },
+  myCard: {
+    borderColor: '#8b5cf6',
+  },
   photo: {
     width: '100%',
     height: '100%',
@@ -231,6 +259,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#8b5cf6',
     borderRadius: 999,
     padding: 4,
+  },
+  meBadge: {
+    position: 'absolute',
+    top: 40,
+    right: 8,
+    backgroundColor: '#8b5cf6',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  meBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '900',
   },
   metaOverlay: {
     position: 'absolute',

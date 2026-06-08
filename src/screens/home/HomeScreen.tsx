@@ -26,6 +26,7 @@ import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 import { IAP_EXPO_GO_MESSAGE, isExpoGo } from '../../lib/iapRuntime';
+import { getBoostActiveMessage } from '../../lib/boostStatus';
 import type { RootStackParamList } from '../../navigation/MainNavigator';
 import ProfileBadges from '../../components/ProfileBadges';
 import SuperLikePurchaseModal from '../../components/SuperLikePurchaseModal';
@@ -385,6 +386,15 @@ const HomeScreen: React.FC = () => {
     navigation.navigate('Status');
   };
 
+  const openBoost = () => {
+    const boostMessage = getBoostActiveMessage(currentUser?.boosted_until);
+    if (boostMessage) {
+      Alert.alert('Boost actif', boostMessage);
+      return;
+    }
+    navigation.navigate('Boost');
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
@@ -427,7 +437,7 @@ const HomeScreen: React.FC = () => {
             <Text style={styles.quickActionTitle}>Abonnements</Text>
           </View>
         </Pressable>
-        <Pressable style={styles.quickActionBtn} onPress={() => navigation.navigate('Boost')}>
+        <Pressable style={styles.quickActionBtn} onPress={openBoost}>
           <View style={styles.quickActionRow}>
             <View style={styles.quickActionIconWrap}>
               <Rocket color="#0ea5e9" size={14} />

@@ -42,7 +42,7 @@ export type RootStackParamList = {
   LikesInbox: undefined;
   Verify: undefined;
   Boost: undefined;
-  DiscoverGrid: undefined;
+  DiscoverGrid: { includeSelf?: boolean } | undefined;
   AdminAuditLogs: undefined;
   AdminMessaging: undefined;
   Status: undefined;

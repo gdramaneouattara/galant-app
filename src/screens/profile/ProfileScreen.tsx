@@ -22,6 +22,7 @@ import type { RootStackParamList } from '../../navigation/MainNavigator';
 import { apiRequest } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
 import { uploadArrayBufferToBucket } from '../../lib/storageUpload';
+import { getBoostActiveMessage, getBoostStatus } from '../../lib/boostStatus';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -44,8 +45,9 @@ const ProfileScreen: React.FC = () => {
     return null;
   }
 
-  const isBoosted = currentUser.boosted_until && new Date(currentUser.boosted_until) > new Date();
-  const boostedUntilDate = isBoosted ? new Date(currentUser.boosted_until!) : null;
+  const boostStatus = getBoostStatus(currentUser.boosted_until);
+  const isBoosted = boostStatus.active;
+  const boostedUntilDate = boostStatus.endsAt;
   const isInvisibleEligible = !!currentUser.invisible_mode_eligible;
   const isInvisibleEnabled = !!currentUser.is_invisible && isInvisibleEligible;
   const normalizedPlan = String(currentUser.subscription_plan_id || '').toUpperCase();
@@ -79,6 +81,15 @@ const ProfileScreen: React.FC = () => {
   const handleGoalUpdate = (goalId: string) => {
     updateCurrentUser({ relationship_goal: goalId });
     setShowGoalModal(false);
+  };
+
+  const openBoost = () => {
+    const boostMessage = getBoostActiveMessage(currentUser.boosted_until);
+    if (boostMessage) {
+      Alert.alert('Boost actif', boostMessage);
+      return;
+    }
+    navigation.navigate('Boost' as never);
   };
 
   const changeProfilePhoto = async () => {
@@ -244,7 +255,7 @@ const ProfileScreen: React.FC = () => {
             )}
           </View>
           {boostedUntilDate && (
-            <Pressable onPress={() => navigation.navigate('DiscoverGrid')}>
+            <Pressable onPress={() => navigation.navigate('DiscoverGrid', { includeSelf: true })}>
               <Text style={styles.boostedUntil}>
                 Boosté jusqu'au {boostedUntilDate.toLocaleDateString('fr-FR')} à {boostedUntilDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}. Voir ma position.
               </Text>
@@ -341,15 +352,18 @@ const ProfileScreen: React.FC = () => {
             <Text style={styles.rowLabel}>Boîte Super Likes</Text>
             <ChevronRight size={18} color="#fda4af" />
           </Pressable>
-          {!isBoosted && (
-            <Pressable style={[styles.row, styles.rowBoost]} onPress={() => navigation.navigate('Boost' as never)}>
-              <View style={[styles.rowIcon, styles.rowIconBoost]}>
-                <Rocket size={18} color="#8b5cf6" />
-              </View>
+          <Pressable style={[styles.row, styles.rowBoost]} onPress={openBoost}>
+            <View style={[styles.rowIcon, styles.rowIconBoost]}>
+              <Rocket size={18} color="#8b5cf6" />
+            </View>
+            <View style={styles.rowContent}>
               <Text style={styles.rowLabel}>Booster mon profil</Text>
-              <ChevronRight size={18} color="#c4b5fd" />
-            </Pressable>
-          )}
+              {isBoosted && boostStatus.remainingLabel ? (
+                <Text style={styles.rowSubLabel}>Déjà boosté • {boostStatus.remainingLabel} restant(s)</Text>
+              ) : null}
+            </View>
+            <ChevronRight size={18} color="#c4b5fd" />
+          </Pressable>
           <Pressable
             style={[styles.row, styles.rowPrivacy]}
             onPress={() => { void exportPersonalData(); }}
