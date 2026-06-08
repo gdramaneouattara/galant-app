@@ -23,13 +23,18 @@ type DiscoverSuggestion = {
   id: string;
   name: string;
   age: number;
+  gender?: string | null;
+  bio?: string | null;
   photos: string[];
   city: string | null;
+  country?: string | null;
+  interests?: string[] | null;
   score: number;
   is_verified: boolean;
   is_premium: boolean;
   super_liked_me: boolean;
   boosted_until: string | null;
+  relationship_goal?: string | null;
   last_active_at?: string | null;
   likes_count: number;
   distance_km: number | null;
@@ -120,7 +125,7 @@ const DiscoverGridScreen: React.FC = () => {
                     Alert.alert('Votre position', 'Ceci est votre profil tel qu’il apparaît dans la grille des profils boostés.');
                     return;
                   }
-                  navigation.navigate('Chat', { userId: profile.id });
+                  navigation.navigate('ProfileDetail', { profile });
                 }}
               >
                 <Image source={{ uri: coverPhoto }} style={styles.photo} />

@@ -16,6 +16,7 @@ import LikesInboxScreen from '../screens/premium/LikesInboxScreen';
 import VerifyScreen from '../screens/verify/VerifyScreen';
 import BoostScreen from '../screens/boost/BoostScreen';
 import DiscoverGridScreen from '../screens/discover/DiscoverGridScreen';
+import BoostedProfileDetailScreen from '../screens/profile/BoostedProfileDetailScreen';
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
 import UserListScreen from '../screens/admin/UserListScreen';
 import AdminModerationScreen from '../screens/admin/AdminModerationScreen';
@@ -43,9 +44,27 @@ export type RootStackParamList = {
   Verify: undefined;
   Boost: undefined;
   DiscoverGrid: { includeSelf?: boolean } | undefined;
+  ProfileDetail: { profile: ProfileDetailParam };
   AdminAuditLogs: undefined;
   AdminMessaging: undefined;
   Status: undefined;
+};
+
+export type ProfileDetailParam = {
+  id: string;
+  name: string;
+  age: number;
+  gender?: string | null;
+  bio?: string | null;
+  city?: string | null;
+  country?: string | null;
+  photos?: string[] | null;
+  interests?: string[] | null;
+  is_verified?: boolean;
+  is_premium?: boolean;
+  boosted_until?: string | null;
+  relationship_goal?: string | null;
+  distance_km?: number | null;
 };
 
 type UserTabParamList = {
@@ -154,6 +173,7 @@ const MainNavigator: React.FC = () => {
             <RootStack.Screen name="Verify" component={VerifyScreen} />
             <RootStack.Screen name="Boost" component={BoostScreen} />
             <RootStack.Screen name="DiscoverGrid" component={DiscoverGridScreen} />
+            <RootStack.Screen name="ProfileDetail" component={BoostedProfileDetailScreen} />
             <RootStack.Screen name="Status" component={StatusScreen} />
           </>
         )}
