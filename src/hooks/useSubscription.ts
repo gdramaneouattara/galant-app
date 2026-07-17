@@ -10,6 +10,22 @@ export type PurchaseType = 'SUPER_LIKE' | 'DIRECT_MESSAGE' | 'BOOST' | 'PREMIUM'
 
 export const useSubscription = () => {
   const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [androidOfferTokenBySku, setAndroidOfferTokenBySku] = useState<Record<string, string>>({});
+
+  const initIAP = useCallback(async (skus: string[], isSubscription = false) => {
+    if (isWeb) return;
+    try {
+      // Pour l'instant on garde l'interface, la logique réelle est gérée par react-native-iap
+      console.log('Initializing IAP for:', skus);
+    } catch (err) {
+      console.error('IAP Init Error:', err);
+    }
+  }, []);
+
+  const endIAP = useCallback(async () => {
+    if (isWeb) return;
+    // Logique de clôture
+  }, []);
 
   const purchaseWithPaystack = useCallback(async (
     type: PurchaseType,
@@ -73,5 +89,8 @@ export const useSubscription = () => {
     purchaseLoading,
     purchaseWithPaystack,
     purchaseWithStore,
+    initIAP,
+    endIAP,
+    androidOfferTokenBySku,
   };
 };
