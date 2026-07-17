@@ -19,12 +19,12 @@ type AdminStats = {
     premium: number;
     free: number;
     invisiblePremium: number;
+    male: number;
+    female: number;
   };
   premiumByPlan: {
     MONTHLY: number;
     QUARTERLY: number;
-    BIANNUAL: number;
-    ANNUAL: number;
     UNKNOWN: number;
   };
   kyc?: {
@@ -58,7 +58,7 @@ type AdminStats = {
 
 type AdminDestination = Exclude<
   keyof RootStackParamList,
-  'AuthFlow' | 'ResetPassword' | 'MainTabs' | 'AdminStack' | 'Chat' | 'CommunityChat' | 'Premium' | 'LikesReceived' | 'LikesInbox' | 'Verify' | 'Boost' | 'DiscoverGrid' | 'ProfileDetail' | 'Status'
+  'AuthFlow' | 'ResetPassword' | 'MainTabs' | 'AdminStack' | 'Chat' | 'Premium' | 'LikesReceived' | 'LikesInbox' | 'Verify' | 'Boost' | 'DiscoverGrid' | 'ProfileDetail' | 'Status' | 'VenueDetail' | 'PartnerDashboard' | 'PartnerPremium'
 >;
 
 type AdminShortcut = {
@@ -84,20 +84,20 @@ const ADMIN_SHORTCUTS: AdminShortcut[] = [
     description: 'Validation manuelle des pièces d’identité et selfies.',
   },
   {
-    route: 'AdminAuditLogs',
-    title: 'Audit Logs',
-    description: 'Traçabilité des actions administratives sensibles.',
-  },
-  {
     route: 'AdminMessaging',
     title: 'Notifications Push',
     description: 'Campagnes système, audience ciblée et historique d’envoi.',
   },
+  {
+    route: 'AdminVenues',
+    title: 'Guide & Partenaires',
+    description: 'Modération des lieux et validation des avantages Galant.',
+  },
 ];
 
 const AdminDashboardScreen: React.FC = () => {
-  const { logout } = useApp();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { logout, colors, activeTheme } = useApp();
+  const navigation = useNavigation<any>();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -132,13 +132,13 @@ const AdminDashboardScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Espace d'administration</Text>
-        <Text style={styles.subtitle}>Pilotage global des utilisateurs et abonnements.</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Espace d'administration</Text>
+        <Text style={[styles.subtitle, { color: colors.textMuted }]}>Pilotage global des utilisateurs et abonnements.</Text>
 
         <Pressable
-          style={styles.refreshButton}
+          style={[styles.refreshButton, { backgroundColor: activeTheme === 'dark' ? '#1e293b' : '#e0f2fe', borderColor: activeTheme === 'dark' ? '#334155' : '#bae6fd' }]}
           onPress={() => {
             setLoading(true);
             void fetchStats();
@@ -146,144 +146,78 @@ const AdminDashboardScreen: React.FC = () => {
           accessibilityRole="button"
           accessibilityLabel="Rafraîchir les statistiques"
         >
-          <Text style={styles.refreshButtonText}>Rafraîchir</Text>
+          <Text style={[styles.refreshButtonText, { color: activeTheme === 'dark' ? '#38bdf8' : '#0369a1' }]}>Rafraîchir</Text>
         </Pressable>
 
-        {loading ? <Text style={styles.infoText}>Chargement des indicateurs...</Text> : null}
+        {loading ? <Text style={[styles.infoText, { color: colors.textMuted }]}>Chargement des indicateurs...</Text> : null}
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
         {stats ? (
           <View style={styles.grid}>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Utilisateurs totaux</Text>
-              <Text style={styles.cardValue}>{stats.users.total}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Utilisateurs actifs</Text>
-              <Text style={styles.cardValue}>{stats.users.active}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Comptes suspendus</Text>
-              <Text style={styles.cardValue}>{stats.users.suspended}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Utilisateurs vérifiés</Text>
-              <Text style={styles.cardValue}>{stats.users.verified}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Utilisateurs non vérifiés</Text>
-              <Text style={styles.cardValue}>{stats.users.unverified}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Utilisateurs gratuits</Text>
-              <Text style={styles.cardValue}>{stats.users.free}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Utilisateurs premium</Text>
-              <Text style={styles.cardValue}>{stats.users.premium}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Premium invisibles</Text>
-              <Text style={styles.cardValue}>{stats.users.invisiblePremium}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Comptes auth</Text>
-              <Text style={styles.cardValue}>
-                {stats.integrity?.authUsersTotal ?? '-'}
-              </Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Auth sans profil</Text>
-              <Text style={styles.cardValue}>
-                {stats.integrity?.authUsersWithoutProfile ?? '-'}
-              </Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>KYC en attente</Text>
-              <Text style={styles.cardValue}>{stats.kyc?.pending ?? 0}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>KYC en revue</Text>
-              <Text style={styles.cardValue}>{stats.kyc?.inReview ?? 0}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>KYC approuvés</Text>
-              <Text style={styles.cardValue}>{stats.kyc?.approved ?? 0}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>KYC rejetés</Text>
-              <Text style={styles.cardValue}>{stats.kyc?.rejected ?? 0}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Demandes KYC (7j)</Text>
-              <Text style={styles.cardValue}>{stats.kyc?.requestsLast7Days ?? 0}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Signalements (ouverts)</Text>
-              <Text style={styles.cardValue}>{stats.moderation?.reportsOpen ?? 0}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Signalements (en revue)</Text>
-              <Text style={styles.cardValue}>{stats.moderation?.reportsInReview ?? 0}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Signalements (résolus)</Text>
-              <Text style={styles.cardValue}>{stats.moderation?.reportsResolved ?? 0}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Signalements (rejetés)</Text>
-              <Text style={styles.cardValue}>{stats.moderation?.reportsDismissed ?? 0}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>RGPD (ouvertes)</Text>
-              <Text style={styles.cardValue}>{stats.privacy?.open ?? 0}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>RGPD (en cours)</Text>
-              <Text style={styles.cardValue}>{stats.privacy?.inProgress ?? 0}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>RGPD (résolues)</Text>
-              <Text style={styles.cardValue}>{stats.privacy?.resolved ?? 0}</Text>
-            </View>
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>RGPD (rejetées)</Text>
-              <Text style={styles.cardValue}>{stats.privacy?.rejected ?? 0}</Text>
-            </View>
+            {[
+              { label: 'Utilisateurs totaux', value: stats.users.total },
+              { label: 'Hommes (Masculin)', value: stats.users.male },
+              { label: 'Femmes (Féminin)', value: stats.users.female },
+              { label: 'Utilisateurs actifs', value: stats.users.active },
+              { label: 'Comptes suspendus', value: stats.users.suspended },
+              { label: 'Utilisateurs vérifiés', value: stats.users.verified },
+              { label: 'Utilisateurs non vérifiés', value: stats.users.unverified },
+              { label: 'Utilisateurs gratuits', value: stats.users.free },
+              { label: 'Utilisateurs premium', value: stats.users.premium },
+              { label: 'Premium invisibles', value: stats.users.invisiblePremium },
+              { label: 'Comptes auth', value: stats.integrity?.authUsersTotal ?? '-' },
+              { label: 'Auth sans profil', value: stats.integrity?.authUsersWithoutProfile ?? '-' },
+              { label: 'KYC en attente', value: stats.kyc?.pending ?? 0 },
+              { label: 'KYC en revue', value: stats.kyc?.inReview ?? 0 },
+              { label: 'KYC approuvés', value: stats.kyc?.approved ?? 0 },
+              { label: 'KYC rejetés', value: stats.kyc?.rejected ?? 0 },
+              { label: 'Demandes KYC (7j)', value: stats.kyc?.requestsLast7Days ?? 0 },
+              { label: 'Signalements (ouverts)', value: stats.moderation?.reportsOpen ?? 0 },
+              { label: 'Signalements (en revue)', value: stats.moderation?.reportsInReview ?? 0 },
+              { label: 'Signalements (résolus)', value: stats.moderation?.reportsResolved ?? 0 },
+              { label: 'Signalements (rejetés)', value: stats.moderation?.reportsDismissed ?? 0 },
+              { label: 'RGPD (ouvertes)', value: stats.privacy?.open ?? 0 },
+              { label: 'RGPD (en cours)', value: stats.privacy?.inProgress ?? 0 },
+              { label: 'RGPD (résolues)', value: stats.privacy?.resolved ?? 0 },
+              { label: 'RGPD (rejetées)', value: stats.privacy?.rejected ?? 0 },
+            ].map((item, idx) => (
+              <View key={idx} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[styles.cardLabel, { color: colors.textMuted }]}>{item.label}</Text>
+                <Text style={[styles.cardValue, { color: colors.text }]}>{item.value}</Text>
+              </View>
+            ))}
           </View>
         ) : null}
 
         {stats ? (
-          <View style={styles.planCard}>
-            <Text style={styles.planTitle}>Premium par type d'abonnement</Text>
-            <Text style={styles.planItem}>Mensuel: {stats.premiumByPlan.MONTHLY}</Text>
-            <Text style={styles.planItem}>Trimestriel: {stats.premiumByPlan.QUARTERLY}</Text>
-            <Text style={styles.planItem}>Semestriel: {stats.premiumByPlan.BIANNUAL}</Text>
-            <Text style={styles.planItem}>Annuel: {stats.premiumByPlan.ANNUAL}</Text>
-            <Text style={styles.planItem}>Non classé: {stats.premiumByPlan.UNKNOWN}</Text>
+          <View style={[styles.planCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.planTitle, { color: colors.text }]}>Premium par type d'abonnement</Text>
+            <Text style={[styles.planItem, { color: colors.text }]}>Mensuel: {stats.premiumByPlan.MONTHLY}</Text>
+            <Text style={[styles.planItem, { color: colors.text }]}>Trimestriel: {stats.premiumByPlan.QUARTERLY}</Text>
+            <Text style={[styles.planItem, { color: colors.text }]}>Non classé: {stats.premiumByPlan.UNKNOWN}</Text>
           </View>
         ) : null}
 
         <View style={styles.shortcutsSection}>
-          <Text style={styles.shortcutsTitle}>Modules back-office</Text>
+          <Text style={[styles.shortcutsTitle, { color: colors.text }]}>Modules back-office</Text>
           <View style={styles.shortcutsGrid}>
             {ADMIN_SHORTCUTS.map((shortcut) => (
               <Pressable
                 key={shortcut.route}
-                style={styles.shortcutCard}
+                style={[styles.shortcutCard, { backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => navigation.navigate(shortcut.route)}
                 accessibilityRole="button"
                 accessibilityLabel={`Ouvrir ${shortcut.title}`}
               >
-                <Text style={styles.shortcutCardTitle}>{shortcut.title}</Text>
-                <Text style={styles.shortcutCardDescription}>{shortcut.description}</Text>
+                <Text style={[styles.shortcutCardTitle, { color: colors.text }]}>{shortcut.title}</Text>
+                <Text style={[styles.shortcutCardDescription, { color: colors.textMuted }]}>{shortcut.description}</Text>
               </Pressable>
             ))}
           </View>
         </View>
 
         <Pressable
-          style={styles.logoutButton}
+          style={[styles.logoutButton, activeTheme === 'dark' && { backgroundColor: '#450a0a', borderColor: '#7f1d1d' }]}
           onPress={handleLogout}
           accessibilityRole="button"
           accessibilityLabel="Se déconnecter"
@@ -298,7 +232,6 @@ const AdminDashboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: COLORS.bg,
   },
   content: {
     padding: 20,
@@ -306,29 +239,23 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: COLORS.ink,
     marginBottom: 6,
   },
   subtitle: {
-    color: COLORS.muted,
     marginBottom: 12,
   },
   refreshButton: {
     alignSelf: 'flex-start',
-    backgroundColor: '#e0f2fe',
     borderWidth: 1,
-    borderColor: '#bae6fd',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
     marginBottom: 12,
   },
   refreshButtonText: {
-    color: '#0369a1',
     fontWeight: '700',
   },
   infoText: {
-    color: COLORS.muted,
     marginBottom: 8,
   },
   errorText: {
@@ -342,39 +269,31 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   card: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
     width: '48%',
   },
   cardLabel: {
-    color: COLORS.muted,
     fontWeight: '700',
     fontSize: 12,
   },
   cardValue: {
-    color: COLORS.ink,
     fontWeight: '900',
     fontSize: 22,
     marginTop: 6,
   },
   planCard: {
     marginTop: 14,
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
   },
   planTitle: {
     fontWeight: '800',
-    color: COLORS.ink,
     marginBottom: 8,
   },
   planItem: {
-    color: COLORS.ink,
     marginBottom: 4,
   },
   shortcutsSection: {
@@ -383,26 +302,21 @@ const styles = StyleSheet.create({
   },
   shortcutsTitle: {
     fontWeight: '800',
-    color: COLORS.ink,
     fontSize: 16,
   },
   shortcutsGrid: {
     gap: 10,
   },
   shortcutCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
   },
   shortcutCardTitle: {
-    color: COLORS.ink,
     fontWeight: '800',
     marginBottom: 4,
   },
   shortcutCardDescription: {
-    color: COLORS.muted,
     lineHeight: 18,
   },
   logoutButton: {

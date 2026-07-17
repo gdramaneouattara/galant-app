@@ -1,15 +1,21 @@
 
 import React, { createContext, useContext, useMemo, useState, useEffect, useRef } from 'react';
-import { Session, RealtimeChannel } from '@supabase/supabase-js';
-import { AppState, AppStateStatus, Platform } from 'react-native';
+import { AppState, AppStateStatus, Platform, useColorScheme, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
-import { Gender, Message, Match, User } from '../types';
-import { supabase } from '../lib/supabase';
+import { fbAuth, db, rtdb, fbMessaging, COLLECTIONS } from '../lib/firebase';
+import { Gender, Message, Match, User, AppThemePreference, Language } from '../types';
 import { apiRequest } from '../lib/api';
+import { THEMES } from '../data/mock';
+import { TRANSLATIONS } from '../translations';
+import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
-const INVISIBLE_MODE_ELIGIBLE_PLANS = new Set(['BIANNUAL', 'ANNUAL']);
+const THEME_STORAGE_KEY = '@galant_theme_pref';
+const LANG_STORAGE_KEY = '@galant_lang_pref';
+
+const INVISIBLE_MODE_ELIGIBLE_PLANS = new Set(['MONTHLY', 'QUARTERLY']);
 const TRIAL_DAYS = 7;
 const APP_RESUME_REFRESH_COOLDOWN_MS = 3000;
 
@@ -25,7 +31,7 @@ const isMaleTrialActiveFromProfile = (profile: any): boolean => {
 type AppContextValue = {
   isAuthenticated: boolean;
   currentUser: User | null;
-  session: Session | null;
+  fbUser: FirebaseAuthTypes.User | null;
   users: User[];
   matches: Match[];
   messages: Message[];
@@ -45,12 +51,19 @@ type AppContextValue = {
   suspendUser: (userId: string) => void;
   activateBoost: () => Promise<string | null>;
   markMessagesAsRead: (matchId: string) => Promise<void>;
+  theme: AppThemePreference;
+  setThemePreference: (pref: AppThemePreference) => void;
+  activeTheme: 'light' | 'dark';
+  colors: typeof THEMES.light;
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  t: (key: keyof typeof TRANSLATIONS.fr, params?: Record<string, any>) => string;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
+  const [fbUser, setFbUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -58,13 +71,72 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [appResumeVersion, setAppResumeVersion] = useState(0);
   const [lastError, setLastError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const matchChannelsRef = useRef<RealtimeChannel[]>([]);
-  const matchesChannelRef = useRef<RealtimeChannel | null>(null);
-  const profileChannelRef = useRef<RealtimeChannel | null>(null);
+
   const pushTokenRef = useRef<string | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const resumeRefreshInFlightRef = useRef(false);
   const lastResumeRefreshAtRef = useRef(0);
+  const notificationListener = useRef<Notifications.EventSubscription | null>(null);
+  const responseListener = useRef<Notifications.EventSubscription | null>(null);
+
+  const [themePreference, setThemePreference] = useState<AppThemePreference>('system');
+  const [language, setLanguageState] = useState<Language>('fr');
+  const systemColorScheme = useColorScheme();
+
+  const activeTheme = useMemo((): 'light' | 'dark' => {
+    if (themePreference === 'system') {
+      return systemColorScheme === 'dark' ? 'dark' : 'light';
+    }
+    return themePreference;
+  }, [themePreference, systemColorScheme]);
+
+  const colors = useMemo(() => THEMES[activeTheme], [activeTheme]);
+
+  const t = (key: keyof typeof TRANSLATIONS.fr, params?: Record<string, any>) => {
+    let str = TRANSLATIONS[language][key] || key;
+    if (params) {
+      Object.keys(params).forEach(p => {
+        str = str.replace(`{${p}}`, params[p]);
+      });
+    }
+    return str;
+  };
+
+  const updateLanguage = async (lang: Language) => {
+    setLanguageState(lang);
+    try {
+      await AsyncStorage.setItem(LANG_STORAGE_KEY, lang);
+    } catch (e) {
+      console.error('Error saving language preference', e);
+    }
+  };
+
+  const updateThemePreference = async (pref: AppThemePreference) => {
+    setThemePreference(pref);
+    try {
+      await AsyncStorage.setItem(THEME_STORAGE_KEY, pref);
+    } catch (e) {
+      console.error('Error saving theme preference', e);
+    }
+  };
+
+  useEffect(() => {
+    const loadPrefs = async () => {
+      try {
+        const savedTheme = await AsyncStorage.getItem(THEME_STORAGE_KEY);
+        if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system')) {
+          setThemePreference(savedTheme as AppThemePreference);
+        }
+        const savedLang = await AsyncStorage.getItem(LANG_STORAGE_KEY);
+        if (savedLang === 'fr' || savedLang === 'en') {
+          setLanguageState(savedLang as Language);
+        }
+      } catch (e) {
+        console.error('Error loading preferences', e);
+      }
+    };
+    void loadPrefs();
+  }, []);
 
   const getCurrentSubscriptionState = async (userId: string) => {
     const fallback = {
@@ -74,35 +146,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     try {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('plan_id, status, current_period_end, updated_at, created_at')
-        .eq('user_id', userId)
-        .eq('status', 'active');
+      const now = new Date().toISOString();
+      const snapshot = await db.collection(COLLECTIONS.SUBSCRIPTIONS)
+        .where('user_id', '==', userId)
+        .where('status', '==', 'active')
+        .where('current_period_end', '>', now)
+        .orderBy('current_period_end', 'desc')
+        .limit(1)
+        .get();
 
-      if (error || !data || data.length === 0) return fallback;
+      if (snapshot.empty) return fallback;
 
-      const nowTs = Date.now();
-      let latestPlan: { planId: string; score: number } | null = null;
-
-      for (const sub of data) {
-        if (sub.current_period_end && new Date(sub.current_period_end).getTime() <= nowTs) continue;
-        const planId = (sub.plan_id || '').toUpperCase();
-        if (!planId) continue;
-        const score = new Date(sub.current_period_end || sub.updated_at || sub.created_at || 0).getTime();
-        if (!latestPlan || score > latestPlan.score) {
-          latestPlan = { planId, score };
-        }
-      }
-
-      if (!latestPlan) return fallback;
+      const sub = snapshot.docs[0].data();
+      const planId = (sub.plan_id || '').toUpperCase();
 
       return {
-        subscription_plan_id: latestPlan.planId,
-        invisible_mode_eligible: INVISIBLE_MODE_ELIGIBLE_PLANS.has(latestPlan.planId),
+        subscription_plan_id: planId,
+        invisible_mode_eligible: INVISIBLE_MODE_ELIGIBLE_PLANS.has(planId),
         has_active_subscription: true,
       };
-    } catch (_e) {
+    } catch (e) {
+      console.error('Error getting subscription state:', e);
       return fallback;
     }
   };
@@ -121,712 +185,400 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...profile,
       is_premium: isPremium,
     });
-    const quarterlyInvisibleEligible =
-      subscriptionPlanId === 'QUARTERLY' &&
-      isPremium &&
-      String(profile.gender || '').toUpperCase() === 'MALE';
-    const monthlyFemaleInvisibleEligible =
-      subscriptionPlanId === 'MONTHLY' &&
-      isPremium &&
-      String(profile.gender || '').toUpperCase() === 'FEMALE';
-    const quarterlyFemaleInvisibleEligible =
-      subscriptionPlanId === 'QUARTERLY' &&
-      isPremium &&
-      String(profile.gender || '').toUpperCase() === 'FEMALE';
     const invisibleModeEligible =
       (options?.invisible_mode_eligible ?? false) ||
-      monthlyFemaleInvisibleEligible ||
-      quarterlyFemaleInvisibleEligible ||
-      quarterlyInvisibleEligible ||
+      (subscriptionPlanId === 'QUARTERLY' && isPremium) ||
+      (subscriptionPlanId === 'MONTHLY' && isPremium && String(profile.gender || '').toUpperCase() === 'FEMALE') ||
       trialInvisibleEligible;
+
     return {
-    id: profile.id,
-    name: profile.name || 'Utilisateur',
-    age: Number(profile.age) || 18,
-    gender: (profile.gender || Gender.OTHER) as Gender,
-    photos: profile.photos || [],
-    bio: profile.bio || '',
-    interests: profile.interests || [],
-    phone: profile.phone ?? null,
-    location: {
-      lat: Number.isFinite(profile.latitude) ? profile.latitude : null,
-      lng: Number.isFinite(profile.longitude) ? profile.longitude : null,
-      city: profile.city || '',
-      country: profile.country || null,
-    },
-    isVerified: !!profile.is_verified,
-    isPremium,
-    boosted_until: profile.boosted_until ?? null,
-    relationship_goal: profile.relationship_goal ?? null,
-    last_active_at: profile.last_active_at ?? null,
-    likes_count: profile.likes_count || 0,
-    is_invisible: !!profile.is_invisible && invisibleModeEligible,
-    is_admin: !!profile.is_admin,
-    suspended_at: profile.suspended_at ?? null,
-    photo_review_status: profile.photo_review_status ?? 'APPROVED',
-    is_vip: !!profile.is_vip,
-    trial_started_at: profile.trial_started_at ?? null,
-    subscription_plan_id: options?.subscription_plan_id ?? null,
-    invisible_mode_eligible: invisibleModeEligible,
-    preferences: {
-      targetGender: profile.target_gender || [],
-      minAge: 18,
-      maxAge: 35,
-      maxDistance: 50,
-    },
-  };
+      id: profile.id,
+      name: profile.name || 'Utilisateur',
+      age: Number(profile.age) || 18,
+      gender: (profile.gender || Gender.OTHER) as Gender,
+      photos: profile.photos || [],
+      bio: profile.bio || '',
+      interests: profile.interests || [],
+      phone: profile.phone ?? null,
+      location: {
+        lat: Number.isFinite(profile.latitude) ? profile.latitude : null,
+        lng: Number.isFinite(profile.longitude) ? profile.longitude : null,
+        city: profile.city || '',
+        country: profile.country || null,
+      },
+      isVerified: !!profile.is_verified,
+      isPremium,
+      boosted_until: profile.boosted_until ?? null,
+      golden_rose_until: profile.golden_rose_until ?? null,
+      relationship_goal: profile.relationship_goal ?? null,
+      last_active_at: profile.last_active_at ?? null,
+      likes_count: profile.likes_count || 0,
+      roses_count: profile.roses_count || 0,
+      galanterie_score: profile.galanterie_score || 5.0,
+      galanterie_ratings_count: profile.galanterie_ratings_count || 0,
+      is_invisible: !!profile.is_invisible && invisibleModeEligible,
+      is_admin: !!profile.is_admin,
+      suspended_at: profile.suspended_at ?? null,
+      photo_review_status: profile.photo_review_status ?? 'APPROVED',
+      is_vip: !!profile.is_vip,
+      is_partner: !!profile.is_partner,
+      trial_started_at: profile.trial_started_at ?? null,
+      subscription_plan_id: options?.subscription_plan_id ?? null,
+      invisible_mode_eligible: invisibleModeEligible,
+      preferences: {
+        targetGender: profile.target_gender || [],
+        minAge: 18,
+        maxAge: 35,
+        maxDistance: 50,
+      },
+    };
   };
 
   const updateLastActive = async (userId: string) => {
     try {
-      await supabase
-        .from('profiles')
-        .update({ last_active_at: new Date().toISOString() })
-        .eq('id', userId);
-    } catch (_e) {
-      // Silent error for non-critical ping
-    }
+      await db.collection(COLLECTIONS.PROFILES).doc(userId).update({
+        last_active_at: new Date().toISOString()
+      });
+    } catch (_e) {}
   };
 
   const refreshProfiles = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .is('suspended_at', null)
-        .neq('photo_review_status', 'REJECTED')
-        .eq('onboarding_completed', true)
-        .eq('is_admin', false);
-      if (error) {
-        setLastError("Impossible de charger les profils.");
-        return;
-      }
-      if (data) {
-        setLastError(null);
-        setUsers(data.map((profile) => mapProfileToUser(profile)));
-      }
-    } catch (_e) {
+      const snapshot = await db.collection(COLLECTIONS.PROFILES)
+        .where('onboarding_completed', '==', true)
+        .where('is_admin', '==', false)
+        .get();
+
+      const activeProfiles = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter((p: any) => !p.suspended_at && p.photo_review_status !== 'REJECTED');
+
+      setUsers(activeProfiles.map(p => mapProfileToUser(p)));
+      setLastError(null);
+    } catch (e) {
       setLastError("Impossible de charger les profils.");
     }
   };
 
 
   const refreshCurrentUser = async (userId?: string): Promise<User | null> => {
-    const resolvedUserId = userId ?? session?.user?.id;
+    const resolvedUserId = userId ?? fbUser?.uid;
     if (!resolvedUserId) return null;
     try {
       try {
-        await apiRequest('/api/subscriptions/sync', {
-          method: 'POST',
-          requireAuth: true,
-        });
-      } catch (_syncError) {
-        // Non-blocking: continue local refresh even if backend sync is unavailable.
-      }
+        await apiRequest('/api/subscriptions/sync', { method: 'POST', requireAuth: true });
+      } catch (_e) {}
 
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', resolvedUserId)
-        .single();
-      if (error) {
-        setLastError("Impossible de charger votre profil.");
+      const doc = await db.collection(COLLECTIONS.PROFILES).doc(resolvedUserId).get();
+      if (!doc.exists) {
+        setLastError("Profil non trouvé.");
         return null;
       }
-      if (profile) {
-        if (profile.suspended_at) {
-          await supabase.auth.signOut({ scope: 'local' });
-          resetAuthState();
-          setLastError("Votre compte est suspendu. Contactez le support.");
-          return null;
-        }
-        if (!profile.onboarding_completed) {
-          setCurrentUser(null);
-          setLastError(null);
-          return null;
-        }
-        const subscriptionState = await getCurrentSubscriptionState(resolvedUserId);
-        const trialInvisibleEligible = isMaleTrialActiveFromProfile(profile);
-        const planId = String(subscriptionState.subscription_plan_id || '').toUpperCase();
-        const quarterlyInvisibleEligible =
-          planId === 'QUARTERLY' &&
-          subscriptionState.has_active_subscription &&
-          String(profile.gender || '').toUpperCase() === 'MALE';
-        const monthlyFemaleInvisibleEligible =
-          planId === 'MONTHLY' &&
-          subscriptionState.has_active_subscription &&
-          String(profile.gender || '').toUpperCase() === 'FEMALE';
-        const quarterlyFemaleInvisibleEligible =
-          planId === 'QUARTERLY' &&
-          subscriptionState.has_active_subscription &&
-          String(profile.gender || '').toUpperCase() === 'FEMALE';
-        const invisibleEligibleNow =
-          subscriptionState.invisible_mode_eligible ||
-          monthlyFemaleInvisibleEligible ||
-          quarterlyFemaleInvisibleEligible ||
-          quarterlyInvisibleEligible ||
-          trialInvisibleEligible;
-        const effectivePremium = subscriptionState.has_active_subscription;
-        if (profile.is_premium !== effectivePremium) {
-          const patch: { is_premium: boolean; is_invisible?: boolean } = { is_premium: effectivePremium };
-          if (!effectivePremium && !trialInvisibleEligible) patch.is_invisible = false;
-          const { error: premiumSyncError } = await supabase
-            .from('profiles')
-            .update(patch)
-            .eq('id', resolvedUserId);
-          if (!premiumSyncError) {
-            profile.is_premium = effectivePremium;
-            if (!effectivePremium && !trialInvisibleEligible) profile.is_invisible = false;
-          }
-        }
-        if (profile.is_invisible && !invisibleEligibleNow) {
-          const { error: disableInvisibleError } = await supabase
-            .from('profiles')
-            .update({ is_invisible: false })
-            .eq('id', resolvedUserId);
-          if (!disableInvisibleError) {
-            profile.is_invisible = false;
-          }
-        }
-        setLastError(null);
-        const mapped = mapProfileToUser(profile, {
-          ...subscriptionState,
-          invisible_mode_eligible: invisibleEligibleNow,
-        });
-        setCurrentUser(mapped);
-        return mapped;
+
+      const profile = { id: doc.id, ...doc.data() } as any;
+
+      if (profile.suspended_at) {
+        await fbAuth.signOut();
+        setCurrentUser(null);
+        setLastError("Votre compte est suspendu.");
+        return null;
       }
-      return null;
-    } catch (_e) {
-      setLastError("Impossible de charger votre profil.");
+
+      if (!profile.onboarding_completed) {
+        setCurrentUser(null);
+        return null;
+      }
+
+      const subState = await getCurrentSubscriptionState(resolvedUserId);
+      const mapped = mapProfileToUser(profile, subState);
+
+      // Auto-sync is_premium if mismatch
+      if (profile.is_premium !== subState.has_active_subscription) {
+        await db.collection(COLLECTIONS.PROFILES).doc(resolvedUserId).update({
+          is_premium: subState.has_active_subscription
+        });
+      }
+
+      setCurrentUser(mapped);
+      setLastError(null);
+      return mapped;
+    } catch (e) {
+      setLastError("Erreur de profil.");
       return null;
     }
   };
 
 
   const refreshMatches = async (userId?: string) => {
-    const uid = userId ?? session?.user?.id;
+    const uid = userId ?? fbUser?.uid;
     if (!uid) return;
     try {
-      const { data, error } = await supabase
-        .from('matches')
-        .select('*')
-        .or(`user_one_id.eq.${uid},user_two_id.eq.${uid}`)
-        .order('created_at', { ascending: false });
-      if (error) {
-        setLastError("Impossible de charger les matchs.");
-        return;
-      }
-      if (data) {
-        setLastError(null);
-        setMatches(data as Match[]);
-      }
-    } catch (_e) {
-      setLastError("Impossible de charger les matchs.");
+      // Note: Firestore doesn't support easy 'OR' for two fields until recently.
+      // We do two queries or one where with array-contains if we store [u1, u2] in a field.
+      const q1 = db.collection(COLLECTIONS.MATCHES).where('user_one_id', '==', uid).get();
+      const q2 = db.collection(COLLECTIONS.MATCHES).where('user_two_id', '==', uid).get();
+      const [s1, s2] = await Promise.all([q1, q2]);
+
+      const allMatches = [...s1.docs, ...s2.docs].map(doc => ({ id: doc.id, ...doc.data() } as Match));
+      setMatches(allMatches);
+    } catch (e) {
+      console.error('Error refreshing matches:', e);
     }
   };
 
   const refreshMessages = async () => {
-    if (!session?.user) return;
-    const matchIds = matches.map((m) => m.id);
-    if (matchIds.length === 0) {
-      setMessages([]);
-      return;
-    }
-    try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .in('match_id', matchIds)
-        .order('created_at', { ascending: true });
-      if (error) {
-        setLastError("Impossible de charger les messages.");
-        return;
-      }
-      if (data) {
-        setLastError(null);
-        setMessages(data as Message[]);
-      }
-    } catch (_e) {
-      setLastError("Impossible de charger les messages.");
-    }
-  };
-
-  const clearMatchChannels = () => {
-    matchChannelsRef.current.forEach((channel) => {
-      supabase.removeChannel(channel);
-    });
-    matchChannelsRef.current = [];
+    if (!fbUser) return;
+    // For RTDB, we usually subscribe. But for initial load:
+    setMessages([]);
   };
 
   const registerPushToken = async (userId: string) => {
     try {
-      if (!Device?.isDevice) return;
+      // 1. Get FCM Token (Native Firebase)
+      let token = null;
 
-      const existing = await Notifications.getPermissionsAsync();
-      let status = existing?.status;
-      if (status !== 'granted') {
-        const requested = await Notifications.requestPermissionsAsync();
-        status = requested?.status;
+      if (Platform.OS !== 'web') {
+        const authStatus = await fbMessaging.requestPermission();
+        const enabled =
+          authStatus === 1 ||
+          authStatus === 2; // PROVISIONAL
+
+        if (enabled) {
+          token = await fbMessaging.getToken();
+        }
       }
-      if (status !== 'granted') return;
 
-      const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID
-        || Constants?.expoConfig?.extra?.eas?.projectId
-        || Constants?.easConfig?.projectId;
+      // 2. Fallback to Expo Push Token if FCM fails or for local testing
+      if (!token && Device?.isDevice) {
+        const { status } = await Notifications.requestPermissionsAsync();
+        if (status === 'granted') {
+          const expoToken = await Notifications.getExpoPushTokenAsync({
+            projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID || Constants?.expoConfig?.extra?.eas?.projectId
+          });
+          token = expoToken?.data;
+        }
+      }
 
-      const tokenResult = await Notifications.getExpoPushTokenAsync(
-        projectId ? { projectId } : {}
-      );
-      const token = tokenResult?.data;
       if (!token) return;
 
       pushTokenRef.current = token;
-      await supabase
-        .from('push_tokens')
-        .upsert({
-          user_id: userId,
-          token,
-          platform: Platform.OS,
-          is_active: true,
-        }, { onConflict: 'user_id,token' });
-    } catch (_error) {
-      // Push is optional: do not break auth flow.
-    }
-  };
 
-  const unregisterPushToken = async (userId: string) => {
-    const token = pushTokenRef.current;
-    if (!token) return;
-    pushTokenRef.current = null;
-    try {
-      await supabase
-        .from('push_tokens')
-        .update({ is_active: false })
-        .eq('user_id', userId)
-        .eq('token', token);
+      // Store token in Firestore
+      await db.collection('push_tokens').doc(`${userId}_${token.substring(0, 50)}`).set({
+        user_id: userId,
+        token,
+        platform: Platform.OS,
+        is_active: true,
+        updated_at: new Date().toISOString()
+      });
     } catch (_error) {
-      // Silent cleanup.
+      console.error('Push Token Registration Error:', _error);
     }
   };
 
   useEffect(() => {
-    const fetchSessionAndProfile = async () => {
-      setLoading(true);
-      try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        setSession(currentSession);
+    const unsubscribe = fbAuth.onAuthStateChanged(async (user) => {
+      setFbUser(user);
+      if (user) {
+        await updateLastActive(user.uid);
+        const refreshedUser = await refreshCurrentUser(user.uid);
+        if (refreshedUser) {
+          await refreshProfiles();
+          await refreshMatches(user.uid);
+          await registerPushToken(user.uid);
 
-        if (currentSession?.user) {
-          await updateLastActive(currentSession.user.id);
-          const refreshedUser = await refreshCurrentUser(currentSession.user.id);
-          if (refreshedUser) {
-            await refreshProfiles();
-            await refreshMatches(currentSession.user.id);
-            await registerPushToken(currentSession.user.id);
+          // Sécurité Admin : Tracker la connexion
+          if (refreshedUser.is_admin) {
+            void apiRequest('/api/tracking/event', {
+              method: 'POST',
+              requireAuth: true,
+              body: JSON.stringify({ eventType: 'LOGIN' })
+            });
           }
         }
-      } catch (_e) {
-        setLastError("Impossible d'initialiser la session.");
-      } finally {
-        setLoading(false);
+      } else {
+        setCurrentUser(null);
+        setUsers([]);
+        setMatches([]);
+        setMessages([]);
       }
-    };
+      setLoading(false);
+    });
 
-    fetchSessionAndProfile();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
-      try {
-        setSession(newSession);
-        if (newSession?.user) {
-          await updateLastActive(newSession.user.id);
-          const refreshedUser = await refreshCurrentUser(newSession.user.id);
-          if (refreshedUser) {
-            await refreshProfiles();
-            await refreshMatches(newSession.user.id);
-            await registerPushToken(newSession.user.id);
-          } else {
-            setUsers([]);
-            setMatches([]);
-            setMessages([]);
-            clearMatchChannels();
-          }
-        } else if (!newSession) {
-          setCurrentUser(null);
-          setUsers([]);
-          setMatches([]);
-          setMessages([]);
-          clearMatchChannels();
-          if (profileChannelRef.current) {
-            supabase.removeChannel(profileChannelRef.current);
-            profileChannelRef.current = null;
-          }
-          if (matchesChannelRef.current) {
-            supabase.removeChannel(matchesChannelRef.current);
-            matchesChannelRef.current = null;
-          }
-        }
-      } catch (_e) {
-        setLastError("Impossible de synchroniser la session.");
-      }
+    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+      const data = notification.request.content.data;
+      if (data?.type === 'CHAT') void refreshMessages();
     });
 
     return () => {
-      authListener.subscription.unsubscribe();
+      unsubscribe();
+      if (notificationListener.current) Notifications.removeNotificationSubscription(notificationListener.current);
     };
   }, []);
 
   useEffect(() => {
-    if (!session?.user?.id) return;
+    if (!fbUser?.uid) return;
 
     const refreshAppOnResume = async () => {
       const now = Date.now();
-      if (resumeRefreshInFlightRef.current) return;
-      if ((now - lastResumeRefreshAtRef.current) < APP_RESUME_REFRESH_COOLDOWN_MS) return;
-
+      if (resumeRefreshInFlightRef.current || (now - lastResumeRefreshAtRef.current) < APP_RESUME_REFRESH_COOLDOWN_MS) return;
       resumeRefreshInFlightRef.current = true;
       lastResumeRefreshAtRef.current = now;
 
       try {
-        const { data: { session: latestSession } } = await supabase.auth.getSession();
-        const uid = latestSession?.user?.id || session.user.id;
-        if (!uid) return;
-
-        if (latestSession) {
-          setSession(latestSession);
-        }
-
-        await updateLastActive(uid);
-        const refreshedUser = await refreshCurrentUser(uid);
-        if (refreshedUser) {
-          await refreshProfiles();
-          await refreshMatches(uid);
-          await registerPushToken(uid);
-          setAppResumeVersion((prev) => prev + 1);
-        }
-      } catch (_e) {
-        // Resume refresh is best-effort and must not interrupt the user.
-      } finally {
+        await updateLastActive(fbUser.uid);
+        await refreshCurrentUser(fbUser.uid);
+        await refreshMatches(fbUser.uid);
+        setAppResumeVersion((prev) => prev + 1);
+      } catch (_e) {} finally {
         resumeRefreshInFlightRef.current = false;
       }
     };
 
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      const previousAppState = appStateRef.current;
-      appStateRef.current = nextAppState;
-
-      const returnedToForeground =
-        nextAppState === 'active' &&
-        (previousAppState === 'background' || previousAppState === 'inactive');
-
-      if (returnedToForeground) {
-        void refreshAppOnResume();
-      }
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active' && appStateRef.current !== 'active') void refreshAppOnResume();
+      appStateRef.current = next;
     });
 
-    return () => {
-      subscription.remove();
-    };
-  }, [session?.user?.id]);
+    return () => sub.remove();
+  }, [fbUser?.uid]);
 
+  // Realtime Messages with RTDB
   useEffect(() => {
-    refreshMessages();
-    clearMatchChannels();
+    if (matches.length === 0) return;
+    const unsubscribers: Array<() => void> = [];
 
-    const newChannels: RealtimeChannel[] = [];
-    matches.forEach((match) => {
-      const channel = supabase
-        .channel(`messages_${match.id}`)
-        .on(
-          'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${match.id}` },
-          (payload) => {
-            const newMessage = payload.new as Message;
-            setMessages((prev) => (
-              prev.some((message) => message.id === newMessage.id)
-                ? prev
-                : [...prev, newMessage]
-            ));
-          }
-        )
-        .on(
-          'postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'messages', filter: `match_id=eq.${match.id}` },
-          (payload) => {
-            const updatedMessage = payload.new as Message;
-            setMessages((prev) => prev.map((message) => (
-              message.id === updatedMessage.id ? updatedMessage : message
-            )));
-          }
-        )
-        .subscribe();
-      newChannels.push(channel);
-    });
-    matchChannelsRef.current = newChannels;
-  }, [matches]);
-
-  useEffect(() => {
-    if (!session?.user) return;
-    if (matchesChannelRef.current) {
-      supabase.removeChannel(matchesChannelRef.current);
-    }
-    const uid = session.user.id;
-    const channel = supabase
-      .channel(`matches_${uid}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'matches', filter: `user_one_id=eq.${uid}` },
-        () => refreshMatches()
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'matches', filter: `user_two_id=eq.${uid}` },
-        () => refreshMatches()
-      )
-      .subscribe();
-    matchesChannelRef.current = channel;
-  }, [session?.user?.id]);
-
-  useEffect(() => {
-    if (!session?.user?.id) return;
-    if (profileChannelRef.current) {
-      supabase.removeChannel(profileChannelRef.current);
-    }
-
-    const uid = session.user.id;
-    const channel = supabase
-      .channel(`profile_${uid}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${uid}` },
-        (payload) => {
-          const profile = payload.new as {
-            is_verified?: boolean;
-            photo_review_status?: string | null;
-          };
-
-          setCurrentUser((prev) => {
-            if (!prev || prev.id !== uid) return prev;
-            return {
-              ...prev,
-              isVerified: !!profile.is_verified,
-              photo_review_status: profile.photo_review_status ?? prev.photo_review_status,
-            };
+    matches.forEach(match => {
+      const ref = rtdb.ref(`messages/${match.id}`);
+      const listener = ref.on('value', (snapshot) => {
+        if (snapshot.exists()) {
+          const msgs = Object.entries(snapshot.val()).map(([id, data]: any) => ({
+            id,
+            ...data
+          }));
+          setMessages(prev => {
+            const otherMsgs = prev.filter(m => m.match_id !== match.id);
+            return [...otherMsgs, ...msgs].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
           });
         }
-      )
-      .subscribe();
+      });
+      unsubscribers.push(() => ref.off('value', listener));
+    });
 
-    profileChannelRef.current = channel;
+    return () => unsubscribers.forEach(u => u());
+  }, [matches]);
 
-    return () => {
-      supabase.removeChannel(channel);
-      if (profileChannelRef.current === channel) {
-        profileChannelRef.current = null;
-      }
-    };
-  }, [session?.user?.id]);
+  // Realtime Matches with Firestore
+  useEffect(() => {
+    if (!fbUser?.uid) return;
+    const q1 = db.collection(COLLECTIONS.MATCHES).where('user_one_id', '==', fbUser.uid);
+    const q2 = db.collection(COLLECTIONS.MATCHES).where('user_two_id', '==', fbUser.uid);
 
-  const login = (user: User) => {
-    setCurrentUser(user);
-  };
+    const unsub1 = q1.onSnapshot(() => refreshMatches());
+    const unsub2 = q2.onSnapshot(() => refreshMatches());
 
-  const resetAuthState = () => {
-    pushTokenRef.current = null;
-    setCurrentUser(null);
-    setSession(null);
-    setUsers([]);
-    setMatches([]);
-    setMessages([]);
-    clearMatchChannels();
-    if (profileChannelRef.current) {
-      supabase.removeChannel(profileChannelRef.current);
-      profileChannelRef.current = null;
-    }
-    if (matchesChannelRef.current) {
-      supabase.removeChannel(matchesChannelRef.current);
-      matchesChannelRef.current = null;
-    }
-  };
+    return () => { unsub1(); unsub2(); };
+  }, [fbUser?.uid]);
 
   const logout = async () => {
-    const userId = session?.user?.id;
     try {
-      if (userId) {
-        await unregisterPushToken(userId);
+      if (fbUser) {
+        await db.collection('push_tokens').where('user_id', '==', fbUser.uid).get()
+          .then(qs => qs.forEach(doc => doc.ref.update({ is_active: false })));
       }
-      const { error } = await supabase.auth.signOut({ scope: 'local' });
-      if (error) {
-        throw error;
-      }
-    } catch (_e) {
-      setLastError("Déconnexion locale effectuée, mais la requête serveur a échoué.");
-    } finally {
-      resetAuthState();
+      await fbAuth.signOut();
+    } catch (e) {
+      setLastError("Erreur lors de la déconnexion.");
     }
   };
 
-  const updateCurrentUser = (updates: Partial<User>) => {
-    if (!currentUser) return;
+  const updateCurrentUser = async (updates: Partial<User>) => {
+    if (!currentUser || !fbUser) return;
+    const payload: any = {};
+    if (updates.name) payload.name = updates.name;
+    if (updates.bio) payload.bio = updates.bio;
+    if (updates.age) payload.age = updates.age;
+    if (updates.photos) payload.photos = updates.photos;
+    if (updates.interests) payload.interests = updates.interests;
+    if (updates.location?.city) payload.city = updates.location.city;
+    if (updates.location?.lat) payload.latitude = updates.location.lat;
+    if (updates.location?.lng) payload.longitude = updates.location.lng;
 
-    const sanitized = { ...updates };
-    delete sanitized.isPremium;
-    delete sanitized.isVerified;
-    delete sanitized.boosted_until;
-    delete sanitized.is_invisible;
-    delete sanitized.is_admin;
-    delete sanitized.suspended_at;
-    delete sanitized.photo_review_status;
-    delete sanitized.subscription_plan_id;
-    delete sanitized.invisible_mode_eligible;
-    delete sanitized.likes_count;
-
-    setCurrentUser((prev) => ({
-      ...prev!,
-      ...sanitized,
-      preferences: {
-        ...prev!.preferences,
-        ...sanitized.preferences,
-      },
-    }));
-
-    const payload: Record<string, unknown> = {};
-    if (sanitized.name !== undefined) payload.name = sanitized.name;
-    if (sanitized.age !== undefined) payload.age = sanitized.age;
-    if (sanitized.gender !== undefined) payload.gender = sanitized.gender;
-    if (sanitized.bio !== undefined) payload.bio = sanitized.bio;
-    if (sanitized.interests !== undefined) payload.interests = sanitized.interests;
-    if (sanitized.photos !== undefined) payload.photos = sanitized.photos;
-    if (sanitized.location?.city !== undefined) payload.city = sanitized.location.city;
-    if (sanitized.location?.country !== undefined) payload.country = sanitized.location.country;
-    if (sanitized.location?.lat !== undefined) payload.latitude = sanitized.location.lat;
-    if (sanitized.location?.lng !== undefined) payload.longitude = sanitized.location.lng;
-    if (sanitized.relationship_goal !== undefined) payload.relationship_goal = sanitized.relationship_goal;
-    if (sanitized.preferences?.targetGender !== undefined) {
-      payload.target_gender = sanitized.preferences.targetGender;
-    }
-
-    if (Object.keys(payload).length > 0) {
-      void supabase.from("profiles").update(payload).eq("id", currentUser.id);
+    try {
+      await db.collection(COLLECTIONS.PROFILES).doc(fbUser.uid).update(payload);
+      setCurrentUser(prev => prev ? { ...prev, ...updates } : null);
+    } catch (e) {
+      console.error('Update profile error:', e);
     }
   };
 
   const toggleInvisibleMode = async (enabled: boolean): Promise<boolean> => {
-    if (!currentUser) {
-      setLastError("Impossible de modifier le mode invisible.");
-      return false;
-    }
-    if (enabled && !currentUser.invisible_mode_eligible) {
-      setLastError("Le mode invisible est reserve aux abonnements Femme 1/3 mois, Homme 3 mois (limite), 6 mois et 1 an.");
-      return false;
-    }
-
+    if (!currentUser || !fbUser || !currentUser.invisible_mode_eligible) return false;
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({ is_invisible: enabled })
-        .eq('id', currentUser.id)
-        .select('*')
-        .single();
-
-      if (error || !data) {
-        setLastError("Impossible de mettre a jour le mode invisible.");
-        return false;
-      }
-
-      await refreshCurrentUser(currentUser.id);
-      setLastError(null);
-      await refreshProfiles();
+      await db.collection(COLLECTIONS.PROFILES).doc(fbUser.uid).update({ is_invisible: enabled });
+      await refreshCurrentUser();
       return true;
-    } catch (_e) {
-      setLastError("Impossible de mettre a jour le mode invisible.");
-      return false;
-    }
+    } catch (e) { return false; }
   };
-
-  const addMatch = (match: Match) => setMatches((prev) => [match, ...prev]);
-  const addMessage = (message: Message) => setMessages((prev) => (
-    prev.some((existing) => existing.id === message.id)
-      ? prev.map((existing) => (existing.id === message.id ? message : existing))
-      : [...prev, message]
-  ));
-  const clearError = () => setLastError(null);
-
-  const toggleUserVerification = (userId: string) => {
-    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isVerified: !u.isVerified } : u)));
-  };
-
-  const suspendUser = (userId: string) => setUsers((prev) => prev.filter((u) => u.id !== userId));
 
   const activateBoost = async (): Promise<string | null> => {
     try {
-      const data = await apiRequest<{ boosted_until?: string; error?: string }>('/api/profile/boost', {
-        method: 'POST',
-        requireAuth: true,
-      });
+      const data = await apiRequest<{ boosted_until?: string }>('/api/profile/boost', { method: 'POST', requireAuth: true });
       if (data.boosted_until) {
         setCurrentUser(prev => prev ? { ...prev, boosted_until: data.boosted_until } : null);
         return data.boosted_until;
       }
-      if (data.error) setLastError(data.error);
       return null;
-    } catch (e) {
-      setLastError("Erreur lors de l'activation du boost");
-      return null;
-    }
+    } catch (e) { return null; }
   };
 
   const markMessagesAsRead = async (matchId: string) => {
     try {
-      await apiRequest('/api/messages/mark-read', {
-        method: 'POST',
-        requireAuth: true,
-        body: JSON.stringify({ matchId })
-      });
-    } catch (e) {
-      console.error("Erreur marquage messages lus", e);
-    }
+      await apiRequest('/api/messages/mark-read', { method: 'POST', requireAuth: true, body: JSON.stringify({ matchId }) });
+    } catch (e) {}
   };
 
   const value = useMemo(
     () => ({
-      session,
-      isAuthenticated: !!session?.user && !!currentUser,
+      isAuthenticated: !!fbUser && !!currentUser,
       currentUser,
+      fbUser,
       users,
       matches,
       messages,
       appResumeVersion,
       lastError,
-      clearError,
-      login,
+      clearError: () => setLastError(null),
+      login: (user: User) => setCurrentUser(user),
       logout,
       updateCurrentUser,
-      addMatch,
-      addMessage,
+      addMatch: (m: Match) => setMatches(prev => [m, ...prev]),
+      addMessage: (m: Message) => setMessages(prev => [...prev, m]),
       refreshMatches,
       refreshMessages,
       refreshCurrentUser,
       toggleInvisibleMode,
-      toggleUserVerification,
-      suspendUser,
+      toggleUserVerification: (id: string) => {},
+      suspendUser: (id: string) => {},
       activateBoost,
-      markMessagesAsRead
+      markMessagesAsRead,
+      theme: themePreference,
+      setThemePreference: updateThemePreference,
+      activeTheme,
+      colors,
+      language,
+      setLanguage: updateLanguage,
+      t,
     }),
-    [session, currentUser, users, matches, messages, appResumeVersion, lastError]
+    [fbUser, currentUser, users, matches, messages, appResumeVersion, lastError, themePreference, activeTheme, colors, language]
   );
 
-  if (loading) {
-    return null;
-  }
-
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  if (loading) return null;
+  return <AppContext.Provider value={value as any}>{children}</AppContext.Provider>;
 };
 
 export const useApp = () => {
   const ctx = useContext(AppContext);
-  if (!ctx) {
-    throw new Error('useApp must be used within AppProvider');
-  }
+  if (!ctx) throw new Error('useApp must be used within AppProvider');
   return ctx;
 };

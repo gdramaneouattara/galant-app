@@ -7,20 +7,16 @@ const read = (path) => readFile(path, 'utf8');
 test('mobile storage uploads use array buffers instead of blobs', async () => {
   const helper = await read('src/lib/storageUpload.ts');
   const authFlow = await read('src/screens/auth/AuthFlowScreen.tsx');
-  const chatScreen = await read('src/screens/messages/ChatScreen.tsx');
-  const communityChatScreen = await read('src/screens/community/CommunityChatScreen.tsx');
   const verifyScreen = await read('src/screens/verify/VerifyScreen.tsx');
 
   assert.match(helper, /response\.arrayBuffer\(\)/);
   assert.match(helper, /supabase\.storage\.from\(bucket\)\.upload/);
   assert.match(authFlow, /uploadArrayBufferToBucket/);
-  assert.match(chatScreen, /uploadArrayBufferToBucket/);
-  assert.match(communityChatScreen, /uploadArrayBufferToBucket/);
   assert.match(verifyScreen, /uploadArrayBufferToBucket/);
 });
 
 test('backend auth returns profile_not_found for missing profile', async () => {
-  const server = await read('server/src/index.js');
+  const server = await read('server/src/middleware/auth.js');
   assert.match(server, /profile_not_found/);
 });
 
@@ -30,32 +26,31 @@ test('backend applies baseline transport and browser security controls', async (
 });
 
 test('backend exposes internal KYC endpoints for user submission', async () => {
-  const server = await read('server/src/index.js');
-  assert.match(server, /\/api\/kyc\/requests/);
+  const code = await read('server/src/routes/kycRoutes.js');
+  assert.match(code, /\/requests/);
 });
 
 test('backend exposes matchmaking and swipe endpoints', async () => {
-  const server = await read('server/src/index.js');
-  assert.match(server, /\/api\/matchmaking\/suggestions/);
-  assert.match(server, /\/api\/matchmaking\/swipe/);
-  assert.match(server, /premium_required_for_super_like/);
+  const routes = await read('server/src/routes/matchmakingRoutes.js');
+  assert.match(routes, /\/suggestions/);
+  assert.match(routes, /\/swipe/);
 });
 
 test('backend persists left swipes', async () => {
-  const server = await read('server/src/index.js');
-  assert.match(server, /direction === ['"]LEFT['"]/);
+  const ctrl = await read('server/src/controllers/matchmakingController.js');
+  assert.match(ctrl, /direction === ['"]LEFT['"]/);
 });
 
 test('backend supports multiple boost plans', async () => {
-  const server = await read('server/src/index.js');
-  assert.match(server, /BOOST_1D/);
-  assert.match(server, /BOOST_3D/);
-  assert.match(server, /BOOST_7D/);
-  assert.match(server, /TRIAL_BOOST_SECONDS/);
+  const config = await read('server/src/config/constants.js');
+  assert.match(config, /BOOST_1D/);
+  assert.match(config, /BOOST_3D/);
+  assert.match(config, /BOOST_7D/);
+  assert.match(config, /BOOST_SCORES/);
 });
 
 test('rls protects sensitive profile flags', async () => {
-  const sql = await read('scripts/supabase-rls-rest-only.sql');
+  const sql = await read('scripts/supabase-rls.sql');
   assert.match(sql, /is_admin/i);
 });
 

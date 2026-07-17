@@ -1,12 +1,33 @@
 import { Gender, SubscriptionPlan, User } from '../types';
 
 export const COLORS = {
-  primary: '#E94057',
-  secondary: '#F27121',
-  accent: '#8A2387',
+  primary: '#E11D48', // Rose Red (Galant)
+  secondary: '#FB7185', // Lighter rose
+  accent: '#9F1239', // Deep rose/wine
   ink: '#0f172a',
   muted: '#64748b',
   bg: '#f8fafc',
+};
+
+export const THEMES = {
+  light: {
+    bg: '#f8fafc',
+    card: '#ffffff',
+    text: '#0f172a',
+    textMuted: '#64748b',
+    border: '#e2e8f0',
+    input: '#f1f5f9',
+    header: '#ffffff',
+  },
+  dark: {
+    bg: '#020617',
+    card: '#0f172a',
+    text: '#f8fafc',
+    textMuted: '#94a3b8',
+    border: '#1e293b',
+    input: '#1e293b',
+    header: '#020617',
+  }
 };
 
 export const MOCK_USERS: User[] = [
@@ -55,8 +76,6 @@ export const MOCK_USERS: User[] = [
 ];
 
 export const SUBSCRIPTION_PLANS = [
-  { id: SubscriptionPlan.MONTHLY, name: '1 Mois', price: '3 000 FCFA', savings: null },
-  { id: SubscriptionPlan.QUARTERLY, name: '3 Mois', price: '9 000 FCFA', savings: '0%' },
-  { id: SubscriptionPlan.BIANNUAL, name: '6 Mois', price: '15 000 FCFA', savings: '17%' },
-  { id: SubscriptionPlan.ANNUAL, name: '1 An', price: '30 000 FCFA', savings: '20%' },
+  { id: SubscriptionPlan.MONTHLY, name: '1 Mois', price: '5 000 FCFA', savings: null },
+  { id: SubscriptionPlan.QUARTERLY, name: '3 Mois', price: '10 000 FCFA', savings: 'ÉCONOMISEZ 33%' },
 ];

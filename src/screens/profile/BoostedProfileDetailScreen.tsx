@@ -123,15 +123,15 @@ const BoostedProfileDetailScreen: React.FC = () => {
         body: JSON.stringify({ targetUserId, direction: 'RIGHT', isSuperLike: true }),
       });
       if (payload?.matched) {
-        Alert.alert('Match 🎉', `Super Like envoyé. Vous et ${profile?.name || 'ce profil'} matchez !`);
+        Alert.alert('Match 🎉', `Bouquet de roses envoyé. Vous et ${profile?.name || 'ce profil'} matchez !`);
       } else {
-        Alert.alert('Super Like envoyé', `Votre Super Like a été envoyé à ${profile?.name || 'ce profil'}.`);
+        Alert.alert('Bouquet de roses envoyé', `Votre bouquet de roses a été envoyé à ${profile?.name || 'ce profil'}.`);
       }
     } catch (error: any) {
       if (String(error?.message || '').includes('premium_required_for_super_like')) {
         setShowSuperLikePurchaseModal(true);
       } else {
-        Alert.alert('Erreur', String(error?.message || 'Impossible d’envoyer le Super Like.'));
+        Alert.alert('Erreur', String(error?.message || 'Impossible d’envoyer le bouquet de roses.'));
       }
     } finally {
       setSuperLiking(false);
@@ -312,6 +312,9 @@ const BoostedProfileDetailScreen: React.FC = () => {
                 {typeof profile.distance_km === 'number' ? ` • ${profile.distance_km.toFixed(1)} km` : ''}
               </Text>
             </View>
+            <View style={styles.gardenBadgeInline}>
+              <Text style={styles.gardenTextInline}>🌹 Jardin de {profile.roses_count || 0} Roses</Text>
+            </View>
           </View>
           {isBoosted ? (
             <View style={styles.boostBadge}>
@@ -342,7 +345,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
         ) : null}
 
         <View style={styles.card}>
-          <ProfileBadges user={{ ...profile, isVerified: profile.is_verified } as any} showLabels />
+          <ProfileBadges user={{ ...profile, isVerified: profile.is_verified, galanterie_score: profile.galanterie_score } as any} showLabels />
           <Text style={styles.sectionTitle}>Identité</Text>
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
@@ -402,8 +405,8 @@ const BoostedProfileDetailScreen: React.FC = () => {
             <Text style={styles.actionButtonText}>Envoyer un Like</Text>
           </Pressable>
           <Pressable style={[styles.actionButton, styles.superLikeButton]} onPress={sendSuperLike} disabled={superLiking}>
-            {superLiking ? <ActivityIndicator color="#fff" /> : <Star size={20} color="#fff" fill="#fff" />}
-            <Text style={styles.actionButtonText}>Envoyer un Super Like</Text>
+            {superLiking ? <ActivityIndicator color="#fff" /> : <Text style={{ fontSize: 20 }}>🌹</Text>}
+            <Text style={styles.superLikeButtonText}>Envoyer une Rose</Text>
           </Pressable>
           <Pressable style={[styles.actionButton, styles.messageButton]} onPress={openDirectMessage} disabled={directMessageLoading}>
             {directMessageLoading ? <ActivityIndicator color="#fff" /> : <MessageCircle size={20} color="#fff" />}
@@ -419,6 +422,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
         onPurchaseGoogle={handleSuperLikeGoogle}
         loading={purchaseLoading}
         userName={profile.name}
+        userInterests={profile.interests || []}
       />
       <DirectMessagePurchaseModal
         visible={showDirectMessagePurchaseModal}
@@ -467,6 +471,19 @@ const styles = StyleSheet.create({
   },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   metaText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  gardenBadgeInline: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  gardenTextInline: {
+    color: '#e11d48',
+    fontSize: 12,
+    fontWeight: '900',
+  },
   boostBadge: {
     position: 'absolute',
     top: 18,
@@ -577,9 +594,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   likeButton: { backgroundColor: '#dc2626' },
-  superLikeButton: { backgroundColor: '#f59e0b' },
+  superLikeButton: { backgroundColor: '#fff', borderColor: '#e11d48', borderWidth: 2 },
   messageButton: { backgroundColor: '#2563eb' },
   actionButtonText: { color: '#fff', fontWeight: '900', fontSize: 15 },
+  superLikeButtonText: { color: COLORS.ink, fontWeight: '900', fontSize: 15 },
   emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 20 },
   emptyText: { color: COLORS.muted, fontWeight: '700' },
   backButtonSolid: {

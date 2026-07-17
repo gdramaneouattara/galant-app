@@ -21,7 +21,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
   }
 }
 
-rootProject.name = 'Yamo'
+rootProject.name = 'Galant'
 
 dependencyResolutionManagement {
   versionCatalogs {

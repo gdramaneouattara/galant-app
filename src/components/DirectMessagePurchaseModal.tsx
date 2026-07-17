@@ -12,7 +12,7 @@ interface Props {
   userName?: string;
 }
 
-const DM_PRICE = parseInt(process.env.EXPO_PUBLIC_DIRECT_MESSAGE_AMOUNT || '200');
+const DM_PRICE = parseInt(process.env.EXPO_PUBLIC_DIRECT_MESSAGE_AMOUNT || '500');
 
 const DirectMessagePurchaseModal: React.FC<Props> = ({
   visible,

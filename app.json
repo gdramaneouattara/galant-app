@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "Yamo",
-    "slug": "yamo-app",
-    "scheme": "yamo",
+    "name": "Galant",
+    "slug": "galant-app",
+    "scheme": "galant",
     "version": "0.1.0",
     "newArchEnabled": true,
     "orientation": "portrait",
-    "icon": "./assets/icon-1024.png",
+    "icon": "./assets/icon (2).png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-1242x2436.png",
@@ -19,18 +19,20 @@
     "ios": {
       "supportsTablet": false,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Yamo utilise votre position pour vous proposer des profils à proximité et faciliter les rencontres locales.",
+        "NSLocationWhenInUseUsageDescription": "Galant utilise votre position pour vous proposer des profils à proximité et faciliter les rencontres locales.",
         "NSCameraUsageDescription": "L'accès à l'appareil photo permet de prendre des photos de profil et de réaliser la vérification d'identité (KYC).",
-        "NSPhotoLibraryUsageDescription": "Accédez à votre galerie pour sélectionner et partager vos plus belles photos sur votre profil Yamo.",
-        "NSPhotoLibraryAddUsageDescription": "Permet à Yamo d'enregistrer des photos dans votre bibliothèque.",
+        "NSPhotoLibraryUsageDescription": "Accédez à votre galerie pour sélectionner et partager vos plus belles photos sur votre profil Galant.",
+        "NSPhotoLibraryAddUsageDescription": "Permet à Galant d'enregistrer des photos dans votre bibliothèque.",
         "PHPhotoLibraryPreventAutomaticLimitedAccessAlert": true,
         "NSMicrophoneUsageDescription": "Le micro est nécessaire pour enregistrer le son de vos vidéos de statut et envoyer des messages vocaux.",
         "UIUserInterfaceStyle": "Light",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "bundleIdentifier": "com.konan.yamo"
+      "bundleIdentifier": "com.ouattara.galant",
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
@@ -46,10 +48,10 @@
         "com.android.vending.BILLING"
       ],
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon-1024.png",
+        "foregroundImage": "./assets/icon (2).png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.konan.yamo",
+      "package": "com.ouattara.galant",
       "versionCode": 16
     },
     "platforms": [
@@ -57,6 +59,9 @@
       "android"
     ],
     "plugins": [
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "@react-native-firebase/messaging",
       "expo-asset",
       "expo-image-picker",
       [
@@ -88,8 +93,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "733b0be9-2861-4be4-b674-e2bbe80e30a0"
+        "projectId": "e450e548-4bcb-47b5-8594-613ea04969eb"
       }
-    }
+    },
+    "owner": "gdramane.ouattara"
   }
 }

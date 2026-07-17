@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { ShieldCheck, Flame, Crown, Rocket, Gem } from 'lucide-react-native';
+import { ShieldCheck, Flame, Crown, Rocket, Gem, Star } from 'lucide-react-native';
+import { useApp } from '../state/AppContext';
 
 type ProfileBadgeUser = {
   isVerified?: boolean;
@@ -11,6 +12,8 @@ type ProfileBadgeUser = {
   boosted_until?: string | null;
   last_active_at?: string | null;
   likes_count?: number;
+  galanterie_score?: number;
+  gender?: string;
 };
 
 interface ProfileBadgesProps {
@@ -20,6 +23,7 @@ interface ProfileBadgesProps {
 }
 
 const ProfileBadges: React.FC<ProfileBadgesProps> = ({ user, containerStyle, showLabels = false }) => {
+  const { currentUser } = useApp();
   const isVerified = user.isVerified ?? user.is_verified ?? false;
   const isPremium = user.isPremium ?? user.is_premium ?? false;
   const isVip = user.is_vip ?? false;
@@ -32,8 +36,32 @@ const ProfileBadges: React.FC<ProfileBadgesProps> = ({ user, containerStyle, sho
     ? new Date(user.boosted_until).getTime() > new Date().getTime()
     : false;
 
+  const galanterieScore = user.galanterie_score || 5.0;
+  const isEliteBehavior = galanterieScore >= 4.5;
+  const isGentleman = isEliteBehavior && String(user.gender || '').toUpperCase() === 'MALE';
+  const isLady = isEliteBehavior && String(user.gender || '').toUpperCase() === 'FEMALE';
+
+  // "Courtoisie" Badge logic: Visible to all women or Premium men
+  const canSeeCourtoisie =
+    String(currentUser?.gender || '').toUpperCase() === 'FEMALE' ||
+    currentUser?.isPremium;
+
   return (
     <View style={[styles.container, containerStyle]}>
+      {canSeeCourtoisie && String(user.gender || '').toUpperCase() === 'MALE' && (
+        <View style={[styles.badge, styles.courtoisieBadge]}>
+          <Star size={12} color="#fff" fill="#fff" />
+          <Text style={styles.badgeText}>{galanterieScore.toFixed(1)} Courtoisie</Text>
+        </View>
+      )}
+
+      {(isGentleman || isLady) && (
+        <View style={[styles.badge, styles.galantBadge]}>
+          <Gem size={14} color="#fff" />
+          {showLabels && <Text style={styles.badgeText}>{isGentleman ? 'Gentleman' : 'Élégante'}</Text>}
+        </View>
+      )}
+
       {isVip && (
         <View style={[styles.badge, styles.vipBadge]}>
           <Gem size={14} color="#fff" />
@@ -110,6 +138,12 @@ const styles = StyleSheet.create({
   },
   boostedBadge: {
     backgroundColor: '#dc2626',
+  },
+  courtoisieBadge: {
+    backgroundColor: '#0ea5e9', // Blue color to signify safety/trust
+  },
+  galantBadge: {
+    backgroundColor: '#be123c',
   },
   activeDot: {
     width: 8,

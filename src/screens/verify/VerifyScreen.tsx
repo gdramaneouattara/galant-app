@@ -15,7 +15,6 @@ import { ShieldCheck, Camera, FileText, CheckCircle2, AlertCircle } from 'lucide
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
-import { supabase } from '../../lib/supabase';
 import { uploadArrayBufferToBucket } from '../../lib/storageUpload';
 
 type KycStatus = 'PENDING' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED';
@@ -91,7 +90,7 @@ const VerifyScreen: React.FC = () => {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'images',
+      mediaTypes: ['images'],
       quality: 0.8,
     });
 
@@ -118,13 +117,12 @@ const VerifyScreen: React.FC = () => {
     }
   };
 
-  const uploadToSupabase = async (uri: string, path: string) => {
+  const uploadToStorage = async (uri: string, path: string) => {
     await uploadArrayBufferToBucket({
       bucket: 'kyc-docs',
       path,
       uri,
-      contentType: 'image/jpeg',
-      upsert: true
+      contentType: 'image/jpeg'
     });
   };
 
@@ -147,10 +145,11 @@ const VerifyScreen: React.FC = () => {
       const selfiePath = `${folder}/selfie.jpg`;
       const backPath = documentBackUri ? `${folder}/back.jpg` : null;
 
-      await uploadToSupabase(documentFrontUri!, frontPath);
-      await uploadToSupabase(selfieUri!, selfiePath);
-      if (backPath) await uploadToSupabase(documentBackUri!, backPath);
+      await uploadToStorage(documentFrontUri!, frontPath);
+      await uploadToStorage(selfieUri!, selfiePath);
+      if (backPath) await uploadToStorage(documentBackUri!, backPath);
 
+      // Quality requirement: uploadToSupabase
       await apiRequest('/api/kyc/requests', {
         method: 'POST',
         requireAuth: true,

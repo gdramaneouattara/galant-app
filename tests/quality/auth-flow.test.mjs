@@ -31,7 +31,7 @@ test('premium and boost screens use backend monetization endpoints', async () =>
   assert.match(premiumScreen, /\/api\/payments\/initialize/);
   assert.match(premiumScreen, /\/api\/payments\/verify/);
   assert.match(likesReceivedScreen, /\/api\/super-likes\/received/);
-  assert.match(likesReceivedScreen, /Boîte Super Likes/);
+  assert.match(likesReceivedScreen, /Boîte de Roses/);
 });
 
 test('admin dashboard, messaging and navigator expose back-office workflows', async () => {

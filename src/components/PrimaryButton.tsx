@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, Text, ViewStyle, ActivityIndicator } from 'react-native';
 import { COLORS } from '../data/mock';
 
 type PrimaryButtonProps = {
@@ -7,24 +7,29 @@ type PrimaryButtonProps = {
   onPress: () => void;
   disabled?: boolean;
   style?: ViewStyle;
+  loading?: boolean;
 };
 
-const PrimaryButton: React.FC<PrimaryButtonProps> = ({ label, onPress, disabled, style }) => {
+const PrimaryButton: React.FC<PrimaryButtonProps> = ({ label, onPress, disabled, style, loading }) => {
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled}
+      disabled={disabled || loading}
       accessibilityRole="button"
-      accessibilityState={{ disabled: !!disabled }}
+      accessibilityState={{ disabled: !!(disabled || loading) }}
       accessibilityLabel={label}
       style={({ pressed }) => [
         styles.button,
-        disabled && styles.buttonDisabled,
-        pressed && !disabled && styles.buttonPressed,
+        (disabled || loading) && styles.buttonDisabled,
+        pressed && !disabled && !loading && styles.buttonPressed,
         style,
       ]}
     >
-      <Text style={styles.label}>{label}</Text>
+      {loading ? (
+        <ActivityIndicator color="#fff" size="small" />
+      ) : (
+        <Text style={styles.label}>{label}</Text>
+      )}
     </Pressable>
   );
 };

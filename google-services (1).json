@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "756651030930",
+    "firebase_url": "https://galant-af393-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "galant-af393",
+    "storage_bucket": "galant-af393.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:756651030930:android:62768bc9eb08bc21a4694b",
+        "android_client_info": {
+          "package_name": "com.ouattara.galant"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "756651030930-oh1pnhbautrv4llkt2k5idia4h94ouh8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ouattara.galant",
+            "certificate_hash": "95f2a12d9c73a49010c3a0d58b4f821e2db7e16c"
+          }
+        },
+        {
+          "client_id": "756651030930-9ukl72f90e86huq16parqirigok3gfgv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAtgVI0yrBMj8wT6Q6lUGP4ccQw0LEipgA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "756651030930-9ukl72f90e86huq16parqirigok3gfgv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,18 +1,19 @@
-import { supabase } from './supabase';
+import { db, fbAuth, COLLECTIONS } from './firebase';
 
 type EventType = 'ui' | 'auth' | 'error' | 'system';
 
 export const logEvent = async (eventType: EventType, eventName: string, metadata: Record<string, unknown> = {}) => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from('events').insert({
-      user_id: user?.id ?? null,
+    const user = fbAuth.currentUser;
+    await db.collection('events').add({
+      user_id: user?.uid ?? null,
       event_type: eventType,
       event_name: eventName,
       metadata,
+      created_at: new Date().toISOString()
     });
   } catch {
-    // Avoid crashing on analytics failures
+    // Analytics is non-critical
   }
 };
 

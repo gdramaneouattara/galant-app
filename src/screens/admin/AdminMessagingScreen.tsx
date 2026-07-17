@@ -76,7 +76,7 @@ const TEMPLATES: TemplateOption[] = [
     label: 'Rappel sécurité',
     segment: 'ACTIVE',
     title: 'Rappel des règles de la communauté',
-    message: 'Merci de respecter la charte Yamo. Les comportements non conformes peuvent entraîner une suspension.',
+    message: 'Merci de respecter la charte Galant. Les comportements non conformes peuvent entraîner une suspension de compte.',
   },
 ];
 

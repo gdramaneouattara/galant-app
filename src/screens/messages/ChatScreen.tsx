@@ -1,1056 +1,159 @@
-import React, { useEffect, useState, useCallback, memo } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Alert,
   FlatList,
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
   SafeAreaView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { ChevronLeft, Send, Image as ImageIcon, Video, Lock, ShieldCheck, MoreVertical } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
-import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
-import * as IAP from 'react-native-iap';
-import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
-import { IAP_EXPO_GO_MESSAGE, isExpoGo } from '../../lib/iapRuntime';
-import { supabase } from '../../lib/supabase';
-import { uploadArrayBufferToBucket } from '../../lib/storageUpload';
-import VideoPlayer from '../../components/VideoPlayer';
-import DirectMessagePurchaseModal from '../../components/DirectMessagePurchaseModal';
+import { rtdb, db, COLLECTIONS } from '../../lib/firebase';
 
-type ChatMessage = {
+// Components
+import ChatHeader from './components/ChatHeader';
+import ChatInput from './components/ChatInput';
+import ChatMessageItem from './components/ChatMessageItem';
+
+interface ChatMessage {
   id: string;
+  match_id: string;
   sender_id: string;
-  content?: string | null;
-  message_type: 'TEXT' | 'IMAGE' | 'VIDEO';
+  content: string;
+  message_type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'VOICE';
   media_url?: string | null;
-  created_at?: string;
-  is_read?: boolean;
-};
-
-type ChatMessageItemProps = {
-  item: ChatMessage;
-  isMine: boolean;
-  avatarUri: string;
-  mediaUrl: string | null;
-  displayTime: string;
-};
-
-const DIRECT_MESSAGE_SKU = 'direct_message_1';
-
-const ChatMessageItem = memo<ChatMessageItemProps>(({ item, isMine, avatarUri, mediaUrl, displayTime }) => {
-  const hasText = !!item.content;
-  const hasImage = item.message_type === 'IMAGE' && !!mediaUrl;
-  const hasVideo = item.message_type === 'VIDEO' && !!mediaUrl;
-
-  return (
-    <View style={[styles.messageRow, isMine && styles.myMessageRow]}>
-      {!isMine && (
-        <Image
-          source={{ uri: avatarUri }}
-          style={styles.senderAvatar}
-        />
-      )}
-      <View style={[styles.bubble, isMine ? styles.myBubble : styles.theirBubble]}>
-        {hasText ? (
-          <Text style={[styles.messageText, isMine && styles.myMessageText]}>{item.content}</Text>
-        ) : null}
-        {hasImage && (
-          <Image source={{ uri: mediaUrl! }} style={[styles.imageContent, hasText && styles.mediaAfterText]} />
-        )}
-        {hasVideo && (
-          <VideoPlayer uri={mediaUrl!} style={[styles.videoContent, hasText && styles.mediaAfterText]} useNativeControls={true} />
-        )}
-        <Text style={[styles.messageMeta, isMine && styles.myMessageMeta]}>
-          {displayTime}{isMine ? ` • ${item.is_read ? 'Lu ✓✓' : 'Envoyé'}` : ''}
-        </Text>
-      </View>
-    </View>
-  );
-});
+  metadata?: Record<string, any>;
+  is_read: boolean;
+  created_at: string;
+}
 
 const ChatScreen: React.FC = () => {
   const route = useRoute<any>();
-  const navigation = useNavigation();
-  const { currentUser, markMessagesAsRead, appResumeVersion } = useApp();
-  const { userId, matchId: initialMatchId } = route.params;
+  const navigation = useNavigation<any>();
+  const { currentUser, markMessagesAsRead, colors, t, language } = useApp();
+  const { userId, matchId: initialMatchId, venueChatId: initialVenueChatId, venueName, venuePhoto } = route.params;
 
+  const [activeMatchId, setActiveMatchId] = useState<string | undefined>(initialMatchId);
+  const [activeVenueChatId, setActiveVenueChatId] = useState<string | undefined>(initialVenueChatId);
+  const [targetUser, setTargetUser] = useState<any>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [loading, setLoading] = useState(true);
   const [inputText, setInputText] = useState('');
   const [sending, setSending] = useState(false);
-  const [targetUser, setTargetUser] = useState<any>(null);
-  const [resolvedMediaUrls, setResolvedMediaUrls] = useState<Record<string, string>>({});
-  const [isUnlocked, setIsUnlocked] = useState(false);
-  const [checkingUnlock, setCheckingUnlock] = useState(true);
-  const [showUnlockModal, setShowUnlockModal] = useState(false);
-  const [premiumRequired, setPremiumRequired] = useState(false);
-  const [purchaseLoading, setPurchaseLoading] = useState(false);
-  const [mediaUploading, setMediaUploading] = useState(false);
-  const [activeMatchId, setActiveMatchId] = useState<string | null>(initialMatchId || null);
-  const [isConversationBlocked, setIsConversationBlocked] = useState(false);
-  const [showSafetyMenu, setShowSafetyMenu] = useState(false);
-  const [availableProductIds, setAvailableProductIds] = useState<Set<string>>(new Set());
-
-  const loadAndroidConsumables = useCallback(async (): Promise<Set<string>> => {
-    if (Platform.OS !== 'android' || isExpoGo) return new Set();
-    const products: any[] = await IAP.getProducts({ skus: [DIRECT_MESSAGE_SKU] });
-    const ids = new Set((products || []).map((item) => String(item?.productId || item?.sku || '')).filter(Boolean));
-    setAvailableProductIds(ids);
-    return ids;
-  }, []);
 
   useEffect(() => {
-    if (isExpoGo) return;
-    IAP.initConnection()
-      .then(() => loadAndroidConsumables().catch(() => {}))
-      .catch(() => {});
-    return () => { IAP.endConnection().catch(() => {}); };
-  }, [loadAndroidConsumables]);
-
-  const ensureDirectThread = useCallback(async () => {
-    try {
-      const response = await apiRequest<{ matchId: string; unlocked: boolean }>('/api/messages/direct-thread', {
-        method: 'POST',
-        requireAuth: true,
-        body: JSON.stringify({ targetUserId: userId }),
-      });
-      if (response?.matchId) {
-        setActiveMatchId(response.matchId);
-        setPremiumRequired(false);
-        setIsConversationBlocked(false);
-        return response.matchId;
-      }
-      return null;
-    } catch (error: any) {
-      if (String(error?.message || '').includes('subscription_required')) {
-        setPremiumRequired(true);
-        setIsUnlocked(false);
-        return null;
-      }
-      if (String(error?.message || '').includes('payment_required')) {
-        setIsUnlocked(false);
-        return null;
-      }
-      if (String(error?.message || '').includes('conversation_blocked')) {
-        setIsConversationBlocked(true);
-        setIsUnlocked(false);
-        setPremiumRequired(false);
-        return null;
-      }
-      throw error;
-    }
-  }, [userId]);
-
-  const checkUnlockStatus = useCallback(async () => {
-    try {
-      if (!userId) {
-        setIsUnlocked(false);
-        return;
-      }
-
-      if (currentUser?.gender === 'MALE' && !currentUser?.isPremium) {
-        const startedAt = currentUser?.trial_started_at ? new Date(currentUser.trial_started_at).getTime() : NaN;
-        const trialActive = Number.isFinite(startedAt) && (Date.now() < (startedAt + 7 * 24 * 60 * 60 * 1000));
-        if (!trialActive) {
-          setIsUnlocked(false);
-          setPremiumRequired(true);
-          return;
-        }
-      }
-
-      // 1. Men during 7-day trial have complete access
-      if (currentUser?.gender === 'MALE' && !currentUser?.isPremium && currentUser?.trial_started_at) {
-        const trialEnd = new Date(currentUser.trial_started_at);
-        trialEnd.setDate(trialEnd.getDate() + 7);
-        if (new Date() < trialEnd) {
-          setIsUnlocked(true);
-          setPremiumRequired(false);
-          return;
-        }
-      }
-
-      // 2. Check if match exists
-      if (activeMatchId) {
-        const { data: match } = await supabase.from('matches').select('id, status').eq('id', activeMatchId).maybeSingle();
-        if (match) {
-          if (match.status === 'BLOCKED') {
-            setIsConversationBlocked(true);
-            setIsUnlocked(false);
-            setPremiumRequired(false);
-            return;
-          }
-          setIsConversationBlocked(false);
-          setIsUnlocked(true);
-          setPremiumRequired(false);
-          return;
-        }
-      }
-
-      // 3. Check if interaction purchased
-      const { data: purchase } = await supabase.from('purchased_interactions')
-        .select('id')
-        .eq('user_id', currentUser?.id)
-        .eq('target_id', userId)
-        .eq('interaction_type', 'DIRECT_MESSAGE')
-        .maybeSingle();
-
-      if (purchase) {
-        setIsConversationBlocked(false);
-        setIsUnlocked(true);
-        setPremiumRequired(false);
-      } else {
-        setIsConversationBlocked(false);
-        setIsUnlocked(false);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setCheckingUnlock(false);
-    }
-  }, [activeMatchId, userId, currentUser]);
-
-  const initiateDirectMessagePurchasePaystack = async () => {
-    try {
-      setPurchaseLoading(true);
-      const init = await apiRequest<{ authorization_url: string; reference: string }>(
-        '/api/payments/initialize',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            amount: parseInt(process.env.EXPO_PUBLIC_DIRECT_MESSAGE_AMOUNT || '200'),
-            type: 'DIRECT_MESSAGE',
-            targetId: userId,
-            paymentMethod: 'MOBILE_MONEY',
-          }),
-          requireAuth: true
-        }
-      );
-      const redirectUrl = Linking.createURL('paystack');
-      await WebBrowser.openAuthSessionAsync(init.authorization_url, redirectUrl);
-      const verify = await apiRequest<{ status: string }>(
-        `/api/payments/verify?reference=${init.reference}`,
-        { requireAuth: true }
-      );
-      if (verify.status === 'active') {
-        Alert.alert('Succès', 'Message direct débloqué !');
-        const threadId = await ensureDirectThread();
-        setIsUnlocked(!!threadId);
-        setShowUnlockModal(false);
-      }
-    } catch (error: any) {
-      Alert.alert('Erreur', error.message);
-    } finally {
-      setPurchaseLoading(false);
-    }
-  };
-
-  const initiateDirectMessagePurchaseGoogle = async () => {
-    if (isExpoGo) {
-      Alert.alert('Achat indisponible', IAP_EXPO_GO_MESSAGE);
-      return;
-    }
-    try {
-      setPurchaseLoading(true);
-      let resolvedIds = availableProductIds;
-      if (Platform.OS === 'android' && !resolvedIds.has(DIRECT_MESSAGE_SKU)) {
-        resolvedIds = await loadAndroidConsumables();
-      }
-      if (Platform.OS === 'android' && !resolvedIds.has(DIRECT_MESSAGE_SKU)) {
-        Alert.alert(
-          'Erreur Google Play',
-          "Le produit Message Direct n'est pas disponible sur Google Play pour ce build. Vérifie l'ID produit, l'activation et le compte testeur."
-        );
-        return;
-      }
-      const purchasePayload = Platform.select({
-        ios: { sku: DIRECT_MESSAGE_SKU },
-        android: { skus: [DIRECT_MESSAGE_SKU] },
-      }) as any;
-      const purchase: any = await IAP.requestPurchase(purchasePayload);
-      const purchaseItem = Array.isArray(purchase) ? purchase[0] : purchase;
-      if (purchaseItem) {
-        const verifyPath = Platform.OS === 'ios' ? '/api/payments/apple-verify' : '/api/payments/google-verify';
-        await apiRequest(verifyPath, {
-          method: 'POST',
-          body: JSON.stringify({
-            productId: purchaseItem.productId,
-            type: 'DIRECT_MESSAGE',
-            targetId: userId,
-            purchaseToken: purchaseItem.purchaseToken,
-            transactionId: purchaseItem.transactionId || purchaseItem.originalTransactionIdentifierIOS,
-          }),
-          requireAuth: true,
-        });
-        await IAP.finishTransaction({ purchase: purchaseItem, isConsumable: true });
-        Alert.alert('Succès', 'Message direct débloqué !');
-        const threadId = await ensureDirectThread();
-        setIsUnlocked(!!threadId);
-        setShowUnlockModal(false);
-      }
-    } catch (error: any) {
-      if (error?.code !== 'E_USER_CANCELLED') {
-        Alert.alert('Erreur Google Play', error?.message || 'Achat non finalisé');
-      }
-    } finally {
-      setPurchaseLoading(false);
-    }
-  };
-
-  const fetchMessages = useCallback(async () => {
-    if (!activeMatchId) {
-      setMessages([]);
-      return;
-    }
-    try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('match_id', activeMatchId)
-        .order('created_at', { ascending: true });
-      if (!error) {
-        setMessages(data || []);
-        void markMessagesAsRead(activeMatchId);
-      }
-    } catch (e) { console.error(e); }
-  }, [activeMatchId, markMessagesAsRead]);
-
-  useEffect(() => {
+    // 1. Fetch Target User Profile
     const fetchUser = async () => {
-      const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
-      setTargetUser(data);
+      if (activeVenueChatId) {
+        if (currentUser?.is_partner) {
+          const doc = await db.collection(COLLECTIONS.PROFILES).doc(userId).get();
+          if (doc.exists()) setTargetUser({ id: doc.id, ...doc.data() });
+        } else {
+          setTargetUser({ name: venueName, photos: [venuePhoto], is_venue: true });
+        }
+        return;
+      }
+      if (!userId) return;
+      const doc = await db.collection(COLLECTIONS.PROFILES).doc(userId).get();
+      if (doc.exists()) setTargetUser({ id: doc.id, ...doc.data() });
     };
     fetchUser();
-    fetchMessages();
-    checkUnlockStatus();
-    if (!activeMatchId) return;
-    const channel = supabase.channel(`chat_${activeMatchId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${activeMatchId}` }, () => {
-        fetchMessages();
-      })
-      .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [userId, activeMatchId, fetchMessages, checkUnlockStatus, appResumeVersion]);
+    // 2. Realtime Messages Subscription
+    const chatPath = activeMatchId ? `messages/${activeMatchId}` : `venue_messages/${activeVenueChatId}`;
+    if (!chatPath) return;
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const hydrate = async () => {
-      const mediaPaths = Array.from(
-        new Set(
-          messages
-            .map((msg) => msg.media_url || '')
-            .filter((path) => !!path)
-        )
-      );
-      const missingPaths = mediaPaths.filter((path) => !resolvedMediaUrls[path]);
-      if (missingPaths.length === 0) return;
-
-      const resolvedEntries = await Promise.all(
-        missingPaths.map(async (path) => {
-          if (/^https?:\/\//i.test(path)) {
-            return [path, path] as const;
-          }
-          const { data } = await supabase.storage.from('chat-media').createSignedUrl(path, 3600);
-          if (data?.signedUrl) {
-            return [path, data.signedUrl] as const;
-          }
-          return null;
-        })
-      );
-
-      if (cancelled) return;
-      const nextMappings = Object.fromEntries(resolvedEntries.filter(Boolean) as Array<readonly [string, string]>);
-      if (Object.keys(nextMappings).length > 0) {
-        setResolvedMediaUrls((prev) => ({ ...prev, ...nextMappings }));
+    const ref = rtdb.ref(chatPath);
+    const listener = ref.on('value', (snapshot) => {
+      if (snapshot.exists()) {
+        const msgs = Object.entries(snapshot.val()).map(([id, data]: any) => ({
+          id,
+          ...data
+        }));
+        setMessages(msgs.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
+      } else {
+        setMessages([]);
       }
-    };
+      setLoading(false);
+    });
 
-    void hydrate();
+    if (activeMatchId) void markMessagesAsRead(activeMatchId);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [messages, resolvedMediaUrls]);
+    return () => ref.off('value', listener);
+  }, [userId, activeMatchId, activeVenueChatId]);
 
-  const handleSend = async (type = 'TEXT', mediaPath?: string) => {
-    if (sending) return;
+  const handleSend = async () => {
+    if (sending || !inputText.trim()) return;
     try {
       setSending(true);
-      let threadId = activeMatchId;
-      if (!threadId) {
-        threadId = await ensureDirectThread();
-      }
-      if (!threadId) {
-        setShowUnlockModal(true);
-        return;
-      }
-
       await apiRequest('/api/messages/send', {
         method: 'POST',
         requireAuth: true,
-        body: JSON.stringify({ matchId: threadId, content: inputText.trim(), messageType: type, mediaPath, recipientId: userId })
+        body: JSON.stringify({
+          matchId: activeMatchId,
+          venueChatId: activeVenueChatId,
+          content: inputText.trim(),
+          messageType: 'TEXT',
+          recipientId: userId
+        })
       });
       setInputText('');
-      fetchMessages();
-      setIsUnlocked(true);
     } catch (e: any) {
-      if (e.message.includes('subscription_required')) {
-        setPremiumRequired(true);
-        Alert.alert('Essai expiré', 'Passez à Premium pour continuer à discuter.');
-      } else if (e.message.includes('payment_required')) {
-        setShowUnlockModal(true);
-      } else {
-        Alert.alert('Erreur', e.message);
-      }
+      Alert.alert('Erreur', e.message);
     } finally {
       setSending(false);
     }
   };
 
-  const pickMedia = async (type: 'IMAGE' | 'VIDEO') => {
-    if (!isUnlocked) {
-      setShowUnlockModal(true);
-      return;
-    }
-    if (sending || mediaUploading) return;
-
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permission.status !== 'granted') {
-      Alert.alert('Permission requise', "Autorisez l'accès à votre galerie pour envoyer des médias.");
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: type === 'IMAGE' ? ['images'] : ['videos'],
-      quality: 0.8,
-      allowsEditing: false,
-    });
-
-    if (result.canceled || !result.assets?.[0]?.uri) return;
-
-    try {
-      setMediaUploading(true);
-      const asset = result.assets[0];
-      const uri = asset.uri;
-      const fileName = asset.fileName || uri.split('/').pop() || `${Date.now()}`;
-      const ext = fileName.includes('.') ? fileName.split('.').pop() : (type === 'IMAGE' ? 'jpg' : 'mp4');
-      const mimeType = asset.mimeType || (type === 'IMAGE' ? 'image/jpeg' : 'video/mp4');
-      let threadId = activeMatchId;
-      if (!threadId) {
-        threadId = await ensureDirectThread();
-      }
-      if (!threadId) {
-        setShowUnlockModal(true);
-        return;
-      }
-      const path = `${threadId}/${currentUser?.id}/${Date.now()}.${ext}`;
-
-      await uploadArrayBufferToBucket({ bucket: 'chat-media', path, uri, contentType: mimeType });
-      await handleSend(type, path);
-    } catch (error: any) {
-      Alert.alert('Erreur média', error?.message || "Impossible d'envoyer ce fichier.");
-    } finally {
-      setMediaUploading(false);
-    }
-  };
-
-  const submitReport = async (reason: string) => {
-    try {
-      setShowSafetyMenu(false);
-      await apiRequest('/api/messages/report', {
-        method: 'POST',
-        requireAuth: true,
-        body: JSON.stringify({
-          reportedUserId: userId,
-          reason,
-          details: `Reported from chat screen (${new Date().toISOString()})`,
-        }),
-      });
-      Alert.alert('Signalement envoyé', 'Merci. Notre équipe de modération va examiner ce signalement.');
-    } catch (error: any) {
-      Alert.alert('Erreur', error?.message || 'Impossible de signaler ce profil.');
-    }
-  };
-
-  const blockUser = () => {
-    Alert.alert(
-      'Bloquer cet utilisateur ?',
-      "Vous ne pourrez plus échanger avec ce profil tant que le blocage est actif.",
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Bloquer',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setShowSafetyMenu(false);
-              await apiRequest('/api/messages/block', {
-                method: 'POST',
-                requireAuth: true,
-                body: JSON.stringify({ blockedUserId: userId }),
-              });
-              setIsConversationBlocked(true);
-              setIsUnlocked(false);
-              Alert.alert('Utilisateur bloqué', 'Le blocage est actif.');
-              navigation.goBack();
-            } catch (error: any) {
-              Alert.alert('Erreur', error?.message || 'Impossible de bloquer cet utilisateur.');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const unblockUser = () => {
-    Alert.alert(
-      'Débloquer cet utilisateur ?',
-      'Vous pourrez à nouveau échanger avec ce profil.',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Débloquer',
-          onPress: async () => {
-            try {
-              setShowSafetyMenu(false);
-              const response = await apiRequest<{ success: boolean; status: string; matchId: string | null }>('/api/messages/unblock', {
-                method: 'POST',
-                requireAuth: true,
-                body: JSON.stringify({ blockedUserId: userId }),
-              });
-              if (response?.matchId) setActiveMatchId(response.matchId);
-              setIsConversationBlocked(false);
-              setPremiumRequired(false);
-              await checkUnlockStatus();
-              Alert.alert('Utilisateur débloqué', 'Le blocage a été retiré.');
-            } catch (error: any) {
-              Alert.alert('Erreur', error?.message || 'Impossible de débloquer cet utilisateur.');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const openSafetyMenu = () => {
-    setShowSafetyMenu(true);
-  };
-
-  const formatMessageTime = (value?: string) => {
-    if (!value) return '';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
-    const datePart = date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-    const timePart = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    return `${datePart} ${timePart}`;
-  };
-
-  const isTargetOnline = (() => {
-    const ts = targetUser?.last_active_at;
-    if (!ts) return false;
-    const delta = Date.now() - new Date(ts).getTime();
-    return delta >= 0 && delta < 5 * 60 * 1000;
-  })();
-
   const renderMessage = useCallback(({ item }: { item: ChatMessage }) => {
     const isMine = item.sender_id === currentUser?.id;
-    const mediaUrl = item.media_url ? resolvedMediaUrls[item.media_url] : null;
     return (
       <ChatMessageItem
         item={item}
         isMine={isMine}
         avatarUri={targetUser?.photos?.[0] || 'https://placehold.co/80x80'}
-        mediaUrl={mediaUrl || null}
-        displayTime={formatMessageTime(item.created_at)}
+        mediaUrl={item.media_url || null}
+        displayTime={item.created_at}
+        t={t}
+        isPremium={!!currentUser?.isPremium}
+        language={language}
       />
     );
-  }, [currentUser?.id, resolvedMediaUrls, targetUser?.photos]);
-
-  const keyExtractor = useCallback((item: ChatMessage) => item.id, []);
+  }, [currentUser, targetUser, t, language]);
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.headerBackBtn}>
-          <ChevronLeft color="#2d2723" size={24} />
-        </Pressable>
-        <Image source={{ uri: targetUser?.photos?.[0] || 'https://placehold.co/80x80' }} style={styles.headerAvatar} />
-        <View style={styles.headerTextWrap}>
-          <View style={styles.headerNameRow}>
-            <Text style={styles.headerTitle}>{targetUser?.name || 'Chat'}</Text>
-            {!!targetUser?.is_verified && (
-              <View style={styles.verifiedBadge}>
-                <ShieldCheck size={12} color="#fff" />
-              </View>
-            )}
-          </View>
-          <Text style={styles.headerSubtitle}>{isTargetOnline ? 'En ligne' : 'Hors ligne'}</Text>
-        </View>
-        <Pressable style={styles.headerMenuBtn} onPress={openSafetyMenu}>
-          <MoreVertical size={22} color="#2d2723" />
-        </Pressable>
-      </View>
-
-      {!!targetUser?.is_verified && (
-        <View style={styles.profileCard}>
-          <View style={styles.profileCardText}>
-            <Text style={styles.profileCardTitle}>Profil vérifié</Text>
-            <Text style={styles.profileCardSub}>Conversation sécurisée avec ce membre</Text>
-          </View>
-          <Pressable
-            style={styles.profileCardBtn}
-            onPress={() => {
-              if (targetUser) {
-                // @ts-ignore
-                navigation.navigate('ProfileDetail', { profile: targetUser });
-              }
-            }}
-          >
-            <Text style={styles.profileCardBtnText}>Voir le profil</Text>
-          </Pressable>
-        </View>
-      )}
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
+      <ChatHeader
+        title={targetUser?.name || 'Chat'}
+        onBack={() => navigation.goBack()}
+        onOpenSafety={() => {}}
+        colors={colors}
+      />
 
       <FlatList
         data={messages}
         renderItem={renderMessage}
-        keyExtractor={keyExtractor}
-        contentContainerStyle={styles.list}
-        initialNumToRender={12}
-        maxToRenderPerBatch={12}
-        windowSize={7}
-        updateCellsBatchingPeriod={50}
-        removeClippedSubviews={Platform.OS === 'android'}
-        ListFooterComponent={<View style={styles.securityCard}>
-          <Text style={styles.securityTitle}>Messages protégés</Text>
-          <Text style={styles.securitySub}>Yamo veille à votre sécurité et confidentialité.</Text>
-        </View>}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        inverted={false}
       />
 
-      {!isUnlocked && !checkingUnlock ? (
-        <View style={styles.unlockPrompt}>
-          <View style={styles.lockCircle}>
-            <Lock color={COLORS.primary} size={20} />
-          </View>
-          <View style={styles.unlockPromptTextWrap}>
-            <Text style={styles.unlockTitle}>{premiumRequired ? 'Essai expiré' : 'Conversation verrouillée'}</Text>
-            <Text style={styles.unlockSub}>
-              {isConversationBlocked
-                ? 'Cette conversation est bloquée. Utilisez le menu sécurité pour débloquer.'
-                : (premiumRequired
-                ? 'Passez à Premium pour réactiver cette conversation.'
-                : 'Débloquez ce chat pour envoyer vos messages et médias.')}
-            </Text>
-          </View>
-          <Pressable
-            style={styles.unlockBtn}
-            onPress={() => {
-              if (isConversationBlocked) {
-                setShowSafetyMenu(true);
-              } else if (premiumRequired) {
-                // @ts-ignore
-                navigation.navigate('Premium');
-              } else {
-                setShowUnlockModal(true);
-              }
-            }}
-          >
-          <Text style={styles.unlockBtnText}>
-              {isConversationBlocked ? 'Gérer' : (premiumRequired ? 'Passer Premium' : 'Débloquer')}
-            </Text>
-          </Pressable>
-        </View>
-      ) : null}
-
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.inputArea}>
-          <Pressable onPress={() => void pickMedia('IMAGE')} style={styles.mediaBtn}>
-            <ImageIcon size={22} color="#de6464" />
-          </Pressable>
-          <Pressable onPress={() => void pickMedia('VIDEO')} style={styles.mediaBtn}>
-            <Video size={22} color="#de6464" />
-          </Pressable>
-          <TextInput
-            style={styles.input}
-            value={inputText}
-            onChangeText={setInputText}
-            placeholder={isUnlocked ? "Écris un message..." : "Conversation verrouillée"}
-            multiline
-            editable={isUnlocked && !isConversationBlocked}
-          />
-          <Pressable
-            onPress={() => {
-              if (isConversationBlocked) {
-                setShowSafetyMenu(true);
-                return;
-              }
-              if (!isUnlocked) {
-                setShowUnlockModal(true);
-                return;
-              }
-              void handleSend();
-            }}
-            style={[styles.sendBtn, (sending || mediaUploading) && styles.sendBtnDisabled]}
-            disabled={sending || mediaUploading}
-          >
-            <Send size={20} color="#fff" />
-          </Pressable>
-        </View>
-      </KeyboardAvoidingView>
-
-      <DirectMessagePurchaseModal
-        visible={showUnlockModal}
-        onClose={() => setShowUnlockModal(false)}
-        onPurchasePaystack={initiateDirectMessagePurchasePaystack}
-        onPurchaseGoogle={initiateDirectMessagePurchaseGoogle}
-        loading={purchaseLoading}
-        userName={targetUser?.name}
+      <ChatInput
+        inputText={inputText}
+        setInputText={setInputText}
+        onSend={handleSend}
+        sending={sending}
+        t={t}
+        colors={colors}
       />
-
-      <Modal
-        visible={showSafetyMenu}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowSafetyMenu(false)}
-      >
-        <Pressable style={styles.safetyOverlay} onPress={() => setShowSafetyMenu(false)}>
-          <Pressable style={styles.safetySheet} onPress={() => {}}>
-            <Text style={styles.safetyTitle}>Sécurité</Text>
-            <Text style={styles.safetySubtitle}>Choisissez une action</Text>
-
-            <Pressable style={styles.safetyAction} onPress={() => void submitReport('FAKE_PROFILE')}>
-              <Text style={styles.safetyActionText}>Signaler faux profil</Text>
-            </Pressable>
-            <Pressable style={styles.safetyAction} onPress={() => void submitReport('HARASSMENT')}>
-              <Text style={styles.safetyActionText}>Signaler harcèlement</Text>
-            </Pressable>
-
-            {isConversationBlocked ? (
-              <Pressable style={[styles.safetyAction, styles.safetyPrimaryAction]} onPress={unblockUser}>
-                <Text style={[styles.safetyActionText, styles.safetyPrimaryActionText]}>Débloquer</Text>
-              </Pressable>
-            ) : (
-              <Pressable style={[styles.safetyAction, styles.safetyDangerAction]} onPress={blockUser}>
-                <Text style={[styles.safetyActionText, styles.safetyDangerActionText]}>Bloquer</Text>
-              </Pressable>
-            )}
-
-            <Pressable style={styles.safetyCancelAction} onPress={() => setShowSafetyMenu(false)}>
-              <Text style={styles.safetyCancelActionText}>Annuler</Text>
-            </Pressable>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f6efeb' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 10,
-    backgroundColor: '#f6efeb',
-  },
-  headerBackBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-  },
-  headerTextWrap: {
-    flex: 1,
-  },
-  headerNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  verifiedBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#de6464',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: '#201b18',
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#6e655f',
-    marginTop: 1,
-  },
-  headerMenuBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  profileCard: {
-    marginHorizontal: 14,
-    marginBottom: 8,
-    backgroundColor: '#efdfcb',
-    borderWidth: 1,
-    borderColor: '#ead4bb',
-    borderRadius: 18,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  profileCardText: {
-    flex: 1,
-  },
-  profileCardTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#2d2723',
-  },
-  profileCardSub: {
-    marginTop: 2,
-    fontSize: 13,
-    color: '#6f655f',
-  },
-  profileCardBtn: {
-    backgroundColor: '#f3d4a8',
-    borderRadius: 999,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-  },
-  profileCardBtnText: {
-    color: '#4e3a2a',
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  list: { paddingHorizontal: 14, paddingTop: 6, paddingBottom: 14 },
-  unlockPrompt: {
-    marginHorizontal: 14,
-    marginBottom: 8,
-    backgroundColor: '#fff5f5',
-    borderWidth: 1,
-    borderColor: '#f3c8c8',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  lockCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#fef2f2',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  unlockPromptTextWrap: {
-    flex: 1,
-  },
-  unlockTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#402727',
-  },
-  unlockSub: {
-    fontSize: 12,
-    color: '#7a5c5c',
-    lineHeight: 16,
-  },
-  unlockBtn: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  unlockBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  messageRow: { flexDirection: 'row', marginBottom: 12, alignItems: 'flex-end', gap: 8 },
-  myMessageRow: { justifyContent: 'flex-end' },
-  senderAvatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-  },
-  bubble: { maxWidth: '78%', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 22 },
-  myBubble: { backgroundColor: '#de6464', borderBottomRightRadius: 8 },
-  theirBubble: { backgroundColor: '#efe5dc', borderBottomLeftRadius: 8 },
-  messageText: { fontSize: 14, color: '#221d1a', lineHeight: 20 },
-  myMessageText: { color: '#fff' },
-  messageMeta: {
-    marginTop: 6,
-    fontSize: 11,
-    color: '#877e78',
-    textAlign: 'right',
-  },
-  myMessageMeta: {
-    color: '#ffe3e3',
-  },
-  imageContent: { width: 200, height: 200, borderRadius: 12, marginBottom: 4 },
-  videoContent: { width: 200, height: 200, borderRadius: 12, marginBottom: 4 },
-  mediaAfterText: { marginTop: 8 },
-  securityCard: {
-    marginTop: 4,
-    backgroundColor: '#dfe8e1',
-    borderWidth: 1,
-    borderColor: '#cad8ce',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-  },
-  securityTitle: {
-    fontWeight: '800',
-    color: '#1f3328',
-    fontSize: 12,
-  },
-  securitySub: {
-    marginTop: 1,
-    color: '#406150',
-    fontSize: 11,
-    lineHeight: 14,
-  },
-  safetyOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 22,
-  },
-  safetySheet: {
-    width: '100%',
-    maxWidth: 360,
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: '#ece3dc',
-  },
-  safetyTitle: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: '#2d2723',
-  },
-  safetySubtitle: {
-    marginTop: 2,
-    marginBottom: 10,
-    fontSize: 12,
-    color: '#7f7268',
-  },
-  safetyAction: {
-    minHeight: 42,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#efe4db',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-    backgroundColor: '#fff',
-  },
-  safetyActionText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#2d2723',
-  },
-  safetyDangerAction: {
-    backgroundColor: '#fff5f5',
-    borderColor: '#f5cccc',
-  },
-  safetyDangerActionText: {
-    color: '#b42318',
-  },
-  safetyPrimaryAction: {
-    backgroundColor: '#eefaf2',
-    borderColor: '#b7e4c2',
-  },
-  safetyPrimaryActionText: {
-    color: '#166534',
-  },
-  safetyCancelAction: {
-    minHeight: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  safetyCancelActionText: {
-    fontSize: 13,
-    color: '#6c625b',
-    fontWeight: '700',
-  },
-  inputArea: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    backgroundColor: '#f6efeb',
-    borderTopWidth: 1,
-    borderTopColor: '#e7dbd2',
-    gap: 8,
-  },
-  mediaBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f9ece8',
-    borderWidth: 1,
-    borderColor: '#efcec8',
-  },
-  input: {
-    flex: 1,
-    backgroundColor: '#f5efe9',
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#e7d8cd',
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    maxHeight: 100,
-    color: '#2a2420',
-  },
-  sendBtn: {
-    backgroundColor: '#de6464',
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sendBtnDisabled: {
-    opacity: 0.6,
-  },
+  safe: { flex: 1 },
+  listContent: { padding: 16, gap: 16 },
 });
 
 export default ChatScreen;

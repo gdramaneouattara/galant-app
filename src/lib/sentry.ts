@@ -13,7 +13,7 @@ if (dsn) {
     tracesSampleRate: normalizedTracesSampleRate,
     attachStacktrace: true,
     sendDefaultPii: false,
-    release: `${Constants.expoConfig?.slug || 'yamo-app'}@${Constants.expoConfig?.version || '0.0.0'}`,
+    release: `${Constants.expoConfig?.slug || 'galant-app'}@${Constants.expoConfig?.version || '0.0.0'}`,
     dist: Constants.expoConfig?.extra?.eas?.projectId || undefined,
   });
 }

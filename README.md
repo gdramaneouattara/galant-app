@@ -1,4 +1,4 @@
-# Yamo — React Native (Expo)
+# Galant — React Native (Expo)
 
 Cette base a été convertie du prototype web vers une app mobile React Native / Expo, prête pour pré‑prod.
 
@@ -60,7 +60,7 @@ npm run dev
 - `BOOST_*_AMOUNT` (montants en plus petite unité)
 - `KYC_PROVIDER` + `KYC_VERIFICATION_URL` (si fournisseur manuel)
 - `EXPO_PUSH_ACCESS_TOKEN` (optionnel, recommandé pour push Expo)
-- `CORS_ALLOW_ORIGINS` (optionnel, ex: `https://app.yamo.com,https://admin.yamo.com`)
+- `CORS_ALLOW_ORIGINS` (optionnel, ex: `https://app.galant.com,https://admin.galant.com`)
 - `FORCE_HTTPS=true` (optionnel, à activer derrière un reverse proxy TLS)
 
 ## Structure

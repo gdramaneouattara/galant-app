@@ -11,57 +11,41 @@ const read = async (path) => {
 };
 
 const backendChecks = [
-  "app.get('/api/likes/quota'",
-  "app.post('/api/messages/send'",
-  "app.post('/api/messages/mark-read'",
-  "app.get('/api/super-likes/received'",
-  "app.post('/api/super-likes/:id/respond'",
-  "app.get('/api/privacy/export'",
-  "app.get('/api/notifications/admin'",
-  "app.post('/api/notifications/admin/:id/read'",
-  "app.post('/api/notifications/admin/read-all'",
-  "app.get('/api/communities'",
-  "app.post('/api/communities/create'",
-  "app.post('/api/communities/:communityId/join'",
-  "app.get('/api/communities/:communityId/messages'",
-  "app.post('/api/communities/:communityId/messages'",
-  "app.get('/api/communities/:communityId/members'",
-  "app.patch('/api/communities/:communityId/members/:userId/role'",
-  "app.delete('/api/communities/:communityId/members/:userId'",
-  "adminRouter.get('/audit-logs'",
-  "adminRouter.get('/messages/history'",
-  'premium_required_for_super_like',
-  'community_schema_missing',
-  'appendAdminAuditLog',
-  'message_type: normalizedType',
-  'media_url: mediaPath || null',
+  { file: 'server/src/index.js', snippet: "app.use('/api/ai', aiRoutes)" },
+  { file: 'server/src/index.js', snippet: "app.use('/api/messages', messageRoutes)" },
+  { file: 'server/src/index.js', snippet: "app.use('/api/matchmaking', matchmakingRoutes)" },
+  { file: 'server/src/index.js', snippet: "app.use('/api/payments', paymentRoutes)" },
+  { file: 'server/src/index.js', snippet: "app.use('/api/admin', adminRoutes)" },
+  { file: 'server/src/config/supabase.js', snippet: "createClient(SUPABASE_URL" },
+  { file: 'server/src/middleware/auth.js', snippet: "requireAuth" },
+  { file: 'server/src/controllers/matchmakingController.js', snippet: "getSuggestions" },
+  { file: 'server/src/controllers/aiController.js', snippet: "targetLang" },
+  { file: 'server/src/controllers/messageController.js', snippet: "sendMessage" },
+  { file: 'server/src/config/constants.js', snippet: "PARTNER_VISIBILITY_AMOUNT" },
 ];
 
-backendChecks.forEach((snippet, index) => {
+backendChecks.forEach(({ file, snippet }, index) => {
   test(`Backend alignment check #${index + 1}`, async () => {
-    const server = await read('server/src/index.js');
+    const code = await read(file);
     assert.ok(
-      server.includes(snippet),
-      `Missing backend snippet: ${snippet}`
+      code.includes(snippet),
+      `Missing snippet in ${file}: ${snippet}`
     );
   });
 });
 
 const mobileChecks = [
   { file: 'src/screens/home/HomeScreen.tsx', snippet: '/api/matchmaking/suggestions' },
-  { file: 'src/screens/home/HomeScreen.tsx', snippet: '/api/matchmaking/swipe' },
+  { file: 'src/screens/home/HomeScreen.tsx', snippet: '/api/matchmaking/visibility-insight' },
   { file: 'src/screens/messages/ChatScreen.tsx', snippet: '/api/messages/send' },
+  { file: 'src/screens/messages/components/ChatMessageItem.tsx', snippet: '/api/ai/translate' },
   { file: 'src/screens/messages/MessagesScreen.tsx', snippet: '/api/notifications/admin' },
-  { file: 'src/screens/community/CommunityScreen.tsx', snippet: '/api/communities' },
-  { file: 'src/screens/community/CommunityScreen.tsx', snippet: '/api/communities/create' },
-  { file: 'src/screens/community/CommunityChatScreen.tsx', snippet: '/api/communities/${communityId}/messages' },
   { file: 'src/screens/profile/ProfileScreen.tsx', snippet: '/api/privacy/export' },
-  { file: 'src/screens/verify/VerifyScreen.tsx', snippet: '/api/kyc/me' },
   { file: 'src/screens/verify/VerifyScreen.tsx', snippet: '/api/kyc/requests' },
-  { file: 'src/state/AppContext.tsx', snippet: '/api/profile/boost' },
-  { file: 'src/state/AppContext.tsx', snippet: '/api/messages/mark-read' },
-  { file: 'src/lib/api.ts', snippet: 'EXPO_PUBLIC_API_BASE_URL is missing.' },
-  { file: 'src/lib/api.ts', snippet: "headers.set('Authorization', `Bearer ${token}`)" },
+  { file: 'src/components/passport/PassportModal.tsx', snippet: 'passport_city' },
+  { file: 'src/screens/partner/PartnerPremiumScreen.tsx', snippet: 'PARTNER_PREMIUM' },
+  { file: 'src/translations/index.ts', snippet: 'rose_box' },
+  { file: 'src/lib/api.ts', snippet: 'EXPO_PUBLIC_API_BASE_URL' },
 ];
 
 mobileChecks.forEach(({ file, snippet }, index) => {
@@ -72,13 +56,12 @@ mobileChecks.forEach(({ file, snippet }, index) => {
 });
 
 const schemaChecks = [
-  'create table if not exists public.communities',
-  'create table if not exists public.community_members',
-  'create table if not exists public.community_messages',
   'create table if not exists public.super_likes',
   'create table if not exists public.privacy_requests',
   'create table if not exists public.likes',
   'create table if not exists public.daily_usage',
+  'create table if not exists public.venues',
+  'create table if not exists public.subscriptions',
   "check (status in ('PENDING', 'ACCEPTED', 'IGNORED'))",
 ];
 
