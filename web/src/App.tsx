@@ -201,7 +201,7 @@ const AppContent: React.FC = () => {
         />
       )}
 
-      {(!isAuthPage) && <Header />}
+      {(!isAuthPage && !isWelcomePage) && <Header />}
 
       <main className={`relative z-10 flex-1 w-full ${(isAuthPage || isWelcomePage) ? '' : 'max-w-6xl mx-auto p-4 md:p-8 mb-20 md:mb-0'}`}>
         <Routes>
