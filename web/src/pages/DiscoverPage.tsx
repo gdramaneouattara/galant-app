@@ -5,9 +5,9 @@ import { Star, ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIc
 import { Link, useNavigate } from 'react-router-dom';
 import FilterModal from '../components/FilterModal';
 import { apiRequest } from '@shared/lib/api';
-import logoImg from '../../assets/icon (2).png';
 
 const DiscoverPage: React.FC = () => {
+  const logoImg = "/pwa-192x192.png";
   const { user, profile: myProfile, loading: authLoading, t } = useAuth();
   const { suggestions, loading, fetchSuggestions, handleSwipe } = useMatchmaking();
   const [currentIndex, setCurrentCardIndex] = useState(0);
