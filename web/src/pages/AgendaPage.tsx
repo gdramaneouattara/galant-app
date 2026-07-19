@@ -1,3 +1,4 @@
+// Force re-process for Trophy icon
 import React, { useEffect, useState } from 'react';
 import { apiRequest } from '@shared/lib/api';
 import { Calendar, MapPin, Zap, ChevronRight, Clock, Star, Users, CheckCircle, Sparkles, Filter, Ticket, Share2, Trophy } from 'lucide-react';

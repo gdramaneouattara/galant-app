@@ -1,3 +1,4 @@
+// Force re-process for Globe icon
 import React, { useEffect, useState } from 'react';
 import { apiRequest } from '@shared/lib/api';
 import { MapPin, Star, Utensils, GlassWater, Sparkles, ChevronRight, Info, Send, MessageCircle, Car, Compass, Search, Heart, Trophy, Globe } from 'lucide-react';
