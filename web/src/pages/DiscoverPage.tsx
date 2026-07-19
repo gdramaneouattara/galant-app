@@ -7,7 +7,7 @@ import FilterModal from '../components/FilterModal';
 import { apiRequest } from '@shared/lib/api';
 
 const DiscoverPage: React.FC = () => {
-  const logoImg = "https://raw.githubusercontent.com/gdramaneouattara/galant-app/main/web/public/pwa-192x192.png";
+  const logoImg = "/pwa-192x192.png";
   const { user, profile: myProfile, loading: authLoading, t } = useAuth();
   const { suggestions, loading, fetchSuggestions, handleSwipe } = useMatchmaking();
   const [currentIndex, setCurrentCardIndex] = useState(0);
@@ -86,12 +86,19 @@ const DiscoverPage: React.FC = () => {
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-md p-10 bg-slate-950/40 backdrop-blur-2xl rounded-[3.5rem] shadow-2xl border border-white/10 text-center space-y-10 animate-in fade-in zoom-in-95 duration-700">
+        <div className="w-full max-w-md p-10 bg-slate-900/60 backdrop-blur-3xl rounded-[3.5rem] shadow-2xl border border-white/10 text-center space-y-10 animate-in fade-in zoom-in-95 duration-700">
           {/* Logo container matching the screenshot */}
-          <div className="relative mx-auto w-24 h-24 bg-white rounded-2xl flex items-center justify-center">
+          <div className="relative mx-auto w-24 h-24 bg-white rounded-2xl flex items-center justify-center shadow-xl">
             {/* Red Glow behind the white square */}
-            <div className="absolute -inset-4 bg-primary/30 rounded-full blur-2xl animate-pulse"></div>
-            <img src={logoImg} alt="Galant Logo" className="w-14 h-14 object-contain relative z-10" />
+            <div className="absolute -inset-6 bg-primary/40 rounded-full blur-3xl animate-pulse"></div>
+            <img
+              src="/pwa-192x192.png"
+              alt="Galant"
+              className="w-16 h-16 object-contain relative z-10"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "https://galant.app/pwa-192x192.png";
+              }}
+            />
           </div>
 
           <div className="space-y-4">
@@ -101,14 +108,14 @@ const DiscoverPage: React.FC = () => {
             <div className="h-1.5 w-14 bg-primary mx-auto rounded-full"></div>
           </div>
 
-          <p className="text-slate-200 font-medium leading-relaxed text-sm px-4">
+          <p className="text-white/90 font-medium leading-relaxed text-sm px-4">
             Faites éclore de belles histoires. Offrez une rose, commencez une rencontre d'exception.
           </p>
 
           <div className="space-y-6 pt-2">
             <Link
               to="/auth"
-              className="block w-full bg-primary text-white py-5 rounded-[1.8rem] font-black text-xs uppercase tracking-[0.1em] hover:scale-[1.03] active:scale-95 transition-all shadow-xl shadow-red-500/20"
+              className="block w-full bg-[#ef4444] text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.1em] hover:scale-[1.03] active:scale-95 transition-all shadow-xl shadow-red-500/40"
             >
               CRÉER UN COMPTE
             </Link>

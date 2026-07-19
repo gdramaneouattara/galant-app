@@ -7,15 +7,14 @@ const ExperiencesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'AGENDA' | 'GUIDE'>('AGENDA');
 
   return (
-    <div className="w-full flex flex-col">
-      {/* Bascule Mobile / Web Premium */}
-      <div className="flex justify-center mb-10 py-4">
-        <div className="bg-white/80 backdrop-blur-xl p-1.5 rounded-[2rem] flex gap-1 shadow-xl border border-slate-200">
+    <div className="w-full">
+      <div className="flex justify-center mb-8 sticky top-20 z-40">
+        <div className="bg-white p-1.5 rounded-[2rem] flex gap-1 shadow-xl border border-slate-200">
           <button
             onClick={() => setActiveTab('AGENDA')}
             className={`flex items-center gap-2 px-8 py-3 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
               activeTab === 'AGENDA'
-                ? 'bg-slate-900 text-white shadow-lg'
+                ? 'bg-slate-900 text-white'
                 : 'text-slate-400 hover:text-slate-600'
             }`}
           >
@@ -26,8 +25,8 @@ const ExperiencesPage: React.FC = () => {
             onClick={() => setActiveTab('GUIDE')}
             className={`flex items-center gap-2 px-8 py-3 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
               activeTab === 'GUIDE'
-                ? 'bg-slate-900 text-white shadow-lg'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-slate-900 text-white'
+                : 'text-slate-400 hover:text-slate-600'
             }`}
           >
             <MapPin size={16} />
@@ -36,7 +35,7 @@ const ExperiencesPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="px-2">
         {activeTab === 'AGENDA' ? <AgendaPage /> : <GuidePage />}
       </div>
     </div>
