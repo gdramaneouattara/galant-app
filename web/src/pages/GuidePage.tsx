@@ -299,5 +299,3 @@ const GuidePage: React.FC = () => {
 };
 
 export default GuidePage;
-
-export default GuidePage;
