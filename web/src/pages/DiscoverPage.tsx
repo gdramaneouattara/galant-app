@@ -1,10 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useMatchmaking } from '@shared/hooks/useMatchmaking';
 import { useAuth } from '../context/AuthContext';
-import { Star, ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIcon, SlidersHorizontal, Sparkles, RefreshCw } from 'lucide-react';
+import { Star, ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIcon, SlidersHorizontal } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import FilterModal from '../components/FilterModal';
-import { apiRequest } from '@shared/lib/api';
 
 const DiscoverPage: React.FC = () => {
   const { user, profile: myProfile, loading: authLoading, t } = useAuth();
@@ -34,6 +33,7 @@ const DiscoverPage: React.FC = () => {
 
   useEffect(() => {
     if (user && !loading && suggestions.length === 0) {
+      // Notifier le concierge IA qu'on n'a plus de profils
       apiRequest('/api/tracking/event', {
         method: 'POST',
         requireAuth: true,
@@ -56,48 +56,45 @@ const DiscoverPage: React.FC = () => {
 
   if (authLoading || (loading && suggestions.length === 0)) {
     return (
-      <div className="flex flex-col items-center justify-center py-40">
-        <div className="relative">
-          <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-primary"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Sparkles className="text-primary/40 animate-pulse" size={32} />
-          </div>
-        </div>
-        <p className="mt-8 text-slate-400 font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">
-          Le charme opère...
-        </p>
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="w-full max-w-sm p-12 bg-white rounded-[3rem] shadow-[0_20px_60px_rgba(0,0,0,0.15)] text-center space-y-10 animate-in fade-in zoom-in-95 duration-700">
-          <div className="space-y-3">
-            <h2 className="text-4xl font-black text-[#1e293b] tracking-tighter">
-              Galant
-            </h2>
-            <p className="text-slate-400 font-bold text-base">L'élégance à chaque rencontre</p>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="w-full max-w-md p-10 bg-white/10 backdrop-blur-2xl rounded-[3.5rem] shadow-2xl border border-white/20 text-center space-y-8 animate-in fade-in zoom-in-95 duration-700">
+          <div className="relative mx-auto w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center border border-primary/30 shadow-lg shadow-red-500/20">
+            <img src="/pwa-192x192.png" alt="Logo" className="w-16 h-16 object-contain drop-shadow-xl" />
+            <div className="absolute -inset-1 bg-primary rounded-full animate-ping opacity-20"></div>
           </div>
 
-          <p className="text-slate-500 font-black leading-relaxed text-sm px-2">
-            Faites éclore de belles histoires. Offrez une rose, commencez une rencontre.
+          <div className="space-y-3">
+            <h2 className="text-4xl font-black text-white italic tracking-tighter drop-shadow-md">
+              Bienvenue
+            </h2>
+            <div className="h-1 w-12 bg-primary mx-auto rounded-full"></div>
+          </div>
+
+          <p className="text-slate-200 font-medium leading-relaxed text-sm px-4">
+            Faites éclore de belles histoires. Offrez une rose, commencez une rencontre d'exception.
           </p>
 
-          <div className="space-y-6 pt-2">
+          <div className="space-y-4 pt-4">
             <Link
               to="/auth"
-              className="block w-full bg-[#ef4444] text-white py-5 rounded-2xl font-black text-xs uppercase shadow-[0_15px_30px_rgba(239,68,68,0.4)] hover:scale-[1.02] active:scale-95 transition-all"
+              className="block w-full bg-primary text-white py-5 rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] hover:scale-[1.03] active:scale-95 transition-all shadow-xl shadow-red-500/30"
             >
-              CRÉER UN COMPTE
+              Créer un compte
             </Link>
 
             <Link
               to="/auth"
-              className="block text-slate-400 hover:text-slate-600 font-black text-[10px] uppercase tracking-wider transition-colors"
+              className="block text-white/60 hover:text-white font-black text-[10px] uppercase tracking-widest transition-colors"
             >
-              SE CONNECTER
+              Déjà membre ? Se connecter
             </Link>
           </div>
         </div>
@@ -108,153 +105,112 @@ const DiscoverPage: React.FC = () => {
   const currentProfile = suggestions[currentIndex];
 
   return (
-    <div className="max-w-xl mx-auto pb-10 px-4">
-      {/* Header avec un look plus "App" */}
-      <div className="flex justify-between items-center mb-10">
-        <div>
-          <h2 className="text-4xl font-black tracking-tight text-slate-900 leading-none">
-            {t('discover') || "Découverte"}
-          </h2>
-          <p className="text-slate-400 font-bold mt-2 text-sm uppercase tracking-widest">
-            {t('discover_subtitle') || "Pour vous"}
-          </p>
-        </div>
+    <div className="max-w-lg mx-auto pb-10">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-black italic tracking-tighter">Découverte</h2>
         <button
           onClick={() => setIsFilterOpen(true)}
-          className="w-14 h-14 bg-white shadow-xl shadow-slate-200/50 border border-slate-100 rounded-2xl flex items-center justify-center text-slate-600 hover:text-primary transition-all group relative"
+          className="p-3 bg-white shadow-md border border-slate-100 rounded-2xl text-slate-600 hover:text-primary transition-all relative"
         >
-          <SlidersHorizontal size={24} className="group-hover:rotate-12 transition-transform" />
+          <SlidersHorizontal size={20} />
           {(filters.premiumOnly || filters.verifiedOnly || filters.minScore > 0) && (
-            <div className="absolute top-3 right-3 w-3 h-3 bg-primary rounded-full border-2 border-white"></div>
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-white"></div>
           )}
         </button>
       </div>
 
       {myProfile && (
-        <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-800 p-6 rounded-[2rem] shadow-xl shadow-blue-500/20 flex items-center gap-5 group cursor-pointer overflow-hidden relative"
-             onClick={() => navigate('/profile')}>
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
-          <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white shadow-lg">
-            <Rocket size={24} className="group-hover:-translate-y-1 transition-transform" />
+        <div className="mb-6 bg-blue-50 border border-blue-100 p-4 rounded-2xl flex items-center gap-4">
+          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white">
+            <Info size={20} />
           </div>
           <div className="flex-1">
-            <p className="text-[10px] font-black text-blue-200 uppercase tracking-[0.2em] mb-1 opacity-80">Rayonnement Galant</p>
-            <p className="text-white font-bold leading-tight">
-              {t('rank_insight', { rank: 4, total: 20, city: myProfile.city || 'votre ville' })}
-            </p>
+            <p className="text-xs font-bold text-blue-900 uppercase tracking-wider">Visibilité Galante</p>
+            <p className="text-sm text-blue-700">{t('rank_insight', { rank: 4, total: 20, city: myProfile.city || 'votre ville' })}</p>
           </div>
-          <ChevronRight className="text-white/40 group-hover:text-white transition-colors" size={20} />
         </div>
       )}
 
       {currentProfile ? (
-        <div className="space-y-8 animate-in slide-in-from-bottom-10 duration-500">
+        <div className="space-y-6">
           <div
             onClick={() => openDetail(currentProfile)}
-            className="relative aspect-[3/4.2] w-full rounded-[3.5rem] overflow-hidden shadow-[0_40px_80px_-15px_rgba(0,0,0,0.15)] border-8 border-white cursor-pointer group bg-slate-100"
+            className="relative aspect-[3/4] w-full rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-white cursor-pointer group"
           >
             <img
               src={currentProfile.photos?.[0] || 'https://placehold.co/400x600'}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2000ms]"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               alt={currentProfile.name}
             />
 
-            {/* Overlays */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+            <div className="absolute top-6 right-6 bg-white/20 backdrop-blur-md p-2 rounded-2xl text-white opacity-0 group-hover:opacity-100 transition-opacity">
+              <UserIcon size={20} />
+            </div>
 
-            <div className="absolute top-8 right-8 flex flex-col gap-3">
-              {currentProfile.is_premium && (
-                <div className="bg-amber-400 text-black w-12 h-12 rounded-2xl shadow-xl flex items-center justify-center animate-pulse">
-                  <Crown size={24} fill="currentColor" />
+            <div className="absolute top-6 left-6 flex gap-2">
+              {currentProfile.is_verified && (
+                <div className="bg-blue-500 text-white p-2 rounded-full shadow-lg">
+                  <ShieldCheck size={18} />
                 </div>
               )}
-              {currentProfile.is_verified && (
-                <div className="bg-blue-500 text-white w-12 h-12 rounded-2xl shadow-xl flex items-center justify-center">
-                  <ShieldCheck size={24} />
+              {currentProfile.is_premium && (
+                <div className="bg-accent text-white p-2 rounded-full shadow-lg">
+                  <Star size={18} fill="currentColor" />
                 </div>
               )}
             </div>
 
-            <div className="absolute inset-x-8 bottom-10 text-white">
-              <div className="flex items-center gap-3 mb-2">
-                <h3 className="text-4xl font-black tracking-tight leading-none">
-                  {currentProfile.name}, {currentProfile.age}
-                </h3>
-                {currentProfile.galanterie_score >= 4.5 && (
-                  <div className="bg-rose-500/30 backdrop-blur-md px-3 py-1 rounded-full border border-rose-500/20 flex items-center gap-1">
-                    <Gem size={12} className="text-rose-400" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-rose-100">Élite</span>
-                  </div>
-                )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent flex flex-col justify-end p-8 text-white">
+              <div className="flex items-baseline gap-2 mb-1">
+                <span className="text-3xl font-black">{currentProfile.name}, {currentProfile.age}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm font-semibold opacity-90 mb-4">
+                <MapPin size={16} className="text-primary" />
+                <span>{currentProfile.city || t('city_not_set')}</span>
+                {currentProfile.distance_km && <span className="bg-white/20 px-2 py-0.5 rounded-full text-[10px]">À {currentProfile.distance_km.toFixed(1)} km</span>}
               </div>
 
-              <div className="flex items-center gap-3 text-white/80 font-bold text-sm mb-6">
-                <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-white/10">
-                  <MapPin size={16} className="text-primary" />
-                  <span>{currentProfile.city || t('city_not_set')}</span>
-                </div>
-                {currentProfile.distance_km && (
-                  <span className="text-[10px] bg-white/5 px-3 py-2 rounded-xl border border-white/5 uppercase tracking-widest">
-                    À {currentProfile.distance_km.toFixed(1)} km
+              <div className="flex gap-2">
+                <span className="text-[10px] bg-accent/90 text-black px-3 py-1 rounded-full font-black uppercase tracking-tighter">
+                  {t('score')} {Math.round(currentProfile.score)}
+                </span>
+                {currentProfile.is_premium && (
+                  <span className="text-[10px] bg-white/20 px-3 py-1 rounded-full font-black uppercase tracking-tighter">
+                    {t('premium_member')}
                   </span>
                 )}
-              </div>
-
-              <div className="flex gap-3">
-                <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-2xl p-4 flex-1">
-                  <p className="text-[8px] font-black text-white/40 uppercase tracking-[0.2em] mb-1">Score de Charme</p>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-black text-white">{Math.round(currentProfile.score || 50)}</span>
-                    <span className="text-[10px] font-bold text-primary">pts</span>
-                  </div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-2xl p-4 flex-1">
-                  <p className="text-[8px] font-black text-white/40 uppercase tracking-[0.2em] mb-1">Status</p>
-                  <p className="text-sm font-black text-white truncate uppercase tracking-widest">
-                    {currentProfile.is_premium ? t('premium_member') : 'Membre Classique'}
-                  </p>
-                </div>
               </div>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-center items-center gap-8 py-4 px-4">
+          <div className="flex justify-center items-center gap-6 pt-4">
             <button
               onClick={() => onSwipe('LEFT')}
-              className="w-20 h-20 rounded-[1.8rem] bg-white shadow-2xl shadow-slate-200/50 flex items-center justify-center text-slate-300 hover:text-red-500 hover:border-red-500/20 hover:bg-red-50 hover:scale-110 active:scale-95 transition-all border border-slate-100"
+              className="w-16 h-16 rounded-full bg-white shadow-xl flex items-center justify-center text-slate-400 hover:text-red-500 hover:scale-110 active:scale-90 transition-all border border-slate-100"
             >
-              <X size={32} strokeWidth={3} />
+              <X size={28} strokeWidth={3} />
             </button>
-
             <button
-              className="w-16 h-16 rounded-[1.5rem] bg-white shadow-2xl shadow-slate-200/50 flex items-center justify-center text-amber-500 hover:scale-110 active:scale-95 transition-all border border-slate-100 group"
+              className="w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center text-secondary hover:scale-110 active:scale-90 transition-all border border-slate-100"
             >
-              <Rocket size={24} className="group-hover:-translate-y-1 transition-transform" />
+              <Rocket size={20} fill="currentColor" />
             </button>
-
             <button
               onClick={() => onSwipe('RIGHT')}
-              className="w-24 h-24 rounded-[2.2rem] bg-primary shadow-2xl shadow-red-500/30 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all group"
+              className="w-20 h-20 rounded-full bg-primary shadow-2xl shadow-red-200 flex items-center justify-center text-white hover:scale-110 active:scale-90 transition-all"
             >
-              <Heart size={44} fill="currentColor" className="group-hover:scale-110 transition-transform" />
+              <Heart size={36} fill="currentColor" />
             </button>
           </div>
         </div>
       ) : (
-        <div className="text-center py-24 bg-white rounded-[3.5rem] border-2 border-dashed border-slate-200 p-12 space-y-8 animate-in fade-in duration-700">
-          <div className="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto text-slate-200">
-            <RefreshCw size={48} />
-          </div>
-          <div>
-            <p className="text-2xl font-black text-slate-900 mb-2">{t('no_more_profiles') || "Fin de la découverte"}</p>
-            <p className="text-slate-400 font-medium">Revenez plus tard pour de nouvelles étincelles.</p>
-          </div>
+        <div className="text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-slate-200 p-10">
+          <p className="text-slate-400 font-bold text-lg mb-6">{t('no_more_profiles')}</p>
           <button
             onClick={() => { setCurrentCardIndex(0); fetchSuggestions(); }}
-            className="w-full bg-primary text-white font-black text-xs uppercase tracking-[0.2em] py-5 rounded-2xl shadow-xl shadow-red-500/20 hover:scale-105 transition-all active:scale-95"
+            className="text-primary font-black text-sm uppercase tracking-widest bg-red-50 px-8 py-4 rounded-2xl"
           >
-            {t('reload') || "Relancer le charme"}
+            {t('reload')}
           </button>
         </div>
       )}

@@ -199,11 +199,6 @@ export const TRANSLATIONS = {
     partner_trial_expires: "Votre essai se termine dans {days} jours",
     upgrade_to_keep_privileges: "Passez à un pack payant pour conserver vos privilèges après l'essai.",
     mark_all_read: "Tout marquer lu",
-    search_conversations: "Retrouver un échange...",
-    no_matches_yet: "Votre prochaine rencontre d'exception...",
-    swipe_to_start: "Laissez le charme opérer.",
-    discover_profiles: "Lancer le charme",
-    no_conversations: "Aucune conversation pour le moment.",
   },
   en: {
     welcome: "Welcome",
@@ -405,10 +400,5 @@ export const TRANSLATIONS = {
     partner_trial_expires: "Your trial ends in {days} days",
     upgrade_to_keep_privileges: "Upgrade to a paid pack to keep your privileges after the trial.",
     mark_all_read: "Mark all read",
-    search_conversations: "Find an exchange...",
-    no_matches_yet: "Your next exceptional encounter...",
-    swipe_to_start: "Let the charm work.",
-    discover_profiles: "Launch the charm",
-    no_conversations: "No conversations yet.",
   }
 };

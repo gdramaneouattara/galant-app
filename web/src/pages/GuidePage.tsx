@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { apiRequest } from '@shared/lib/api';
-import { MapPin, Star, Utensils, GlassWater, Sparkles, ChevronRight, Info, Send, MessageCircle, Car, Compass, Search, Heart, Trophy } from 'lucide-react';
+import { MapPin, Star, Utensils, GlassWater, Sparkles, ChevronRight, Info, Send, MessageCircle, Car } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ProposeVenueModal from '../components/ProposeVenueModal';
-import { showAlert } from '@shared/lib/ui-bridge';
 
 interface Venue {
   id: string;
@@ -18,21 +17,21 @@ interface Venue {
 }
 
 const GuidePage: React.FC = () => {
-  const { profile, t } = useAuth();
+  const { t } = useAuth();
   const navigate = useNavigate();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState<'ALL' | 'RESTAURANT' | 'LOUNGE' | 'HOTEL'>('ALL');
 
   useEffect(() => {
     const fetchVenues = async () => {
       try {
         setLoading(true);
+        // On récupère les lieux approuvés
         const data = await apiRequest<{ venues: Venue[] }>('/api/venues', { requireAuth: true });
 
+        // Si la liste est vide, on injecte du contenu éditorial de prestige (Contenu d'Appel)
         if (!data.venues || data.venues.length === 0) {
           setVenues([
             {
@@ -77,19 +76,19 @@ const GuidePage: React.FC = () => {
     fetchVenues();
   }, []);
 
-  const filteredVenues = venues.filter(v => {
-    const matchesSearch = v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         v.city.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = activeCategory === 'ALL' || v.venue_type === activeCategory;
-    return matchesSearch && matchesCategory;
-  });
-
   const handleContactVenue = async (venueId: string, venueName: string) => {
+    // On vérifie si l'utilisateur est éligible sans appeler l'API pour une UX plus fluide
     if (!profile?.is_premium && !profile?.is_vip && (profile?.roses_count || 0) < 1) {
-      showAlert('Accès Conciergerie', 'Le chat direct avec les établissements est un privilège Premium.');
+      showAlert('Accès Conciergerie', 'Le chat direct avec les établissements est un privilège Premium. Vous pouvez également débloquer cet accès pour 1 Rose d\'Or.');
       navigate('/premium');
       return;
     }
+
+    const confirmMsg = !profile?.is_premium && !profile?.is_vip
+      ? `Souhaitez-vous utiliser 1 Rose d'Or pour ouvrir une discussion avec ${venueName} ?`
+      : null;
+
+    if (confirmMsg && !window.confirm(confirmMsg)) return;
 
     try {
       const res = await apiRequest<{ venueChatId: string }>('/api/messages/venue-thread', {
@@ -104,196 +103,134 @@ const GuidePage: React.FC = () => {
   };
 
   const handleYangoRide = (venue: Venue) => {
+    // Dans une version finale, on récupèrerait les points GPS du lieu
+    // Ici on prépare le lien profond vers l'app Yango
     const yangoUrl = `https://yango.com/action/order?end_lat=4.05&end_lon=9.7&name=${encodeURIComponent(venue.name)}`;
     window.open(yangoUrl, '_blank');
+    showAlert('Yango', 'Redirection vers Yango pour commander votre chauffeur Premium.');
   };
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-40">
-        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Sélection des meilleures adresses...</p>
+      <div className="flex justify-center py-20">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto pb-20 px-4 space-y-12">
-      {/* Hero Header Ultra Premium */}
-      <div className="relative rounded-[4rem] overflow-hidden shadow-2xl bg-slate-950 min-h-[450px] flex items-center group">
-        <div className="absolute inset-0">
-          <img
-            src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200"
-            className="w-full h-full object-cover opacity-40 group-hover:scale-110 transition-transform duration-[5000ms]"
-            alt="Hero"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent"></div>
-        </div>
-
-        <div className="relative z-10 p-12 md:p-20 space-y-8 max-w-2xl">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/20">
-              <Compass size={24} className="text-white animate-pulse" />
-            </div>
-            <span className="text-white/40 font-black uppercase tracking-[0.3em] text-[10px]">
-              Expérience Galante
-            </span>
-          </div>
-
-          <h2 className="text-5xl md:text-7xl font-black text-white italic tracking-tighter leading-none">
-            Le Guide <span className="text-primary not-italic">Privilège</span>
+    <div className="max-w-5xl mx-auto pb-20 space-y-10">
+      {/* Hero Section du Guide */}
+      <div className="relative rounded-[3rem] overflow-hidden bg-slate-900 text-white p-10 md:p-16 shadow-2xl">
+        <div className="relative z-10 space-y-4 max-w-lg">
+          <span className="bg-primary/20 text-primary px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-primary/30">
+            L'Expertise Galant
+          </span>
+          <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter leading-tight">
+            Les adresses les plus chics de votre ville.
           </h2>
-
-          <p className="text-slate-400 text-lg md:text-xl font-medium leading-relaxed">
-            Découvrez notre sélection exclusive de lieux d'exception pour des rendez-vous inoubliables.
+          <p className="text-slate-400 font-medium leading-relaxed">
+            Notre équipe sélectionne pour vous les lieux les plus propices à une rencontre d'exception.
           </p>
+        </div>
+        <Sparkles className="absolute right-10 bottom-10 text-white/5 w-64 h-64 -rotate-12" />
+      </div>
 
-          <div className="flex flex-wrap gap-4 pt-4">
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 px-6 py-3 rounded-2xl flex items-center gap-3">
-              <Trophy size={20} className="text-amber-500" />
-              <span className="text-white text-xs font-black uppercase tracking-widest">Lieux Certifiés</span>
-            </div>
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 px-6 py-3 rounded-2xl flex items-center gap-3">
-              <Sparkles size={20} className="text-primary" />
-              <span className="text-white text-xs font-black uppercase tracking-widest">Avantages Membres</span>
-            </div>
+      {/* Grid des Lieux */}
+      <div className="space-y-6">
+        <div className="flex justify-between items-center px-4">
+          <h3 className="text-xl font-black italic">Le Guide Galant</h3>
+          <div className="flex gap-2">
+            <button className="p-3 bg-white shadow-sm border border-slate-100 rounded-2xl hover:text-primary transition-all"><Utensils size={18} /></button>
+            <button className="p-3 bg-white shadow-sm border border-slate-100 rounded-2xl hover:text-primary transition-all"><GlassWater size={18} /></button>
           </div>
         </div>
-      </div>
 
-      {/* Barre de Recherche et Filtres */}
-      <div className="flex flex-col md:flex-row gap-6 items-center justify-between sticky top-24 z-40 bg-slate-50/80 backdrop-blur-lg p-6 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50">
-        <div className="relative flex-1 w-full group">
-          <Search size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
-          <input
-            type="text"
-            placeholder="Rechercher un lieu, une ville..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white border border-slate-100 rounded-2xl py-4 pl-14 pr-6 text-slate-700 font-bold focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all shadow-sm"
-          />
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-2">
+          {venues.map((venue) => (
+            <div key={venue.id} className="group bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-50 overflow-hidden hover:scale-[1.02] transition-all cursor-pointer">
+              <div className="relative h-56">
+                <img src={venue.photo_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" />
 
-        <div className="flex gap-2 p-1 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-x-auto no-scrollbar w-full md:w-auto">
-          {[
-            { id: 'ALL', label: 'Tous', icon: Globe },
-            { id: 'RESTAURANT', label: 'Restaurants', icon: Utensils },
-            { id: 'LOUNGE', label: 'Lounges', icon: GlassWater },
-            { id: 'HOTEL', label: 'Hotels', icon: Star }
-          ].map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id as any)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
-                activeCategory === cat.id ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'
-              }`}
-            >
-              <cat.icon size={14} />
-              {cat.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Grid des Lieux - Design Magazine */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-        {filteredVenues.map((venue) => (
-          <div key={venue.id} className="group bg-white rounded-[3.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.08)] border border-slate-100 overflow-hidden hover:scale-[1.02] transition-all duration-500 flex flex-col">
-            <div className="relative h-72 overflow-hidden">
-              <img
-                src={venue.photo_url}
-                className="w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-110"
-                alt={venue.name}
-              />
-
-              {/* Overlay Gradient App-Style */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
-
-              <div className="absolute top-6 left-6 flex flex-col gap-2">
-                <div className={`px-5 py-2 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] shadow-2xl flex items-center gap-2 border border-white/20 backdrop-blur-md ${
-                  venue.is_editorial ? 'bg-slate-950/80 text-white' : 'bg-primary text-white'
+                {/* Badge Editorial vs Partenaire */}
+                <div className={`absolute top-4 left-4 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-1.5 ${
+                  venue.is_editorial ? 'bg-slate-900/80 text-white backdrop-blur-md' : 'bg-primary text-white'
                 }`}>
-                  {venue.is_editorial ? <Sparkles size={12} className="text-amber-400" /> : <Trophy size={12} className="text-amber-400" />}
-                  {venue.is_editorial ? 'Conseil Galant' : 'Élite Certifié'}
+                  {venue.is_editorial ? <Info size={12} /> : <Star size={12} fill="currentColor" />}
+                  {venue.is_editorial ? 'Conseil Galant' : 'Partenaire'}
+                </div>
+
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute bottom-4 left-6 right-6">
+                   <div className="flex items-center gap-1.5 text-white/80 text-[10px] font-black uppercase tracking-tighter mb-1">
+                     <MapPin size={10} className="text-primary" />
+                     {venue.city}
+                   </div>
+                   <h4 className="text-xl font-black text-white leading-none">{venue.name}</h4>
                 </div>
               </div>
 
-              <div className="absolute bottom-6 left-8 right-8">
-                <div className="flex items-center gap-2 text-primary-light font-black text-[10px] uppercase tracking-[0.2em] mb-2">
-                  <MapPin size={12} className="text-primary" />
-                  <span className="text-white/80">{venue.city}</span>
-                </div>
-                <h4 className="text-3xl font-black text-white tracking-tighter leading-none">{venue.name}</h4>
-              </div>
-            </div>
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-slate-500 font-medium line-clamp-2 leading-relaxed">
+                  {venue.description}
+                </p>
 
-            <div className="p-8 space-y-8 flex-1 flex flex-col">
-              <p className="text-slate-500 font-medium text-base leading-relaxed line-clamp-3">
-                {venue.description}
-              </p>
-
-              {venue.benefit_description && (
-                <div className="bg-gradient-to-br from-rose-50 to-rose-100/30 p-5 rounded-[2rem] border border-rose-100 flex items-start gap-4 shadow-inner">
-                  <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-xl">🎁</div>
-                  <div>
-                    <p className="text-[8px] font-black text-rose-300 uppercase tracking-widest mb-1">Privilège Membre</p>
-                    <p className="text-xs font-black text-primary uppercase tracking-tight leading-tight">
+                {venue.benefit_description && (
+                  <div className="bg-rose-50 p-3 rounded-2xl border border-rose-100 flex items-center gap-3">
+                    <span className="text-lg">🎁</span>
+                    <span className="text-[10px] font-black text-primary uppercase tracking-tighter leading-tight">
                       {venue.benefit_description}
-                    </p>
+                    </span>
+                  </div>
+                )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => {
+                        setSelectedVenue(venue);
+                        setIsModalOpen(true);
+                      }}
+                      className="py-4 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg shadow-slate-200"
+                    >
+                      <Send size={14} />
+                      Proposer
+                    </button>
+                    <button
+                      onClick={() => handleYangoRide(venue)}
+                      className="py-4 rounded-2xl bg-teal-50 border-2 border-teal-100 text-teal-700 font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-teal-100 transition-all shadow-sm"
+                    >
+                      <Car size={14} />
+                      Yango
+                    </button>
+                    <button
+                      onClick={() => handleContactVenue(venue.id, venue.name)}
+                      className="py-4 rounded-2xl bg-white border-2 border-slate-100 text-slate-900 font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-50 transition-all shadow-sm"
+                    >
+                      <MessageCircle size={14} className="text-primary" />
+                      Chat Direct
+                    </button>
                   </div>
                 </div>
-              )}
-
-              <div className="mt-auto space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => { setSelectedVenue(venue); setIsModalOpen(true); }}
-                    className="py-4 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-black transition-all shadow-xl shadow-slate-900/10 active:scale-95 group/btn"
-                  >
-                    <Send size={14} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
-                    Proposer
-                  </button>
-                  <button
-                    onClick={() => handleYangoRide(venue)}
-                    className="py-4 rounded-2xl bg-white border-2 border-slate-100 text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-slate-50 hover:text-slate-900 transition-all active:scale-95"
-                  >
-                    <Car size={16} />
-                    Yango
-                  </button>
-                </div>
-
-                <button
-                  onClick={() => handleContactVenue(venue.id, venue.name)}
-                  className="w-full py-5 rounded-2xl bg-rose-50 border border-rose-100 text-primary font-black text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-primary hover:text-white transition-all group/chat active:scale-95 shadow-lg shadow-rose-500/5"
-                >
-                  <MessageCircle size={18} fill="currentColor" className="opacity-20 group-hover/chat:opacity-100 transition-opacity" />
-                  Accès Conciergerie
-                </button>
               </div>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
-
-      {/* CTA Partenariat - Design Épuré */}
-      <div className="relative rounded-[4rem] bg-gradient-to-br from-amber-400 to-amber-600 p-12 md:p-20 text-center overflow-hidden shadow-2xl shadow-amber-500/20 group">
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 bg-black/10 rounded-full blur-3xl"></div>
-
-        <div className="relative z-10 max-w-2xl mx-auto space-y-6">
-          <h3 className="text-3xl md:text-5xl font-black text-white italic tracking-tighter">Votre lieu mérite l'excellence</h3>
-          <p className="text-white/80 text-lg font-medium">Rejoignez le cercle restreint des établissements certifiés Galant.</p>
-          <button className="bg-white text-amber-600 px-10 py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all mt-4">
-            Inscrire mon établissement
-          </button>
         </div>
-      </div>
 
-      <ProposeVenueModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        venue={selectedVenue}
-      />
+        {/* Modal de proposition */}
+        <ProposeVenueModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          venue={selectedVenue}
+        />
+
+      {/* Call to Action Business */}
+      <div className="mx-4 bg-amber-50 rounded-[3rem] border border-amber-100 p-10 text-center space-y-4">
+         <h3 className="text-xl font-black text-amber-900 italic">Vous possédez un lieu d'exception ?</h3>
+         <p className="text-amber-700/70 text-sm font-medium max-w-sm mx-auto">Rejoignez le Guide Galant et devenez la destination préférée de nos membres.</p>
+         <button className="bg-amber-500 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-amber-200 hover:scale-105 transition-all">
+           Inscrire mon établissement
+         </button>
+      </div>
     </div>
   );
 };

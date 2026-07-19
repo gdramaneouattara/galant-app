@@ -3,12 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { db, COLLECTIONS, fbStorage } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import {
-  Camera, ShieldCheck, MapPin, Edit3, Save, LogOut,
-  Sparkles, Plane, Globe, ChevronRight, Share2,
-  EyeOff, Eye, Crown, Gem, Settings, User, Bell,
-  CreditCard, HelpCircle
-} from 'lucide-react';
+import { Camera, ShieldCheck, MapPin, Edit3, Save, LogOut, Sparkles, Plane, Globe, ChevronRight, Share2, EyeOff, Eye } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { apiRequest } from '@shared/lib/api';
 import { useNavigate } from 'react-router-dom';
@@ -27,35 +22,7 @@ const ProfilePage: React.FC = () => {
   const [isPassportOpen, setIsPassportOpen] = useState(false);
   const [isTogglingInvisible, setIsTogglingInvisible] = useState(false);
 
-  // Éviter l'écran blanc si les données ne sont pas encore là
-  if (loading && !profile) {
-    return (
-      <div className="max-w-2xl mx-auto py-20 text-center">
-        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Préparation de votre élégance...</p>
-      </div>
-    );
-  }
-
-  if (!user || !profile) {
-    return (
-      <div className="max-w-md mx-auto py-20 text-center px-6">
-        <div className="bg-white p-10 rounded-[3rem] shadow-2xl shadow-slate-200 border border-slate-100">
-          <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
-            <User size={40} />
-          </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-2">Profil non trouvé</h2>
-          <p className="text-slate-500 font-medium mb-8">Veuillez vous connecter pour accéder à votre espace Galant.</p>
-          <button
-            onClick={() => navigate('/auth')}
-            className="w-full bg-primary text-white py-4 rounded-2xl font-black shadow-xl shadow-primary/20 hover:scale-105 transition-transform"
-          >
-            Se connecter
-          </button>
-        </div>
-      </div>
-    );
-  }
+  if (!user || !profile) return null;
 
   const handleToggleInvisible = async () => {
     if (!profile.is_premium) {
@@ -125,6 +92,7 @@ const ProfilePage: React.FC = () => {
 
     setUploading(true);
     try {
+      // Compression Web
       const compressedBlob = await compressImageWeb(file);
       const storageRef = ref(fbStorage, `profiles/${user.uid}/${Date.now()}.webp`);
       await uploadBytes(storageRef, compressedBlob, { contentType: 'image/webp' });
@@ -143,215 +111,175 @@ const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto pb-20 px-4">
-      {/* Header Profile - Premium Style */}
-      <div className="relative mb-12">
-        <div className="h-64 rounded-[3rem] overflow-hidden shadow-2xl border-4 border-white">
+    <div className="max-w-2xl mx-auto pb-20">
+      <div className="bg-white rounded-[3rem] shadow-2xl shadow-slate-200 border border-slate-100 overflow-hidden">
+        {/* En-tête avec Photo et Bouton Edit */}
+        <div className="relative h-64 bg-slate-100">
           <img
-            src={profile.photos?.[0] || 'https://placehold.co/1200x400?text=Ajouter+une+photo'}
+            src={profile.photos?.[0] || 'https://placehold.co/600x400?text=Ajouter+une+photo'}
             className="w-full h-full object-cover"
             alt=""
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
 
-          {/* Status Badge Over Image */}
-          <div className="absolute top-6 left-6 flex gap-2">
-            {profile.is_premium && (
-              <div className="bg-gradient-to-r from-amber-400 to-amber-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2">
-                <Crown size={14} fill="currentColor" />
-                Premium
-              </div>
-            )}
-            {profile.is_verified && (
-              <div className="bg-blue-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2">
-                <ShieldCheck size={14} fill="currentColor" />
-                Vérifié
-              </div>
-            )}
-          </div>
-
-          <label className="absolute bottom-6 right-6 w-14 h-14 bg-primary text-white rounded-2xl shadow-xl flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all border-4 border-white/20 backdrop-blur-sm">
-            {uploading ? <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Camera size={24} />}
+          <label className="absolute bottom-6 right-6 w-14 h-14 bg-white rounded-full shadow-xl flex items-center justify-center text-primary cursor-pointer hover:scale-110 active:scale-95 transition-all">
+            <Camera size={24} />
             <input type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} />
           </label>
         </div>
 
-        {/* Floating Name & Stats */}
-        <div className="absolute -bottom-8 left-10 right-10 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="text-white drop-shadow-lg">
-            {editing ? (
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="text-4xl font-black border-b-2 border-primary outline-none bg-transparent"
-              />
-            ) : (
-              <h2 className="text-4xl font-black tracking-tight">{profile.name}, {profile.age}</h2>
-            )}
-            <div className="flex items-center gap-2 text-white/70 font-bold text-sm uppercase tracking-wider mt-1">
-              <MapPin size={16} />
-              <span>{profile.city || 'Ville non renseignée'}</span>
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <div className="bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-xl flex flex-col items-center min-w-[100px] border border-white/50">
-              <span className="text-xl font-black text-primary">{profile.galanterie_score || '5.0'}</span>
-              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Galanterie</span>
-            </div>
-            <div className="bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-xl flex flex-col items-center min-w-[100px] border border-white/50">
-              <span className="text-xl font-black text-amber-600">{profile.roses_count || 0}</span>
-              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Roses</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
-        {/* Left Column: Info & Bio */}
-        <div className="md:col-span-2 space-y-8">
-          <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('my_bio')}</h3>
-              <div className="flex gap-2">
-                {editing && (
-                  <button
-                    onClick={handleAiAssist}
-                    disabled={generating}
-                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-secondary bg-purple-50 px-4 py-2 rounded-xl hover:bg-purple-100 transition-colors"
-                  >
-                    <Sparkles size={12} />
-                    IA
-                  </button>
+        <div className="p-8 -mt-12 relative bg-white rounded-t-[3rem]">
+          <div className="flex justify-between items-start mb-6">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                {editing ? (
+                  <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="text-3xl font-black text-slate-900 border-b-2 border-primary outline-none bg-transparent"
+                  />
+                ) : (
+                  <h2 className="text-3xl font-black text-slate-900">{profile.name}, {profile.age}</h2>
                 )}
-                <button
-                  onClick={() => editing ? handleUpdateProfile() : setEditing(true)}
-                  disabled={loading}
-                  className={`p-3 rounded-xl transition-all ${
-                    editing ? 'bg-green-500 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:text-primary'
-                  }`}
-                >
-                  {editing ? <Save size={18} /> : <Edit3 size={18} />}
-                </button>
+                {profile.is_verified && <ShieldCheck size={24} className="text-blue-500 fill-blue-50" />}
+              </div>
+              <div className="flex items-center gap-2 text-slate-500 font-bold text-sm uppercase tracking-wider">
+                <MapPin size={16} />
+                <span>{profile.city || 'Ville non renseignée'}</span>
               </div>
             </div>
 
+            <button
+              onClick={() => editing ? handleUpdateProfile() : setEditing(true)}
+              disabled={loading}
+              className={`p-4 rounded-2xl shadow-lg transition-all ${
+                editing ? 'bg-green-500 text-white shadow-green-100' : 'bg-slate-50 text-slate-400'
+              }`}
+            >
+              {editing ? <Save size={20} /> : <Edit3 size={20} />}
+            </button>
+          </div>
+
+          {/* Section Bio */}
+          <div className="space-y-4 mb-8">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('my_bio')}</h3>
+              {editing && (
+                <button
+                  onClick={handleAiAssist}
+                  disabled={generating}
+                  className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-secondary bg-purple-50 px-4 py-2 rounded-full hover:bg-purple-100 transition-colors"
+                >
+                  {generating ? <div className="w-3 h-3 border-2 border-secondary/30 border-t-secondary rounded-full animate-spin"></div> : <Sparkles size={12} />}
+                  Aide IA
+                </button>
+              )}
+            </div>
             {editing ? (
               <textarea
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                rows={5}
-                className="w-full p-6 rounded-2xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-primary/10 font-medium text-slate-700 leading-relaxed text-lg"
+                rows={4}
+                className="w-full p-6 rounded-[2rem] bg-slate-50 border-none outline-none focus:ring-2 focus:ring-primary/10 font-medium text-slate-700 leading-relaxed"
                 placeholder="Décrivez votre élégance..."
               />
             ) : (
-              <p className="text-slate-600 font-medium leading-relaxed text-lg italic">
-                {profile.bio || "Aucune bio rédigée pour le moment. Cliquez sur l'icône éditer pour vous présenter."}
+              <p className="text-slate-600 font-medium leading-relaxed bg-slate-50/50 p-6 rounded-[2rem]">
+                {profile.bio || "Aucune bio rédigée pour le moment. Cliquez sur éditer pour vous présenter."}
               </p>
             )}
           </div>
 
-          {/* Invitation Card */}
-          <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white flex items-center justify-between group hover:scale-[1.01] transition-all cursor-pointer shadow-2xl shadow-slate-900/20"
+          {/* Statistiques Galanterie */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-rose-50 p-6 rounded-[2rem] text-center border border-rose-100">
+              <span className="block text-2xl font-black text-primary">{profile.galanterie_score || '5.0'}</span>
+              <span className="text-[10px] font-black text-rose-300 uppercase tracking-tighter">Score Galanterie</span>
+            </div>
+            <div className="bg-amber-50 p-6 rounded-[2rem] text-center border border-amber-100">
+              <span className="block text-2xl font-black text-amber-600">{profile.roses_count || 0}</span>
+              <span className="text-[10px] font-black text-amber-300 uppercase tracking-tighter">Roses Reçues</span>
+            </div>
+          </div>
+
+          {/* Invitation / Parrainage */}
+          <div className="mb-6 bg-slate-900 p-6 rounded-[2rem] text-white flex items-center justify-between group hover:scale-[1.02] transition-all cursor-pointer shadow-xl"
                onClick={() => {
                  const url = `https://galant.app/invite/${user.uid}`;
                  navigator.clipboard.writeText(url);
                  showAlert('Lien copié !', 'Partagez ce lien avec vos amis. Une Rose d\'Or vous sera offerte pour chaque inscription certifiée.');
                }}>
-            <div className="flex items-center gap-6">
-              <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center text-primary group-hover:rotate-12 transition-transform">
-                <Share2 size={32} />
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-primary">
+                <Share2 size={24} />
               </div>
               <div className="text-left">
-                <p className="text-lg font-black italic uppercase tracking-tighter leading-none mb-1">Inviter un Ami 🌹</p>
-                <p className="text-sm font-bold text-slate-400">Gagnez des Roses d'Or gratuitement</p>
+                <p className="text-sm font-black italic uppercase tracking-tighter leading-none">Inviter un Ami 🌹</p>
+                <p className="text-[10px] font-bold text-slate-400 mt-1">Gagnez des Roses d'Or gratuitement</p>
               </div>
             </div>
-            <div className="bg-white/10 p-3 rounded-full group-hover:bg-primary transition-colors">
-              <ChevronRight size={24} />
-            </div>
+            <ChevronRight className="text-slate-500 group-hover:text-white transition-colors" size={20} />
           </div>
-        </div>
 
-        {/* Right Column: Menu & Actions */}
-        <div className="space-y-6">
-          <div className="bg-white p-4 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col gap-2">
-
-            {/* Action Item: Passport */}
+          {/* Mode Voyage (Passport) */}
+          <div className="space-y-4 mb-10">
             <button
               onClick={() => setIsPassportOpen(true)}
-              className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-all text-left group"
+              className="w-full p-6 rounded-[2rem] bg-slate-900 text-white flex items-center justify-between group hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-slate-200"
             >
-              <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center group-hover:bg-amber-100 transition-colors">
-                <Plane size={24} />
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-amber-400">
+                  <Plane size={24} />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-black italic uppercase tracking-tighter leading-none">Mode Voyage 💎</p>
+                  <p className="text-[10px] font-bold text-slate-400 mt-1">
+                    {profile.passport_city ? `Actif : ${profile.passport_city}` : 'Changez de ville virtuellement'}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-black text-slate-900 uppercase tracking-tight">Mode Voyage</p>
-                <p className="text-[10px] font-bold text-slate-400">
-                  {profile.passport_city ? profile.passport_city : 'Changez de ville'}
-                </p>
-              </div>
-              <ChevronRight size={16} className="text-slate-200" />
+              <ChevronRight className="text-slate-500 group-hover:text-white transition-colors" size={20} />
             </button>
 
-            {/* Action Item: Invisible */}
+            {/* Mode Invisible */}
             <button
               onClick={handleToggleInvisible}
               disabled={isTogglingInvisible}
-              className={`flex items-center gap-4 p-4 rounded-2xl transition-all text-left group ${
-                profile.is_invisible ? 'bg-teal-50/50' : 'hover:bg-slate-50'
+              className={`w-full p-6 rounded-[2rem] border-2 transition-all flex items-center justify-between group active:scale-95 ${
+                profile.is_invisible
+                  ? 'bg-teal-50 border-teal-100'
+                  : 'bg-white border-slate-100 hover:border-teal-100 hover:bg-teal-50/30'
               }`}
             >
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
-                profile.is_invisible ? 'bg-teal-500 text-white shadow-lg shadow-teal-100' : 'bg-slate-50 text-slate-300 group-hover:bg-slate-100'
-              }`}>
-                {profile.is_invisible ? <EyeOff size={24} /> : <Eye size={24} />}
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                  profile.is_invisible ? 'bg-teal-500 text-white shadow-lg shadow-teal-100' : 'bg-slate-50 text-slate-400'
+                }`}>
+                  {profile.is_invisible ? <EyeOff size={24} /> : <Eye size={24} />}
+                </div>
+                <div className="text-left">
+                  <p className={`text-sm font-black italic uppercase tracking-tighter leading-none ${profile.is_invisible ? 'text-teal-900' : 'text-slate-900'}`}>Mode Invisible 🎭</p>
+                  <p className="text-[10px] font-bold text-slate-400 mt-1">
+                    {profile.is_invisible ? 'Vous êtes actuellement masqué' : 'Disponible avec le plan Privilège'}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className={`text-sm font-black uppercase tracking-tight ${profile.is_invisible ? 'text-teal-900' : 'text-slate-900'}`}>
-                  Mode Invisible
-                </p>
-                <p className="text-[10px] font-bold text-slate-400">
-                  {profile.is_invisible ? 'Actuellement masqué' : 'Devenir discret'}
-                </p>
+              <div className={`w-12 h-6 rounded-full relative transition-colors ${profile.is_invisible ? 'bg-teal-500' : 'bg-slate-200'}`}>
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${profile.is_invisible ? 'left-7' : 'left-1'}`}></div>
               </div>
-              <div className={`w-10 h-5 rounded-full relative transition-colors ${profile.is_invisible ? 'bg-teal-500' : 'bg-slate-200'}`}>
-                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${profile.is_invisible ? 'left-6' : 'left-1'}`}></div>
-              </div>
-            </button>
-
-            <div className="h-[1px] bg-slate-50 mx-4 my-2"></div>
-
-            {/* General Menu Items */}
-            <button className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-all text-left group">
-              <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center group-hover:bg-slate-100 transition-colors">
-                <Bell size={20} />
-              </div>
-              <p className="flex-1 text-sm font-black text-slate-700 uppercase tracking-tight">Notifications</p>
-            </button>
-
-            <button onClick={() => navigate('/premium')} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-all text-left group">
-              <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center group-hover:bg-amber-100 transition-colors">
-                <CreditCard size={20} />
-              </div>
-              <p className="flex-1 text-sm font-black text-slate-700 uppercase tracking-tight">Abonnement</p>
-            </button>
-
-            <button className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-all text-left group">
-              <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center group-hover:bg-slate-100 transition-colors">
-                <HelpCircle size={20} />
-              </div>
-              <p className="flex-1 text-sm font-black text-slate-700 uppercase tracking-tight">Aide</p>
             </button>
           </div>
 
-          <button
-            onClick={() => logout()}
-            className="w-full py-5 rounded-[2rem] border-2 border-slate-100 text-slate-300 font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-rose-50 hover:text-primary hover:border-primary/10 transition-all group"
-          >
-            <LogOut size={18} className="group-hover:-translate-x-1 transition-transform" />
-            {t('logout')}
-          </button>
+          {/* Actions du compte */}
+          <div className="space-y-3">
+            <button
+              onClick={() => logout()}
+              className="w-full py-5 rounded-2xl border-2 border-slate-100 text-slate-400 font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-slate-50 hover:text-red-500 transition-all"
+            >
+              <LogOut size={18} />
+              {t('logout')}
+            </button>
+          </div>
         </div>
       </div>
 

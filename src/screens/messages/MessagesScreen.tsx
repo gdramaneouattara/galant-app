@@ -7,8 +7,7 @@ import { useApp } from '../../state/AppContext';
 import { COLORS } from '../../data/mock';
 import { apiRequest } from '../../lib/api';
 import { db, COLLECTIONS } from '../../lib/firebase';
-import { ShieldCheck, Gem, ChevronRight, MessageSquare, Search, Sparkles } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { ShieldCheck, Gem, ChevronRight } from 'lucide-react-native';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -139,20 +138,11 @@ const MessagesScreen: React.FC = () => {
   useFocusEffect(useCallback(() => { void fetchAdminNotifications(); void fetchVenueChats(); }, [fetchAdminNotifications, fetchVenueChats, appResumeVersion]));
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: activeTheme === 'dark' ? colors.bg : '#F9F9FB' }]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: colors.text, fontFamily: 'PlayfairDisplay_900Black' }]}>
-            {t('messages')}
-          </Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
-            {t('messages_subtitle')}
-          </Text>
-        </View>
-
-        <View style={[styles.searchBar, { backgroundColor: colors.input, borderColor: colors.border }]}>
-          <Search size={18} color={colors.textMuted} />
-          <Text style={[styles.searchText, { color: colors.textMuted }]}>{t('search_conversations') || 'Rechercher...'}</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('messages')}</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>{t('messages_subtitle')}</Text>
         </View>
 
         {showAdminBox && (
@@ -178,27 +168,7 @@ const MessagesScreen: React.FC = () => {
 
         <Text style={[styles.title, { color: colors.text }]}>{t('matches')}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.matchesRow}>
-          {recentMatches.length === 0 && (
-            <Pressable
-              onPress={() => navigation.navigate('Discover' as any)}
-              style={styles.emptyMatchesContainer}
-            >
-              <LinearGradient
-                colors={['#fff', '#fef2f2']}
-                style={[styles.emptyMatchCard, { borderColor: colors.border }]}
-              >
-                <View style={styles.emptyMatchCircle}>
-                  <Sparkles size={24} color="#de6464" />
-                </View>
-                <Text style={[styles.emptyMatchText, { color: colors.text }]}>
-                  {t('no_matches_yet') || 'Swippez pour obtenir vos premiers matches !'}
-                </Text>
-                <View style={styles.emptyMatchButton}>
-                  <Text style={styles.emptyMatchButtonText}>{t('discover_profiles') || 'Découvrir'}</Text>
-                </View>
-              </LinearGradient>
-            </Pressable>
-          )}
+          {recentMatches.length === 0 && <View style={[styles.empty, { backgroundColor: colors.input, borderColor: colors.border }]}><Text style={[styles.emptyText, { color: colors.textMuted }]}>Swipe !</Text></View>}
           {recentMatches.map(({ match, user }) => (
             <Pressable key={match.id} onPress={() => navigation.navigate('Chat', { userId: user.id, matchId: match.id })} style={[styles.matchItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Image source={{ uri: user.photos[0] }} style={styles.matchAvatar} />
@@ -242,16 +212,7 @@ const MessagesScreen: React.FC = () => {
               </View>
             </Pressable>
           ))}
-          {conversations.length === 0 && (
-            <View style={styles.emptyConversations}>
-              <View style={styles.emptyConvIconContainer}>
-                <MessageSquare size={48} color={colors.border} strokeWidth={1.5} />
-              </View>
-              <Text style={[styles.emptyConvText, { color: colors.textMuted }]}>
-                {t('no_conversations') || 'Aucune conversation pour le moment.'}
-              </Text>
-            </View>
-          )}
+          {conversations.length === 0 && <Text style={[styles.emptyList, { color: colors.textMuted }]}>...</Text>}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -261,20 +222,9 @@ const MessagesScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   content: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 24, gap: 14 },
-  header: { paddingHorizontal: 2, marginBottom: 8 },
-  headerTitle: { fontSize: 34, fontWeight: '900', letterSpacing: -0.5 },
-  headerSubtitle: { marginTop: 2, fontSize: 15, fontWeight: '500', opacity: 0.7 },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    gap: 10,
-    marginBottom: 6,
-  },
-  searchText: { fontSize: 15, fontWeight: '500' },
+  header: { paddingHorizontal: 2, marginBottom: 2 },
+  headerTitle: { fontSize: 31, fontWeight: '900' },
+  headerSubtitle: { marginTop: 4, fontSize: 14, fontWeight: '500' },
   adminBox: { borderRadius: 18, padding: 14, gap: 10, borderWidth: 1 },
   adminBoxHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   adminBoxTitle: { fontSize: 15, fontWeight: '800' },
@@ -289,89 +239,30 @@ const styles = StyleSheet.create({
   adminItemTitle: { fontWeight: '700', fontSize: 13 },
   adminItemMessage: { fontSize: 12 },
   adminItemDate: { fontSize: 11 },
-  title: { fontSize: 18, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase', opacity: 0.8 },
+  title: { fontSize: 20, fontWeight: '800' },
   matchesRow: { gap: 14, paddingVertical: 6 },
-  matchItem: { alignItems: 'center', gap: 7, borderRadius: 18, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
-  matchAvatar: { width: 68, height: 68, borderRadius: 34, borderWidth: 2, borderColor: '#de6464' },
-  matchName: { fontSize: 13, fontWeight: '700' },
+  matchItem: { alignItems: 'center', gap: 7, borderRadius: 18, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
+  matchAvatar: { width: 62, height: 62, borderRadius: 31, borderWidth: 2, borderColor: '#df6767' },
+  matchName: { fontSize: 12, fontWeight: '700' },
   matchNameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  emptyMatchesContainer: { width: 300, marginRight: 18 },
-  emptyMatchCard: {
-    padding: 20,
-    borderRadius: 24,
-    borderWidth: 1,
-    alignItems: 'center',
-    gap: 12,
-    borderStyle: 'dashed',
-  },
-  emptyMatchCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#de6464',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  emptyMatchText: {
-    textAlign: 'center',
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 20,
-    paddingHorizontal: 10,
-  },
-  emptyMatchButton: {
-    backgroundColor: '#de6464',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 99,
-  },
-  emptyMatchButtonText: {
-    color: '#fff',
-    fontWeight: '800',
-    fontSize: 12,
-    textTransform: 'uppercase',
-  },
-  subtitle: { fontSize: 18, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase', opacity: 0.8, marginTop: 8 },
-  list: { gap: 12 },
-  row: { paddingHorizontal: 16, paddingVertical: 14, borderRadius: 20, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 10, elevation: 1 },
-  rowAvatar: { width: 60, height: 60, borderRadius: 20 },
+  empty: { paddingHorizontal: 16, paddingVertical: 14, borderRadius: 14, borderWidth: 1 },
+  emptyText: { fontWeight: '600' },
+  subtitle: { fontSize: 20, fontWeight: '800' },
+  list: { gap: 10 },
+  row: { paddingHorizontal: 12, paddingVertical: 11, borderRadius: 16, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  rowAvatar: { width: 56, height: 56, borderRadius: 18 },
   venueRow: { backgroundColor: '#fff1f2', borderColor: '#fecdd3' },
   venueBadge: { backgroundColor: '#e11d48', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
   venueBadgeText: { color: '#fff', fontSize: 9, fontWeight: '900', textTransform: 'uppercase' },
-  rowText: { flex: 1, gap: 4 },
-  rowName: { fontWeight: '800', fontSize: 17, letterSpacing: -0.3 },
+  rowText: { flex: 1, gap: 5 },
+  rowName: { fontWeight: '800', fontSize: 16 },
   rowNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  rowMessage: { fontSize: 14, opacity: 0.8 },
+  rowMessage: { fontSize: 13 },
   rowMeta: { alignItems: 'flex-end', gap: 8 },
-  rowTime: { fontSize: 11, fontWeight: '600', opacity: 0.6 },
-  badge: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: '#de6464', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  badgeText: { color: '#fff', fontSize: 11, fontWeight: '800' },
-  emptyConversations: {
-    paddingVertical: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 16,
-  },
-  emptyConvIconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  emptyConvText: {
-    fontSize: 15,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
+  rowTime: { fontSize: 11, fontWeight: '700' },
+  badge: { minWidth: 20, height: 20, borderRadius: 10, backgroundColor: '#de6464', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
+  badgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  emptyList: { textAlign: 'center', paddingVertical: 18, fontWeight: '600' },
 });
 
 export default MessagesScreen;
