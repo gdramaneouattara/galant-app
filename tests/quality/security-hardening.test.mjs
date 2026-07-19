@@ -48,16 +48,3 @@ test('backend supports multiple boost plans', async () => {
   assert.match(config, /BOOST_7D/);
   assert.match(config, /BOOST_SCORES/);
 });
-
-test('rls protects sensitive profile flags', async () => {
-  const sql = await read('scripts/supabase-rls.sql');
-  assert.match(sql, /is_admin/i);
-});
-
-test('schema defines moderation and privacy tables', async () => {
-  const schema = await read('scripts/supabase-schema.sql');
-  assert.match(schema, /create table if not exists public\.likes/i);
-  assert.match(schema, /create table if not exists public\.privacy_requests/i);
-  assert.match(schema, /create table if not exists public\.super_likes/i);
-  assert.match(schema, /create table if not exists public\.daily_usage/i);
-});

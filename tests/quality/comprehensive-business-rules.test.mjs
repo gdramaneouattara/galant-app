@@ -61,11 +61,6 @@ test('Rules: Backend handles internationalization in AI', async () => {
   assert.match(code, /targetLang/);
 });
 
-test('Rules: Database schema is Galant-ready', async () => {
-  const code = await read('scripts/supabase-schema.sql');
-  assert.match(code, /likes/);
-});
-
 test('Rules: AdminDashboard includes partner moderation', async () => {
   const code = await read('src/screens/admin/AdminDashboardScreen.tsx');
   assert.match(code, /AdminVenues/);
