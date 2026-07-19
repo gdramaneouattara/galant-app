@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { apiRequest } from '@shared/lib/api';
-import { Calendar, MapPin, Zap, ChevronRight, Clock, Star, Users, CheckCircle, Sparkles, Filter, Ticket, Share2 } from 'lucide-react';
+import { Calendar, MapPin, Zap, ChevronRight, Clock, Star, Users, CheckCircle, Sparkles, Filter, Ticket, Share2, Trophy } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { showAlert } from '@shared/lib/ui-bridge';
 

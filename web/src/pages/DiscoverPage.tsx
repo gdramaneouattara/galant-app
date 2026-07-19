@@ -95,9 +95,6 @@ const DiscoverPage: React.FC = () => {
               src="/pwa-192x192.png"
               alt="Galant"
               className="w-16 h-16 object-contain relative z-10"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "https://galant.app/pwa-192x192.png";
-              }}
             />
           </div>
 
