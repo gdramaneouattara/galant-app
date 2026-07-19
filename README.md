@@ -1,110 +1,111 @@
-# Galant — React Native (Expo)
+# 🌹 Galant - L'Élégance à chaque rencontre
 
-Cette base a été convertie du prototype web vers une app mobile React Native / Expo, prête pour pré‑prod.
+![Galant Banner](web/public/pwa-192x192.png)
 
-## Prérequis
+Galant est une plateforme de rencontre premium conçue pour offrir une expérience utilisateur raffinée et sécurisée. Le projet est structuré en monorepo comprenant une application mobile (Expo), une application web (Vite/React) et un backend Node.js.
 
-- Node.js 18+
-- Expo CLI (via `npx expo`)
-- Un simulateur iOS/Android ou un device physique
+## 🚀 Fonctionnalités Clés
 
-## Installation & lancement
+- **Système de Matchmaking** : Algorithme de score basé sur la galanterie et les intérêts.
+- **Stories Galant** : Partagez des moments éphémères en photo ou vidéo (style Instagram).
+- **Guide Privilège** : Sélection exclusive des meilleurs lieux (Restaurants, Lounges, Hôtels).
+- **Agenda VIP** : Calendrier des soirées et événements de prestige.
+- **Abonnement Premium** : Mode invisible, badges certifiés, et outils IA rédactionnels.
+- **Paiements Sécurisés** : Intégration complète avec **Paystack** (Mobile Money / Cartes).
+- **Vérification KYC** : Processus de certification d'identité pour garantir l'élite de la communauté.
 
-1) Installer les dépendances :
-   `npm install`
-2) Démarrer Expo :
-   `npm run start`
-   - En mode offline (évite les appels réseau de validation) :
-     `npm run start:offline`
-3) Lancer sur un device :
-   - Android : `npm run android`
-   - iOS : `npm run ios`
+## 🛠️ Stack Technique
 
-## Variables d'environnement (app mobile)
+- **Mobile** : React Native (Expo SDK 52), TypeScript, Lucide Icons.
+- **Web** : React 18, Vite, Tailwind CSS, Lucide Icons.
+- **Backend** : Node.js, Express, Firebase Admin SDK.
+- **Services Cloud** :
+  - **Firebase Auth** : Gestion des utilisateurs.
+  - **Firestore** : Base de données temps réel.
+  - **Firebase Storage** : Hébergement des médias.
+  - **Google Cloud Run** : Hébergement du backend.
 
-Crée un `.env.local` à la racine :
+## 📁 Structure du Projet
 
+```text
+galant-app/
+├── android/            # Configuration native Android
+├── src/                # Code source Application Mobile (React Native)
+│   ├── components/     # Composants UI partagés
+│   ├── screens/        # Écrans principaux
+│   ├── hooks/          # Logique réutilisable (Custom Hooks)
+│   └── lib/            # Clients API et Firebase
+├── web/                # Code source Application Web (Vite/React)
+│   ├── src/pages/      # Pages de l'application Web
+│   └── src/context/    # Gestion de l'Auth et état Global
+├── server/             # Backend Node.js (Paystack & Admin)
+└── scripts/            # Utilitaires de maintenance et setup
 ```
-EXPO_PUBLIC_SUPABASE_URL=https://votre-projet.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=VOTRE_CLE_ANON
-EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:8787
+
+## ⚙️ Installation et Configuration
+
+### 1. Prérequis
+- Node.js 20+
+- Firebase Project (Plan Blaze recommandé pour Cloud Run)
+- Compte Paystack
+
+### 2. Configuration des environnements
+Créez les fichiers suivants (ignorés par Git) :
+
+#### Mobile (`./.env.local`)
+```env
+EXPO_PUBLIC_API_BASE_URL=http://localhost:5000
+EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=VOTRE_CLE_SHA1_RESTREINTE
+EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_test_...
 ```
 
-## Backend Paystack / KYC (pré‑prod)
-
-Un serveur Node est fourni dans `server/` pour :
-- Initialiser le paiement Paystack
-- Vérifier le paiement et activer le Premium
-- Gérer les paiements pour les boosts de profil
-- Démarrer le flux KYC (fournisseur configurable)
-
-### Setup
-
+#### Web (`./web/.env.local`)
+```env
+VITE_API_BASE_URL=http://localhost:5000
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_PROJECT_ID=...
 ```
+
+#### Serveur (`./server/.env`)
+```env
+PAYSTACK_SECRET_KEY=sk_test_...
+FIREBASE_SERVICE_ACCOUNT={"type": "service_account", ...}
+```
+
+### 3. Lancement en développement
+
+**Lancer le backend :**
+```bash
 cd server
 npm install
-cp .env.example .env
 npm run dev
 ```
 
-### Variables d'environnement (server)
-
-À renseigner dans `server/.env` :
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `PAYSTACK_SECRET_KEY`
-- `PAYSTACK_CURRENCY` (ex: XOF)
-- `PAYSTACK_CALLBACK_URL` (optionnel)
-- `SIMULATE_PAYMENTS=true` (optionnel: désactive Paystack et simule le paiement)
-- `PLAN_*_AMOUNT` (montants en plus petite unité)
-- `BOOST_*_AMOUNT` (montants en plus petite unité)
-- `KYC_PROVIDER` + `KYC_VERIFICATION_URL` (si fournisseur manuel)
-- `EXPO_PUSH_ACCESS_TOKEN` (optionnel, recommandé pour push Expo)
-- `CORS_ALLOW_ORIGINS` (optionnel, ex: `https://app.galant.com,https://admin.galant.com`)
-- `FORCE_HTTPS=true` (optionnel, à activer derrière un reverse proxy TLS)
-
-## Structure
-
-- `App.tsx` : entrée principale (provider + navigation)
-- `src/navigation/` : navigation stack + tabs
-- `src/screens/` : écrans (auth, home, chat, profile, premium, verify, boost)
-- `src/state/` : état global
-- `src/lib/` : supabase + API
-- `scripts/` : SQL + scripts supabase
-- `server/` : backend Paystack / KYC
-
-## Supabase (Cloud)
-
-### Initialiser le schéma + RLS
-
-Dans **SQL Editor** :
-1) Exécute `scripts/supabase-schema.sql`
-2) Exécute `scripts/supabase-rls-rest-only.sql` avec le rôle **postgres**
-3) Exécute `scripts/supabase-rls-storage-only.sql` avec le rôle **supabase_storage_admin**
-
-### Bucket photos
-
-Créer un bucket `photos` et le marquer **Public** dans Storage.
-
-### Buckets privés requis
-
-- `kyc-docs` (privé) : justificatifs KYC (recto/verso/selfie)
-- `chat-media` (privé) : photos partagées en messagerie
-
-Tu peux les créer avec :
-
+**Lancer le web :**
 ```bash
-npm run create:bucket:kyc
-npm run create:bucket:chat
+cd web
+npm install
+npm run dev
 ```
 
-## Android SDK (Windows)
+**Lancer le mobile :**
+```bash
+npm install
+npx expo start
+```
 
-Si `adb` est introuvable ou si `ANDROID_HOME` n'est pas défini :
+## 🔒 Sécurité et CI/CD
 
-`npm run setup:android`
+- **GitHub Actions** : Validation automatique du code (linting, typecheck) à chaque push sur `main` et `staging`.
+- **Protection des Secrets** : Aucun fichier `.env` ou `service-account.json` n'est commité. Les clés sont gérées via les *Repository Secrets* de GitHub.
+- **Staging** : Déploiement automatique sur l'environnement de test avant toute mise en production.
 
-## Notes
+## 🤝 Contribution
 
-- Les policies RLS sont aussi disponibles dans `scripts/supabase-rls.sql` (version complète).
-- Les données sont alimentées par Supabase (plus de données mock).
+1. Créez une branche de fonctionnalité : `git checkout -b feat/nom-ma-fonction`
+2. Testez vos changements localement : `npm run typecheck`
+3. Fusionnez dans `staging` pour validation.
+4. Une fois validé, fusionnez dans `main`.
+
+---
+© 2026 Galant App. Tous droits réservés.
