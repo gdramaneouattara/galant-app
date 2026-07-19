@@ -251,7 +251,7 @@ const getBroadcastAudience = async (req, res) => {
 
 const getUsers = async (req, res) => {
   try {
-    const { search, gender, isPremium, isVerified, isSuspended } = req.query;
+    const { search, gender, is_premium, is_verified, isSuspended } = req.query;
     let query = db.collection('profiles');
 
     // On récupère tout et on filtre en mémoire pour plus de flexibilité (petite base au début)
@@ -269,8 +269,8 @@ const getUsers = async (req, res) => {
     }
 
     if (gender && gender !== 'ALL') users = users.filter(u => u.gender === gender);
-    if (isPremium === 'true') users = users.filter(u => !!u.is_premium);
-    if (isVerified === 'true') users = users.filter(u => !!u.is_verified);
+    if (is_premium === 'true') users = users.filter(u => !!u.is_premium);
+    if (is_verified === 'true') users = users.filter(u => !!u.is_verified);
     if (isSuspended === 'true') users = users.filter(u => !!u.suspended_at);
 
     res.json({ users: users.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)) });
@@ -297,5 +297,6 @@ const getCampaignHistory = async (req, res) => {
 module.exports = {
   getStats, getPendingVenues, approveVenue, rejectVenue, reconcileProfiles,
   getPrivacyRequests, resolvePrivacyRequest, getPhotoReviews, reviewPhoto,
-  getKycRequests, reviewKyc, getBroadcastAudience, broadcastMessage, getCampaignHistory
+  getKycRequests, reviewKyc, getBroadcastAudience, broadcastMessage, getCampaignHistory,
+  getUsers, toggleUserStatus
 };

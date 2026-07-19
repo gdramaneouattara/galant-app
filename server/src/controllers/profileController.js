@@ -1,4 +1,4 @@
-const { supabase } = require('../config/supabase');
+const { db } = require('../config/firebase');
 const { isTrialActive } = require('../services/accessService');
 const { getDailyUsage, incrementUsage } = require('../services/usageService');
 const { QUOTAS, BOOST_SCORES } = require('../config/constants');
@@ -19,9 +19,13 @@ const updateProfile = async (req, res) => {
     if (passport_longitude !== undefined) updates.passport_longitude = is_passport_active ? passport_longitude : null;
   }
 
-  const { data, error } = await supabase.from('profiles').update(updates).eq('id', userId).select().single();
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ success: true, profile: data });
+  try {
+    await db.collection('profiles').doc(userId).update(updates);
+    const updatedDoc = await db.collection('profiles').doc(userId).get();
+    res.json({ success: true, profile: { id: updatedDoc.id, ...updatedDoc.data() } });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 const boostProfile = async (req, res) => {
@@ -35,35 +39,73 @@ const boostProfile = async (req, res) => {
   }
 
   if (!canBoost && isTrialActive(me)) {
-    const { data } = await supabase.from('daily_usage').select('usage_seconds').eq('user_id', me.id).eq('action_type', 'BOOST');
-    const totalTrialUsage = (data || []).reduce((acc, curr) => acc + (curr.usage_seconds || 0), 0);
-    if (totalTrialUsage < QUOTAS.TRIAL_BOOST_SECONDS) canBoost = true;
+    try {
+      const usageSnap = await db.collection('daily_usage')
+        .where('user_id', '==', me.id)
+        .where('action_type', '==', 'BOOST')
+        .get();
+      const totalTrialUsage = usageSnap.docs.reduce((acc, curr) => acc + (curr.data().usage_seconds || 0), 0);
+      if (totalTrialUsage < QUOTAS.TRIAL_BOOST_SECONDS) canBoost = true;
+    } catch (e) {}
   }
 
   if (!canBoost) return res.status(403).json({ error: 'no_free_boost_available', message: 'Votre heure de boost gratuite est épuisée.' });
 
   const boostedUntil = new Date(Date.now() + duration * 1000).toISOString();
-  const { error } = await supabase.from('profiles').update({ boosted_until: boostedUntil, boost_score: BOOST_SCORES.FREE }).eq('id', me.id);
-  if (error) return res.status(500).json({ error: error.message });
-
-  await incrementUsage(me.id, 'BOOST', duration);
-  res.json({ boosted_until: boostedUntil });
+  try {
+    await db.collection('profiles').doc(me.id).update({ boosted_until: boostedUntil, boost_score: BOOST_SCORES.FREE });
+    await incrementUsage(me.id, 'BOOST', duration);
+    res.json({ boosted_until: boostedUntil });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 const completePartnerProfile = async (req, res) => {
   const { venueName, venueType, city, address, description, benefit, latitude, longitude } = req.body;
   const userId = req.user.id;
 
-  await supabase.from('profiles').update({ name: venueName, is_partner: true, onboarding_completed: true }).eq('id', userId);
-  await supabase.from('venues').insert({ owner_id: userId, name: venueName, venue_type: venueType, city: city, address: address, description: description, benefit_description: benefit, latitude: latitude || null, longitude: longitude || null, status: 'APPROVED' });
+  try {
+    const batch = db.batch();
 
-  const now = new Date();
-  const end = new Date(now);
-  end.setDate(end.getDate() + 30);
+    const profileRef = db.collection('profiles').doc(userId);
+    batch.update(profileRef, { name: venueName, is_partner: true, onboarding_completed: true });
 
-  await supabase.from('subscriptions').insert({ user_id: userId, plan_id: 'PRESTIGE', status: 'active', current_period_start: now.toISOString(), current_period_end: end.toISOString(), payment_method: 'TRIAL' });
+    const venueRef = db.collection('venues').doc();
+    batch.set(venueRef, {
+      owner_id: userId,
+      name: venueName,
+      venue_type: venueType,
+      city,
+      address,
+      description,
+      benefit_description: benefit,
+      latitude: latitude || null,
+      longitude: longitude || null,
+      status: 'APPROVED',
+      created_at: new Date().toISOString()
+    });
 
-  res.json({ success: true });
+    const now = new Date();
+    const end = new Date(now);
+    end.setDate(end.getDate() + 30);
+
+    const subRef = db.collection('subscriptions').doc();
+    batch.set(subRef, {
+      user_id: userId,
+      plan_id: 'PRESTIGE',
+      status: 'active',
+      current_period_start: now.toISOString(),
+      current_period_end: end.toISOString(),
+      payment_method: 'TRIAL',
+      created_at: now.toISOString()
+    });
+
+    await batch.commit();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 module.exports = { updateProfile, boostProfile, completePartnerProfile };

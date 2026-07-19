@@ -1,46 +1,69 @@
-const { supabase } = require('../config/supabase');
+const { db } = require('../config/firebase');
 
 const getNotifications = async (req, res) => {
   const limit = Math.max(1, Math.min(100, Number(req.query.limit || 20)));
-  const { data, error } = await supabase
-    .from('events')
-    .select('id, event_type, event_name, metadata, created_at')
-    .in('event_type', ['ADMIN_NOTIFICATION', 'STORY_NOTIFICATION'])
-    .eq('user_id', req.user.id)
-    .order('created_at', { ascending: false })
-    .limit(limit);
+  try {
+    const snapshot = await db.collection('events')
+      .where('user_id', '==', req.user.id)
+      .where('event_type', 'in', ['ADMIN_NOTIFICATION', 'STORY_NOTIFICATION'])
+      .orderBy('created_at', 'desc')
+      .limit(limit)
+      .get();
 
-  if (error) return res.status(500).json({ error: error.message });
+    const notifications = snapshot.docs.map((doc) => {
+      const item = doc.data();
+      return {
+        id: doc.id,
+        ...item,
+        is_read: item.metadata?.is_read === true,
+      };
+    });
 
-  const notifications = (data || []).map((item) => ({
-    ...item,
-    is_read: item.metadata?.is_read === true,
-  }));
-  const unreadCount = notifications.filter((item) => !item.is_read).length;
-  res.json({ notifications, unreadCount });
+    const unreadCount = notifications.filter((item) => !item.is_read).length;
+    res.json({ notifications, unreadCount });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 const markAsRead = async (req, res) => {
   const id = req.params.id;
-  const { data: item } = await supabase.from('events').select('id, user_id, metadata').eq('id', id).maybeSingle();
-  if (!item || item.user_id !== req.user.id) return res.status(404).json({ error: 'not_found' });
+  try {
+    const ref = db.collection('events').doc(id);
+    const doc = await ref.get();
+    if (!doc.exists || doc.data().user_id !== req.user.id) return res.status(404).json({ error: 'not_found' });
 
-  const nextMetadata = { ...(item.metadata || {}), is_read: true, read_at: new Date().toISOString() };
-  await supabase.from('events').update({ metadata: nextMetadata }).eq('id', id);
-  res.json({ success: true });
+    const item = doc.data();
+    const nextMetadata = { ...(item.metadata || {}), is_read: true, read_at: new Date().toISOString() };
+    await ref.update({ metadata: nextMetadata });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 const markAllAsRead = async (req, res) => {
-  const { data, error } = await supabase.from('events').select('id, metadata').in('event_type', ['ADMIN_NOTIFICATION', 'STORY_NOTIFICATION']).eq('user_id', req.user.id);
-  if (error) return res.status(500).json({ error: error.message });
+  try {
+    const snapshot = await db.collection('events')
+      .where('user_id', '==', req.user.id)
+      .where('event_type', 'in', ['ADMIN_NOTIFICATION', 'STORY_NOTIFICATION'])
+      .get();
 
-  const updates = (data || []).map((item) => (
-    supabase.from('events').update({
-      metadata: { ...(item.metadata || {}), is_read: true, read_at: new Date().toISOString() }
-    }).eq('id', item.id)
-  ));
-  if (updates.length > 0) await Promise.all(updates);
-  res.json({ success: true });
+    if (snapshot.empty) return res.json({ success: true });
+
+    const batch = db.batch();
+    snapshot.docs.forEach((doc) => {
+      const item = doc.data();
+      batch.update(doc.ref, {
+        metadata: { ...(item.metadata || {}), is_read: true, read_at: new Date().toISOString() }
+      });
+    });
+
+    await batch.commit();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 module.exports = { getNotifications, markAsRead, markAllAsRead };

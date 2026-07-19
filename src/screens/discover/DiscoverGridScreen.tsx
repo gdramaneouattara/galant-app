@@ -69,7 +69,7 @@ const DiscoverGridScreen: React.FC = () => {
           {profiles.map((profile) => (
             <Pressable key={profile.id} style={[styles.card, { backgroundColor: colors.card }, profile.current_user && styles.myCard]} onPress={() => profile.current_user ? Alert.alert(t('your_position'), t('boost_grid_desc')) : navigation.navigate('ProfileDetail', { profile })}>
               <Image source={{ uri: profile.photos?.[0] || 'https://placehold.co/300x400' }} style={styles.photo} />
-              <View style={styles.badgesOverlay}><ProfileBadges user={{ ...profile, isVerified: profile.is_verified } as any} /></View>
+              <View style={styles.badgesOverlay}><ProfileBadges user={profile as any} /></View>
               {profile.super_liked_me && <View style={styles.superLikeBadge}><Star size={12} color="#fff" fill="#fff" /></View>}
               {profile.boosted_until && new Date(profile.boosted_until) > new Date() && <View style={styles.boostIcon}><Rocket size={12} color="#fff" /></View>}
               {profile.current_user && <View style={styles.meBadge}><Text style={styles.meBadgeText}>{t('you')}</Text></View>}

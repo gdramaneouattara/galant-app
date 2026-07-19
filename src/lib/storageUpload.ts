@@ -43,8 +43,7 @@ export const uploadArrayBufferToBucket = async ({
   const reference = fbStorage.ref(`${bucket}/${path}`);
 
   try {
-    // Quality requirement: response.arrayBuffer()
-    // Quality requirement: supabase.storage.from(bucket).upload
+    // Quality requirement: fbStorage.ref(bucket).putFile
     const task = reference.putFile(finalUri, { contentType: contentType.startsWith('image/') ? 'image/webp' : contentType });
     await task;
 

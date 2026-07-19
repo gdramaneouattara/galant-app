@@ -51,7 +51,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         <Text style={[styles.name, { color: colors.text }]}>
           {currentUser.name}, {currentUser.age}
         </Text>
-        {currentUser.isVerified && (
+        {currentUser.is_verified && (
           <View style={styles.verifiedBadge}>
             <ShieldCheck size={14} color="#2563eb" />
             <Text style={styles.verifiedBadgeText}>{t('active')}</Text>
@@ -79,16 +79,16 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         </View>
         <View style={[
           styles.badge,
-          currentUser.isPremium ? styles.badgePremium : styles.badgeFree,
-          !currentUser.isPremium && { backgroundColor: activeTheme === 'dark' ? '#1e293b' : '#e2e8f0' }
+          currentUser.is_premium ? styles.badgePremium : styles.badgeFree,
+          !currentUser.is_premium && { backgroundColor: activeTheme === 'dark' ? '#1e293b' : '#e2e8f0' }
         ]}>
-          {currentUser.isPremium && <Crown size={14} color="#d97706" />}
+          {currentUser.is_premium && <Crown size={14} color="#d97706" />}
           <Text style={[
             styles.badgeText,
-            currentUser.isPremium ? styles.badgeTextPremium : styles.badgeTextFree,
-            !currentUser.isPremium && { color: colors.textMuted }
+            currentUser.is_premium ? styles.badgeTextPremium : styles.badgeTextFree,
+            !currentUser.is_premium && { color: colors.textMuted }
           ]}>
-            {currentUser.isPremium ? t('premium_member') : t('free_model')}
+            {currentUser.is_premium ? t('premium_member') : t('free_model')}
           </Text>
         </View>
         {isBoosted && (

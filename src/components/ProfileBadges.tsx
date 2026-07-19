@@ -4,9 +4,7 @@ import { ShieldCheck, Flame, Crown, Rocket, Gem, Star } from 'lucide-react-nativ
 import { useApp } from '../state/AppContext';
 
 type ProfileBadgeUser = {
-  isVerified?: boolean;
   is_verified?: boolean;
-  isPremium?: boolean;
   is_premium?: boolean;
   is_vip?: boolean;
   boosted_until?: string | null;
@@ -24,9 +22,9 @@ interface ProfileBadgesProps {
 
 const ProfileBadges: React.FC<ProfileBadgesProps> = ({ user, containerStyle, showLabels = false }) => {
   const { currentUser } = useApp();
-  const isVerified = user.isVerified ?? user.is_verified ?? false;
-  const isPremium = user.isPremium ?? user.is_premium ?? false;
-  const isVip = user.is_vip ?? false;
+  const is_verified = user.is_verified ?? false;
+  const is_premium = user.is_premium ?? false;
+  const is_vip = user.is_vip ?? false;
   const likesCount = user.likes_count || 0;
   const isRecentlyActive = user.last_active_at
     ? (new Date().getTime() - new Date(user.last_active_at).getTime()) < 24 * 60 * 60 * 1000
@@ -44,7 +42,7 @@ const ProfileBadges: React.FC<ProfileBadgesProps> = ({ user, containerStyle, sho
   // "Courtoisie" Badge logic: Visible to all women or Premium men
   const canSeeCourtoisie =
     String(currentUser?.gender || '').toUpperCase() === 'FEMALE' ||
-    currentUser?.isPremium;
+    currentUser?.is_premium;
 
   return (
     <View style={[styles.container, containerStyle]}>
@@ -62,14 +60,14 @@ const ProfileBadges: React.FC<ProfileBadgesProps> = ({ user, containerStyle, sho
         </View>
       )}
 
-      {isVip && (
+      {is_vip && (
         <View style={[styles.badge, styles.vipBadge]}>
           <Gem size={14} color="#fff" />
           {showLabels && <Text style={styles.badgeText}>VIP</Text>}
         </View>
       )}
 
-      {isVerified && (
+      {is_verified && (
         <View style={[styles.badge, styles.verifiedBadge]}>
           <ShieldCheck size={14} color="#fff" />
           {showLabels && <Text style={styles.badgeText}>Verifie</Text>}
@@ -90,7 +88,7 @@ const ProfileBadges: React.FC<ProfileBadgesProps> = ({ user, containerStyle, sho
         </View>
       )}
 
-      {isPremium && !isVip && (
+      {is_premium && !is_vip && (
         <View style={[styles.badge, styles.premiumBadge]}>
           <Crown size={14} color="#fff" />
           {showLabels && <Text style={styles.badgeText}>Premium</Text>}

@@ -40,23 +40,23 @@ const UserListScreen: React.FC = () => {
 
   useEffect(() => { void fetchUsers(); }, []);
 
-  const isPremium = (u: AdminUser) => u.is_premium === true || u.isPremium === true;
-  const isVerified = (u: AdminUser) => u.is_verified === true || u.isVerified === true;
+  const is_premium = (u: AdminUser) => u.is_premium === true;
+  const is_verified = (u: AdminUser) => u.is_verified === true;
   const isAdmin = (u: AdminUser) => u.is_admin === true;
   const isSuspended = (u: AdminUser) => !!u.suspended_at;
 
   const filterCounts = useMemo(() => ({
     ALL: users.length,
     SUSPENDED: users.filter(isSuspended).length,
-    PREMIUM: users.filter(isPremium).length,
-    UNVERIFIED: users.filter(u => !isVerified(u)).length,
+    PREMIUM: users.filter(is_premium).length,
+    UNVERIFIED: users.filter(u => !is_verified(u)).length,
     ADMINS: users.filter(isAdmin).length,
   }), [users]);
 
   const filteredUsers = useMemo(() => {
     const q = query.trim().toLowerCase();
     return users.filter((u) => {
-      const pass = activeFilter === 'ALL' || (activeFilter === 'SUSPENDED' && isSuspended(u)) || (activeFilter === 'PREMIUM' && isPremium(u)) || (activeFilter === 'UNVERIFIED' && !isVerified(u)) || (activeFilter === 'ADMINS' && isAdmin(u));
+      const pass = activeFilter === 'ALL' || (activeFilter === 'SUSPENDED' && isSuspended(u)) || (activeFilter === 'PREMIUM' && is_premium(u)) || (activeFilter === 'UNVERIFIED' && !is_verified(u)) || (activeFilter === 'ADMINS' && isAdmin(u));
       if (!pass) return false;
       if (!q) return true;
       return `${u.name || ''} ${u.email || ''} ${u.phone || ''} ${u.id}`.toLowerCase().includes(q);

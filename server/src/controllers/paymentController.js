@@ -1,5 +1,4 @@
 const axios = require('axios');
-const { supabase } = require('../config/supabase');
 const { getExpectedAmountForPurchase, extractPaystackError, shouldFallbackFromMobileMoney } = require('../utils/paymentHelpers');
 const {
   applyPurchasedEntitlement,

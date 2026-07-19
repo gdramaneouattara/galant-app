@@ -153,7 +153,7 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
         </Pressable>
       )}
 
-      {!currentUser.isVerified && (
+      {!currentUser.is_verified && (
         <Pressable style={[styles.row, styles.rowVerify, { backgroundColor: activeTheme === 'dark' ? '#172554' : '#eff6ff', borderColor: activeTheme === 'dark' ? '#1e3a8a' : '#dbeafe' }]} onPress={onVerify}>
           <View style={[styles.rowIcon, { backgroundColor: colors.card }]}>
             <ShieldCheck size={18} color="#2563eb" />
@@ -163,7 +163,7 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
         </Pressable>
       )}
 
-      {!currentUser.isPremium && (
+      {!currentUser.is_premium && (
         <Pressable style={[styles.row, styles.rowPremium, { backgroundColor: activeTheme === 'dark' ? '#451a03' : '#fffbeb', borderColor: activeTheme === 'dark' ? '#78350f' : '#fef3c7' }]} onPress={onGoPremium}>
           <View style={[styles.rowIcon, { backgroundColor: colors.card }]}>
             <Crown size={18} color="#d97706" />

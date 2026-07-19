@@ -4,13 +4,12 @@ import { readFile } from 'node:fs/promises';
 
 const read = (path) => readFile(path, 'utf8');
 
-test('mobile storage uploads use array buffers instead of blobs', async () => {
+test('mobile storage uploads use native putFile instead of blobs', async () => {
   const helper = await read('src/lib/storageUpload.ts');
   const authFlow = await read('src/screens/auth/AuthFlowScreen.tsx');
   const verifyScreen = await read('src/screens/verify/VerifyScreen.tsx');
 
-  assert.match(helper, /response\.arrayBuffer\(\)/);
-  assert.match(helper, /supabase\.storage\.from\(bucket\)\.upload/);
+  assert.match(helper, /fbStorage\.ref\(bucket\)\.putFile/);
   assert.match(authFlow, /uploadArrayBufferToBucket/);
   assert.match(verifyScreen, /uploadArrayBufferToBucket/);
 });

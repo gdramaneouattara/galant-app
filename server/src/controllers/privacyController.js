@@ -1,33 +1,35 @@
-const { supabase } = require('../config/supabase');
+const { db, auth } = require('../config/firebase');
 
 const exportData = async (req, res) => {
   const userId = req.user.id;
   const exportedAt = new Date().toISOString();
 
-  const [profileRes, likesRes, matchesRes, messagesRes, subscriptionsRes] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
-    supabase.from('likes').select('*').or(`liker_id.eq.${userId},liked_id.eq.${userId}`),
-    supabase.from('matches').select('*').or(`user_one_id.eq.${userId},user_two_id.eq.${userId}`),
-    supabase.from('messages').select('*').eq('sender_id', userId),
-    supabase.from('subscriptions').select('*').eq('user_id', userId),
+  const [profileSnap, likesSnap1, likesSnap2, matchesSnap1, matchesSnap2, messagesSnap, subscriptionsSnap] = await Promise.all([
+    db.collection('profiles').doc(userId).get(),
+    db.collection('likes').where('liker_id', '==', userId).get(),
+    db.collection('likes').where('liked_id', '==', userId).get(),
+    db.collection('matches').where('user_one_id', '==', userId).get(),
+    db.collection('matches').where('user_two_id', '==', userId).get(),
+    db.collection('messages').where('sender_id', '==', userId).get(),
+    db.collection('subscriptions').where('user_id', '==', userId).get(),
   ]);
 
   res.json({
     filename: `galant-export-${userId}.json`,
     exported_at: exportedAt,
     format: 'json',
-    profile: profileRes.data || null,
-    likes: likesRes.data || [],
-    matches: matchesRes.data || [],
-    messages: messagesRes.data || [],
-    subscriptions: subscriptionsRes.data || [],
+    profile: profileSnap.exists ? profileSnap.data() : null,
+    likes: [...likesSnap1.docs, ...likesSnap2.docs].map(d => ({ id: d.id, ...d.data() })),
+    matches: [...matchesSnap1.docs, ...matchesSnap2.docs].map(d => ({ id: d.id, ...d.data() })),
+    messages: messagesSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+    subscriptions: subscriptionsSnap.docs.map(d => ({ id: d.id, ...d.data() })),
   });
 };
 
 const deleteAccount = async (req, res) => {
   const userId = req.user.id;
-  await supabase.from('profiles').delete().eq('id', userId);
-  await supabase.auth.admin.deleteUser(userId);
+  await db.collection('profiles').doc(userId).delete();
+  await auth.deleteUser(userId);
   res.json({ success: true });
 };
 

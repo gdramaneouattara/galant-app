@@ -28,8 +28,8 @@ const AdminUsers: React.FC = () => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState({
     gender: 'ALL',
-    isPremium: false,
-    isVerified: false,
+    is_premium: false,
+    is_verified: false,
     isSuspended: false
   });
 
@@ -39,8 +39,8 @@ const AdminUsers: React.FC = () => {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
       if (filter.gender !== 'ALL') params.set('gender', filter.gender);
-      if (filter.isPremium) params.set('isPremium', 'true');
-      if (filter.isVerified) params.set('isVerified', 'true');
+      if (filter.is_premium) params.set('is_premium', 'true');
+      if (filter.is_verified) params.set('is_verified', 'true');
       if (filter.isSuspended) params.set('isSuspended', 'true');
 
       const data = await apiRequest<{ users: AdminUser[] }>(`/api/admin/users?${params.toString()}`, {
@@ -112,14 +112,14 @@ const AdminUsers: React.FC = () => {
 
         <div className="flex items-center gap-2">
            <button
-             onClick={() => setFilter({...filter, isPremium: !filter.isPremium})}
-             className={`px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${filter.isPremium ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-200' : 'bg-white border-slate-100 text-slate-400'}`}
+             onClick={() => setFilter({...filter, is_premium: !filter.is_premium})}
+             className={`px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${filter.is_premium ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-200' : 'bg-white border-slate-100 text-slate-400'}`}
            >
              Premium
            </button>
            <button
-             onClick={() => setFilter({...filter, isVerified: !filter.isVerified})}
-             className={`px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${filter.isVerified ? 'bg-blue-500 border-blue-500 text-white shadow-lg shadow-blue-200' : 'bg-white border-slate-100 text-slate-400'}`}
+             onClick={() => setFilter({...filter, is_verified: !filter.is_verified})}
+             className={`px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${filter.is_verified ? 'bg-blue-500 border-blue-500 text-white shadow-lg shadow-blue-200' : 'bg-white border-slate-100 text-slate-400'}`}
            >
              Vérifiés
            </button>

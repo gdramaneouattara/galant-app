@@ -13,8 +13,8 @@ interface UserCardProps {
 const UserCard: React.FC<UserCardProps> = ({ user, onSuspend, onDelete, isDeleting }) => {
   const isSuspended = !!user.suspended_at;
   const isAdmin = user.is_admin === true;
-  const isPremium = user.is_premium === true || user.isPremium === true;
-  const isVerified = user.is_verified === true || user.isVerified === true;
+  const is_premium = user.is_premium === true;
+  const is_verified = user.is_verified === true;
   const photoReviewPending = user.photo_review_status === 'PENDING';
 
   const getUserInitial = (name: string) => name?.trim()?.charAt(0)?.toUpperCase() || '?';
@@ -36,8 +36,8 @@ const UserCard: React.FC<UserCardProps> = ({ user, onSuspend, onDelete, isDeleti
 
         <View style={styles.badgesRow}>
           {isAdmin && <Text style={[styles.badge, styles.badgeAdmin]}>ADMIN</Text>}
-          {isPremium && <Text style={[styles.badge, styles.badgePremium]}>PREMIUM</Text>}
-          {isVerified ? (
+          {is_premium && <Text style={[styles.badge, styles.badgePremium]}>PREMIUM</Text>}
+          {is_verified ? (
             <View style={styles.verifiedBadge}>
               <ShieldCheck size={12} color="#166534" />
               <Text style={styles.verifiedBadgeText}>VÉRIFIÉ</Text>

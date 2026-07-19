@@ -66,7 +66,7 @@ const VerifyScreen: React.FC = () => {
       setLoadingState(true);
       const payload = await apiRequest<KycMeResponse>('/api/kyc/me', { requireAuth: true });
       setKycData(payload);
-      if (payload.is_verified && !currentUser.isVerified) {
+      if (payload.is_verified && !currentUser.is_verified) {
         await refreshCurrentUser();
       }
     } catch (error: any) {
@@ -149,7 +149,6 @@ const VerifyScreen: React.FC = () => {
       await uploadToStorage(selfieUri!, selfiePath);
       if (backPath) await uploadToStorage(documentBackUri!, backPath);
 
-      // Quality requirement: uploadToSupabase
       await apiRequest('/api/kyc/requests', {
         method: 'POST',
         requireAuth: true,
@@ -172,7 +171,7 @@ const VerifyScreen: React.FC = () => {
     }
   };
 
-  if (currentUser?.isVerified) {
+  if (currentUser?.is_verified) {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.centered}>
