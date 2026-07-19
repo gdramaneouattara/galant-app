@@ -11,6 +11,7 @@ const DiscoverPage: React.FC = () => {
   const { suggestions, loading, fetchSuggestions, handleSwipe } = useMatchmaking();
   const [currentIndex, setCurrentCardIndex] = useState(0);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [visibilityRank, setVisibilityRank] = useState<{ rank: number | null, total: number }>({ rank: null, total: 0 });
   const navigate = useNavigate();
 
   const [filters, setFilters] = useState({
@@ -28,9 +29,20 @@ const DiscoverPage: React.FC = () => {
     }
   }, [user, fetchSuggestions, filters]);
 
+  const fetchVisibilityRank = useCallback(async () => {
+    if (!user) return;
+    try {
+      const data = await apiRequest<{ rank: number | null, total: number }>('/api/matchmaking/visibility-insight', { requireAuth: true });
+      setVisibilityRank(data);
+    } catch (e) {
+      console.error('Error fetching visibility rank:', e);
+    }
+  }, [user]);
+
   useEffect(() => {
     loadSuggestions();
-  }, [loadSuggestions]);
+    fetchVisibilityRank();
+  }, [loadSuggestions, fetchVisibilityRank]);
 
   useEffect(() => {
     if (user && !loading && suggestions.length === 0) {
@@ -144,7 +156,9 @@ const DiscoverPage: React.FC = () => {
           <div className="flex-1">
             <p className="text-[10px] font-black text-blue-200 uppercase tracking-[0.2em] mb-1 opacity-80">Rayonnement Galant</p>
             <p className="text-white font-bold leading-tight">
-              {t('rank_insight', { rank: 4, total: 20, city: myProfile.city || 'votre ville' })}
+              {visibilityRank.rank
+                ? t('rank_insight', { rank: visibilityRank.rank, total: visibilityRank.total, city: myProfile.city || 'votre ville' })
+                : "Boostez votre profil pour rayonner dans votre ville !"}
             </p>
           </div>
           <ChevronRight className="text-white/40 group-hover:text-white transition-colors" size={20} />
