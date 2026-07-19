@@ -86,11 +86,6 @@ const DiscoverPage: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-md p-10 bg-white/10 backdrop-blur-2xl rounded-[3.5rem] shadow-2xl border border-white/20 text-center space-y-8 animate-in fade-in zoom-in-95 duration-700">
-          {/* Logo container matching the screenshot */}
-          <div className="relative mx-auto w-24 h-24 bg-white rounded-3xl flex items-center justify-center shadow-[0_0_50px_rgba(239,68,68,0.3)] animate-pulse">
-            <img src="/pwa-192x192.png" alt="Logo" className="w-16 h-16 object-contain" />
-          </div>
-
           <div className="space-y-3">
             <h2 className="text-5xl font-black text-white italic tracking-tighter drop-shadow-md">
               Bienvenue
