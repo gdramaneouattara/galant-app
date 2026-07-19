@@ -179,16 +179,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       has_active_subscription?: boolean;
     }
   ): User => {
-    const isPremium = options?.has_active_subscription ?? !!profile.is_premium;
+    const is_premium = options?.has_active_subscription ?? !!profile.is_premium;
     const subscriptionPlanId = String(options?.subscription_plan_id || '').toUpperCase();
     const trialInvisibleEligible = isMaleTrialActiveFromProfile({
       ...profile,
-      is_premium: isPremium,
+      is_premium: is_premium,
     });
     const invisibleModeEligible =
       (options?.invisible_mode_eligible ?? false) ||
-      (subscriptionPlanId === 'QUARTERLY' && isPremium) ||
-      (subscriptionPlanId === 'MONTHLY' && isPremium && String(profile.gender || '').toUpperCase() === 'FEMALE') ||
+      (subscriptionPlanId === 'QUARTERLY' && is_premium) ||
+      (subscriptionPlanId === 'MONTHLY' && is_premium && String(profile.gender || '').toUpperCase() === 'FEMALE') ||
       trialInvisibleEligible;
 
     return {
@@ -206,8 +206,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         city: profile.city || '',
         country: profile.country || null,
       },
-      isVerified: !!profile.is_verified,
-      isPremium,
+      is_verified: !!profile.is_verified,
+      is_premium,
       boosted_until: profile.boosted_until ?? null,
       golden_rose_until: profile.golden_rose_until ?? null,
       relationship_goal: profile.relationship_goal ?? null,

@@ -31,8 +31,8 @@ export interface User {
     city: string;
     country?: string | null;
   };
-  isVerified: boolean;
-  isPremium: boolean;
+  is_verified: boolean;
+  is_premium: boolean;
   boosted_until?: string | null;
   golden_rose_until?: string | null;
   relationship_goal?: string | null;
