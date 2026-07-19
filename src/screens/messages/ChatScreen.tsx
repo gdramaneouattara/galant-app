@@ -116,7 +116,7 @@ const ChatScreen: React.FC = () => {
         mediaUrl={item.media_url || null}
         displayTime={item.created_at}
         t={t}
-        isPremium={!!currentUser?.isPremium}
+        is_premium={!!currentUser?.is_premium}
         language={language}
       />
     );

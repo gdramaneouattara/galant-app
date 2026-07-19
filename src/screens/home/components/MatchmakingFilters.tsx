@@ -18,7 +18,7 @@ interface MatchmakingFiltersProps {
   filters: any;
   setFilters: (filters: any) => void;
   colors: any;
-  isPremium: boolean;
+  is_premium: boolean;
   onGoPremium: () => void;
 }
 
@@ -28,11 +28,11 @@ const MatchmakingFilters: React.FC<MatchmakingFiltersProps> = ({
   filters,
   setFilters,
   colors,
-  isPremium,
+  is_premium,
   onGoPremium,
 }) => {
   const handlePremiumFilter = (key: string) => {
-    if (!isPremium) {
+    if (!is_premium) {
       Alert.alert(
         'Privilège Premium 💎',
         'Les filtres de standing sont réservés aux membres Premium.',
@@ -47,7 +47,7 @@ const MatchmakingFilters: React.FC<MatchmakingFiltersProps> = ({
   };
 
   const handleScoreFilter = (score: number) => {
-    if (score > 0 && !isPremium) {
+    if (score > 0 && !is_premium) {
       Alert.alert('Privilège Premium 💎', 'Le filtrage par score de galanterie est une option Premium.');
       return;
     }

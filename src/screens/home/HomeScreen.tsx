@@ -110,7 +110,7 @@ const HomeScreen: React.FC = () => {
 
   const trialInfo = useMemo(() => {
     const isMale = currentUser?.gender === 'MALE';
-    if (!isMale || currentUser?.isPremium || !currentUser?.trial_started_at) {
+    if (!isMale || currentUser?.is_premium || !currentUser?.trial_started_at) {
       return { eligible: false, active: false, daysRemaining: 0 };
     }
     const startedAt = new Date(currentUser.trial_started_at).getTime();
@@ -119,15 +119,15 @@ const HomeScreen: React.FC = () => {
     const remainingMs = trialEndTs - Date.now();
     const daysRemaining = Math.max(0, Math.ceil(remainingMs / (24 * 60 * 60 * 1000)));
     return { eligible: true, active: remainingMs > 0, daysRemaining };
-  }, [currentUser?.gender, currentUser?.isPremium, currentUser?.trial_started_at]);
+  }, [currentUser?.gender, currentUser?.is_premium, currentUser?.trial_started_at]);
 
   const isFemaleFreePlan = useMemo(() => {
-    return String(currentUser?.gender || '').toUpperCase() === 'FEMALE' && !currentUser?.isPremium;
-  }, [currentUser?.gender, currentUser?.isPremium]);
+    return String(currentUser?.gender || '').toUpperCase() === 'FEMALE' && !currentUser?.is_premium;
+  }, [currentUser?.gender, currentUser?.is_premium]);
 
   const canAccessLikesInbox = useMemo(() => {
-    return !!currentUser?.isPremium || trialInfo.active || isFemaleFreePlan;
-  }, [currentUser?.isPremium, trialInfo.active, isFemaleFreePlan]);
+    return !!currentUser?.is_premium || trialInfo.active || isFemaleFreePlan;
+  }, [currentUser?.is_premium, trialInfo.active, isFemaleFreePlan]);
 
   useEffect(() => {
     if (trialInfo.eligible && !trialInfo.active) setTrialLocked(true);
@@ -289,7 +289,7 @@ const HomeScreen: React.FC = () => {
             </Pressable>
           )}
         </View>
-      ) : (!currentUser?.isPremium && (
+      ) : (!currentUser?.is_premium && (
         <Pressable style={styles.aiNudgeBanner} onPress={() => navigation.navigate('Premium')}>
           <Sparkles size={16} color="#e11d48" />
           <Text style={styles.aiNudgeText}>Boostez vos rencontres : L'IA peut écrire vos accroches ! ✨</Text>
@@ -307,8 +307,8 @@ const HomeScreen: React.FC = () => {
             placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            onFocus={() => !currentUser?.isPremium && Alert.alert('Recherche Directe 💎', 'Devenez Premium pour cibler vos recherches.', [{ text: 'Plus tard' }, { text: 'Premium', onPress: () => navigation.navigate('Premium') }])}
-            editable={!!currentUser?.isPremium}
+            onFocus={() => !currentUser?.is_premium && Alert.alert('Recherche Directe 💎', 'Devenez Premium pour cibler vos recherches.', [{ text: 'Plus tard' }, { text: 'Premium', onPress: () => navigation.navigate('Premium') }])}
+            editable={!!currentUser?.is_premium}
           />
           {searchQuery.length > 0 && <Pressable onPress={() => setSearchQuery('')}><X size={18} color={colors.textMuted} /></Pressable>}
         </View>
@@ -325,7 +325,7 @@ const HomeScreen: React.FC = () => {
         canAccessLikesInbox={canAccessLikesInbox}
         onOpenBoost={openBoost}
         onShowGoldenRose={() => setShowGoldenRoseModal(true)}
-        onShowPassport={() => currentUser?.isPremium ? setShowPassportModal(true) : navigation.navigate('Premium')}
+        onShowPassport={() => currentUser?.is_premium ? setShowPassportModal(true) : navigation.navigate('Premium')}
       />
 
       <VisibilityInsight
@@ -375,7 +375,7 @@ const HomeScreen: React.FC = () => {
         filters={filters}
         setFilters={setFilters}
         colors={colors}
-        isPremium={!!currentUser?.isPremium}
+        is_premium={!!currentUser?.is_premium}
         onGoPremium={() => { setShowFilters(false); navigation.navigate('Premium'); }}
       />
       <MatchOverlay visible={!!matchModal} userName={matchModal?.user.name || ''} onContinue={() => { const { user, matchId } = matchModal!; setMatchModal(null); navigation.navigate('Chat', { userId: user.id, matchId }); }} t={t} />

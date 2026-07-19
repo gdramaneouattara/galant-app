@@ -345,7 +345,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
         ) : null}
 
         <View style={styles.card}>
-          <ProfileBadges user={{ ...profile, isVerified: profile.is_verified, galanterie_score: profile.galanterie_score } as any} showLabels />
+          <ProfileBadges user={{ ...profile, is_verified: profile.is_verified, galanterie_score: profile.galanterie_score } as any} showLabels />
           <Text style={styles.sectionTitle}>Identité</Text>
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>

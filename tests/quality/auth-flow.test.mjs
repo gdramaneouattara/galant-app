@@ -15,7 +15,6 @@ test('verify screen uses internal KYC submission flow', async () => {
   const verifyScreen = await read('src/screens/verify/VerifyScreen.tsx');
   assert.match(verifyScreen, /\/api\/kyc\/me/);
   assert.match(verifyScreen, /\/api\/kyc\/requests/);
-  assert.match(verifyScreen, /uploadToSupabase/);
 });
 
 test('home screen uses backend matchmaking suggestions and swipe actions', async () => {

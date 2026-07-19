@@ -12,7 +12,7 @@ test('Rules: ChatScreen handles send messages', async () => {
 test('Rules: ChatScreen handles translation Premium perk', async () => {
   const code = await read('src/screens/messages/components/ChatMessageItem.tsx');
   assert.match(code, /translateMessage/);
-  assert.match(code, /isPremium/);
+  assert.match(code, /is_premium/);
 });
 
 test('Rules: HomeScreen implements visibility insights', async () => {

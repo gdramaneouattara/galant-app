@@ -70,13 +70,13 @@ const BoostScreen: React.FC = () => {
   const isMaleTrialActive = useMemo(() => {
     if (!currentUser) return false;
     if (String(currentUser.gender || '').toUpperCase() !== 'MALE') return false;
-    if (currentUser.isPremium) return false;
+    if (currentUser.is_premium) return false;
     if (!currentUser.trial_started_at) return false;
     const startedAt = new Date(currentUser.trial_started_at).getTime();
     return Number.isFinite(startedAt) && (Date.now() < startedAt + 7 * 24 * 60 * 60 * 1000);
   }, [currentUser]);
 
-  const canSeeFreeBoostCard = (String(currentUser?.gender || '').toUpperCase() === 'FEMALE' && !!currentUser?.isPremium) || isMaleTrialActive;
+  const canSeeFreeBoostCard = (String(currentUser?.gender || '').toUpperCase() === 'FEMALE' && !!currentUser?.is_premium) || isMaleTrialActive;
 
   useEffect(() => {
     void initIAP(BOOST_PLANS.map(p => p.sku));

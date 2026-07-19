@@ -31,7 +31,7 @@ const SuperLikePurchaseModal: React.FC<Props> = ({
   const [aiLoading, setAiLoading] = useState(false);
 
   const getAiSuggestion = async () => {
-    if (!currentUser?.isPremium) {
+    if (!currentUser?.is_premium) {
       Alert.alert(
         t('ai_assistant_title'),
         t('ai_assistant_exclusive'),

@@ -8,16 +8,16 @@ interface Props {
   onClose: () => void;
   filters: any;
   setFilters: (f: any) => void;
-  isPremium: boolean;
+  is_premium: boolean;
 }
 
-const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, isPremium }) => {
+const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is_premium }) => {
   const navigate = useNavigate();
 
   if (!isOpen) return null;
 
   const handlePremiumFilter = (key: string) => {
-    if (!isPremium) {
+    if (!is_premium) {
       showAlert('Privilège Premium 💎', 'Les filtres de standing sont réservés aux membres Premium.');
       onClose();
       navigate('/premium');
@@ -27,7 +27,7 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is
   };
 
   const handleScoreFilter = (score: number) => {
-    if (score > 0 && !isPremium) {
+    if (score > 0 && !is_premium) {
       showAlert('Privilège Premium 💎', 'Le filtrage par score de galanterie est une option Premium.');
       onClose();
       navigate('/premium');

@@ -204,7 +204,7 @@ const MessagesScreen: React.FC = () => {
               <Image source={{ uri: user.photos[0] }} style={styles.matchAvatar} />
               <View style={styles.matchNameRow}>
                 <Text style={[styles.matchName, { color: colors.text }]}>{user.name}</Text>
-                {user.isVerified && <ShieldCheck size={12} color="#60a5fa" />}
+                {user.is_verified && <ShieldCheck size={12} color="#60a5fa" />}
               </View>
             </Pressable>
           ))}
@@ -231,7 +231,7 @@ const MessagesScreen: React.FC = () => {
               <View style={styles.rowText}>
                 <View style={styles.rowNameRow}>
                   <Text style={[styles.rowName, { color: colors.text }]}>{user.name}</Text>
-                  {user.isVerified && <ShieldCheck size={12} color="#60a5fa" />}
+                  {user.is_verified && <ShieldCheck size={12} color="#60a5fa" />}
                   {(user.galanterie_score || 0) >= 4.5 && <Gem size={12} color="#be123c" />}
                 </View>
                 <Text style={[styles.rowMessage, { color: colors.textMuted }]} numberOfLines={1}>{lastMessage?.content || '...'}</Text>

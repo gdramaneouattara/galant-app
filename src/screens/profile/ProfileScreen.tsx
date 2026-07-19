@@ -71,7 +71,7 @@ const ProfileScreen: React.FC = () => {
   const boostStatus = getBoostStatus(currentUser.boosted_until);
   const isInvisibleEligible = !!currentUser.invisible_mode_eligible;
   const isInvisibleEnabled = !!currentUser.is_invisible && isInvisibleEligible;
-  const hasQuarterlyLimitedInvisible = String(currentUser.subscription_plan_id || '').toUpperCase() === 'QUARTERLY' && currentUser.isPremium && currentUser.gender === 'MALE';
+  const hasQuarterlyLimitedInvisible = String(currentUser.subscription_plan_id || '').toUpperCase() === 'QUARTERLY' && currentUser.is_premium && currentUser.gender === 'MALE';
 
   const invisibleModeDescription = isInvisibleEnabled
     ? (hasQuarterlyLimitedInvisible ? 'Mode discret 3 mois actif.' : 'Votre profil est masqué dans la découverte standard.')
@@ -97,7 +97,7 @@ const ProfileScreen: React.FC = () => {
   };
 
   const getAiBioSuggestion = async () => {
-    if (!currentUser?.isPremium) {
+    if (!currentUser?.is_premium) {
       Alert.alert("Assistant IA 💎", "L'amélioration de profil par IA est réservée aux membres Premium.", [{ text: "Plus tard" }, { text: "Premium", onPress: () => navigation.navigate('Premium') }]);
       return;
     }
@@ -223,7 +223,7 @@ const ProfileScreen: React.FC = () => {
         setTempBio={setTempBio}
         onSave={handleBioUpdate}
         onGetAiSuggestion={getAiBioSuggestion}
-        isPremium={!!currentUser.isPremium}
+        is_premium={!!currentUser.is_premium}
         aiLoading={aiLoading}
         saving={savingBio}
         colors={colors}

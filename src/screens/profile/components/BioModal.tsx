@@ -10,7 +10,7 @@ interface BioModalProps {
   setTempBio: (bio: string) => void;
   onSave: () => void;
   onGetAiSuggestion: () => void;
-  isPremium: boolean;
+  is_premium: boolean;
   aiLoading: boolean;
   saving: boolean;
   colors: any;
@@ -24,7 +24,7 @@ const BioModal: React.FC<BioModalProps> = ({
   setTempBio,
   onSave,
   onGetAiSuggestion,
-  isPremium,
+  is_premium,
   aiLoading,
   saving,
   colors,
@@ -50,13 +50,13 @@ const BioModal: React.FC<BioModalProps> = ({
           ]}>
             <Sparkles size={20} color="#e11d48" />
             <View style={{ flex: 1 }}>
-              <Text style={styles.aiAssistTitle}>{isPremium ? "Assistant Rédactionnel" : "Sublimez avec l'IA 💎"}</Text>
+              <Text style={styles.aiAssistTitle}>{is_premium ? "Assistant Rédactionnel" : "Sublimez avec l'IA 💎"}</Text>
               <Text style={[styles.aiAssistSub, { color: activeTheme === 'dark' ? '#fb7185' : '#9f1239' }]}>
-                {isPremium ? "Laissez l'IA sublimer votre présentation." : "Les membres Premium ont des bios 3x plus attirantes."}
+                {is_premium ? "Laissez l'IA sublimer votre présentation." : "Les membres Premium ont des bios 3x plus attirantes."}
               </Text>
             </View>
             <Pressable style={styles.aiAssistBtn} onPress={onGetAiSuggestion} disabled={aiLoading}>
-              {aiLoading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.aiAssistBtnText}>{isPremium ? "Sublimer" : "Découvrir"}</Text>}
+              {aiLoading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.aiAssistBtnText}>{is_premium ? "Sublimer" : "Découvrir"}</Text>}
             </Pressable>
           </View>
 

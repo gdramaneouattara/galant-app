@@ -51,7 +51,7 @@ const LikesInboxScreen: React.FC = () => {
 
   const trialInfo = useMemo(() => {
     const isMale = currentUser?.gender === 'MALE';
-    if (!isMale || currentUser?.isPremium || !currentUser?.trial_started_at) {
+    if (!isMale || currentUser?.is_premium || !currentUser?.trial_started_at) {
       return { active: false };
     }
 
@@ -62,10 +62,10 @@ const LikesInboxScreen: React.FC = () => {
 
     const trialEndTs = startedAt + TRIAL_DAYS * 24 * 60 * 60 * 1000;
     return { active: trialEndTs > Date.now() };
-  }, [currentUser?.gender, currentUser?.isPremium, currentUser?.trial_started_at]);
+  }, [currentUser?.gender, currentUser?.is_premium, currentUser?.trial_started_at]);
 
-  const isFemaleFreePlan = String(currentUser?.gender || '').toUpperCase() === 'FEMALE' && !currentUser?.isPremium;
-  const canAccessLikesInbox = !!currentUser?.isPremium || trialInfo.active || isFemaleFreePlan;
+  const isFemaleFreePlan = String(currentUser?.gender || '').toUpperCase() === 'FEMALE' && !currentUser?.is_premium;
+  const canAccessLikesInbox = !!currentUser?.is_premium || trialInfo.active || isFemaleFreePlan;
 
   const fetchLikesInbox = useCallback(async () => {
     if (!canAccessLikesInbox) {

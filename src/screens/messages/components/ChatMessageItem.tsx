@@ -24,12 +24,12 @@ interface ChatMessageItemProps {
   mediaUrl: string | null;
   displayTime: string;
   t: (key: any, params?: any) => string;
-  isPremium: boolean;
+  is_premium: boolean;
   language: string;
 }
 
 const ChatMessageItem = memo<ChatMessageItemProps>(({
-  item, isMine, avatarUri, mediaUrl, displayTime, t, isPremium, language
+  item, isMine, avatarUri, mediaUrl, displayTime, t, is_premium, language
 }) => {
   const hasText = !!item.content;
   const hasImage = item.message_type === 'IMAGE' && !!mediaUrl;
@@ -46,7 +46,7 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
   const [showOriginal, setShowOriginal] = useState(false);
 
   const translateMessage = async () => {
-    if (!isPremium) {
+    if (!is_premium) {
       Alert.alert(t('premium_join'), t('translation_premium_only'));
       return;
     }

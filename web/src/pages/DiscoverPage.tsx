@@ -281,7 +281,7 @@ const DiscoverPage: React.FC = () => {
         onClose={() => setIsFilterOpen(false)}
         filters={filters}
         setFilters={setFilters}
-        isPremium={!!myProfile?.is_premium}
+        is_premium={!!myProfile?.is_premium}
       />
     </div>
   );
