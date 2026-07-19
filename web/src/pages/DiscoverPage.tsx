@@ -72,37 +72,37 @@ const DiscoverPage: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-md p-12 bg-white rounded-[3.5rem] shadow-2xl text-center space-y-8 animate-in fade-in zoom-in-95 duration-700">
-          <div className="relative mx-auto w-24 h-24 bg-rose-50 rounded-[2rem] flex items-center justify-center shadow-inner">
-            <img src="/pwa-192x192.png" alt="Logo" className="w-14 h-14 object-contain" />
-            <div className="absolute inset-0 bg-primary/10 rounded-[2rem] animate-ping"></div>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="w-full max-w-sm p-12 bg-white rounded-[3rem] shadow-[0_20px_60px_rgba(0,0,0,0.15)] text-center space-y-10 animate-in fade-in zoom-in-95 duration-700">
+          {/* Logo qui "bat" comme un coeur */}
+          <div className="relative mx-auto w-24 h-24 bg-rose-50/50 rounded-[2rem] flex items-center justify-center shadow-xl shadow-rose-100 animate-pulse">
+            <img src="/pwa-192x192.png" alt="Logo" className="w-12 h-12 object-contain" />
           </div>
 
-          <div className="space-y-2">
-            <h2 className="text-4xl font-black text-slate-900 tracking-tighter">
+          <div className="space-y-3">
+            <h2 className="text-4xl font-black text-[#1e293b] tracking-tighter">
               Galant
             </h2>
-            <p className="text-slate-500 font-medium">L'élégance à chaque rencontre</p>
+            <p className="text-slate-400 font-bold text-base">L'élégance à chaque rencontre</p>
           </div>
 
-          <p className="text-slate-600 font-bold leading-relaxed text-sm px-4">
+          <p className="text-slate-500 font-black leading-relaxed text-sm px-2">
             Faites éclore de belles histoires. Offrez une rose, commencez une rencontre.
           </p>
 
-          <div className="space-y-4 pt-4">
+          <div className="space-y-6 pt-2">
             <Link
               to="/auth"
-              className="block w-full bg-primary text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:scale-[1.03] active:scale-95 transition-all shadow-2xl shadow-red-500/20"
+              className="block w-full bg-[#ef4444] text-white py-5 rounded-2xl font-black text-xs uppercase shadow-[0_15px_30px_rgba(239,68,68,0.4)] hover:scale-[1.02] active:scale-95 transition-all"
             >
-              Créer un compte
+              CRÉER UN COMPTE
             </Link>
 
             <Link
               to="/auth"
-              className="block text-slate-400 hover:text-primary font-black text-[10px] uppercase tracking-[0.2em] transition-colors"
+              className="block text-slate-400 hover:text-slate-600 font-black text-[10px] uppercase tracking-wider transition-colors"
             >
-              Se connecter
+              SE CONNECTER
             </Link>
           </div>
         </div>
