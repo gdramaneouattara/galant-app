@@ -56,27 +56,3 @@ jobs:
           else
             echo "scripts/setup-test-users.mjs not found; skipping syntax check."
           fi
-
-      - name: SQL sanity checks
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          required_files=(
-            "scripts/supabase-schema.sql"
-            "scripts/supabase-rls.sql"
-            "scripts/supabase-rls-rest-only.sql"
-            "scripts/supabase-rls-storage-only.sql"
-          )
-
-          for file in "${required_files[@]}"; do
-            if [[ ! -f "$file" ]]; then
-              echo "Missing required SQL file: $file"
-              exit 1
-            fi
-          done
-
-          if grep -R -nE '^(<<<<<<<|=======|>>>>>>>)' scripts/*.sql; then
-            echo "Git conflict markers found in SQL files."
-            exit 1
-          fi

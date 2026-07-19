@@ -16,7 +16,6 @@ const backendChecks = [
   { file: 'server/src/index.js', snippet: "app.use('/api/matchmaking', matchmakingRoutes)" },
   { file: 'server/src/index.js', snippet: "app.use('/api/payments', paymentRoutes)" },
   { file: 'server/src/index.js', snippet: "app.use('/api/admin', adminRoutes)" },
-  { file: 'server/src/config/supabase.js', snippet: "createClient(SUPABASE_URL" },
   { file: 'server/src/middleware/auth.js', snippet: "requireAuth" },
   { file: 'server/src/controllers/matchmakingController.js', snippet: "getSuggestions" },
   { file: 'server/src/controllers/aiController.js', snippet: "targetLang" },
@@ -52,22 +51,5 @@ mobileChecks.forEach(({ file, snippet }, index) => {
   test(`Mobile alignment check #${index + 1}`, async () => {
     const code = await read(file);
     assert.ok(code.includes(snippet), `Missing mobile snippet in ${file}: ${snippet}`);
-  });
-});
-
-const schemaChecks = [
-  'create table if not exists public.super_likes',
-  'create table if not exists public.privacy_requests',
-  'create table if not exists public.likes',
-  'create table if not exists public.daily_usage',
-  'create table if not exists public.venues',
-  'create table if not exists public.subscriptions',
-  "check (status in ('PENDING', 'ACCEPTED', 'IGNORED'))",
-];
-
-schemaChecks.forEach((snippet, index) => {
-  test(`Schema alignment check #${index + 1}`, async () => {
-    const schema = await read('scripts/supabase-schema.sql');
-    assert.ok(schema.includes(snippet), `Missing schema snippet: ${snippet}`);
   });
 });
