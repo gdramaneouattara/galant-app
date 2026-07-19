@@ -74,11 +74,6 @@ const DiscoverPage: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="w-full max-w-sm p-12 bg-white rounded-[3rem] shadow-[0_20px_60px_rgba(0,0,0,0.15)] text-center space-y-10 animate-in fade-in zoom-in-95 duration-700">
-          {/* Logo qui "bat" comme un coeur */}
-          <div className="relative mx-auto w-24 h-24 bg-rose-50/50 rounded-[2rem] flex items-center justify-center shadow-xl shadow-rose-100 animate-pulse">
-            <img src="/pwa-192x192.png" alt="Logo" className="w-12 h-12 object-contain" />
-          </div>
-
           <div className="space-y-3">
             <h2 className="text-4xl font-black text-[#1e293b] tracking-tighter">
               Galant
