@@ -5,6 +5,7 @@ import { Star, ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIc
 import { Link, useNavigate } from 'react-router-dom';
 import FilterModal from '../components/FilterModal';
 import { apiRequest } from '@shared/lib/api';
+import logoImg from '../../assets/icon (2).png';
 
 const DiscoverPage: React.FC = () => {
   const { user, profile: myProfile, loading: authLoading, t } = useAuth();
@@ -90,7 +91,7 @@ const DiscoverPage: React.FC = () => {
           <div className="relative mx-auto w-24 h-24 bg-white rounded-2xl flex items-center justify-center">
             {/* Red Glow behind the white square */}
             <div className="absolute -inset-4 bg-primary/30 rounded-full blur-2xl animate-pulse"></div>
-            <img src="/pwa-192x192.png" alt="Logo" className="w-14 h-14 object-contain relative z-10" />
+            <img src={logoImg} alt="Galant Logo" className="w-14 h-14 object-contain relative z-10" />
           </div>
 
           <div className="space-y-4">
