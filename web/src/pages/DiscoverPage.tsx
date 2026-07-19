@@ -7,7 +7,7 @@ import FilterModal from '../components/FilterModal';
 import { apiRequest } from '@shared/lib/api';
 
 const DiscoverPage: React.FC = () => {
-  const logoImg = "/pwa-192x192.png";
+  const logoImg = "https://raw.githubusercontent.com/gdramaneouattara/galant-app/main/web/public/pwa-192x192.png";
   const { user, profile: myProfile, loading: authLoading, t } = useAuth();
   const { suggestions, loading, fetchSuggestions, handleSwipe } = useMatchmaking();
   const [currentIndex, setCurrentCardIndex] = useState(0);
