@@ -72,10 +72,11 @@ const DiscoverPage: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center p-4">
-        <div className="w-full max-w-md p-10 bg-white rounded-[3.5rem] shadow-[0_32px_64px_-15px_rgba(0,0,0,0.1)] border border-slate-100 text-center space-y-8 animate-in fade-in zoom-in-95 duration-700">
-          <div className="relative mx-auto w-24 h-24 bg-rose-50 rounded-[2rem] flex items-center justify-center border border-rose-100 shadow-xl shadow-rose-500/10">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="w-full max-w-md p-12 bg-white rounded-[3.5rem] shadow-2xl text-center space-y-8 animate-in fade-in zoom-in-95 duration-700">
+          <div className="relative mx-auto w-24 h-24 bg-rose-50 rounded-[2rem] flex items-center justify-center shadow-inner">
             <img src="/pwa-192x192.png" alt="Logo" className="w-14 h-14 object-contain" />
+            <div className="absolute inset-0 bg-primary/10 rounded-[2rem] animate-ping"></div>
           </div>
 
           <div className="space-y-2">
@@ -85,23 +86,23 @@ const DiscoverPage: React.FC = () => {
             <p className="text-slate-500 font-medium">L'élégance à chaque rencontre</p>
           </div>
 
-          <p className="text-slate-600 font-medium leading-relaxed px-4">
-            {t('welcome_subtitle') || "Faites éclore de belles histoires. Offrez une rose, commencez une rencontre d'exception."}
+          <p className="text-slate-600 font-bold leading-relaxed text-sm px-4">
+            Faites éclore de belles histoires. Offrez une rose, commencez une rencontre.
           </p>
 
           <div className="space-y-4 pt-4">
             <Link
               to="/auth"
-              className="block w-full bg-primary text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:scale-[1.03] active:scale-95 transition-all shadow-xl shadow-red-500/20"
+              className="block w-full bg-primary text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:scale-[1.03] active:scale-95 transition-all shadow-2xl shadow-red-500/20"
             >
-              {t('create_account') || "Créer un compte"}
+              Créer un compte
             </Link>
 
             <Link
               to="/auth"
-              className="block text-slate-400 hover:text-primary font-black text-[10px] uppercase tracking-widest transition-colors"
+              className="block text-slate-400 hover:text-primary font-black text-[10px] uppercase tracking-[0.2em] transition-colors"
             >
-              {t('login') || "Déjà membre ? Se connecter"}
+              Se connecter
             </Link>
           </div>
         </div>
