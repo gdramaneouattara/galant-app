@@ -25,8 +25,8 @@ Cette base a été convertie du prototype web vers une app mobile React Native /
 Crée un `.env.local` à la racine :
 
 ```
-EXPO_PUBLIC_SUPABASE_URL=https://zmyulbdxbqcbzhrafwue.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY
+EXPO_PUBLIC_SUPABASE_URL=https://votre-projet.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=VOTRE_CLE_ANON
 EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:8787
 ```
 
