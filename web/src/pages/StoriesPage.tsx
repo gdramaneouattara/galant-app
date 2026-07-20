@@ -223,7 +223,12 @@ const StoriesPage: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <img src={resolvedUrls[status.media_url]} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[3000ms]" alt="" />
+              <img
+                src={resolvedUrls[status.media_url]}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[3000ms]"
+                alt=""
+                loading="lazy"
+              />
             )}
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />

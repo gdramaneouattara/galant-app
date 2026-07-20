@@ -205,6 +205,7 @@ const GuidePage: React.FC = () => {
                 src={venue.photo_url}
                 className="w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-110"
                 alt={venue.name}
+                loading="lazy"
               />
 
               {/* Overlay Gradient App-Style */}

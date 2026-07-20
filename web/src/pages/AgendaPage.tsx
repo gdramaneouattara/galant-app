@@ -182,6 +182,7 @@ const AgendaPage: React.FC = () => {
                   src={event.photo_url || 'https://placehold.co/600x800'}
                   className="w-full h-full object-cover transition-transform duration-[4000ms] group-hover:scale-110"
                   alt={event.title}
+                  loading="lazy"
                 />
 
                 {/* Date Floating Badge */}

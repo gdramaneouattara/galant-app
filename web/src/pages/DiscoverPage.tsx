@@ -181,6 +181,7 @@ const DiscoverPage: React.FC = () => {
               src={currentProfile.photos?.[0] || 'https://placehold.co/400x600'}
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2000ms]"
               alt={currentProfile.name}
+              loading="lazy"
             />
 
             {/* Overlays */}

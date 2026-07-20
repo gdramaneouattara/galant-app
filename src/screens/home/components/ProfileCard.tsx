@@ -45,7 +45,10 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
     >
       <Pressable style={{ flex: 1 }} onPress={onPress}>
         <ImageBackground
-          source={{ uri: profile.photos[0] }}
+          source={{
+            uri: profile.photos[0],
+            cache: 'force-cache'
+          }}
           style={styles.cardImage}
           imageStyle={{ borderRadius: 24 }}
         >
