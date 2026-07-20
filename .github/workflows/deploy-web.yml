@@ -1,0 +1,41 @@
+name: Deploy Web to GitHub Pages
+
+on:
+  push:
+    branches: [ main, staging ]
+    paths:
+      - 'web/**'
+      - 'src/**'
+      - '.github/workflows/deploy-web.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Build Web
+        run: |
+          cd web
+          npm install
+          npm run build
+          cp dist/index.html dist/404.html
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: web/dist
+          branch: gh-pages
