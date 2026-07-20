@@ -87,14 +87,12 @@ const DiscoverPage: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-md p-10 bg-slate-900/60 backdrop-blur-3xl rounded-[3.5rem] shadow-2xl border border-white/10 text-center space-y-10 animate-in fade-in zoom-in-95 duration-700">
-          {/* Logo container matching the screenshot */}
-          <div className="relative mx-auto w-24 h-24 bg-white rounded-2xl flex items-center justify-center shadow-xl">
-            {/* Red Glow behind the white square */}
-            <div className="absolute -inset-6 bg-primary/40 rounded-full blur-3xl animate-pulse"></div>
+          {/* Logo without frame for visible animation */}
+          <div className="relative mx-auto w-32 h-32 flex items-center justify-center animate-pulse">
             <img
               src={logoImg}
               alt="Galant"
-              className="w-16 h-16 object-contain relative z-10"
+              className="w-24 h-24 object-contain drop-shadow-[0_0_15px_rgba(239,68,68,0.6)]"
             />
           </div>
 
