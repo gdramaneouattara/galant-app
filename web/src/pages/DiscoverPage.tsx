@@ -5,6 +5,7 @@ import { Star, ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIc
 import { Link, useNavigate } from 'react-router-dom';
 import FilterModal from '../components/FilterModal';
 import { apiRequest } from '@shared/lib/api';
+import logoImg from '../assets/icon (2).png';
 
 const DiscoverPage: React.FC = () => {
   const logoImg = "/pwa-192x192.png";
@@ -92,7 +93,7 @@ const DiscoverPage: React.FC = () => {
             {/* Red Glow behind the white square */}
             <div className="absolute -inset-6 bg-primary/40 rounded-full blur-3xl animate-pulse"></div>
             <img
-              src="/pwa-192x192.png"
+              src={logoImg}
               alt="Galant"
               className="w-16 h-16 object-contain relative z-10"
             />

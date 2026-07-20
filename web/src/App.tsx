@@ -43,6 +43,7 @@ import PWAInstallPrompt from './components/PWAInstallPrompt';
 // Admin
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import logoImg from './assets/icon (2).png';
 import AdminSupport from './pages/admin/AdminSupport';
 import AdminKyc from './pages/admin/AdminKyc';
 import AdminUsers from './pages/admin/AdminUsers';
@@ -153,7 +154,7 @@ const Header = () => {
       <div className="max-w-6xl mx-auto flex justify-between items-center">
         <div className="flex items-center gap-6">
           <Link to="/" className="flex items-center gap-2 group">
-            <img src="/pwa-192x192.png" alt="Galant Logo" className="w-8 h-8 rounded-lg shadow-sm group-hover:scale-105 transition-transform" />
+            <img src={logoImg} alt="Galant Logo" className="w-8 h-8 rounded-lg shadow-sm group-hover:scale-105 transition-transform" />
             <h1 className="text-2xl font-black text-primary tracking-tighter">
               GALANT
             </h1>
