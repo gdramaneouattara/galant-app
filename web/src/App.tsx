@@ -43,7 +43,7 @@ import PWAInstallPrompt from './components/PWAInstallPrompt';
 // Admin
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
-import logoImg from './assets/icon (2).png';
+import logoImg from './assets/galant-logo.png';
 import AdminSupport from './pages/admin/AdminSupport';
 import AdminKyc from './pages/admin/AdminKyc';
 import AdminUsers from './pages/admin/AdminUsers';
