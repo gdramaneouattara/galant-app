@@ -10,8 +10,8 @@ const isTrialActive = (p) => {
 
 const hasStandardAccess = (p) => {
   if (!p) return false;
-  if (p.gender === 'FEMALE' || p.is_premium) return true;
-  return true;
+  // Les Stories sont désormais une fonctionnalité réservée aux membres Premium, VIP ou en période d'essai (Hommes)
+  return !!p.is_premium || !!p.is_vip || isTrialActive(p);
 };
 
 const hasInvisiblePremiumAccessForPlan = (profile, planId) => {

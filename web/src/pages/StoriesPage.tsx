@@ -71,6 +71,12 @@ const StoriesPage: React.FC = () => {
   }, [user, fetchStatuses]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!profile?.is_premium && !profile?.is_vip) {
+      showAlert('Privilège Premium 💎', 'La publication de stories est réservée aux membres Premium.');
+      navigate('/premium');
+      return;
+    }
+
     const file = e.target.files?.[0];
     if (!file || !user) return;
 

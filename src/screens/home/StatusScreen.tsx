@@ -143,8 +143,8 @@ const StatusScreen: React.FC = () => {
 
   const pickStatusMedia = async () => {
     if (uploading) return;
-    if (locked) {
-      Alert.alert('Essai expiré', 'Passez à Premium pour publier des stories.');
+    if (locked || (!currentUser?.is_premium && !currentUser?.is_vip)) {
+      Alert.alert('Privilège Premium 💎', 'La publication de stories est réservée aux membres Premium.');
       // @ts-ignore
       navigation.navigate('Premium');
       return;
