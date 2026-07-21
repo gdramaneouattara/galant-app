@@ -206,6 +206,12 @@ const ChatPage: React.FC = () => {
 
       {/* Zone des Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30">
+        <div className="bg-slate-100/50 p-4 rounded-3xl text-center border border-slate-200/50 mb-4">
+           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-center gap-2">
+             <ShieldCheck size={14} /> Sécurité Galant : Les médias sont effacés tous les 15 jours
+           </p>
+        </div>
+
         {chatMessages.map((msg) => {
           const isMine = msg.sender_id === user?.uid;
           const isVenue = msg.message_type === 'VENUE_SUGGESTION';

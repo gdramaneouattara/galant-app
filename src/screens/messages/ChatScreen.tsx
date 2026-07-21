@@ -196,6 +196,13 @@ const ChatScreen: React.FC = () => {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         inverted={false}
+        ListHeaderComponent={
+          <View style={styles.privacyNotice}>
+            <Text style={styles.privacyNoticeText}>
+              🛡️ Par mesure de confidentialité, les médias partagés sont effacés après 15 jours.
+            </Text>
+          </View>
+        }
       />
 
       <ChatInput
@@ -215,6 +222,8 @@ const ChatScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   listContent: { padding: 16, gap: 16 },
+  privacyNotice: { backgroundColor: '#f8fafc', padding: 12, borderRadius: 16, marginBottom: 8, borderColor: '#e2e8f0', borderWidth: 1 },
+  privacyNoticeText: { fontSize: 11, color: '#64748b', textAlign: 'center', fontWeight: '600' },
 });
 
 export default ChatScreen;

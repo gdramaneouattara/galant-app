@@ -65,19 +65,50 @@ const cleanupExpiredStatuses = async () => {
 };
 
 /**
+ * Deletes chat media (images/videos) older than 15 days from Storage.
+ */
+const cleanupExpiredChatMedia = async () => {
+  console.log('[CRON] Starting chat media cleanup...');
+  const fifteenDaysAgo = new Date();
+  fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+
+  let deletedCount = 0;
+
+  try {
+    const [files] = await bucket.getFiles({ prefix: 'chats/' });
+
+    for (const file of files) {
+      const [metadata] = await file.getMetadata();
+      const createdAt = new Date(metadata.timeCreated);
+
+      if (createdAt < fifteenDaysAgo) {
+        await file.delete();
+        deletedCount++;
+      }
+    }
+
+    console.log(`[CRON] Chat media cleanup finished. Deleted ${deletedCount} expired files.`);
+  } catch (error) {
+    console.error('[CRON] Error during chat media cleanup:', error.message);
+  }
+};
+
+/**
  * Initializes all periodic background tasks.
  * Runs every hour.
  */
 const initCronJobs = () => {
-  console.log('⏰ Background services initialized (Status Cleanup).');
+  console.log('⏰ Background services initialized (Cleanup Tasks).');
 
   // Run once on startup
   cleanupExpiredStatuses();
+  cleanupExpiredChatMedia();
 
   // Then run every hour (3600000 ms)
   setInterval(() => {
     cleanupExpiredStatuses();
+    cleanupExpiredChatMedia();
   }, 3600000);
 };
 
-module.exports = { cleanupExpiredStatuses, initCronJobs };
+module.exports = { cleanupExpiredStatuses, cleanupExpiredChatMedia, initCronJobs };
