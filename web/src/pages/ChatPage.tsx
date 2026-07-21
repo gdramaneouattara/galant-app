@@ -8,7 +8,7 @@ import { apiRequest } from '@shared/lib/api';
 import { Send, ChevronLeft, ShieldCheck, Gem, Sparkles, Languages, Loader2, MapPin, Calendar, Image as ImageIcon, Video, Paperclip } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { compressImageWeb } from '../lib/imageCompression';
-import { ref, uploadBytes, getDownloadURL as getStorageUrl } from 'firebase/storage';
+import { ref as storageRef, uploadBytes, getDownloadURL as getStorageUrl } from 'firebase/storage';
 
 const ChatPage: React.FC = () => {
   const { matchId } = useParams();
@@ -160,9 +160,9 @@ const ChatPage: React.FC = () => {
         finalFile = await compressImageWeb(file);
       }
 
-      const storageRef = ref(fbStorage, `chats/${matchId}/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, finalFile, { contentType: file.type });
-      const mediaUrl = await getStorageUrl(storageRef);
+      const sRef = storageRef(fbStorage, `chats/${matchId}/${Date.now()}_${file.name}`);
+      await uploadBytes(sRef, finalFile, { contentType: file.type });
+      const mediaUrl = await getStorageUrl(sRef);
 
       await apiRequest('/api/messages/send', {
         method: 'POST',
