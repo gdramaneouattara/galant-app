@@ -12,7 +12,7 @@ const initializePayment = async (req, res) => {
   const normalizedType = String(type || '').toUpperCase();
   const normalizedPlanId = String(planId || '').toUpperCase();
   const normalizedPaymentMethod = String(paymentMethod || 'CARD').toUpperCase();
-  const expectedAmount = getExpectedAmountForPurchase({ type: normalizedType, planId: normalizedPlanId });
+  const expectedAmount = await getExpectedAmountForPurchase({ type: normalizedType, planId: normalizedPlanId });
   const roundedAmount = Math.round(Number(expectedAmount || 0) * 100);
 
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;

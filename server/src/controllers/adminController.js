@@ -294,9 +294,47 @@ const getCampaignHistory = async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
 
+const getPricing = async (req, res) => {
+  try {
+    const doc = await db.collection('app_settings').doc('pricing').get();
+    if (!doc.exists) {
+      const { PRICES, PLAN_AMOUNTS, PARTNER_PLAN_AMOUNTS } = require('../config/constants');
+      return res.json({
+        PRICES,
+        PLAN_AMOUNTS,
+        PARTNER_PLAN_AMOUNTS,
+        source: 'defaults'
+      });
+    }
+    res.json({ ...doc.data(), source: 'firestore' });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+};
+
+const updatePricing = async (req, res) => {
+  const { PRICES, PLAN_AMOUNTS, PARTNER_PLAN_AMOUNTS } = req.body;
+  try {
+    const data = {
+      PRICES: PRICES || {},
+      PLAN_AMOUNTS: PLAN_AMOUNTS || {},
+      PARTNER_PLAN_AMOUNTS: PARTNER_PLAN_AMOUNTS || {},
+      updated_at: new Date().toISOString(),
+      updated_by: req.user.id
+    };
+    await db.collection('app_settings').doc('pricing').set(data, { merge: true });
+
+    await appendAdminAuditLog({
+      adminId: req.user.id,
+      action: 'UPDATE_PRICING',
+      metadata: data
+    });
+
+    res.json({ success: true });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+};
+
 module.exports = {
   getStats, getPendingVenues, approveVenue, rejectVenue, reconcileProfiles,
   getPrivacyRequests, resolvePrivacyRequest, getPhotoReviews, reviewPhoto,
   getKycRequests, reviewKyc, getBroadcastAudience, broadcastMessage, getCampaignHistory,
-  getUsers, toggleUserStatus
+  getUsers, toggleUserStatus, getPricing, updatePricing
 };

@@ -4,7 +4,8 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 const {
   getStats, getPendingVenues, approveVenue, rejectVenue, reconcileProfiles,
   getPrivacyRequests, resolvePrivacyRequest, getPhotoReviews, reviewPhoto,
-  getKycRequests, reviewKyc, getBroadcastAudience, broadcastMessage, getCampaignHistory
+  getKycRequests, reviewKyc, getBroadcastAudience, broadcastMessage, getCampaignHistory,
+  getUsers, toggleUserStatus, getPricing, updatePricing
 } = require('../controllers/adminController');
 
 router.use(requireAuth);
@@ -26,5 +27,8 @@ router.post('/users/:id/toggle-status', toggleUserStatus);
 router.get('/messages/audience', getBroadcastAudience);
 router.post('/messages/broadcast', broadcastMessage);
 router.get('/messages/history', getCampaignHistory);
+
+router.get('/pricing', getPricing);
+router.post('/pricing', updatePricing);
 
 module.exports = router;

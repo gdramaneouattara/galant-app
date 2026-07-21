@@ -1,7 +1,8 @@
 const { db } = require('../config/firebase');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
-const { PLAN_DURATIONS, PRICES, BOOST_SCORES } = require('../config/constants');
+const { PLAN_DURATIONS, BOOST_SCORES } = require('../config/constants');
+const { getCurrentPricing } = require('./pricingService');
 
 const SUBSCRIPTION_RENEWAL_REFRESH_COOLDOWN_MS = 5 * 60 * 1000;
 
@@ -97,12 +98,13 @@ const applyPurchasedEntitlement = async ({
     });
 
   } else if (['SUPER_LIKE', 'DIRECT_MESSAGE', 'ROSE_NOTE_UNLOCK'].includes(normalizedType)) {
+    const pricing = await getCurrentPricing();
     await db.collection('purchased_interactions').add({
       user_id: userId,
       interaction_type: normalizedType,
       target_id: targetId,
       reference,
-      price_amount: PRICES[normalizedType],
+      price_amount: pricing.PRICES[normalizedType],
       provider: paymentMethod,
       created_at: new Date().toISOString()
     });
@@ -118,12 +120,13 @@ const applyPurchasedEntitlement = async ({
       golden_rose_until: expiresAt
     });
   } else if (normalizedType === 'STORY_UPLOAD') {
+    const pricing = await getCurrentPricing();
     await db.collection('purchased_interactions').add({
       user_id: userId,
       interaction_type: 'STORY_UPLOAD',
       status: 'UNUSED',
       reference,
-      price_amount: PRICES.STORY_UPLOAD,
+      price_amount: pricing.PRICES.STORY_UPLOAD,
       provider: paymentMethod,
       created_at: new Date().toISOString()
     });

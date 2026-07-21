@@ -1,6 +1,9 @@
-const { PLAN_AMOUNTS, PARTNER_PLAN_AMOUNTS, PRICES } = require('../config/constants');
+const { getCurrentPricing } = require('../services/pricingService');
 
-const getExpectedAmountForPurchase = ({ type, planId }) => {
+const getExpectedAmountForPurchase = async ({ type, planId }) => {
+  const pricing = await getCurrentPricing();
+  const { PRICES, PLAN_AMOUNTS, PARTNER_PLAN_AMOUNTS } = pricing;
+
   const normalizedType = String(type || '').toUpperCase();
   const normalizedPlanId = String(planId || '').toUpperCase();
 

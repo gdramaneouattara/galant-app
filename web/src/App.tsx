@@ -43,6 +43,7 @@ import PWAInstallPrompt from './components/PWAInstallPrompt';
 // Admin
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminPricing from './pages/admin/AdminPricing';
 import logoImg from './assets/galant-logo.png';
 import AdminSupport from './pages/admin/AdminSupport';
 import AdminKyc from './pages/admin/AdminKyc';
@@ -232,6 +233,7 @@ const AppContent: React.FC = () => {
             <Route path="support" element={<AdminSupport />} />
             <Route path="kyc" element={<AdminKyc />} />
             <Route path="users" element={<AdminUsers />} />
+            <Route path="pricing" element={<AdminPricing />} />
             <Route path="finances" element={<AdminFinances />} />
           </Route>
 

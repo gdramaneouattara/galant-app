@@ -27,6 +27,7 @@ const AdminLayout: React.FC = () => {
   const menuItems = [
     { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/admin/users', icon: Users, label: 'Membres' },
+    { path: '/admin/pricing', icon: Settings, label: 'Tarifs' },
     { path: '/admin/kyc', icon: ShieldCheck, label: 'KYC' },
     { path: '/admin/support', icon: MessageSquare, label: 'Support' },
     { path: '/admin/finances', icon: CreditCard, label: 'Finances' },
