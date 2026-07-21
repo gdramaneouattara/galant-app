@@ -3,10 +3,12 @@ import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '@shared/lib/api';
 import { fbStorage } from '../firebase';
 import { ref, getDownloadURL, uploadBytes } from 'firebase/storage';
-import { Plus, Heart, X, Play, Image as ImageIcon, Film, Lock, ChevronLeft, MoreHorizontal, Sparkles, Send, Share2 } from 'lucide-react';
+import { Plus, Heart, X, Play, Image as ImageIcon, Film, Lock, ChevronLeft, MoreHorizontal, Sparkles, Send, Share2, Users } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { compressImageWeb } from '../lib/imageCompression';
+import StatusLikersModal from '../components/StatusLikersModal';
+import { useMatchmaking } from '@shared/hooks/useMatchmaking';
 
 interface Status {
   id: string;
@@ -27,12 +29,19 @@ interface Status {
 
 const StoriesPage: React.FC = () => {
   const { user, profile, t } = useAuth();
+  const navigate = useNavigate();
+  const { handleSwipe } = useMatchmaking();
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [loading, setLoading] = useState(true);
   const [locked, setLocked] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<Status | null>(null);
   const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
+
+  // Likers Management
+  const [isLikersOpen, setIsLikersOpen] = useState(false);
+  const [likers, setLikers] = useState<any[]>([]);
+  const [likersLoading, setLikersLoading] = useState(false);
 
   const fetchStatuses = useCallback(async () => {
     try {
@@ -143,6 +152,34 @@ const StoriesPage: React.FC = () => {
       });
     } catch (e) {
       fetchStatuses();
+    }
+  };
+
+  const handleOpenLikers = async (status: Status) => {
+    setIsLikersOpen(true);
+    setLikersLoading(true);
+    try {
+      const data = await apiRequest<{ likes: any[] }>(`/api/statuses/${status.id}/likes`, { requireAuth: true });
+      setLikers(data.likes || []);
+    } catch (e) {
+      setLikers([]);
+    } finally {
+      setLikersLoading(false);
+    }
+  };
+
+  const handleLikeBack = async (liker: any) => {
+    try {
+      const res = await handleSwipe(liker.user_id, 'RIGHT');
+      if (res?.matched) {
+        showAlert('Match 🎉', `Vous et ${liker.profile.name} vous plaisez !`);
+        setIsLikersOpen(false);
+        navigate('/matches');
+      } else {
+        setLikers(prev => prev.map(l => l.user_id === liker.user_id ? { ...l, is_matched: true } : l));
+      }
+    } catch (e) {
+      showAlert('Erreur', 'Impossible de liker en retour.');
     }
   };
 
@@ -304,9 +341,18 @@ const StoriesPage: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <button className="text-white/40 hover:text-white transition-colors">
-                <MoreHorizontal size={24} />
-              </button>
+
+              {selectedStatus.user_id === user?.uid && (
+                <button
+                  onClick={() => handleOpenLikers(selectedStatus)}
+                  className="bg-white/10 backdrop-blur-xl border border-white/10 px-6 py-3 rounded-2xl flex items-center gap-3 text-white hover:bg-white/20 transition-all"
+                >
+                  <Users size={20} />
+                  <span className="text-xs font-black uppercase tracking-widest">
+                    {selectedStatus.likes_count || 0} Admirateurs
+                  </span>
+                </button>
+              )}
             </div>
 
             <div className="absolute bottom-12 left-10 right-10 flex items-center gap-6 z-50">
@@ -333,6 +379,14 @@ const StoriesPage: React.FC = () => {
           </div>
         </div>
       )}
+      <StatusLikersModal
+        isOpen={isLikersOpen}
+        onClose={() => setIsLikersOpen(false)}
+        likers={likers}
+        loading={likersLoading}
+        onLikeBack={handleLikeBack}
+        onDirectMessage={(liker) => navigate(`/chat/${liker.user_id}`)}
+      />
     </div>
   );
 };
