@@ -8,6 +8,8 @@ interface Props {
   loading: boolean;
 }
 
+const STORY_UPLOAD_PRICE = import.meta.env.VITE_STORY_UPLOAD_AMOUNT || '500';
+
 const StoryPurchaseModal: React.FC<Props> = ({ isOpen, onClose, onPurchase, loading }) => {
   if (!isOpen) return null;
 
@@ -31,7 +33,7 @@ const StoryPurchaseModal: React.FC<Props> = ({ isOpen, onClose, onPurchase, load
           </div>
 
           <div className="bg-amber-50 p-6 rounded-3xl inline-block mx-auto border border-amber-100">
-             <p className="text-3xl font-black text-amber-600">500 F CFA</p>
+             <p className="text-3xl font-black text-amber-600">{STORY_UPLOAD_PRICE} F CFA</p>
              <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mt-1">par story publiée</p>
           </div>
 

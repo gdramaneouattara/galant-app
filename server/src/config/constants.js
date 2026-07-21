@@ -10,7 +10,7 @@ const PRICES = {
   BOOST_7D: parseInt(process.env.BOOST_7D_AMOUNT || '5000'),
   GOLDEN_ROSE: parseInt(process.env.GOLDEN_ROSE_AMOUNT || '2500'),
   ROSE_NOTE_UNLOCK: parseInt(process.env.ROSE_NOTE_UNLOCK_AMOUNT || '500'),
-  STORY_UPLOAD: 500
+  STORY_UPLOAD: parseInt(process.env.STORY_UPLOAD_AMOUNT || '500')
 };
 
 const PLAN_AMOUNTS = {

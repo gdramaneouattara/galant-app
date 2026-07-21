@@ -11,6 +11,8 @@ interface Props {
   loading?: boolean;
 }
 
+const STORY_UPLOAD_PRICE = parseInt(process.env.EXPO_PUBLIC_STORY_UPLOAD_AMOUNT || '500');
+
 const StoryPurchaseModal: React.FC<Props> = ({
   visible,
   onClose,
@@ -36,7 +38,7 @@ const StoryPurchaseModal: React.FC<Props> = ({
           </Text>
 
           <View style={styles.priceTag}>
-            <Text style={styles.price}>500 F CFA</Text>
+            <Text style={styles.price}>{STORY_UPLOAD_PRICE} F CFA</Text>
             <Text style={styles.unit}>par story</Text>
           </View>
 
