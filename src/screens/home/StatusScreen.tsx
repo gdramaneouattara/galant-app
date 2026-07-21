@@ -31,6 +31,7 @@ import StatusLikersModal from './components/StatusLikersModal';
 import LikerProfileModal from './components/LikerProfileModal';
 import SuperLikePurchaseModal from '../../components/SuperLikePurchaseModal';
 import DirectMessagePurchaseModal from '../../components/DirectMessagePurchaseModal';
+import StoryPurchaseModal from '../../components/StoryPurchaseModal';
 
 interface Status {
   id: string;
@@ -93,6 +94,7 @@ const StatusScreen: React.FC = () => {
   const [likingBackUserId, setLikingBackUserId] = useState<string | null>(null);
   const [showSuperLikePurchaseModal, setShowSuperLikePurchaseModal] = useState(false);
   const [showDirectMessagePurchaseModal, setShowDirectMessagePurchaseModal] = useState(false);
+  const [showStoryPurchaseModal, setShowStoryPurchaseModal] = useState(false);
 
   const fetchStatuses = useCallback(async () => {
     try {
@@ -144,9 +146,7 @@ const StatusScreen: React.FC = () => {
   const pickStatusMedia = async () => {
     if (uploading) return;
     if (locked || (!currentUser?.is_premium && !currentUser?.is_vip)) {
-      Alert.alert('Privilège Premium 💎', 'La publication de stories est réservée aux membres Premium.');
-      // @ts-ignore
-      navigation.navigate('Premium');
+      setShowStoryPurchaseModal(true);
       return;
     }
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -267,6 +267,28 @@ const StatusScreen: React.FC = () => {
     }
   };
 
+  const handleStoryPurchasePaystack = async () => {
+    const ok = await purchaseWithPaystack('STORY_UPLOAD', 500);
+    if (ok) {
+      setShowStoryPurchaseModal(false);
+      // Wait a bit for server sync and then allow picker
+      setTimeout(() => {
+        pickStatusMedia();
+      }, 1000);
+    }
+  };
+
+  const handleStoryPurchaseGoogle = async () => {
+    // Assuming you'll add 'story_upload' SKU to Google Play/App Store
+    const ok = await purchaseWithStore('story_upload', 'STORY_UPLOAD');
+    if (ok) {
+      setShowStoryPurchaseModal(false);
+      setTimeout(() => {
+        pickStatusMedia();
+      }, 1000);
+    }
+  };
+
   const formatPublishedAt = (value?: string) => {
     if (!value) return '';
     const date = new Date(value);
@@ -364,6 +386,14 @@ const StatusScreen: React.FC = () => {
         onPurchaseGoogle={() => handlePurchaseAction('GOOGLE', 'DIRECT_MESSAGE')}
         loading={purchaseLoading}
         userName={selectedLiker?.profile.name}
+      />
+
+      <StoryPurchaseModal
+        visible={showStoryPurchaseModal}
+        onClose={() => setShowStoryPurchaseModal(false)}
+        onPurchasePaystack={handleStoryPurchasePaystack}
+        onPurchaseGoogle={handleStoryPurchaseGoogle}
+        loading={purchaseLoading}
       />
     </SafeAreaView>
   );

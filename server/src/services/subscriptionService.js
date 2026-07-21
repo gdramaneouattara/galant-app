@@ -117,6 +117,16 @@ const applyPurchasedEntitlement = async ({
     await db.collection('profiles').doc(userId).update({
       golden_rose_until: expiresAt
     });
+  } else if (normalizedType === 'STORY_UPLOAD') {
+    await db.collection('purchased_interactions').add({
+      user_id: userId,
+      interaction_type: 'STORY_UPLOAD',
+      status: 'UNUSED',
+      reference,
+      price_amount: PRICES.STORY_UPLOAD,
+      provider: paymentMethod,
+      created_at: new Date().toISOString()
+    });
   }
 
   return { success: true };

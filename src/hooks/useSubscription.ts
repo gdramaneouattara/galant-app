@@ -6,7 +6,7 @@ import { openPaymentUrl } from '../lib/payment-bridge';
 // Détection Web/Mobile
 const isWeb = typeof window !== 'undefined' && !((window as any).expo);
 
-export type PurchaseType = 'SUPER_LIKE' | 'DIRECT_MESSAGE' | 'BOOST' | 'PREMIUM' | 'ROSE_NOTE_UNLOCK';
+export type PurchaseType = 'SUPER_LIKE' | 'DIRECT_MESSAGE' | 'BOOST' | 'PREMIUM' | 'ROSE_NOTE_UNLOCK' | 'STORY_UPLOAD';
 
 export const useSubscription = () => {
   const [purchaseLoading, setPurchaseLoading] = useState(false);

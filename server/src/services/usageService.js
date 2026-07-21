@@ -77,4 +77,31 @@ const incrementUsage = async (userId, type, seconds = 0) => {
   }
 };
 
-module.exports = { hasDirectMessagePurchase, getDailyUsage, incrementUsage };
+/**
+ * Checks if a user has an unused story upload purchase
+ */
+const consumeStoryPurchase = async (userId) => {
+  if (!userId) return false;
+  try {
+    const snapshot = await db.collection('purchased_interactions')
+      .where('user_id', '==', userId)
+      .where('interaction_type', '==', 'STORY_UPLOAD')
+      .where('status', '==', 'UNUSED')
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) return false;
+
+    // Consume it
+    await snapshot.docs[0].ref.update({
+      status: 'USED',
+      consumed_at: new Date().toISOString()
+    });
+    return true;
+  } catch (error) {
+    console.error('Error consuming story purchase:', error);
+    return false;
+  }
+};
+
+module.exports = { hasDirectMessagePurchase, getDailyUsage, incrementUsage, consumeStoryPurchase };

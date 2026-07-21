@@ -8,7 +8,9 @@ import { showAlert } from '@shared/lib/ui-bridge';
 import { Link, useNavigate } from 'react-router-dom';
 import { compressImageWeb } from '../lib/imageCompression';
 import StatusLikersModal from '../components/StatusLikersModal';
+import StoryPurchaseModal from '../components/StoryPurchaseModal';
 import { useMatchmaking } from '@shared/hooks/useMatchmaking';
+import { useSubscription } from '@shared/hooks/useSubscription';
 
 interface Status {
   id: string;
@@ -31,6 +33,7 @@ const StoriesPage: React.FC = () => {
   const { user, profile, t } = useAuth();
   const navigate = useNavigate();
   const { handleSwipe } = useMatchmaking();
+  const { purchaseWithPaystack, purchaseLoading } = useSubscription();
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [loading, setLoading] = useState(true);
   const [locked, setLocked] = useState(false);
@@ -42,6 +45,11 @@ const StoriesPage: React.FC = () => {
   const [isLikersOpen, setIsLikersOpen] = useState(false);
   const [likers, setLikers] = useState<any[]>([]);
   const [likersLoading, setLikersLoading] = useState(false);
+
+  // Purchase Management
+  const [isPurchaseOpen, setIsPurchaseOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const storyTriggerRef = useRef<HTMLInputElement>(null);
 
   const fetchStatuses = useCallback(async () => {
     try {
@@ -72,8 +80,7 @@ const StoriesPage: React.FC = () => {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!profile?.is_premium && !profile?.is_vip) {
-      showAlert('Privilège Premium 💎', 'La publication de stories est réservée aux membres Premium.');
-      navigate('/premium');
+      setIsPurchaseOpen(true);
       return;
     }
 
@@ -186,6 +193,14 @@ const StoriesPage: React.FC = () => {
       }
     } catch (e) {
       showAlert('Erreur', 'Impossible de liker en retour.');
+    }
+  };
+
+  const handlePurchase = async () => {
+    const ok = await purchaseWithPaystack('STORY_UPLOAD', 500);
+    if (ok) {
+      setIsPurchaseOpen(false);
+      showAlert('Achat réussi', 'Vous pouvez maintenant publier votre story !');
     }
   };
 
@@ -392,6 +407,13 @@ const StoriesPage: React.FC = () => {
         loading={likersLoading}
         onLikeBack={handleLikeBack}
         onDirectMessage={(liker) => navigate(`/chat/${liker.user_id}`)}
+      />
+
+      <StoryPurchaseModal
+        isOpen={isPurchaseOpen}
+        onClose={() => setIsPurchaseOpen(false)}
+        onPurchase={handlePurchase}
+        loading={purchaseLoading}
       />
     </div>
   );

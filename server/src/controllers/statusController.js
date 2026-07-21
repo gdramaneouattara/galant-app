@@ -1,6 +1,6 @@
 const { db } = require('../config/firebase');
 const { hasStandardAccess, hasInvisiblePremiumAccessForPlan, isHiddenByInvisibleMode } = require('../services/accessService');
-const { getDailyUsage, incrementUsage } = require('../services/usageService');
+const { getDailyUsage, incrementUsage, consumeStoryPurchase } = require('../services/usageService');
 const { createStoryLikeNotificationIfNeeded } = require('../services/notificationService');
 const { QUOTAS } = require('../config/constants');
 
@@ -77,7 +77,19 @@ const getStatuses = async (req, res) => {
 const createStatus = async (req, res) => {
   const { mediaUrl, type, content } = req.body;
   const me = req.user;
-  if (!hasStandardAccess(me)) return res.status(403).json({ error: 'subscription_required' });
+
+  // 1. Check for Subscription/Trial
+  let hasAccess = hasStandardAccess(me);
+
+  // 2. If no subscription, check for a one-time Story Purchase
+  if (!hasAccess) {
+    const consumed = await consumeStoryPurchase(me.id);
+    if (consumed) {
+      hasAccess = true;
+    }
+  }
+
+  if (!hasAccess) return res.status(403).json({ error: 'subscription_required' });
 
   const expiresAt = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
   try {
