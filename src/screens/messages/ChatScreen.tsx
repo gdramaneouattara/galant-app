@@ -110,6 +110,18 @@ const ChatScreen: React.FC = () => {
   };
 
   const handleAttachMedia = async (type: 'IMAGE' | 'VIDEO') => {
+    if (!currentUser?.is_premium) {
+      Alert.alert(
+        t('premium_join'),
+        "Le partage de photos et vidéos est un privilège réservé aux membres Premium. ✨",
+        [
+          { text: t('maybe_later'), style: 'cancel' },
+          { text: t('become_premium'), onPress: () => navigation.navigate('Premium') }
+        ]
+      );
+      return;
+    }
+
     const options: ImagePicker.ImagePickerOptions = {
       mediaTypes: type === 'IMAGE' ? ImagePicker.MediaTypeOptions.Images : ImagePicker.MediaTypeOptions.Videos,
       allowsEditing: true,

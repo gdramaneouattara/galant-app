@@ -144,6 +144,12 @@ const ChatPage: React.FC = () => {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'IMAGE' | 'VIDEO') => {
+    if (!profile?.is_premium) {
+      showAlert('Privilège Premium 💎', 'Le partage de médias est réservé aux membres Premium.');
+      navigate('/premium');
+      return;
+    }
+
     const file = e.target.files?.[0];
     if (!file || !user || !matchId) return;
 
