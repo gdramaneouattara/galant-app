@@ -7,9 +7,11 @@ import {
   View,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 import { rtdb, db, COLLECTIONS } from '../../lib/firebase';
+import { uploadArrayBufferToBucket, getPublicUrl } from '../../lib/storageUpload';
 
 // Components
 import ChatHeader from './components/ChatHeader';
@@ -41,6 +43,7 @@ const ChatScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [inputText, setInputText] = useState('');
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     // 1. Fetch Target User Profile
@@ -106,6 +109,50 @@ const ChatScreen: React.FC = () => {
     }
   };
 
+  const handleAttachMedia = async (type: 'IMAGE' | 'VIDEO') => {
+    const options: ImagePicker.ImagePickerOptions = {
+      mediaTypes: type === 'IMAGE' ? ImagePicker.MediaTypeOptions.Images : ImagePicker.MediaTypeOptions.Videos,
+      allowsEditing: true,
+      quality: 0.8,
+    };
+
+    const result = await ImagePicker.launchImageLibraryAsync(options);
+    if (result.canceled || !result.assets[0]) return;
+
+    const asset = result.assets[0];
+
+    try {
+      setUploading(true);
+      const bucketPath = `chats/${activeMatchId || activeVenueChatId}/${Date.now()}`;
+
+      await uploadArrayBufferToBucket({
+        bucket: COLLECTIONS.MATCHES,
+        path: bucketPath,
+        uri: asset.uri,
+        contentType: type === 'IMAGE' ? 'image/webp' : 'video/mp4'
+      });
+
+      const mediaUrl = await getPublicUrl(COLLECTIONS.MATCHES, bucketPath);
+
+      await apiRequest('/api/messages/send', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({
+          matchId: activeMatchId,
+          venueChatId: activeVenueChatId,
+          messageType: type,
+          mediaPath: mediaUrl,
+          recipientId: userId
+        })
+      });
+
+    } catch (e: any) {
+      Alert.alert('Erreur Upload', e.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const renderMessage = useCallback(({ item }: { item: ChatMessage }) => {
     const isMine = item.sender_id === currentUser?.id;
     return (
@@ -143,7 +190,9 @@ const ChatScreen: React.FC = () => {
         inputText={inputText}
         setInputText={setInputText}
         onSend={handleSend}
+        onAttachMedia={handleAttachMedia}
         sending={sending}
+        uploading={uploading}
         t={t}
         colors={colors}
       />

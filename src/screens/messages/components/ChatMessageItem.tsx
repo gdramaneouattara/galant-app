@@ -1,7 +1,7 @@
 import React, { memo, useState } from 'react';
 import { View, Text, Image, Pressable, ActivityIndicator, StyleSheet, Alert } from 'react-native';
-import { Music, Play, Languages, MapPin, Calendar, Trash2 } from 'lucide-react-native';
-import { Audio } from 'expo-av';
+import { Music, Play, Languages, MapPin, Calendar, Trash2, Film } from 'lucide-react-native';
+import { Audio, Video, ResizeMode } from 'expo-av';
 import { apiRequest } from '../../../lib/api';
 import { COLORS } from '../../../data/mock';
 
@@ -33,6 +33,7 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
 }) => {
   const hasText = !!item.content;
   const hasImage = item.message_type === 'IMAGE' && !!mediaUrl;
+  const isVideo = item.message_type === 'VIDEO' && !!mediaUrl;
   const isVoice = item.message_type === 'VOICE' && !!mediaUrl;
   const isVenue = (item.message_type as any) === 'VENUE_SUGGESTION';
   const isEvent = (item.message_type as any) === 'EVENT_SUGGESTION';
@@ -166,6 +167,18 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
 
         {hasImage && <Image source={{ uri: mediaUrl! }} style={[styles.imageContent, (hasText || isVenue) && styles.mediaAfterText]} />}
 
+        {isVideo && (
+          <View style={[styles.videoContainer, (hasText || isVenue) && styles.mediaAfterText]}>
+            <Video
+              source={{ uri: mediaUrl! }}
+              style={styles.videoContent}
+              useNativeControls
+              resizeMode={ResizeMode.CONTAIN}
+              isLooping={false}
+            />
+          </View>
+        )}
+
         <Text style={[styles.messageMeta, isMine && styles.myMessageMeta]}>
           {displayTime}{isMine ? ` • ${item.is_read ? 'Lu ✓✓' : t('sent')}` : ''}
           {isSerenade && !isMine && !isExpired && ` • ${t('one_listen_only')}`}
@@ -202,6 +215,8 @@ const styles = StyleSheet.create({
   voiceAction: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 8 },
   voiceText: { fontSize: 13, fontWeight: '700' },
   imageContent: { width: 200, height: 200, borderRadius: 12 },
+  videoContainer: { width: 220, height: 160, borderRadius: 12, overflow: 'hidden', backgroundColor: '#000' },
+  videoContent: { width: '100%', height: '100%' },
   mediaAfterText: { marginTop: 10 },
   voiceExpired: { opacity: 0.5 },
 });

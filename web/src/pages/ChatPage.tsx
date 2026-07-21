@@ -5,8 +5,10 @@ import { db, rtdb, COLLECTIONS } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { ref, onValue } from 'firebase/database';
 import { apiRequest } from '@shared/lib/api';
-import { Send, ChevronLeft, ShieldCheck, Gem, Sparkles, Languages, Loader2, MapPin, Calendar } from 'lucide-react';
+import { Send, ChevronLeft, ShieldCheck, Gem, Sparkles, Languages, Loader2, MapPin, Calendar, Image as ImageIcon, Video, Paperclip } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
+import { compressImageWeb } from '../lib/imageCompression';
+import { ref, uploadBytes, getDownloadURL as getStorageUrl } from 'firebase/storage';
 
 const ChatPage: React.FC = () => {
   const { matchId } = useParams();
@@ -16,7 +18,10 @@ const ChatPage: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState('');
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const [translations, setTranslations] = useState<Record<string, string>>({});
   const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -138,6 +143,39 @@ const ChatPage: React.FC = () => {
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'IMAGE' | 'VIDEO') => {
+    const file = e.target.files?.[0];
+    if (!file || !user || !matchId) return;
+
+    setUploading(true);
+    try {
+      let finalFile: Blob | File = file;
+      if (type === 'IMAGE') {
+        finalFile = await compressImageWeb(file);
+      }
+
+      const storageRef = ref(fbStorage, `chats/${matchId}/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, finalFile, { contentType: file.type });
+      const mediaUrl = await getStorageUrl(storageRef);
+
+      await apiRequest('/api/messages/send', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({
+          matchId,
+          messageType: type,
+          mediaPath: mediaUrl,
+          recipientId: targetUser.id
+        })
+      });
+    } catch (error: any) {
+      showAlert('Erreur Upload', error.message);
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
   if (!targetUser) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
 
   return (
@@ -172,11 +210,29 @@ const ChatPage: React.FC = () => {
               <div className={`max-w-[85%] group relative ${isMine ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
 
                 {/* Bulle Standard */}
-                <div className={`p-4 rounded-3xl text-sm font-medium shadow-sm ${
+                <div className={`p-4 rounded-3xl text-sm font-medium shadow-sm overflow-hidden ${
                   isMine
                     ? 'bg-primary text-white rounded-tr-none'
                     : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
                 }`}>
+
+                  {/* Media Content */}
+                  {msg.message_type === 'IMAGE' && msg.media_url && (
+                    <img
+                      src={msg.media_url}
+                      className="max-w-full rounded-2xl mb-2 hover:scale-[1.02] transition-transform cursor-pointer"
+                      alt="Shared media"
+                      onClick={() => window.open(msg.media_url, '_blank')}
+                    />
+                  )}
+
+                  {msg.message_type === 'VIDEO' && msg.media_url && (
+                    <video
+                      src={msg.media_url}
+                      controls
+                      className="max-w-full rounded-2xl mb-2 bg-black"
+                    />
+                  )}
 
                   {/* Suggestions Lieux/Events */}
                   {(isVenue || isEvent) && (
@@ -243,18 +299,40 @@ const ChatPage: React.FC = () => {
         )}
 
         <form onSubmit={handleSend} className="flex gap-3 items-center">
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="p-3 hover:bg-slate-100 rounded-xl text-slate-400 transition-colors"
+            >
+              <ImageIcon size={20} />
+            </button>
+            <button
+              type="button"
+              onClick={() => videoInputRef.current?.click()}
+              disabled={uploading}
+              className="p-3 hover:bg-slate-100 rounded-xl text-slate-400 transition-colors"
+            >
+              <Video size={20} />
+            </button>
+            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'IMAGE')} />
+            <input type="file" ref={videoInputRef} className="hidden" accept="video/*" onChange={(e) => handleFileUpload(e, 'VIDEO')} />
+          </div>
+
           <input
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder={t('write_message')}
-            className="flex-1 bg-slate-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium"
+            disabled={uploading}
+            placeholder={uploading ? "Envoi du fichier..." : t('write_message')}
+            className="flex-1 bg-slate-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium disabled:opacity-50"
           />
           <button
-            disabled={!inputText.trim() || sending}
+            disabled={(!inputText.trim() && !uploading) || sending || uploading}
             className="w-12 h-12 bg-primary text-white rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shadow-red-100 disabled:opacity-30"
           >
-            <Send size={20} fill="currentColor" />
+            {uploading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} fill="currentColor" />}
           </button>
         </form>
       </div>
