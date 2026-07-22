@@ -1,38 +1,44 @@
-const admin = require('firebase-admin');
+const { initializeApp, getApps, cert } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
+const { getAuth } = require('firebase-admin/auth');
+const { getDatabase } = require('firebase-admin/database');
+const { getStorage } = require('firebase-admin/storage');
 require('dotenv').config();
 
 /**
- * ULTRA-SAFE FIREBASE INITIALIZATION
- * Designed to never crash the main process even if config fails.
+ * FIREBASE ADMIN MODULAR INITIALIZATION
+ * Verified for Firebase Admin v14+ on Cloud Run.
  */
 
 let app;
+
 try {
-  if (admin.apps.length === 0) {
+  if (getApps().length === 0) {
     const config = {
       databaseURL: process.env.FIREBASE_DATABASE_URL,
       storageBucket: process.env.FIREBASE_STORAGE_BUCKET
     };
 
-    // Use Service Account if provided, otherwise let Google handle it automatically
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-      config.credential = admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT));
+      console.log('ℹ️ Initializing with Service Account from ENV');
+      config.credential = cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT));
     }
+    // Sur Cloud Run, si pas de credential, il utilise ADC automatiquement
 
-    app = admin.initializeApp(config);
-    console.log('✅ Firebase initialized successfully.');
+    app = initializeApp(config);
+    console.log('✅ Firebase Modular initialized.');
   } else {
-    app = admin.app();
+    app = getApps()[0];
   }
 } catch (error) {
-  console.error('⚠️ Firebase Init Warning (Non-Fatal):', error.message);
+  console.error('⚠️ Firebase Modular Init Error:', error.message);
 }
 
-// Export with safety checks
 module.exports = {
-  admin,
-  db: app ? app.firestore() : null,
-  auth: app ? app.auth() : null,
-  rtdb: app ? app.database() : null,
-  bucket: app ? app.storage().bucket() : null
+  app,
+  db: app ? getFirestore(app) : null,
+  auth: app ? getAuth(app) : null,
+  rtdb: app ? getDatabase(app) : null,
+  bucket: app ? getStorage(app).bucket() : null,
+  admin: require('firebase-admin') // For legacy compatibility
 };

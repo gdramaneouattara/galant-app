@@ -33,30 +33,45 @@ const {
 
 const app = express();
 
-// 1. START SERVER IMMEDIATELY TO SATISFY CLOUD RUN HEALTH CHECK
-const serverPort = process.env.PORT || 8080;
-const server = app.listen(serverPort, '0.0.0.0', () => {
-  console.log('✅=========================================');
-  console.log(`🚀 GALANT Server LISTENING on port ${serverPort}`);
-  console.log('✅=========================================');
-});
-
 // Catch all unhandled errors
 process.on('uncaughtException', (err) => {
   console.error('🔥 UNCAUGHT:', err.message);
 });
 
-// 2. CONTINUE WITH MIDDLEWARES AND ROUTES
+// START SERVER IMMEDIATELY (Health check priority)
+const serverPort = process.env.PORT || PORT || 8080;
+app.listen(serverPort, '0.0.0.0', () => {
+  console.log(`🚀 GALANT Server LISTENING on port ${serverPort}`);
+});
+
 // Gestion sécurisée du dossier uploads
 const uploadDir = path.join('/tmp', 'uploads');
 if (!fs.existsSync(uploadDir)) {
   try {
     fs.mkdirSync(uploadDir, { recursive: true });
-    console.log('📁 Dossier "uploads/" créé dans /tmp.');
-  } catch (e) {
-    console.error('⚠️ Impossible de créer le dossier uploads:', e.message);
-  }
+  } catch (e) {}
 }
+
+// LATE REQUIRE (Prevents blocking the port opening)
+const { initCronJobs } = require('./services/cronService');
+const aiRoutes = require('./routes/aiRoutes');
+const messageRoutes = require('./routes/messageRoutes');
+const matchmakingRoutes = require('./routes/matchmakingRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const subscriptionRoutes = require('./routes/subscriptionRoutes');
+const venueRoutes = require('./routes/venueRoutes');
+const statusRoutes = require('./routes/statusRoutes');
+const communityRoutes = require('./routes/communityRoutes');
+const kycRoutes = require('./routes/kycRoutes');
+const profileRoutes = require('./routes/profileRoutes');
+const privacyRoutes = require('./routes/privacyRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const likeRoutes = require('./routes/likeRoutes');
+const superLikeRoutes = require('./routes/superLikeRoutes');
+const mediaRoutes = require('./routes/mediaRoutes');
+const trackingRoutes = require('./routes/trackingRoutes');
+const yangoRoutes = require('./routes/yangoRoutes');
 
 // Middlewares
 const allowedOrigins = ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean);
