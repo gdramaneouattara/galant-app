@@ -2,41 +2,37 @@ const admin = require('firebase-admin');
 require('dotenv').config();
 
 /**
- * FIREBASE ADMIN INITIALIZATION
- * Standard recommended pattern for Google Cloud Run.
- * It automatically finds credentials in the environment.
+ * ULTRA-SAFE FIREBASE INITIALIZATION
+ * Designed to never crash the main process even if config fails.
  */
 
+let app;
 try {
   if (admin.apps.length === 0) {
-    // Si on a un compte de service en variable (Local/Dev), on l'utilise
+    const config = {
+      databaseURL: process.env.FIREBASE_DATABASE_URL,
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET
+    };
+
+    // Use Service Account if provided, otherwise let Google handle it automatically
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        databaseURL: process.env.FIREBASE_DATABASE_URL,
-        storageBucket: process.env.FIREBASE_STORAGE_BUCKET
-      });
-      console.log('✅ Firebase initialized with Service Account from ENV');
+      config.credential = admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT));
     }
-    // Sinon, on laisse Google Cloud Run gérer l'authentification tout seul (Production)
-    else {
-      admin.initializeApp({
-        databaseURL: process.env.FIREBASE_DATABASE_URL,
-        storageBucket: process.env.FIREBASE_STORAGE_BUCKET
-      });
-      console.log('ℹ️ Firebase initialized with Application Default Credentials (Cloud Run)');
-    }
+
+    app = admin.initializeApp(config);
+    console.log('✅ Firebase initialized successfully.');
+  } else {
+    app = admin.app();
   }
 } catch (error) {
-  console.error('🔥 Firebase Initialization Error:', error.message);
-  // On ne bloque pas le démarrage du serveur pour que le port 8080 s'ouvre quand même
+  console.error('⚠️ Firebase Init Warning (Non-Fatal):', error.message);
 }
 
+// Export with safety checks
 module.exports = {
   admin,
-  db: admin.firestore(),
-  auth: admin.auth(),
-  rtdb: admin.database(),
-  bucket: admin.storage().bucket()
+  db: app ? app.firestore() : null,
+  auth: app ? app.auth() : null,
+  rtdb: app ? app.database() : null,
+  bucket: app ? app.storage().bucket() : null
 };

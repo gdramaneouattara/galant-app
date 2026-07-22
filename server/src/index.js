@@ -33,16 +33,20 @@ const {
 
 const app = express();
 
-// Catch all unhandled errors to prevent container crash
+// 1. START SERVER IMMEDIATELY TO SATISFY CLOUD RUN HEALTH CHECK
+const serverPort = process.env.PORT || 8080;
+const server = app.listen(serverPort, '0.0.0.0', () => {
+  console.log('✅=========================================');
+  console.log(`🚀 GALANT Server LISTENING on port ${serverPort}`);
+  console.log('✅=========================================');
+});
+
+// Catch all unhandled errors
 process.on('uncaughtException', (err) => {
-  console.error('🔥 UNCAUGHT EXCEPTION:', err.message);
-  console.error(err.stack);
+  console.error('🔥 UNCAUGHT:', err.message);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('🔥 UNHANDLED REJECTION at:', promise, 'reason:', reason);
-});
-
+// 2. CONTINUE WITH MIDDLEWARES AND ROUTES
 // Gestion sécurisée du dossier uploads
 const uploadDir = path.join('/tmp', 'uploads');
 if (!fs.existsSync(uploadDir)) {
@@ -90,20 +94,12 @@ app.use('/api/yango', yangoRoutes);
 // Compatibility aliases (if needed by frontend)
 app.use('/api/profile', profileRoutes); // Some endpoints might use singular /profile
 
-// Start Server
-const serverPort = process.env.PORT || PORT;
-app.listen(serverPort, '0.0.0.0', () => {
-  console.log('✅=========================================');
-  console.log(`🚀 GALANT Server LIVE on port ${serverPort}`);
-  console.log('✅=========================================');
-
-  // Lancer les tâches de fond après le démarrage
-  setTimeout(() => {
-    try {
-      console.log('⏰ Initializing Background Jobs...');
-      initCronJobs();
-    } catch (e) {
-      console.error('❌ Cron Jobs Initialization Failed:', e.message);
-    }
-  }, 10000);
-});
+// Start Tâches de fond
+setTimeout(() => {
+  try {
+    console.log('⏰ Initializing Background Jobs...');
+    initCronJobs();
+  } catch (e) {
+    console.error('❌ Cron Jobs Initialization Failed:', e.message);
+  }
+}, 15000);
