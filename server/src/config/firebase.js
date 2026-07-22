@@ -1,50 +1,52 @@
 const admin = require('firebase-admin');
-const dotenv = require('dotenv');
-
-dotenv.config();
+const { credential } = require('firebase-admin');
+require('dotenv').config();
 
 /**
  * FIREBASE ADMIN INITIALIZATION
- *
- * It requires a service account JSON file.
- * Go to Firebase Console > Project Settings > Service Accounts > Generate new private key.
- * Place it in server/firebase-service-account.json (ADD TO .GITIGNORE!)
+ * Robust initialization for both local and Cloud Run environments.
  */
 
-let credential;
+let firebaseCredential;
 
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-  // If the service account JSON is provided via environment variable (useful for CI/CD or specific setups)
+  // Production/CI: via environment variable
   try {
     const serviceAccountData = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    credential = admin.credential.cert(serviceAccountData);
+    firebaseCredential = admin.credential.cert(serviceAccountData);
   } catch (e) {
-    console.error('Error parsing FIREBASE_SERVICE_ACCOUNT env var:', e.message);
+    console.error('🔥 Error parsing FIREBASE_SERVICE_ACCOUNT:', e.message);
   }
 } else {
   try {
-    // Try to load from file (local development)
-    serviceAccount = require('../../firebase-service-account.json');
-    credential = admin.credential.cert(serviceAccount);
+    // Local development: via JSON file
+    const serviceAccount = require('../../firebase-service-account.json');
+    firebaseCredential = admin.credential.cert(serviceAccount);
+    console.log('✅ Firebase initialized with local service account file.');
   } catch (e) {
-    // Fallback to Application Default Credentials (for Cloud Run production)
-    console.log('Firebase Service Account file missing, falling back to Application Default Credentials.');
-    credential = admin.credential.applicationDefault();
+    // Cloud Run Production: Fallback to Application Default Credentials
+    console.log('ℹ️ Local service account missing, using Cloud Run Default Credentials.');
+    firebaseCredential = admin.credential.applicationDefault();
   }
 }
 
-if (credential) {
+if (!admin.apps.length) {
   admin.initializeApp({
-    credential,
+    credential: firebaseCredential,
     databaseURL: process.env.FIREBASE_DATABASE_URL,
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET
   });
 }
 
+const db = admin.firestore();
+const auth = admin.auth();
+const rtdb = admin.database();
+const bucket = admin.storage().bucket();
+
 module.exports = {
   admin,
-  db: admin ? admin.firestore() : null,
-  auth: admin ? admin.auth() : null,
-  rtdb: admin ? admin.database() : null,
-  bucket: admin ? admin.storage().bucket() : null
+  db,
+  auth,
+  rtdb,
+  bucket
 };
