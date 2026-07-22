@@ -1,45 +1,50 @@
-const { initializeApp, credential, apps } = require('firebase-admin');
-const { getFirestore } = require('firebase-admin/firestore');
-const { getAuth } = require('firebase-admin/auth');
-const { getDatabase } = require('firebase-admin/database');
-const { getStorage } = require('firebase-admin/storage');
+const admin = require('firebase-admin');
 require('dotenv').config();
 
 /**
  * FIREBASE ADMIN INITIALIZATION
- * Modern modular syntax to ensure compatibility with Cloud Run and Node 22.
+ * Absolute fallback logic to ensure startup on Cloud Run.
  */
 
 let firebaseCredential;
 
 try {
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    // Production/CI: via environment variable
     const serviceAccountData = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    firebaseCredential = credential.cert(serviceAccountData);
+    firebaseCredential = admin.credential.cert(serviceAccountData);
   } else {
     try {
-      // Local development
+      // Local development: via JSON file
       const serviceAccount = require('../../firebase-service-account.json');
-      firebaseCredential = credential.cert(serviceAccount);
+      firebaseCredential = admin.credential.cert(serviceAccount);
+      console.log('✅ Firebase initialized with local service account file.');
     } catch (e) {
-      // Cloud Run Production: Official method for Application Default Credentials
-      firebaseCredential = credential.applicationDefault();
+      // Cloud Run Production: Official Application Default Credentials
+      // Use the global admin object which is guaranteed to exist
+      if (admin.credential) {
+        firebaseCredential = admin.credential.applicationDefault();
+        console.log('ℹ️ Using Google Cloud Application Default Credentials.');
+      }
     }
   }
 } catch (err) {
-  console.error('🔥 Firebase Credential Error:', err.message);
+  console.error('🔥 Firebase Credential Config Error:', err.message);
 }
 
-const app = !apps.length ? initializeApp({
-  credential: firebaseCredential,
-  databaseURL: process.env.FIREBASE_DATABASE_URL,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET
-}) : apps[0];
+// Global initialization check
+if (admin.apps.length === 0) {
+  admin.initializeApp({
+    credential: firebaseCredential,
+    databaseURL: process.env.FIREBASE_DATABASE_URL,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET
+  });
+}
 
 module.exports = {
-  admin: require('firebase-admin'),
-  db: getFirestore(app),
-  auth: getAuth(app),
-  rtdb: getDatabase(app),
-  bucket: getStorage(app).bucket()
+  admin: admin,
+  db: admin.firestore(),
+  auth: admin.auth(),
+  rtdb: admin.database(),
+  bucket: admin.storage().bucket()
 };
