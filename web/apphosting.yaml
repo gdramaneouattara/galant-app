@@ -1,7 +1,9 @@
-kind: "publishedCloudRun"
-apiVersion: "v1"
+# Configuration Firebase App Hosting
+runConfig:
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 512
 
-# Configuration de l'environnement de build
 env:
   - variable: VITE_FIREBASE_API_KEY
     secret: VITE_FIREBASE_API_KEY
@@ -21,9 +23,5 @@ env:
     secret: VITE_API_BASE_URL
   - variable: VITE_STORY_UPLOAD_AMOUNT
     secret: VITE_STORY_UPLOAD_AMOUNT
-
-# Paramètres du service Cloud Run
-runConfig:
-  concurrency: 80
-  cpu: 1.0
-  memoryMiB: 512
+  - variable: VITE_FIREBASE_DATABASE_URL
+    secret: VITE_FIREBASE_DATABASE_URL
