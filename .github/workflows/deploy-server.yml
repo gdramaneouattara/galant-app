@@ -1,0 +1,52 @@
+name: Deploy Server to Cloud Run
+
+on:
+  push:
+    branches: [ main, staging ]
+    paths:
+      - 'server/**'
+      - '.github/workflows/deploy-server.yml'
+
+env:
+  PROJECT_ID: galant-af393
+  SERVICE_NAME: galant-backend
+  REGION: europe-west4
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and Push Container
+        run: |
+          # Use different tag for staging
+          TAG=${{ github.ref == 'refs/heads/main' && 'latest' || 'staging' }}
+          gcloud builds submit --tag gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:$TAG server/
+
+      - name: Deploy to Cloud Run
+        run: |
+          # Use different service name for staging
+          SERVICE=${{ github.ref == 'refs/heads/main' && env.SERVICE_NAME || format('{0}-staging', env.SERVICE_NAME) }}
+          TAG=${{ github.ref == 'refs/heads/main' && 'latest' || 'staging' }}
+          
+          gcloud run deploy $SERVICE \
+            --image gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:$TAG \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --set-env-vars "NODE_ENV=production,ALLOWED_ORIGINS=*" \
+            --set-secrets "PAYSTACK_SECRET_KEY=PAYSTACK_SECRET_KEY:latest,JWT_SECRET=JWT_SECRET:latest,FIREBASE_DATABASE_URL=FIREBASE_DATABASE_URL:latest,FIREBASE_STORAGE_BUCKET=FIREBASE_STORAGE_BUCKET:latest,EXPO_PUSH_ACCESS_TOKEN=EXPO_PUSH_ACCESS_TOKEN:latest,YANGO_API_KEY=YANGO_API_KEY:latest"
