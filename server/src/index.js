@@ -33,8 +33,18 @@ const {
 
 const app = express();
 
-// Gestion sécurisée du dossier uploads pour Cloud Run
-const uploadDir = path.join('/tmp', 'uploads'); // Utiliser /tmp qui est toujours accessible en écriture
+// Catch all unhandled errors to prevent container crash
+process.on('uncaughtException', (err) => {
+  console.error('🔥 UNCAUGHT EXCEPTION:', err.message);
+  console.error(err.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🔥 UNHANDLED REJECTION at:', promise, 'reason:', reason);
+});
+
+// Gestion sécurisée du dossier uploads
+const uploadDir = path.join('/tmp', 'uploads');
 if (!fs.existsSync(uploadDir)) {
   try {
     fs.mkdirSync(uploadDir, { recursive: true });
@@ -83,14 +93,17 @@ app.use('/api/profile', profileRoutes); // Some endpoints might use singular /pr
 // Start Server
 const serverPort = process.env.PORT || PORT;
 app.listen(serverPort, '0.0.0.0', () => {
+  console.log('✅=========================================');
   console.log(`🚀 GALANT Server LIVE on port ${serverPort}`);
+  console.log('✅=========================================');
 
-  // Lancer les tâches de fond après le démarrage pour ne pas bloquer le serveur
+  // Lancer les tâches de fond après le démarrage
   setTimeout(() => {
     try {
+      console.log('⏰ Initializing Background Jobs...');
       initCronJobs();
     } catch (e) {
-      console.error('❌ Erreur lors du lancement des Cron Jobs:', e.message);
+      console.error('❌ Cron Jobs Initialization Failed:', e.message);
     }
-  }, 5000);
+  }, 10000);
 });
