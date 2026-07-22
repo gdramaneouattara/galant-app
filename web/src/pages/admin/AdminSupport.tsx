@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Send, ShieldCheck, Gem, User, MoreVertical, CheckCircle2, Clock } from 'lucide-react';
+import { Search, Send, ShieldCheck, Gem, User, MoreVertical, CheckCircle2, Clock, MessageSquare } from 'lucide-react';
 
 const AdminSupport: React.FC = () => {
   const [selectedChat, setSelectedChat] = useState<any>(null);

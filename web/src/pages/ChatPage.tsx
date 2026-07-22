@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { db, rtdb, COLLECTIONS } from '../firebase';
+import { db, rtdb, COLLECTIONS, fbStorage } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { ref, onValue } from 'firebase/database';
 import { apiRequest } from '@shared/lib/api';

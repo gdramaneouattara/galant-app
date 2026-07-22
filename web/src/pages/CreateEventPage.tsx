@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '@shared/lib/api';
 import { showAlert } from '@shared/lib/ui-bridge';
-import { ChevronLeft, Calendar, Image as ImageIcon, AlignLeft, Tag, Clock } from 'lucide-react';
+import { ChevronLeft, Calendar, Image as ImageIcon, AlignLeft, Tag, Clock, Camera } from 'lucide-react';
 import { fbStorage } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { compressImageWeb } from '../lib/imageCompression';

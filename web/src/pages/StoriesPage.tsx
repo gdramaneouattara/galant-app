@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '@shared/lib/api';
 import { fbStorage } from '../firebase';
 import { ref, getDownloadURL, uploadBytes } from 'firebase/storage';
-import { Plus, Heart, X, Play, Image as ImageIcon, Film, Lock, ChevronLeft, MoreHorizontal, Sparkles, Send, Share2, Users } from 'lucide-react';
+import { Plus, Heart, X, Play, Image as ImageIcon, Film, Lock, ChevronLeft, MoreHorizontal, Sparkles, Send, Share2, Users, Crown } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { Link, useNavigate } from 'react-router-dom';
 import { compressImageWeb } from '../lib/imageCompression';

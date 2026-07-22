@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { apiRequest } from '@shared/lib/api';
-import { Save, RefreshCcw, DollarSign, Gem, Rocket, MessageSquare, Heart, Film } from 'lucide-react';
+import { Save, RefreshCcw, DollarSign, Gem, Rocket, MessageSquare, Heart, Film, Sparkles } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 
 const AdminPricing: React.FC = () => {

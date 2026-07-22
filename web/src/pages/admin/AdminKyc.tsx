@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { apiRequest } from '@shared/lib/api';
-import { ShieldCheck, XCircle, CheckCircle2, Eye, ExternalLink, Clock, AlertCircle } from 'lucide-react';
+import { ShieldCheck, XCircle, CheckCircle2, Eye, ExternalLink, Clock, AlertCircle, Camera } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 
 interface KycRequest {
