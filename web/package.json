@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "start": "superstatic dist --port 8080 --host 0.0.0.0",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -14,7 +15,8 @@
     "lucide-react": "^0.378.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.30.4"
+    "react-router-dom": "^6.30.4",
+    "superstatic": "^9.0.3"
   },
   "devDependencies": {
     "@types/react": "^18.2.66",
