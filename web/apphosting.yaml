@@ -1,12 +1,5 @@
-# Configuration simplifiée pour test
+kind: "publishedCloudRun"
+apiVersion: "v1"
 runConfig:
   cpu: 1
   memoryMiB: 512
-
-env:
-  - variable: VITE_FIREBASE_API_KEY
-    value: "VOTRE_CLE_API"
-  - variable: VITE_FIREBASE_PROJECT_ID
-    value: "galant-af393"
-  - variable: VITE_API_BASE_URL
-    value: "https://galant-app.web.app"
