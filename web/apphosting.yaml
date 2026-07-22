@@ -1,7 +1,6 @@
 runConfig:
   cpu: 1
   memoryMiB: 512
-
 env:
   - variable: VITE_FIREBASE_API_KEY
     secret: VITE_FIREBASE_API_KEY
