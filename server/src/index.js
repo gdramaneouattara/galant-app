@@ -33,11 +33,15 @@ const {
 
 const app = express();
 
-// Création automatique du dossier uploads s'il n'existe pas
-const uploadDir = path.join(__dirname, '../uploads');
+// Gestion sécurisée du dossier uploads pour Cloud Run
+const uploadDir = path.join('/tmp', 'uploads'); // Utiliser /tmp qui est toujours accessible en écriture
 if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-  console.log('📁 Dossier "uploads/" créé avec succès.');
+  try {
+    fs.mkdirSync(uploadDir, { recursive: true });
+    console.log('📁 Dossier "uploads/" créé dans /tmp.');
+  } catch (e) {
+    console.error('⚠️ Impossible de créer le dossier uploads:', e.message);
+  }
 }
 
 // Middlewares
@@ -77,7 +81,16 @@ app.use('/api/yango', yangoRoutes);
 app.use('/api/profile', profileRoutes); // Some endpoints might use singular /profile
 
 // Start Server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 GALANT Production Server running on port ${PORT}`);
-  initCronJobs();
+const serverPort = process.env.PORT || PORT;
+app.listen(serverPort, '0.0.0.0', () => {
+  console.log(`🚀 GALANT Server LIVE on port ${serverPort}`);
+
+  // Lancer les tâches de fond après le démarrage pour ne pas bloquer le serveur
+  setTimeout(() => {
+    try {
+      initCronJobs();
+    } catch (e) {
+      console.error('❌ Erreur lors du lancement des Cron Jobs:', e.message);
+    }
+  }, 5000);
 });
