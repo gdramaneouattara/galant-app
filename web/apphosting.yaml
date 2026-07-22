@@ -1,11 +1,8 @@
-# Configuration Firebase App Hosting
 runConfig:
-  concurrency: 80
   cpu: 1
   memoryMiB: 512
 
-# Variables provenant de Secret Manager (Sécurisé)
-secrets:
+env:
   - variable: VITE_FIREBASE_API_KEY
     secret: VITE_FIREBASE_API_KEY
   - variable: VITE_FIREBASE_AUTH_DOMAIN
@@ -20,8 +17,6 @@ secrets:
     secret: VITE_FIREBASE_APP_ID
   - variable: VITE_GOOGLE_MAPS_API_KEY
     secret: VITE_GOOGLE_MAPS_API_KEY
-  - variable: VITE_API_BASE_URL
-    secret: VITE_API_BASE_URL
   - variable: VITE_STORY_UPLOAD_AMOUNT
     secret: VITE_STORY_UPLOAD_AMOUNT
   - variable: VITE_FIREBASE_DATABASE_URL
