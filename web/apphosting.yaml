@@ -1,5 +1,5 @@
-kind: "publishedCloudRun"
-apiVersion: "v1"
+# Configuration stable avec Node 22 (LTS)
 runConfig:
   cpu: 1
   memoryMiB: 512
+# On laisse la console Firebase gérer les variables d'environnement
