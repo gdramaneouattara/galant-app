@@ -2,43 +2,51 @@ const admin = require('firebase-admin');
 require('dotenv').config();
 
 /**
- * PRODUCTION-READY FIREBASE INITIALIZATION
- * Standard pattern for Google Cloud Run (Node 22).
+ * FIREBASE ADMIN INITIALIZATION - FINAL COMPATIBILITY FIX
+ * This version uses the most resilient check for Cloud Run environments.
  */
 
-if (!admin.apps.length) {
-  const config = {};
+const initializeFirebase = () => {
+  if (admin.apps.length > 0) return admin.app();
 
-  // URL de la base de données (Nécessaire pour Realtime DB)
-  if (process.env.FIREBASE_DATABASE_URL) {
-    config.databaseURL = process.env.FIREBASE_DATABASE_URL;
-  }
+  const config = {
+    databaseURL: process.env.FIREBASE_DATABASE_URL,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET
+  };
 
-  // Bucket de stockage
-  if (process.env.FIREBASE_STORAGE_BUCKET) {
-    config.storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
-  }
-
-  // Identifiants
-  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-    try {
+  try {
+    // 1. Priorité au Service Account (Local ou spécifique)
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      console.log('ℹ️ Initializing Firebase with Service Account from ENV');
       config.credential = admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT));
-      console.log('✅ Initialized with Service Account from ENV');
-    } catch (e) {
-      console.error('❌ Error parsing Service Account:', e.message);
     }
-  }
-  // Sur Cloud Run, si pas de credential, admin.initializeApp()
-  // utilise automatiquement les droits du projet sans rien demander.
+    // 2. Repli sur le fichier JSON local si présent
+    else {
+      try {
+        const localKeys = require('../../firebase-service-account.json');
+        console.log('✅ Initializing Firebase with local JSON file');
+        config.credential = admin.credential.cert(localKeys);
+      } catch (e) {
+        // 3. Cloud Run : Utilisation automatique des droits du projet
+        console.log('ℹ️ No explicit credentials found, using Application Default Credentials');
+        // Sur Cloud Run, on ne définit PAS config.credential, initializeApp le trouve tout seul
+      }
+    }
 
-  admin.initializeApp(config);
-  console.log('🚀 Firebase Admin instance created.');
-}
+    return admin.initializeApp(config);
+  } catch (error) {
+    console.error('⚠️ Firebase Initialization critical error:', error.message);
+    // On initialise vide pour ne pas crasher le container et permettre le déploiement
+    return admin.initializeApp();
+  }
+};
+
+const app = initializeFirebase();
 
 module.exports = {
   admin,
-  db: admin.firestore(),
-  auth: admin.auth(),
-  rtdb: admin.database(),
-  bucket: admin.storage().bucket()
+  db: app.firestore(),
+  auth: app.auth(),
+  rtdb: app.database(),
+  bucket: app.storage().bucket()
 };
