@@ -3,49 +3,40 @@ require('dotenv').config();
 
 /**
  * FIREBASE ADMIN INITIALIZATION
- * Ultra-robust pattern to prevent startup crashes on Cloud Run.
+ * Standard recommended pattern for Google Cloud Run.
+ * It automatically finds credentials in the environment.
  */
 
-const initFirebase = () => {
-  // If already initialized, stop here
-  if (admin.apps.length > 0) return admin.app();
-
-  const config = {
-    databaseURL: process.env.FIREBASE_DATABASE_URL,
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET
-  };
-
-  try {
+try {
+  if (admin.apps.length === 0) {
+    // Si on a un compte de service en variable (Local/Dev), on l'utilise
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-      console.log('ℹ️ Initializing with Service Account from ENV');
-      config.credential = admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT));
-    } else {
-      try {
-        // Try local file first
-        const serviceAccount = require('../../firebase-service-account.json');
-        console.log('✅ Initializing with local JSON file');
-        config.credential = admin.credential.cert(serviceAccount);
-      } catch (e) {
-        // Cloud Run environment: Admin SDK will automatically find credentials
-        console.log('ℹ️ Local file missing, using Environment Default Credentials');
-      }
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        databaseURL: process.env.FIREBASE_DATABASE_URL,
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET
+      });
+      console.log('✅ Firebase initialized with Service Account from ENV');
     }
-
-    return admin.initializeApp(config);
-  } catch (error) {
-    console.error('⚠️ Firebase Initialization warning (will try default):', error.message);
-    // Last resort: initialize without explicit credentials (ADC will take over)
-    return admin.initializeApp();
+    // Sinon, on laisse Google Cloud Run gérer l'authentification tout seul (Production)
+    else {
+      admin.initializeApp({
+        databaseURL: process.env.FIREBASE_DATABASE_URL,
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET
+      });
+      console.log('ℹ️ Firebase initialized with Application Default Credentials (Cloud Run)');
+    }
   }
-};
-
-// Execute initialization
-const app = initFirebase();
+} catch (error) {
+  console.error('🔥 Firebase Initialization Error:', error.message);
+  // On ne bloque pas le démarrage du serveur pour que le port 8080 s'ouvre quand même
+}
 
 module.exports = {
   admin,
-  db: app.firestore(),
-  auth: app.auth(),
-  rtdb: app.database(),
-  bucket: app.storage().bucket()
+  db: admin.firestore(),
+  auth: admin.auth(),
+  rtdb: admin.database(),
+  bucket: admin.storage().bucket()
 };
