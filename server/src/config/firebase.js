@@ -1,44 +1,44 @@
-const { initializeApp, getApps, cert } = require('firebase-admin/app');
-const { getFirestore } = require('firebase-admin/firestore');
-const { getAuth } = require('firebase-admin/auth');
-const { getDatabase } = require('firebase-admin/database');
-const { getStorage } = require('firebase-admin/storage');
+const admin = require('firebase-admin');
 require('dotenv').config();
 
 /**
- * FIREBASE ADMIN MODULAR INITIALIZATION
- * Verified for Firebase Admin v14+ on Cloud Run.
+ * PRODUCTION-READY FIREBASE INITIALIZATION
+ * Standard pattern for Google Cloud Run (Node 22).
  */
 
-let app;
+if (!admin.apps.length) {
+  const config = {};
 
-try {
-  if (getApps().length === 0) {
-    const config = {
-      databaseURL: process.env.FIREBASE_DATABASE_URL,
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET
-    };
-
-    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-      console.log('ℹ️ Initializing with Service Account from ENV');
-      config.credential = cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT));
-    }
-    // Sur Cloud Run, si pas de credential, il utilise ADC automatiquement
-
-    app = initializeApp(config);
-    console.log('✅ Firebase Modular initialized.');
-  } else {
-    app = getApps()[0];
+  // URL de la base de données (Nécessaire pour Realtime DB)
+  if (process.env.FIREBASE_DATABASE_URL) {
+    config.databaseURL = process.env.FIREBASE_DATABASE_URL;
   }
-} catch (error) {
-  console.error('⚠️ Firebase Modular Init Error:', error.message);
+
+  // Bucket de stockage
+  if (process.env.FIREBASE_STORAGE_BUCKET) {
+    config.storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
+  }
+
+  // Identifiants
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    try {
+      config.credential = admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT));
+      console.log('✅ Initialized with Service Account from ENV');
+    } catch (e) {
+      console.error('❌ Error parsing Service Account:', e.message);
+    }
+  }
+  // Sur Cloud Run, si pas de credential, admin.initializeApp()
+  // utilise automatiquement les droits du projet sans rien demander.
+
+  admin.initializeApp(config);
+  console.log('🚀 Firebase Admin instance created.');
 }
 
 module.exports = {
-  app,
-  db: app ? getFirestore(app) : null,
-  auth: app ? getAuth(app) : null,
-  rtdb: app ? getDatabase(app) : null,
-  bucket: app ? getStorage(app).bucket() : null,
-  admin: require('firebase-admin') // For legacy compatibility
+  admin,
+  db: admin.firestore(),
+  auth: admin.auth(),
+  rtdb: admin.database(),
+  bucket: admin.storage().bucket()
 };
