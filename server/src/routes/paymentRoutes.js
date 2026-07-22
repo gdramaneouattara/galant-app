@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
-const { initializePayment, verifyPayment, googleVerify, appleVerify } = require('../controllers/paymentController');
+const { initializePayment, verifyPayment, googleVerify, appleVerify, handleWebhook } = require('../controllers/paymentController');
 
+router.post('/webhook', handleWebhook);
 router.post('/initialize', requireAuth, initializePayment);
 router.get('/verify', requireAuth, verifyPayment);
 router.post('/google-verify', requireAuth, googleVerify);

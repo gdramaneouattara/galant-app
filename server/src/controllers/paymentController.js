@@ -1,4 +1,5 @@
 const axios = require('axios');
+const crypto = require('crypto');
 const { getExpectedAmountForPurchase, extractPaystackError, shouldFallbackFromMobileMoney } = require('../utils/paymentHelpers');
 const {
   applyPurchasedEntitlement,
@@ -8,7 +9,7 @@ const {
 
 const initializePayment = async (req, res) => {
   const { planId, type, targetId, paymentMethod, note } = req.body;
-  const email = req.authUser.email || `${req.user.id}@galant.app`;
+  const email = req.authUser?.email || `${req.user.id}@galant.app`;
   const normalizedType = String(type || '').toUpperCase();
   const normalizedPlanId = String(planId || '').toUpperCase();
   const normalizedPaymentMethod = String(paymentMethod || 'CARD').toUpperCase();
@@ -83,6 +84,42 @@ const verifyPayment = async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: 'paystack_verify_failed' });
   }
+};
+
+const handleWebhook = async (req, res) => {
+  const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+
+  // Verify signature
+  const hash = crypto.createHmac('sha512', PAYSTACK_SECRET_KEY).update(JSON.stringify(req.body)).digest('hex');
+  if (hash !== req.headers['x-paystack-signature']) {
+    return res.sendStatus(400);
+  }
+
+  const event = req.body;
+  if (event.event === 'charge.success') {
+    const data = event.data;
+    const { userId, planId, type, targetId, note } = data.metadata || {};
+    const reference = data.reference;
+
+    if (userId) {
+      try {
+        await applyPurchasedEntitlement({
+          userId,
+          planId,
+          type,
+          targetId,
+          reference,
+          paymentMethod: 'PAYSTACK_WEBHOOK',
+          note
+        });
+        console.log(`✅ Webhook processed successfully for user ${userId}, reference ${reference}`);
+      } catch (error) {
+        console.error('❌ Error processing webhook entitlement:', error.message);
+      }
+    }
+  }
+
+  res.sendStatus(200);
 };
 
 const googleVerify = async (req, res) => {
