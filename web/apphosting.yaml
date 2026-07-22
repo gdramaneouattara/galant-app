@@ -3,8 +3,9 @@ runConfig:
   memoryMiB: 512
 
 # Instructions de construction explicites pour éviter les conflits monorepo
+# On supprime le tsconfig racine car il contient des extensions Expo incompatibles avec le build Web
 scripts:
-  buildCommand: "npm install && npm run build"
+  buildCommand: "rm -f ../tsconfig.json && npm install && npm run build"
 
 env:
   - variable: VITE_FIREBASE_API_KEY
