@@ -32,7 +32,22 @@ const AuthPage: React.FC = () => {
         navigate('/location-setup');
       }
     } catch (error: any) {
-      showAlert(t('error'), error.message);
+      console.error('Auth Error:', error.code);
+      let friendlyMessage = "Une erreur est survenue lors de l'authentification.";
+
+      if (error.code === 'auth/email-already-in-use') {
+        friendlyMessage = "Cette adresse e-mail est déjà inscrite. Veuillez vous connecter à votre compte existant.";
+      } else if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+        friendlyMessage = "Identifiants incorrects. Veuillez vérifier votre e-mail et votre mot de passe.";
+      } else if (error.code === 'auth/invalid-email') {
+        friendlyMessage = "L'adresse e-mail saisie n'est pas valide.";
+      } else if (error.code === 'auth/weak-password') {
+        friendlyMessage = "Le mot de passe doit contenir au moins 6 caractères.";
+      } else if (error.code === 'auth/network-request-failed') {
+        friendlyMessage = "Problème de connexion internet. Veuillez réessayer.";
+      }
+
+      showAlert('Authentification', friendlyMessage);
     } finally {
       setLoading(false);
     }
