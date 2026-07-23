@@ -37,7 +37,7 @@ const AuthPage: React.FC = () => {
 
       if (error.code === 'auth/email-already-in-use') {
         friendlyMessage = "Cette adresse e-mail est déjà inscrite. Veuillez vous connecter à votre compte existant.";
-      } else if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+      } else if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
         friendlyMessage = "Identifiants incorrects. Veuillez vérifier votre e-mail et votre mot de passe.";
       } else if (error.code === 'auth/invalid-email') {
         friendlyMessage = "L'adresse e-mail saisie n'est pas valide.";
