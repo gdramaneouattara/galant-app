@@ -4,10 +4,14 @@ import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  base: '/galant-app/',
-  plugins: [
-    react(),
+export default defineConfig(({ mode }) => {
+  const isGitHubPages = mode === 'staging'; // On peut utiliser le mode pour distinguer
+
+  return {
+    // Si on déploie sur GitHub Pages (staging), on utilise le sous-dossier, sinon la racine (Firebase/Prod)
+    base: isGitHubPages ? '/galant-app/' : '/',
+    plugins: [
+      react(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
