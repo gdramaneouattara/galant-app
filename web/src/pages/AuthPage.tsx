@@ -43,8 +43,14 @@ const AuthPage: React.FC = () => {
         friendlyMessage = "L'adresse e-mail saisie n'est pas valide.";
       } else if (error.code === 'auth/weak-password') {
         friendlyMessage = "Le mot de passe doit contenir au moins 6 caractères.";
+      } else if (error.code === 'auth/user-disabled') {
+        friendlyMessage = "Ce compte a été suspendu. Veuillez contacter le support Galant pour plus d'informations.";
+      } else if (error.code === 'auth/too-many-requests') {
+        friendlyMessage = "Trop de tentatives échouées. Votre compte a été temporairement bloqué par sécurité. Réessayez plus tard.";
       } else if (error.code === 'auth/network-request-failed') {
-        friendlyMessage = "Problème de connexion internet. Veuillez réessayer.";
+        friendlyMessage = "Problème de connexion internet. Veuillez vérifier votre réseau et réessayer.";
+      } else if (error.code === 'auth/internal-error') {
+        friendlyMessage = "Une erreur technique est survenue. Nos équipes travaillent à sa résolution.";
       }
 
       showAlert('Authentification', friendlyMessage);
