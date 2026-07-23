@@ -14,31 +14,55 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 };
 
 const calculateMatchScore = ({ candidate, me, isGoldenRose }) => {
-  let score = (candidate.is_vip ? 200 : (candidate.is_premium ? 50 : 0)) + (candidate.city === me.city ? 15 : 0);
+  let score = (candidate.is_vip ? 200 : (candidate.is_premium ? 50 : 0)) + (candidate.city === me.city ? 30 : 0);
 
-  // 1. New User Boost (First 48h)
+  // 1. Common Interests (High quality matching)
+  const myInterests = new Set(me.interests || []);
+  const candidateInterests = candidate.interests || [];
+  let commonCount = 0;
+  candidateInterests.forEach(interest => {
+    if (myInterests.has(interest)) commonCount++;
+  });
+  score += (commonCount * 40);
+
+  // 2. Relationship Goal Alignment
+  if (me.relationship_goal && candidate.relationship_goal) {
+    if (me.relationship_goal === candidate.relationship_goal) {
+      score += 150;
+    } else if (
+      (me.relationship_goal === 'SERIOUS' && candidate.relationship_goal === 'MARRIAGE') ||
+      (me.relationship_goal === 'MARRIAGE' && candidate.relationship_goal === 'SERIOUS')
+    ) {
+      score += 100;
+    }
+  }
+
+  // 3. New User Boost (First 48h)
   const isNewUser = new Date(candidate.created_at) > new Date(Date.now() - 48 * 3600 * 1000);
   if (isNewUser) score += 300;
 
-  // 2. Golden Rose Priority (Ultra High)
+  // 4. Golden Rose Priority (Ultra High)
   if (isGoldenRose) score += 10000;
 
-  // 3. Behavior Score (Galanterie)
-  const galanterieBonus = Math.max(0, (candidate.galanterie_score || 5.0) - 3) * 20;
+  // 5. Behavior Score (Galanterie)
+  const galanterieBonus = Math.max(0, (candidate.galanterie_score || 5.0) - 3) * 25;
   score += galanterieBonus;
 
-  // 4. Boosted Priority
+  // 6. Boosted Priority
   if (candidate.boosted_until && new Date(candidate.boosted_until) > new Date()) {
     score += (candidate.boost_score || 500);
   }
 
-  // 5. Reciprocity Balance
+  // 7. Reciprocity Balance
   const candidateTargetGenders = Array.isArray(candidate.target_gender) ? candidate.target_gender : [];
   if (candidateTargetGenders.length === 0 || candidateTargetGenders.includes(me.gender)) {
     score += 50;
   }
 
-  return score;
+  // 8. Random Shuffle Factor (to keep discovery fresh)
+  score += Math.floor(Math.random() * 10);
+
+  return { score, commonInterestsCount: commonCount };
 };
 
 module.exports = { calculateDistance, calculateMatchScore };

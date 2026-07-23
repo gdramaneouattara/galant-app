@@ -81,6 +81,13 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                   ? ` • ${profile.distance_km.toFixed(1)} km`
                   : ''}
               </Text>
+              {(profile.common_interests_count || 0) > 0 && (
+                <View style={styles.commonInterestsPill}>
+                  <Text style={styles.commonInterestsText}>
+                    ✨ {profile.common_interests_count} intérêts communs
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
         </ImageBackground>
@@ -143,6 +150,18 @@ const styles = StyleSheet.create({
     fontFamily: 'InterSemiBold',
     fontSize: 13,
     marginLeft: 2,
+  },
+  commonInterestsPill: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  commonInterestsText: {
+    color: '#fff',
+    fontSize: 10,
+    fontFamily: 'InterBold',
   },
 });
 

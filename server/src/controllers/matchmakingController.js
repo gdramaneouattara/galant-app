@@ -41,9 +41,24 @@ const getSuggestions = async (req, res) => {
   try {
     const now = new Date().toISOString();
 
-    // 1. Fetch Golden Roses (active)
-    const grSnapshot = await db.collection('golden_roses').where('expires_at', '>', now).get();
+    // 1. Fetch Golden Roses, My Likes (swipes), My Matches, and Super Likes received
+    const [grSnapshot, myLikesSnapshot, myMatchesSnapshot, incomingSuperLikesSnapshot] = await Promise.all([
+      db.collection('golden_roses').where('expires_at', '>', now).get(),
+      db.collection('likes').where('liker_id', '==', me.id).get(),
+      db.collection('matches').where('status', '==', 'ACTIVE').get(),
+      db.collection('likes').where('liked_id', '==', me.id).where('is_super_like', '==', true).get(),
+    ]);
+
     const goldenRoseUserIds = new Set(grSnapshot.docs.map(doc => doc.data().user_id));
+    const alreadySwipedIds = new Set(myLikesSnapshot.docs.map(doc => doc.data().liked_id));
+    const incomingSuperLikesByCandidate = new Set(incomingSuperLikesSnapshot.docs.map(doc => doc.data().liker_id));
+
+    // Add existing matches to already swiped
+    myMatchesSnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      if (data.user_one_id === me.id) alreadySwipedIds.add(data.user_two_id);
+      else if (data.user_two_id === me.id) alreadySwipedIds.add(data.user_one_id);
+    });
 
     // 2. Fetch candidates from Firestore
     let query = db.collection('profiles')
@@ -60,10 +75,9 @@ const getSuggestions = async (req, res) => {
     const snapshot = await query.get();
     let candidates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    // Remove self and suspended
-    candidates = candidates.filter(c => c.id !== me.id && !c.suspended_at);
+    // Remove self, suspended, and ALREADY SWIPED
+    candidates = candidates.filter(c => c.id !== me.id && !c.suspended_at && !alreadySwipedIds.has(c.id));
 
-    // 3. Subscription checks (for invisible mode)
     const candidateIds = candidates.map(c => c.id);
     const invisibleEligibleBySubscription = new Set();
 
@@ -122,7 +136,7 @@ const getSuggestions = async (req, res) => {
         }
       }
 
-      const score = calculateMatchScore({
+      const { score, commonInterestsCount } = calculateMatchScore({
         candidate: c,
         me,
         isGoldenRose: goldenRoseUserIds.has(c.id)
@@ -131,6 +145,7 @@ const getSuggestions = async (req, res) => {
       return {
         ...c,
         score,
+        common_interests_count: commonInterestsCount,
         distance_km: distanceKm ? parseFloat(distanceKm.toFixed(1)) : null,
         super_liked_me: incomingSuperLikesByCandidate.has(c.id),
         has_golden_rose: goldenRoseUserIds.has(c.id),

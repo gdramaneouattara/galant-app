@@ -233,12 +233,22 @@ const DiscoverPage: React.FC = () => {
                     <span className="text-[10px] font-bold text-primary">pts</span>
                   </div>
                 </div>
-                <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-2xl p-4 flex-1">
-                  <p className="text-[8px] font-black text-white/40 uppercase tracking-[0.2em] mb-1">Status</p>
-                  <p className="text-sm font-black text-white truncate uppercase tracking-widest">
-                    {currentProfile.is_premium ? t('premium_member') : 'Membre Classique'}
-                  </p>
-                </div>
+                {(currentProfile.common_interests_count || 0) > 0 ? (
+                  <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-2xl p-4 flex-1">
+                    <p className="text-[8px] font-black text-white/40 uppercase tracking-[0.2em] mb-1">Affinités</p>
+                    <p className="text-sm font-black text-white truncate uppercase tracking-widest flex items-center gap-2">
+                      <Sparkles size={12} className="text-primary" />
+                      {currentProfile.common_interests_count} communs
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-2xl p-4 flex-1">
+                    <p className="text-[8px] font-black text-white/40 uppercase tracking-[0.2em] mb-1">Status</p>
+                    <p className="text-sm font-black text-white truncate uppercase tracking-widest">
+                      {currentProfile.is_premium ? t('premium_member') : 'Membre Classique'}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
