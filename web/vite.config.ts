@@ -72,6 +72,7 @@ export default defineConfig(({ mode }) => {
   },
   define: {
     'global': 'window',
+    'process.env': {},
   },
   server: {
     port: 3000,

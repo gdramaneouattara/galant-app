@@ -14,13 +14,25 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-// Initialisation propre au Web
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+// Vérification de la configuration pour éviter le crash au chargement
+const isConfigValid = !!firebaseConfig.apiKey && !!firebaseConfig.projectId;
 
-export const fbAuth = getAuth(app);
-export const db = getFirestore(app);
-export const rtdb = getDatabase(app);
-export const fbStorage = getStorage(app);
+let app;
+try {
+  if (!isConfigValid) {
+    console.warn("Firebase configuration is missing or incomplete. Check environment variables.");
+  }
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+} catch (error) {
+  console.error("Firebase initialization failed:", error);
+  // On crée une app "bidon" ou on laisse undefined pour que les services échouent plus tard proprement
+  app = getApps().length > 0 ? getApp() : null;
+}
+
+export const fbAuth = app ? getAuth(app) : ({} as any);
+export const db = app ? getFirestore(app) : ({} as any);
+export const rtdb = app ? getDatabase(app) : ({} as any);
+export const fbStorage = app ? getStorage(app) : ({} as any);
 
 export const COLLECTIONS = {
   PROFILES: 'profiles',

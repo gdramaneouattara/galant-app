@@ -68,6 +68,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Auth & Profile
   useEffect(() => {
+    // Si fbAuth n'est pas correctement initialisé (fallback {}), on arrête tout de suite
+    if (!fbAuth || typeof fbAuth.onAuthStateChanged !== 'function') {
+      console.error('Firebase Auth is not initialized properly.');
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(fbAuth, async (firebaseUser) => {
       try {
         setUser(firebaseUser);
