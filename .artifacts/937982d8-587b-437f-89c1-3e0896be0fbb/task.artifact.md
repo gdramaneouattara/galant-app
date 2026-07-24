@@ -1,8 +1,6 @@
-# Task: Server 404 Diagnostic Deployment
+# Task: Expose mountErrors for Deep Diagnostic
 
-- `[/]` Secure Firebase Storage initialization
-    - `[ ]` Update `server/src/config/firebase.js`
-- `[/]` Track and expose mount errors
-    - `[ ]` Update `server/src/index.js`
-- `[ ]` Deploy to all branches
-- `[ ]` Provide instructions for error extraction
+- `[x]` Update `server/src/index.js` to add `/api/ping`
+- `[x]` Update `src/lib/api.ts` to show detailed error JSON
+- `[/]` Deploy to all branches
+- `[ ]` Verify by checking `/api/ping` URL directly

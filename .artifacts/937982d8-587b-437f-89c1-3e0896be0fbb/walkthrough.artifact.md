@@ -1,28 +1,26 @@
-# Walkthrough: Restored Test Alignment & Diagnostic Finalized
+# Walkthrough: Enhanced Server Diagnostic
 
-I have successfully restored the backend test alignment while keeping the advanced diagnostics active.
+I have deployed a "trap" on the server to catch and expose the exact errors preventing the profile routes from mounting.
 
 ## Changes made
 
-### [Server]
-- **[index.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/index.js)**: Reverted to explicit `app.use` declarations for all API routes. This was necessary because the quality test suite uses exact string matching to verify backend alignment. I kept the enhanced 404 logging at the end of the file.
+### [Server Robustness]
+- **[firebase.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/config/firebase.js)**: Secured the storage bucket initialization. If the bucket fails to initialize (likely due to a missing environment variable), the server will now log the warning but **continue to start** instead of crashing or blocking modules.
 
-### [Diagnostics]
-- **[api.ts](file:///C:/Users/UTILISATEUR/galant-app/src/lib/api.ts)**: Confirmed it is still reporting the absolute URL in error messages. This will help you verify if your `VITE_API_BASE_URL` is being correctly injected during build.
+### [Deep Diagnostic]
+- **[index.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/index.js)**:
+    - Added a `mountErrors` registry that captures any failure during route registration.
+    - Updated the 404 handler to include these errors in its JSON response.
 
-## Verification Results
+## Next Steps for You
 
-### Automated Tests
-- Ran `npm run test:quality`.
-- **Status**: 100% Pass (70/70 tests).
-- All backend alignment checks are now green.
+1.  Wait about 5 minutes for the Cloud Run deployment to finish.
+2.  Try the onboarding process again on your phone.
+3.  When the error popup appears:
+    - It should still say **API Error 404**.
+    - Look closely at the message or take a screenshot.
+    - If my trap is working, the response will now contain a `mountErrors` field.
+    - **Crucial**: If the error message is too long to see, I might need to adjust the UI to show the full JSON. For now, try to copy-paste or capture as much as possible.
 
-### Deployment
-- Changes pushed to `staging` and merged into `main`.
-- Workflows are triggered and will be live in a few minutes.
-
-> [!IMPORTANT]
-> **Check your Error Message**: When you test the onboarding again, if it still fails, the error message will now clearly show if it's hitting a relative path (e.g., `on /api/...`) or an absolute path (e.g., `on https://your-backend.a.run.app/api/...`).
->
-> - If you see **no domain** (relative path), you MUST check your GitHub Secrets for `VITE_API_BASE_URL`.
-> - If you see the **wrong domain**, update your secret with the correct Cloud Run URL.
+> [!TIP]
+> This data will tell us if a specific file is missing on the server or if a library is failing to load, which is the "invisible" cause of the 404.

@@ -1,27 +1,27 @@
-# Plan de Diagnostic Profond : Serveur 404
+# Plan de Diagnostic Final : Extraction des mountErrors
 
-Ce plan vise à identifier la cause exacte pour laquelle les routes `/api/profiles` ne sont pas activées sur votre serveur Cloud Run, malgré leur présence dans le code.
+Le serveur Cloud Run indique que la route n'est pas trouvée. Nous devons maintenant voir l'erreur de chargement qui est cachée dans le champ `mountErrors` de la réponse 404.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> Nous allons temporairement exposer les erreurs de démarrage du serveur dans les réponses 404. Cela nous permettra de voir quel fichier (ex: `firebase.js` ou `profileController.js`) empêche l'activation de la création de profil.
+> Nous allons modifier l'application pour qu'elle affiche le contenu brut de l'erreur serveur. Une fois le déploiement terminé, la prochaine erreur 404 sera beaucoup plus bavarde et nous donnera la cause racine (ex: "Cannot find module X" ou "SyntaxError at line Y").
 
 ## Proposed Changes
 
-### [Server] Debug & Robustesse
+### [Client] Diagnostic bavard
 
-#### [MODIFY] [firebase.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/config/firebase.js)
-- Sécuriser l'export du `bucket` Storage. Si l'initialisation échoue, le serveur continuera de fonctionner pour les autres services (Auth, DB).
+#### [MODIFY] [api.ts](file:///C:/Users/UTILISATEUR/galant-app/src/lib/api.ts)
+- Améliorer `apiRequest` pour que le message d'erreur inclue le contenu JSON complet si un champ `mountErrors` est détecté.
+
+### [Server] Route de secours
 
 #### [MODIFY] [index.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/index.js)
-- Créer un registre `mountErrors` pour stocker les raisons des échecs de chargement.
-- Modifier le handler 404 pour inclure ces erreurs dans la réponse JSON.
+- Ajouter `app.get('/api/ping', (req, res) => res.json({ status: 'ok', mountErrors }));` pour permettre un diagnostic direct via navigateur.
 
 ## Verification Plan
 
 ### Manual Verification
-1. Déployer sur `staging` et `main`.
-2. Cliquer sur "J'adhère aux valeurs".
-3. L'erreur 404 s'affichera toujours, mais elle contiendra un champ `mountErrors`.
-4. Envoyez-moi le contenu de ce champ (ou une capture d'écran) pour que je puisse corriger la racine du problème.
+1. Déployer et cliquer sur "J'adhère aux valeurs".
+2. Lire le nouveau message d'erreur.
+3. Alternativement, ouvrir `https://galant-backend-756651030930.europe-west4.run.app/api/ping` dans un navigateur pour voir la liste des erreurs de chargement.

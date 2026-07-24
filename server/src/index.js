@@ -16,6 +16,11 @@ app.use(express.json({ limit: '1mb' }));
 // Health check pour Google Cloud
 app.get('/', (req, res) => res.status(200).send('GALANT API LIVE'));
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/api/ping', (req, res) => res.json({
+  status: 'ok',
+  timestamp: new Date().toISOString(),
+  mountErrors: Object.keys(mountErrors).length > 0 ? mountErrors : 'none'
+}));
 
 const mountErrors = {};
 
