@@ -29,7 +29,7 @@ const AuthPage: React.FC = () => {
         navigate('/');
       } else {
         await createUserWithEmailAndPassword(fbAuth, email, password);
-        navigate('/location-setup');
+        navigate('/onboarding');
       }
     } catch (error: any) {
       console.error('Auth Error:', error.code);

@@ -73,4 +73,21 @@ const requireAuth = async (req, res, next) => {
 
 const requireAdmin = (req, res, next) => req.user?.is_admin ? next() : res.status(403).json({ error: 'admin_required' });
 
-module.exports = { requireAuth, requireAdmin };
+/**
+ * BASE FIREBASE AUTH MIDDLEWARE
+ * Only verifies the ID Token, doesn't require a Firestore profile
+ */
+const requireBaseAuth = async (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'missing_token' });
+
+  try {
+    const decodedToken = await auth.verifyIdToken(token);
+    req.authUser = decodedToken;
+    next();
+  } catch (e) {
+    res.status(401).json({ error: 'invalid_token' });
+  }
+};
+
+module.exports = { requireAuth, requireAdmin, requireBaseAuth };

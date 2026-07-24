@@ -7,7 +7,7 @@ import './index.css';
 import DiscoverPage from './pages/DiscoverPage';
 import AuthPage from './pages/AuthPage';
 import PartnerSignupPage from './pages/PartnerSignupPage';
-import LocationSetupPage from './pages/LocationSetupPage';
+import OnboardingPage from './pages/OnboardingPage';
 import MatchesPage from './pages/MatchesPage';
 import ChatPage from './pages/ChatPage';
 import ProfilePage from './pages/ProfilePage';
@@ -211,7 +211,7 @@ const AppContent: React.FC = () => {
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/cgu" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
-          <Route path="/location-setup" element={<LocationSetupPage />} />
+          <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/partner-signup" element={<PartnerSignupPage />} />
           <Route path="/stories" element={<StoriesPage />} />
           <Route path="/matches" element={<MatchesPage />} />

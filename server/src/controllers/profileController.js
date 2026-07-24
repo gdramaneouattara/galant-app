@@ -108,4 +108,37 @@ const completePartnerProfile = async (req, res) => {
   }
 };
 
-module.exports = { updateProfile, boostProfile, completePartnerProfile };
+const createProfile = async (req, res) => {
+  const { name, age, gender } = req.body;
+  const { uid, email } = req.authUser; // from middleware
+
+  try {
+    const profileRef = db.collection('profiles').doc(uid);
+    const doc = await profileRef.get();
+
+    if (doc.exists) {
+      return res.status(400).json({ error: 'profile_already_exists' });
+    }
+
+    const newProfile = {
+      name,
+      age: parseInt(age),
+      gender: String(gender).toUpperCase(),
+      email,
+      is_premium: false,
+      is_verified: false,
+      is_admin: false,
+      onboarding_completed: false,
+      likes_count: 0,
+      roses_count: 0,
+      created_at: new Date().toISOString()
+    };
+
+    await profileRef.set(newProfile);
+    res.json({ success: true, profile: { id: uid, ...newProfile } });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { createProfile, updateProfile, boostProfile, completePartnerProfile };
