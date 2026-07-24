@@ -182,10 +182,19 @@ const Header = () => {
 };
 
 const AppContent: React.FC = () => {
-  const { user } = useAuth();
+  const { user, profile, loading } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const isAuthPage = location.pathname === '/auth';
+  const isOnboardingPage = location.pathname === '/onboarding';
   const isWelcomePage = location.pathname === '/' && !user;
+
+  // Global Redirect Logic for incomplete profiles
+  React.useEffect(() => {
+    if (!loading && user && !profile && !isOnboardingPage && !isAuthPage) {
+      navigate('/onboarding');
+    }
+  }, [user, profile, loading, isOnboardingPage, isAuthPage, navigate]);
 
   return (
     <div className={`min-h-screen flex flex-col font-sans ${(isAuthPage || isWelcomePage) ? '' : 'bg-slate-50'}`}>
