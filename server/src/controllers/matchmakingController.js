@@ -93,17 +93,23 @@ const getSuggestions = async (req, res) => {
       // Chunking for Firestore 'in' limit (30)
       for (let i = 0; i < candidateIds.length; i += 30) {
         const chunk = candidateIds.slice(i, i + 30);
+
+        // Note: We remove current_period_end inequality to avoid index requirements (Error 500)
+        // We will check the expiration date in memory below.
         const subSnapshot = await db.collection('subscriptions')
           .where('user_id', 'in', chunk)
           .where('status', '==', 'active')
-          .where('current_period_end', '>', now)
           .get();
 
         subSnapshot.docs.forEach(doc => {
           const data = doc.data();
-          const profile = candidates.find(c => c.id === data.user_id);
-          if (hasInvisiblePremiumAccessForPlan(profile, data.plan_id)) {
-            invisibleEligibleBySubscription.add(data.user_id);
+          const isExpired = data.current_period_end && new Date(data.current_period_end) < new Date();
+
+          if (!isExpired) {
+            const profile = candidates.find(c => c.id === data.user_id);
+            if (hasInvisiblePremiumAccessForPlan(profile, data.plan_id)) {
+              invisibleEligibleBySubscription.add(data.user_id);
+            }
           }
         });
       }
