@@ -1,32 +1,29 @@
-# Fix API Failure during Onboarding
+# Remédiation : Alignement des tests et Diagnostic API
 
-The "API request failed" error occurs when the server rejects the request without a specific error message. Analysis reveals a "chicken-and-egg" bug in the authentication middleware and a potential configuration issue with the API Base URL.
+Ce plan vise à corriger les 5 échecs de tests introduits par la refactorisation du serveur et à finaliser le diagnostic de l'erreur 404 rencontrée lors de l'onboarding.
 
-## Root Causes
-1. **Middleware Block**: The `/api/profiles/complete-onboarding` route is protected by `requireAuth`, which requires a profile to already exist in Firestore. However, for new users, the profile is only created *by* this endpoint.
-2. **Generic Error Message**: The `apiRequest` utility hides the HTTP status code, making it hard to distinguish between a 404 (wrong URL), 403 (middleware block), or 500 (server crash).
+## User Review Required
+
+> [!IMPORTANT]
+> **Variable d'environnement manquante** : Le diagnostic actuel indique que `VITE_API_BASE_URL` est probablement vide lors du build. Vous devez vous assurer que cette variable est définie dans vos **GitHub Secrets** avec l'URL de votre backend Cloud Run.
 
 ## Proposed Changes
 
-### [Server] Onboarding Logic
+### [Server] Restauration de l'alignement des tests
 
-#### [MODIFY] [profileRoutes.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/routes/profileRoutes.js)
-- Change `/complete-onboarding` from `requireAuth` to `requireBaseAuth`. This allows users without a profile document to reach the controller.
+#### [MODIFY] [index.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/index.js)
+- Supprimer le helper `mountRoute` et restaurer les appels `app.use` explicites avec leurs variables respectives (`aiRoutes`, `messageRoutes`, etc.) car le moteur de test effectue une vérification textuelle stricte sur ces lignes.
+- Conserver le gestionnaire de 404 à la fin du fichier pour le debugging.
 
-#### [MODIFY] [profileController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/profileController.js)
-- Update `completeOnboarding` to use `req.authUser.uid` instead of `req.user.id`.
-- Manually fetch the profile inside the controller to handle the reward logic (`onboarding_reward_granted`).
-
-### [Shared] Diagnostics
+### [Client] Diagnostic Final
 
 #### [MODIFY] [api.ts](file:///C:/Users/UTILISATEUR/galant-app/src/lib/api.ts)
-- Enhance the error message to include the HTTP status code and the attempted URL. This will help diagnose if `VITE_API_BASE_URL` is missing.
+- Forcer l'affichage de l'URL absolue dans le message d'erreur pour confirmer si l'appel est relatif ou absolu.
 
 ## Verification Plan
 
+### Automated Tests
+- Lancer `npm run test:quality`. Tous les 70 tests doivent être au vert.
+
 ### Manual Verification
-1. Push changes to `staging`.
-2. Attempt to create a new profile on the web.
-3. If it still fails, the new error message will show something like `API Error 404 on https://...` or `API Error 403`.
-    - **If 404**: Check `VITE_API_BASE_URL` in your deployment settings (GitHub Secrets or Firebase App Hosting).
-    - **If 403**: The middleware fix should have resolved this.
+- Après déploiement, vérifier le message d'erreur sur mobile. S'il n'affiche pas de domaine (ex: `https://...`), la configuration des secrets GitHub doit être corrigée.

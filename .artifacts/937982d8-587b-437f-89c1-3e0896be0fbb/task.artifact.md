@@ -1,10 +1,7 @@
-# Task: Fix Onboarding API Failure
+# Remediation Task: Test Alignment & Final Diagnostic
 
-- `[x]` Modify Server logic
-    - `[x]` Update `profileRoutes.js` (security relaxation)
-    - `[x]` Update `profileController.js` (onboarding logic)
-- `[x]` Enhance Client diagnostics
-    - `[x]` Update `api.ts` (detailed errors)
-- `[/]` Deploy and Verify
-    - `[ ]` Push to staging
-    - `[ ]` Push to main
+- `[ ]` Restore explicit route mounting in `server/src/index.js`
+- `[ ]` Verify `api.ts` absolute URL reporting
+- `[ ]` Run quality tests locally (`npm run test:quality`)
+- `[ ]` Deploy to staging and main
+- `[ ]` Provide final walkthrough
