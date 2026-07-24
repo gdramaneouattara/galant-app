@@ -16,14 +16,14 @@ const IdentityStep: React.FC<IdentityStepProps> = ({ form, setForm, onNext }) =>
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Text style={[styles.title, { color: colors.text }]}>C'est quoi ton petit nom ?</Text>
-      <Text style={[styles.caption, { color: colors.textMuted }]}>C'est ainsi que tes futurs matchs te verront.</Text>
+      <Text style={[styles.title, { color: colors.text }]}>Comment vous appelez-vous ?</Text>
+      <Text style={[styles.caption, { color: colors.textMuted }]}>C'est ainsi que les autres membres vous verront.</Text>
       <View style={styles.field}>
-        <Text style={[styles.label, { color: colors.text }]}>Prénom</Text>
+        <Text style={[styles.label, { color: colors.text }]}>Nom et prénom(s)</Text>
         <TextInput
           value={form.name}
           onChangeText={(text) => setForm({ ...form, name: text })}
-          placeholder="Ton prénom"
+          placeholder="Votre nom complet"
           placeholderTextColor={colors.textMuted}
           style={[styles.input, { backgroundColor: colors.input, borderColor: colors.border, color: colors.text }]}
         />

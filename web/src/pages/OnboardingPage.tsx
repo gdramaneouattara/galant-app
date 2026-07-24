@@ -186,13 +186,13 @@ const OnboardingPage: React.FC = () => {
 
             <div className="space-y-5">
                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Prénom</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nom et prénom(s)</label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
                     className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary/20"
-                    placeholder="Votre prénom"
+                    placeholder="Votre nom complet"
                   />
                </div>
                <div className="space-y-2">
