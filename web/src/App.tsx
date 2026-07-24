@@ -189,10 +189,17 @@ const AppContent: React.FC = () => {
   const isOnboardingPage = location.pathname === '/onboarding';
   const isWelcomePage = location.pathname === '/' && !user;
 
-  // Global Redirect Logic for incomplete profiles
+  // Global Redirect Logic for incomplete profiles or unverified emails
   React.useEffect(() => {
-    if (!loading && user && !profile && !isOnboardingPage && !isAuthPage) {
-      navigate('/onboarding');
+    if (!loading && user) {
+      // 1. Force verification if email not verified
+      if (!user.emailVerified && !isAuthPage) {
+        navigate('/auth');
+      }
+      // 2. Force onboarding if profile missing
+      else if (user.emailVerified && !profile && !isOnboardingPage && !isAuthPage) {
+        navigate('/onboarding');
+      }
     }
   }, [user, profile, loading, isOnboardingPage, isAuthPage, navigate]);
 

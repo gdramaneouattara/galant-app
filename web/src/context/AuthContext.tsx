@@ -19,6 +19,7 @@ interface AuthContextType {
   setLanguage: (lang: Language) => void;
   t: (key: keyof typeof TRANSLATIONS.fr, params?: Record<string, any>) => string;
   logout: () => Promise<void>;
+  reloadUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -31,7 +32,8 @@ const AuthContext = createContext<AuthContextType>({
   language: 'fr',
   setLanguage: () => {},
   t: (key) => key,
-  logout: async () => {}
+  logout: async () => {},
+  reloadUser: async () => {}
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -161,6 +163,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await fbAuth.signOut();
   };
 
+  const reloadUser = async () => {
+    if (fbAuth.currentUser) {
+      await fbAuth.currentUser.reload();
+      setUser({ ...fbAuth.currentUser });
+    }
+  };
+
   const value = useMemo(() => ({
     user,
     profile,
@@ -171,7 +180,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     language,
     setLanguage,
     t,
-    logout
+    logout,
+    reloadUser
   }), [user, profile, matches, messages, users, loading, language]);
 
   return (

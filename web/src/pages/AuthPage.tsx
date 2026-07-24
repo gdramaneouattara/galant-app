@@ -4,6 +4,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
+  sendEmailVerification,
   GoogleAuthProvider,
   OAuthProvider,
   signInWithPopup
@@ -11,12 +12,21 @@ import {
 import { useNavigate, Link } from 'react-router-dom';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, CheckSquare, Square, Lock, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, CheckSquare, Square, Lock, ArrowLeft, Mail, RefreshCw } from 'lucide-react';
 
 const AuthPage: React.FC = () => {
-  const { t } = useAuth();
-  const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login');
+  const { user, reloadUser, t } = useAuth();
+  const [mode, setMode] = useState<'login' | 'signup' | 'reset' | 'verify'>('login');
   const [email, setEmail] = useState('');
+
+  // Auto-detect verification mode if user is logged in but not verified
+  useEffect(() => {
+    if (user && !user.emailVerified) {
+      setMode('verify');
+      setEmail(user.email || '');
+    }
+  }, [user]);
+
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [hasAcceptedLegal, setHasAcceptedLegal] = useState(false);
@@ -32,11 +42,16 @@ const AuthPage: React.FC = () => {
     setLoading(true);
     try {
       if (mode === 'login') {
-        await signInWithEmailAndPassword(fbAuth, email, password);
-        navigate('/');
+        const cred = await signInWithEmailAndPassword(fbAuth, email, password);
+        if (cred.user && !cred.user.emailVerified) {
+          setMode('verify');
+        } else {
+          navigate('/');
+        }
       } else if (mode === 'signup') {
-        await createUserWithEmailAndPassword(fbAuth, email, password);
-        navigate('/onboarding');
+        const cred = await createUserWithEmailAndPassword(fbAuth, email, password);
+        await sendEmailVerification(cred.user);
+        setMode('verify');
       } else if (mode === 'reset') {
         await sendPasswordResetEmail(fbAuth, email.trim().toLowerCase());
         showAlert('Email envoyé', 'Vérifiez votre boîte de réception pour réinitialiser votre mot de passe.');
@@ -67,6 +82,20 @@ const AuthPage: React.FC = () => {
       showAlert('Authentification', friendlyMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (fbAuth.currentUser) {
+      setLoading(true);
+      try {
+        await sendEmailVerification(fbAuth.currentUser);
+        showAlert('Email renvoyé', 'Un nouvel email de confirmation vous a été envoyé.');
+      } catch (e) {
+        showAlert('Erreur', 'Impossible de renvoyer l\'email pour le moment.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -123,14 +152,56 @@ const AuthPage: React.FC = () => {
               </button>
             )}
             <h2 className="text-3xl font-black text-slate-900 leading-none">
-              {mode === 'login' ? t('login') : mode === 'signup' ? t('welcome') : 'Réinitialisation'}
+              {mode === 'login' ? t('login') : mode === 'signup' ? t('welcome') : mode === 'reset' ? 'Réinitialisation' : 'Vérification'}
             </h2>
             <p className="text-slate-500 mt-3 font-medium text-sm">
-              {mode === 'login' ? 'Heureux de vous revoir parmi nous.' : mode === 'signup' ? t('welcome_subtitle') : 'Saisissez votre email pour recevoir un lien.'}
+              {mode === 'login' ? 'Heureux de vous revoir parmi nous.' :
+               mode === 'signup' ? t('welcome_subtitle') :
+               mode === 'reset' ? 'Saisissez votre email pour recevoir un lien.' :
+               'Veuillez confirmer votre adresse e-mail.'}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          {mode === 'verify' ? (
+            <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500 text-center py-4">
+               <div className="w-20 h-20 bg-rose-50 rounded-[2rem] flex items-center justify-center mx-auto text-primary mb-6 animate-bounce">
+                  <Mail size={40} />
+               </div>
+               <div className="space-y-4">
+                  <p className="text-slate-600 font-medium leading-relaxed">
+                     Un email de confirmation vient d'être envoyé à <span className="font-bold text-slate-900">{email}</span>.
+                  </p>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest leading-loose">
+                     Cliquez sur le lien contenu dans l'email pour activer votre accès au Cercle Galant.
+                  </p>
+               </div>
+
+               <div className="pt-6 space-y-4">
+                  <button
+                    onClick={async () => {
+                      await reloadUser();
+                      if (fbAuth.currentUser?.emailVerified) {
+                        navigate('/');
+                      } else {
+                        showAlert('Non vérifié', 'Votre email n\'est pas encore confirmé. Vérifiez vos messages.');
+                      }
+                    }}
+                    className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black transition-all"
+                  >
+                    <RefreshCw size={16} /> J'ai confirmé l'email
+                  </button>
+                  <button
+                    onClick={handleResendVerification}
+                    disabled={loading}
+                    className="text-[10px] font-black text-primary uppercase tracking-[0.2em] hover:underline"
+                  >
+                    Renvoyer l'email de confirmation
+                  </button>
+               </div>
+            </div>
+          ) : (
+            <>
+            <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 ml-1">Adresse Email</label>
               <input
@@ -202,37 +273,54 @@ const AuthPage: React.FC = () => {
               ) : (mode === 'login' ? t('login') : mode === 'signup' ? t('continue') : 'Envoyer le lien')}
             </button>
           </form>
+          </>
+          )}
 
-          <div className="mt-8 flex items-center gap-4">
-            <div className="h-px bg-slate-100 flex-1"></div>
-            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">OU</span>
-            <div className="h-px bg-slate-100 flex-1"></div>
-          </div>
+          {mode !== 'verify' && (
+            <>
+            <div className="mt-8 flex items-center gap-4">
+              <div className="h-px bg-slate-100 flex-1"></div>
+              <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">OU</span>
+              <div className="h-px bg-slate-100 flex-1"></div>
+            </div>
 
-          <div className="mt-8 grid grid-cols-2 gap-4">
-            <button
-              onClick={handleGoogleLogin}
-              className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-white border border-slate-200 hover:bg-slate-50 transition-all group"
-            >
-              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
-              <span className="text-xs font-bold text-slate-600">Google</span>
-            </button>
-            <button
-              onClick={handleAppleLogin}
-              className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-black hover:bg-slate-900 transition-all group"
-            >
-              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 384 512"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 21.8-88.5 21.8-11.4 0-51.1-18.1-81.9-18.1-41.9 0-82.6 23.3-104 63.8-43.2 81.3-11.1 201 31 262.3 20.6 29.8 44.4 63.3 76.5 63.3 32.1 0 44.2-20.1 82.9-20.1 38.7 0 49.3 20.1 82.9 20.1 32.7 0 54.5-30.4 75.1-60.5 24.3-35.6 34.3-70 34.6-71.8-1-.4-66.2-25.5-66.4-101.4zM240.4 103.9c18.5-22.3 31-53.3 27.5-84.3-26.7 1.1-59 17.8-78.1 40.5-17.1 20.2-32.2 52.1-28.7 82.2 29.7 2.3 59.8-16 79.3-38.4z"/></svg>
-              <span className="text-xs font-bold text-white">Apple</span>
-            </button>
-          </div>
+            <div className="mt-8 grid grid-cols-2 gap-4">
+              <button
+                onClick={handleGoogleLogin}
+                className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-white border border-slate-200 hover:bg-slate-50 transition-all group"
+              >
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+                <span className="text-xs font-bold text-slate-600">Google</span>
+              </button>
+              <button
+                onClick={handleAppleLogin}
+                className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-black hover:bg-slate-900 transition-all group"
+              >
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 384 512"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 21.8-88.5 21.8-11.4 0-51.1-18.1-81.9-18.1-41.9 0-82.6 23.3-104 63.8-43.2 81.3-11.1 201 31 262.3 20.6 29.8 44.4 63.3 76.5 63.3 32.1 0 44.2-20.1 82.9-20.1 38.7 0 49.3 20.1 82.9 20.1 32.7 0 54.5-30.4 75.1-60.5 24.3-35.6 34.3-70 34.6-71.8-1-.4-66.2-25.5-66.4-101.4zM240.4 103.9c18.5-22.3 31-53.3 27.5-84.3-26.7 1.1-59 17.8-78.1 40.5-17.1 20.2-32.2 52.1-28.7 82.2 29.7 2.3 59.8-16 79.3-38.4z"/></svg>
+                <span className="text-xs font-bold text-white">Apple</span>
+              </button>
+            </div>
+            </>
+          )}
 
           <div className="mt-10 flex flex-col gap-4">
-            {mode !== 'reset' && (
+            {mode !== 'reset' && mode !== 'verify' && (
               <button
                 onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
                 className="text-slate-500 font-bold hover:text-primary transition-colors text-sm uppercase"
               >
                 {mode === 'login' ? "Pas encore membre ? S'inscrire" : "Déjà un compte ? Se connecter"}
+              </button>
+            )}
+            {mode === 'verify' && (
+              <button
+                onClick={() => {
+                  fbAuth.signOut();
+                  setMode('login');
+                }}
+                className="text-slate-400 font-bold hover:text-slate-600 transition-colors text-[10px] uppercase tracking-widest"
+              >
+                Utiliser une autre adresse email
               </button>
             )}
           </div>
