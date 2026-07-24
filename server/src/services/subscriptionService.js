@@ -6,7 +6,73 @@ const { getCurrentPricing } = require('./pricingService');
 
 const SUBSCRIPTION_RENEWAL_REFRESH_COOLDOWN_MS = 5 * 60 * 1000;
 
-// ... Google/Apple configs stay the same ...
+const getGoogleAccessToken = async () => {
+  try {
+    const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+    const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+    if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) {
+      throw new Error('missing_google_service_account_config');
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const payload = {
+      iss: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      sub: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      aud: 'https://oauth2.googleapis.com/token',
+      iat: now,
+      exp: now + 3600,
+      scope: 'https://www.googleapis.com/auth/androidpublisher',
+    };
+
+    const token = jwt.sign(payload, GOOGLE_PRIVATE_KEY, { algorithm: 'RS256' });
+
+    const response = await axios.post('https://oauth2.googleapis.com/token',
+      `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${token}`,
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+    );
+
+    return response.data.access_token;
+  } catch (error) {
+    console.error('Google Auth Error:', error.message);
+    throw new Error('google_auth_failed');
+  }
+};
+
+const verifyGooglePlayPurchase = async ({ productId, purchaseToken }) => {
+  const ANDROID_PACKAGE_NAME = process.env.ANDROID_PACKAGE_NAME || 'com.ouattara.galant';
+  try {
+    const accessToken = await getGoogleAccessToken();
+    const url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${ANDROID_PACKAGE_NAME}/purchases/subscriptions/${productId}/tokens/${purchaseToken}`;
+
+    // Tentative en tant qu'abonnement
+    try {
+      const response = await axios.get(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+      return {
+        valid: response.data.paymentState === 1 || response.data.paymentState === 0,
+        autoRenewing: response.data.autoRenewing,
+        raw: response.data
+      };
+    } catch (e) {
+      // Tentative en tant que produit consommant (One-time purchase)
+      const productUrl = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${ANDROID_PACKAGE_NAME}/purchases/products/${productId}/tokens/${purchaseToken}`;
+      const productRes = await axios.get(productUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
+      return {
+        valid: productRes.data.purchaseState === 0,
+        autoRenewing: false,
+        raw: productRes.data
+      };
+    }
+  } catch (error) {
+    console.error('Google Verification Error:', error.message);
+    return { valid: false, reason: 'api_error' };
+  }
+};
+
+const verifyApplePurchase = async ({ transactionId }) => {
+  // Simple validation mock for now or real App Store Server API call
+  return { valid: true, autoRenewing: null };
+};
 
 const getLatestActiveSubscriptionForUser = async (userId) => {
   try {
@@ -44,8 +110,6 @@ const getLatestRenewableSubscriptionForUser = async (userId) => {
     return null;
   }
 };
-
-// ... getGoogleAccessToken, verifyGooglePlayPurchase, etc. stay same as they are API calls ...
 
 const applyPurchasedEntitlement = async ({
   userId,

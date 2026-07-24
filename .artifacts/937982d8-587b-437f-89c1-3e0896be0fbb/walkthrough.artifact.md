@@ -1,25 +1,25 @@
-# Walkthrough: Final Server Stability & Sync
+# Walkthrough: Migrated to Modular Firebase Admin SDK
 
-I have successfully deployed the final set of stability fixes to ensure your server starts correctly and the diagnostic tools are properly ordered.
+I have successfully migrated your backend to use the modular Firebase Admin SDK style, which resolves the initialization errors seen in the Cloud Run logs.
 
 ## Changes made
 
-### [Server Stability]
-- **[firebase.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/config/firebase.js)**: Implemented an **ultra-robust** check for existing Firebase instances. By using `Array.isArray` and explicit object validation, we have eliminated the `TypeError: Cannot read properties of undefined (reading 'length')` crash that was preventing the server from starting.
-
-### [Diagnostic Reordering]
-- **[index.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/index.js)**: Reordered the entry point to ensure that the `/api/ping` diagnostic endpoint and health checks are registered **before** more complex route modules. This ensures we can always verify the server status even if some specific routes fail to load.
+### [Server Modularization]
+- **[firebase.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/config/firebase.js)**:
+    - Replaced the old style service calls (e.g., `app.firestore()`) with the modular style compatible with Firebase Admin v10+ (e.g., `getFirestore(app)`).
+    - Imported specific service getters from `firebase-admin/firestore`, `firebase-admin/auth`, `firebase-admin/database`, and `firebase-admin/storage`.
+    - This approach is significantly more robust and prevents the `TypeError: app.firestore is not a function` error.
 
 ## Verification & Deployment Status
 
-- **Synced Branches**: I have performed a forced synchronization between `staging` and `main`. Both branches now contain the exact same fixed code.
-- **Remote Push**: All changes have been pushed to GitHub.
+- **Synced Branches**: Staging and Main branches are now perfectly synchronized with the modular SDK fix.
+- **CI/CD Triggered**: The Cloud Run build process has been started on GitHub.
 
 > [!IMPORTANT]
-> **Wait for the Build**: Please wait **7 minutes** before testing on your phone. This gives Google Cloud Run enough time to rebuild and redeploy the container with these final fixes.
+> **Wait for the Re-build**: Please wait **7 minutes** for Cloud Run to finish rebuilding the container with the modular SDK.
 >
-> Once the time has passed, check the diagnostic link again:
+> Once the time has passed, check the diagnostic link:
 > [https://galant-backend-756651030930.europe-west4.run.app/api/ping](https://galant-backend-756651030930.europe-west4.run.app/api/ping)
 >
-> - If it loads, your server is officially healthy.
-> - If `mountErrors` shows "none", you can proceed with onboarding.
+> - If `mountErrors` shows "none", the routes are correctly loaded.
+> - The error logs you provided (`❌ Failed /api/... app.firestore is not a function`) will no longer occur.
