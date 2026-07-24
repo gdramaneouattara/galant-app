@@ -25,20 +25,21 @@ const DiscoverPage: React.FC = () => {
   });
 
   const loadSuggestions = useCallback(async () => {
-    if (user) {
+    // On ne charge les suggestions que si l'utilisateur ET son profil sont présents
+    if (user && myProfile) {
       await fetchSuggestions(filters);
     }
-  }, [user, fetchSuggestions, filters]);
+  }, [user, myProfile, fetchSuggestions, filters]);
 
   const fetchVisibilityRank = useCallback(async () => {
-    if (!user) return;
+    if (!user || !myProfile) return;
     try {
       const data = await apiRequest<{ rank: number | null, total: number }>('/api/matchmaking/visibility-insight', { requireAuth: true });
       setVisibilityRank(data);
     } catch (e) {
       console.error('Error fetching visibility rank:', e);
     }
-  }, [user]);
+  }, [user, myProfile]);
 
   useEffect(() => {
     loadSuggestions();

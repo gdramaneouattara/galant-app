@@ -172,7 +172,9 @@ const OnboardingPage: React.FC = () => {
       });
 
       showAlert('Dossier Transmis 🌹', 'Bienvenue dans le Cercle Galant. Votre profil est en cours de revue par notre Conciergerie pour garantir l\'excellence de notre communauté.');
-      navigate('/');
+
+      // On recharge la page pour forcer le rafraîchissement complet du profil dans l'AuthContext
+      window.location.href = '/';
     } catch (error: any) {
       showAlert('Erreur', error.message || 'Échec de la création du profil.');
     } finally {
