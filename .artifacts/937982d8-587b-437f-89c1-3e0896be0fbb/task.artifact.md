@@ -1,10 +1,10 @@
-# Tasks: Securing .trim() calls
+# Task: Fix Onboarding API Failure
 
-- `[x]` Secure `web/src/pages/AuthPage.tsx`
-- `[x]` Secure `web/src/pages/LocationSetupPage.tsx`
-- `[x]` Secure `src/screens/auth/components/AuthMethodStep.tsx`
-- `[x]` Secure `src/screens/admin/UserListScreen.tsx`
-- `[x]` Secure `src/components/passport/PassportModal.tsx`
-- `[x]` Secure `web/src/components/PassportModal.tsx`
-- `[x]` Secure `src/screens/discover/DiscoverGridScreen.tsx`
-- `[x]` Final verification and deployment
+- `[x]` Modify Server logic
+    - `[x]` Update `profileRoutes.js` (security relaxation)
+    - `[x]` Update `profileController.js` (onboarding logic)
+- `[x]` Enhance Client diagnostics
+    - `[x]` Update `api.ts` (detailed errors)
+- `[/]` Deploy and Verify
+    - `[ ]` Push to staging
+    - `[ ]` Push to main

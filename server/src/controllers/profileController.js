@@ -167,9 +167,13 @@ const completeOnboarding = async (req, res) => {
     name, age, gender, bio, interests, relationship_goal,
     city, country, latitude, longitude, photos, radiance_score
   } = req.body;
-  const userId = req.user.id;
+  const userId = req.authUser.uid;
 
   try {
+    const profileRef = db.collection('profiles').doc(userId);
+    const profileDoc = await profileRef.get();
+    const profile = profileDoc.exists ? profileDoc.data() : {};
+
     const updates = {
       name,
       age: parseInt(age),
@@ -188,8 +192,8 @@ const completeOnboarding = async (req, res) => {
     };
 
     // Reward Logic
-    if (radiance_score === 100 && !req.user.onboarding_reward_granted) {
-      updates.roses_count = (req.user.roses_count || 0) + 1;
+    if (radiance_score === 100 && !profile.onboarding_reward_granted) {
+      updates.roses_count = (profile.roses_count || 0) + 1;
       updates.onboarding_reward_granted = true;
       void sendPushNotification(
         userId,
@@ -198,7 +202,7 @@ const completeOnboarding = async (req, res) => {
       );
     }
 
-    await db.collection('profiles').doc(userId).set(updates, { merge: true });
+    await profileRef.set(updates, { merge: true });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });

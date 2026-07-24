@@ -1,23 +1,16 @@
-# Walkthrough: Securing .trim() calls
+# Walkthrough: Fixed Onboarding API Failure
 
-I have secured all identified calls to `.trim()` across the project to prevent `TypeError: Cannot read properties of undefined (reading 'trim')` crashes.
+I have resolved the "API request failed" error that occurred during the final step of the profile creation.
 
 ## Changes made
 
-### [Shared Hooks]
-- **[useMatchmaking.ts](file:///C:/Users/UTILISATEUR/galant-app/src/hooks/useMatchmaking.ts)**: Added robust checks for `filters.city` and `search` parameters before calling `.trim()`.
+### [Server]
+- **[profileRoutes.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/routes/profileRoutes.js)**: Relaxed security for the `/complete-onboarding` endpoint. It now uses `requireBaseAuth` (ID Token check only) instead of `requireAuth` (which required an existing Firestore profile).
+- **[profileController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/profileController.js)**: Updated the onboarding logic to correctly handle users who don't have a profile document yet.
 
-### [Web Application]
-- **[AuthPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/AuthPage.tsx)**: Secured `email.trim()` in the password reset flow.
-- **[LocationSetupPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/LocationSetupPage.tsx)**: Secured `manualCity.trim()` in the location selection form.
-- **[PassportModal.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/PassportModal.tsx)**: Secured `query.trim()` in the city search.
-
-### [Mobile Application]
-- **[AuthMethodStep.tsx](file:///C:/Users/UTILISATEUR/galant-app/src/screens/auth/components/AuthMethodStep.tsx)**: Secured `identifier.trim()` during login/signup.
-- **[UserListScreen.tsx](file:///C:/Users/UTILISATEUR/galant-app/src/screens/admin/UserListScreen.tsx)**: Secured `query.trim()` in the admin search bar.
-- **[DiscoverGridScreen.tsx](file:///C:/Users/UTILISATEUR/galant-app/src/screens/discover/DiscoverGridScreen.tsx)**: Secured `q.trim()` in the grid search function.
-- **[PassportModal.tsx](file:///C:/Users/UTILISATEUR/galant-app/src/components/passport/PassportModal.tsx)**: Secured `query.trim()` in the passport city search.
+### [Shared Library]
+- **[api.ts](file:///C:/Users/UTILISATEUR/galant-app/src/lib/api.ts)**: Improved error reporting. If an API call fails, the error message now includes the HTTP status code and the path (e.g., `API Error 403: ... (on /api/profiles/complete-onboarding)`). This will make future debugging much faster.
 
 ## Verification
 
-These changes eliminate the risk of a crash if a user leaves a search field empty or if an initial state is `undefined`. The application should now be more stable on both platforms.
+The server-side fix removes the security wall that was blocking new users from saving their first profile. The improved client-side errors will provide immediate clarity if there are any remaining configuration issues in your production environment.

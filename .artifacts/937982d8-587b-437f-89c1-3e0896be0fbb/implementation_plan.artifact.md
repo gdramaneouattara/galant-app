@@ -1,45 +1,32 @@
-# Résolution de l'écran blanc sur mobile (Web Staging)
+# Fix API Failure during Onboarding
 
-Ce plan vise à corriger l'erreur d'écran blanc rencontrée sur téléphone lors de l'accès à la version de staging (GitHub Pages). Les causes probables identifiées sont des chemins d'accès aux assets incorrects (Base URL), des variables d'environnement manquantes lors du build, et des crashs potentiels dus à l'accès à `process.env` dans un environnement navigateur.
+The "API request failed" error occurs when the server rejects the request without a specific error message. Analysis reveals a "chicken-and-egg" bug in the authentication middleware and a potential configuration issue with the API Base URL.
 
-## User Review Required
-
-> [!IMPORTANT]
-> - Vérifiez que les **GitHub Secrets** (VITE_FIREBASE_API_KEY, etc.) sont bien configurés dans votre dépôt GitHub. Sans eux, le build de staging échouera à l'initialisation de Firebase.
-> - Confirmez que l'URL de staging est bien `https://[votre-nom].github.io/galant-app/`. Si le nom du dépôt est différent, la variable `base` dans `vite.config.ts` devra être ajustée.
+## Root Causes
+1. **Middleware Block**: The `/api/profiles/complete-onboarding` route is protected by `requireAuth`, which requires a profile to already exist in Firestore. However, for new users, the profile is only created *by* this endpoint.
+2. **Generic Error Message**: The `apiRequest` utility hides the HTTP status code, making it hard to distinguish between a 404 (wrong URL), 403 (middleware block), or 500 (server crash).
 
 ## Proposed Changes
 
-### [Vite Configuration]
+### [Server] Onboarding Logic
 
-#### [MODIFY] [vite.config.ts](file:///C:/Users/UTILISATEUR/galant-app/web/vite.config.ts)
-- Utiliser une base relative ou s'assurer que le mode `staging` est correctement géré.
-- Ajouter un shim pour `process.env` afin d'éviter les `ReferenceError`.
+#### [MODIFY] [profileRoutes.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/routes/profileRoutes.js)
+- Change `/complete-onboarding` from `requireAuth` to `requireBaseAuth`. This allows users without a profile document to reach the controller.
 
-### [CI/CD Pipeline]
+#### [MODIFY] [profileController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/profileController.js)
+- Update `completeOnboarding` to use `req.authUser.uid` instead of `req.user.id`.
+- Manually fetch the profile inside the controller to handle the reward logic (`onboarding_reward_granted`).
 
-#### [MODIFY] [deploy-web.yml](file:///C:/Users/UTILISATEUR/galant-app/.github/workflows/deploy-web.yml)
-- Forcer le mode de build à `staging` pour que Vite utilise la bonne configuration de base et les bonnes variables d'environnement.
-
-### [Shared Library Safety]
+### [Shared] Diagnostics
 
 #### [MODIFY] [api.ts](file:///C:/Users/UTILISATEUR/galant-app/src/lib/api.ts)
-- Sécuriser l'accès à `process.env` pour éviter les crashs dans le bundle Web.
-
-### [Web Application Core]
-
-#### [MODIFY] [AuthContext.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/context/AuthContext.tsx)
-- Ajouter des blocs try/catch autour des appels asynchrones dans `onAuthStateChanged` pour éviter que `loading` ne reste bloqué à `true` en cas d'erreur.
-
-#### [MODIFY] [App.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/App.tsx)
-- Ajouter un composant `ErrorBoundary` pour capturer les erreurs au rendu et afficher un message utile au lieu d'un écran blanc.
-- Corriger les chemins d'images absolus (`/auth-bg.png`) pour qu'ils fonctionnent sur GitHub Pages.
+- Enhance the error message to include the HTTP status code and the attempted URL. This will help diagnose if `VITE_API_BASE_URL` is missing.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Pousser les modifications sur la branche `staging`.
-2.  Vérifier le succès du workflow GitHub Actions.
-3.  Tester sur téléphone :
-    - Si l'écran blanc persiste, l'ErrorBoundary devrait maintenant afficher un message d'erreur.
-    - Vérifier dans la console du navigateur mobile (via inspecteur distant ou via un outil comme VConsole si nécessaire) les erreurs 404 ou JS.
+1. Push changes to `staging`.
+2. Attempt to create a new profile on the web.
+3. If it still fails, the new error message will show something like `API Error 404 on https://...` or `API Error 403`.
+    - **If 404**: Check `VITE_API_BASE_URL` in your deployment settings (GitHub Secrets or Firebase App Hosting).
+    - **If 403**: The middleware fix should have resolved this.

@@ -72,7 +72,7 @@ export const apiRequest = async <T>(path: string, options: ApiOptions = {}): Pro
 
     if (!response.ok) {
       const msg = payload?.error || payload?.message || 'API request failed';
-      throw new Error(msg);
+      throw new Error(`API Error ${response.status}: ${msg} (on ${path})`);
     }
 
     return payload as T;

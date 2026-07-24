@@ -5,7 +5,7 @@ const { createProfile, updateProfile, boostProfile, completePartnerProfile, comp
 
 router.post('/create', requireBaseAuth, createProfile);
 router.post('/update', requireAuth, updateProfile);
-router.post('/complete-onboarding', requireAuth, completeOnboarding);
+router.post('/complete-onboarding', requireBaseAuth, completeOnboarding);
 router.post('/boost', requireAuth, boostProfile);
 router.post('/complete-partner', requireAuth, completePartnerProfile);
 
