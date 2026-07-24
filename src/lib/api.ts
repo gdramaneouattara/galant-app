@@ -58,7 +58,8 @@ export const apiRequest = async <T>(path: string, options: ApiOptions = {}): Pro
   const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
 
   try {
-    const response = await fetch(`${runtimeApiBaseUrl}${path}`, {
+    const fullUrl = `${runtimeApiBaseUrl}${path}`;
+    const response = await fetch(fullUrl, {
       ...options,
       headers,
       signal: controller.signal,
@@ -72,7 +73,7 @@ export const apiRequest = async <T>(path: string, options: ApiOptions = {}): Pro
 
     if (!response.ok) {
       const msg = payload?.error || payload?.message || 'API request failed';
-      throw new Error(`API Error ${response.status}: ${msg} (on ${path})`);
+      throw new Error(`API Error ${response.status}: ${msg} (on ${fullUrl})`);
     }
 
     return payload as T;
