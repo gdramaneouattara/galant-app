@@ -198,7 +198,7 @@ const completeOnboarding = async (req, res) => {
       );
     }
 
-    await db.collection('profiles').doc(userId).update(updates);
+    await db.collection('profiles').doc(userId).set(updates, { merge: true });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
