@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert, Linking } from 'react-native';
 import { ChevronLeft, Eye, EyeOff, CheckSquare, Square } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
 import PrimaryButton from '../../../components/PrimaryButton';
 import { COLORS } from '../../../data/mock';
 import { useApp } from '../../../state/AppContext';
@@ -19,6 +20,7 @@ interface AuthMethodStepProps {
 
 const AuthMethodStep: React.FC<AuthMethodStepProps> = ({ mode, onBack, onSuccess, loading, setLoading }) => {
   const { colors } = useApp();
+  const navigation = useNavigation<any>();
   const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -105,6 +107,12 @@ const AuthMethodStep: React.FC<AuthMethodStepProps> = ({ mode, onBack, onSuccess
         {mode === 'signup' && <Text style={styles.helperText}>{passwordPolicyHint}</Text>}
       </View>
 
+      {mode === 'login' && (
+        <Pressable onPress={() => navigation.navigate('ResetPassword')} style={styles.forgotBtn}>
+          <Text style={styles.forgotText}>Mot de passe oublié ?</Text>
+        </Pressable>
+      )}
+
       {mode === 'signup' && (
         <View style={styles.checkboxContainer}>
           <Pressable onPress={() => setHasAcceptedLegal(!hasAcceptedLegal)} style={styles.checkboxIcon}>
@@ -145,6 +153,8 @@ const styles = StyleSheet.create({
   checkboxIcon: { marginTop: 2 },
   checkboxText: { fontSize: 13, flex: 1, lineHeight: 20 },
   legalLink: { color: COLORS.primary, fontWeight: '800', textDecorationLine: 'underline' },
+  forgotBtn: { alignSelf: 'flex-end', marginTop: -8 },
+  forgotText: { fontSize: 12, fontWeight: '700', color: COLORS.primary },
 });
 
 export default AuthMethodStep;
