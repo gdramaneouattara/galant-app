@@ -1,7 +1,8 @@
-# Remediation Task: Test Alignment & Final Diagnostic
+# Task: Server 404 Diagnostic Deployment
 
-- `[ ]` Restore explicit route mounting in `server/src/index.js`
-- `[ ]` Verify `api.ts` absolute URL reporting
-- `[ ]` Run quality tests locally (`npm run test:quality`)
-- `[ ]` Deploy to staging and main
-- `[ ]` Provide final walkthrough
+- `[/]` Secure Firebase Storage initialization
+    - `[ ]` Update `server/src/config/firebase.js`
+- `[/]` Track and expose mount errors
+    - `[ ]` Update `server/src/index.js`
+- `[ ]` Deploy to all branches
+- `[ ]` Provide instructions for error extraction

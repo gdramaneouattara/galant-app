@@ -1,29 +1,27 @@
-# Remédiation : Alignement des tests et Diagnostic API
+# Plan de Diagnostic Profond : Serveur 404
 
-Ce plan vise à corriger les 5 échecs de tests introduits par la refactorisation du serveur et à finaliser le diagnostic de l'erreur 404 rencontrée lors de l'onboarding.
+Ce plan vise à identifier la cause exacte pour laquelle les routes `/api/profiles` ne sont pas activées sur votre serveur Cloud Run, malgré leur présence dans le code.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> **Variable d'environnement manquante** : Le diagnostic actuel indique que `VITE_API_BASE_URL` est probablement vide lors du build. Vous devez vous assurer que cette variable est définie dans vos **GitHub Secrets** avec l'URL de votre backend Cloud Run.
+> Nous allons temporairement exposer les erreurs de démarrage du serveur dans les réponses 404. Cela nous permettra de voir quel fichier (ex: `firebase.js` ou `profileController.js`) empêche l'activation de la création de profil.
 
 ## Proposed Changes
 
-### [Server] Restauration de l'alignement des tests
+### [Server] Debug & Robustesse
+
+#### [MODIFY] [firebase.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/config/firebase.js)
+- Sécuriser l'export du `bucket` Storage. Si l'initialisation échoue, le serveur continuera de fonctionner pour les autres services (Auth, DB).
 
 #### [MODIFY] [index.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/index.js)
-- Supprimer le helper `mountRoute` et restaurer les appels `app.use` explicites avec leurs variables respectives (`aiRoutes`, `messageRoutes`, etc.) car le moteur de test effectue une vérification textuelle stricte sur ces lignes.
-- Conserver le gestionnaire de 404 à la fin du fichier pour le debugging.
-
-### [Client] Diagnostic Final
-
-#### [MODIFY] [api.ts](file:///C:/Users/UTILISATEUR/galant-app/src/lib/api.ts)
-- Forcer l'affichage de l'URL absolue dans le message d'erreur pour confirmer si l'appel est relatif ou absolu.
+- Créer un registre `mountErrors` pour stocker les raisons des échecs de chargement.
+- Modifier le handler 404 pour inclure ces erreurs dans la réponse JSON.
 
 ## Verification Plan
 
-### Automated Tests
-- Lancer `npm run test:quality`. Tous les 70 tests doivent être au vert.
-
 ### Manual Verification
-- Après déploiement, vérifier le message d'erreur sur mobile. S'il n'affiche pas de domaine (ex: `https://...`), la configuration des secrets GitHub doit être corrigée.
+1. Déployer sur `staging` et `main`.
+2. Cliquer sur "J'adhère aux valeurs".
+3. L'erreur 404 s'affichera toujours, mais elle contiendra un champ `mountErrors`.
+4. Envoyez-moi le contenu de ce champ (ou une capture d'écran) pour que je puisse corriger la racine du problème.

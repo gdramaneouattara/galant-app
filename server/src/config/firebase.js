@@ -43,10 +43,18 @@ const initializeFirebase = () => {
 
 const app = initializeFirebase();
 
+let bucket = null;
+try {
+  bucket = app.storage().bucket();
+  console.log('✅ Firebase Storage bucket initialized');
+} catch (e) {
+  console.error('⚠️ Firebase Storage initialization failed:', e.message);
+}
+
 module.exports = {
   admin,
   db: app.firestore(),
   auth: app.auth(),
   rtdb: app.database(),
-  bucket: app.storage().bucket()
+  bucket
 };
