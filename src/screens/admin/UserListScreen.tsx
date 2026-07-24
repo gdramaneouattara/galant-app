@@ -54,7 +54,7 @@ const UserListScreen: React.FC = () => {
   }), [users]);
 
   const filteredUsers = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = (query || '').trim().toLowerCase();
     return users.filter((u) => {
       const pass = activeFilter === 'ALL' || (activeFilter === 'SUSPENDED' && isSuspended(u)) || (activeFilter === 'PREMIUM' && is_premium(u)) || (activeFilter === 'UNVERIFIED' && !is_verified(u)) || (activeFilter === 'ADMINS' && isAdmin(u));
       if (!pass) return false;

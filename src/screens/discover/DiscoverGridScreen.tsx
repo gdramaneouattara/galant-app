@@ -27,7 +27,8 @@ const DiscoverGridScreen: React.FC = () => {
   const fetchGridSuggestions = useCallback(async (q = searchQuery) => {
     try {
       setLoading(true);
-      const searchParam = q.trim() ? `&search=${encodeURIComponent(q.trim())}` : '';
+      const safeQ = (q || '').trim();
+      const searchParam = safeQ ? `&search=${encodeURIComponent(safeQ)}` : '';
       const includeSelfParam = includeSelf ? '&includeSelf=true' : '';
       const res = await apiRequest<DiscoverResponse>(`/api/matchmaking/suggestions?limit=${MATCHMAKING_LIMIT}${includeSelfParam}${searchParam}`, { requireAuth: true });
       setProfiles(res.suggestions || []);

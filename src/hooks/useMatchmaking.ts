@@ -46,16 +46,18 @@ export const useMatchmaking = () => {
     try {
       const params = new URLSearchParams();
       if (filters) {
-        params.set('gender', filters.gender);
-        params.set('minAge', String(filters.minAge));
-        params.set('maxAge', String(filters.maxAge));
-        params.set('maxDistanceKm', String(filters.maxDistanceKm));
-        if (filters.city.trim()) params.set('city', filters.city.trim());
+        params.set('gender', filters.gender || 'ALL');
+        params.set('minAge', String(filters.minAge || 18));
+        params.set('maxAge', String(filters.maxAge || 50));
+        params.set('maxDistanceKm', String(filters.maxDistanceKm || 50));
+        if (filters.city && typeof filters.city === 'string' && filters.city.trim()) {
+          params.set('city', filters.city.trim());
+        }
         if (filters.premiumOnly) params.set('premiumOnly', 'true');
         if (filters.verifiedOnly) params.set('verifiedOnly', 'true');
         if (filters.minScore) params.set('minScore', String(filters.minScore));
       }
-      if (search?.trim()) params.set('search', search.trim());
+      if (search && typeof search === 'string' && search.trim()) params.set('search', search.trim());
 
       const data = await apiRequest<{ suggestions: ProfileDetailParam[] }>(`/api/matchmaking/suggestions?${params.toString()}`, {
         requireAuth: true,

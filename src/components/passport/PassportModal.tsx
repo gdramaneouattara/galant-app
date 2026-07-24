@@ -31,10 +31,11 @@ const PassportModal: React.FC<Props> = ({ visible, onClose }) => {
   }, [visible]);
 
   const searchCity = async () => {
-    if (!query.trim()) return;
+    const cityQuery = (query || '').trim();
+    if (!cityQuery) return;
     try {
       setLoading(true);
-      const res = await Location.geocodeAsync(query);
+      const res = await Location.geocodeAsync(cityQuery);
       if (res.length > 0) {
         const addr = await Location.reverseGeocodeAsync({
           latitude: res[0].latitude,

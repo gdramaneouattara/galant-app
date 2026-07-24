@@ -47,14 +47,15 @@ const LocationSetupPage: React.FC = () => {
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!manualCity.trim()) return;
+    const city = (manualCity || '').trim();
+    if (!city) return;
     setLoading(true);
     try {
       // Geocoding de la ville saisie manuellement
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(manualCity)}&limit=1`);
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}&limit=1`);
       const data = await response.json();
       if (data && data.length > 0) {
-        await saveLocation(parseFloat(data[0].lat), parseFloat(data[0].lon), manualCity, 'Cameroun');
+        await saveLocation(parseFloat(data[0].lat), parseFloat(data[0].lon), city, 'Cameroun');
       } else {
         showAlert('Oups', 'Ville introuvable. Veuillez réessayer.');
         setLoading(false);

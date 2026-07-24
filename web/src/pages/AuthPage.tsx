@@ -53,7 +53,7 @@ const AuthPage: React.FC = () => {
         await sendEmailVerification(cred.user);
         setMode('verify');
       } else if (mode === 'reset') {
-        await sendPasswordResetEmail(fbAuth, email.trim().toLowerCase());
+        await sendPasswordResetEmail(fbAuth, (email || '').trim().toLowerCase());
         showAlert('Email envoyé', 'Vérifiez votre boîte de réception pour réinitialiser votre mot de passe.');
         setMode('login');
       }

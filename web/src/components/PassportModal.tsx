@@ -22,12 +22,13 @@ const PassportModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   const searchCity = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!query.trim()) return;
+    const cityQuery = (query || '').trim();
+    if (!cityQuery) return;
 
     setLoading(true);
     try {
       // Simulation simple ou appel API de géocodage (ex: Nominatim OpenStreetMap)
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=1`);
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityQuery)}&addressdetails=1&limit=1`);
       const data = await response.json();
 
       if (data && data.length > 0) {

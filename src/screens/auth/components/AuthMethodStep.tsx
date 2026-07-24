@@ -37,11 +37,12 @@ const AuthMethodStep: React.FC<AuthMethodStepProps> = ({ mode, onBack, onSuccess
 
     setLoading(true);
     try {
+      const safeIdentifier = (identifier || '').trim().toLowerCase();
       if (mode === 'signup') {
-        const cred = await fbAuth.createUserWithEmailAndPassword(identifier.trim().toLowerCase(), password);
+        const cred = await fbAuth.createUserWithEmailAndPassword(safeIdentifier, password);
         onSuccess(cred.user.uid);
       } else {
-        const cred = await fbAuth.signInWithEmailAndPassword(identifier.trim().toLowerCase(), password);
+        const cred = await fbAuth.signInWithEmailAndPassword(safeIdentifier, password);
         onSuccess(cred.user.uid);
       }
     } catch (error: any) {
