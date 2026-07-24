@@ -13,6 +13,7 @@ import { showAlert } from '@shared/lib/ui-bridge';
 import { apiRequest } from '@shared/lib/api';
 import { useNavigate } from 'react-router-dom';
 import PassportModal from '../components/PassportModal';
+import SettingsModal from '../components/SettingsModal';
 import { compressImageWeb } from '../lib/imageCompression';
 
 const ProfilePage: React.FC = () => {
@@ -25,6 +26,7 @@ const ProfilePage: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [isPassportOpen, setIsPassportOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isTogglingInvisible, setIsTogglingInvisible] = useState(false);
 
   // Éviter l'écran blanc si les données ne sont pas encore là
@@ -337,6 +339,16 @@ const ProfilePage: React.FC = () => {
               <p className="flex-1 text-sm font-black text-slate-700 uppercase tracking-tight">Abonnement</p>
             </button>
 
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-all text-left group"
+            >
+              <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center group-hover:bg-slate-100 transition-colors">
+                <Settings size={20} />
+              </div>
+              <p className="flex-1 text-sm font-black text-slate-700 uppercase tracking-tight">{t('settings') || 'Paramètres'}</p>
+            </button>
+
             <button className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-all text-left group">
               <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center group-hover:bg-slate-100 transition-colors">
                 <HelpCircle size={20} />
@@ -358,6 +370,11 @@ const ProfilePage: React.FC = () => {
       <PassportModal
         isOpen={isPassportOpen}
         onClose={() => setIsPassportOpen(false)}
+      />
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
       />
     </div>
   );

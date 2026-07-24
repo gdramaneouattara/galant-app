@@ -1,25 +1,31 @@
-# Plan de correction : Erreur "app.firestore is not a function"
+# Ajout de l'option Paramètres dans l'onglet Moi (Web)
 
-Les logs indiquent que l'objet `app` retourné par l'initialisation de Firebase n'expose pas les méthodes classiques (`.firestore()`, `.auth()`, etc.). Cela arrive avec les versions récentes du SDK Firebase Admin (v10+) qui privilégient une approche modulaire.
+L'option "Paramètres" est présente sur la version mobile mais manquante sur la version Web. Ce plan vise à rétablir la parité entre les deux plateformes en ajoutant le menu de réglages sur le Web.
 
 ## User Review Required
 
-> [!IMPORTANT]
-> - Nous allons migrer la configuration Firebase vers le style "Modulaire" (`getFirestore(app)` au lieu de `app.firestore()`).
-> - Ce style est beaucoup plus robuste et compatible avec toutes les versions récentes du SDK, évitant ainsi les erreurs "is not a function".
+> [!NOTE]
+> La version Web ne supporte pas encore le mode sombre dynamique (contrairement au mobile). Pour l'instant, les paramètres sur le Web se concentreront sur la gestion de la langue et serviront de point d'entrée pour les futures options de compte.
 
 ## Proposed Changes
 
-### [Server] Migration Modulaire de Firebase
+### [Web Components]
 
-#### [MODIFY] [firebase.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/config/firebase.js)
-- Importer les getters spécifiques pour chaque service : `getFirestore`, `getAuth`, `getDatabase`, `getStorage`.
-- Initialiser les services en utilisant ces fonctions au lieu d'appeler des méthodes sur l'instance `app`.
-- Simplifier la logique de détection des credentials pour Cloud Run.
+#### [NEW] [SettingsModal.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/SettingsModal.tsx)
+- Créer un composant modal stylisé pour le Web.
+- Permettre le basculement entre Français et Anglais.
+- Utiliser les fonctions `language` et `setLanguage` du contexte `AuthContext`.
+
+### [Web Pages]
+
+#### [MODIFY] [ProfilePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ProfilePage.tsx)
+- Ajouter l'icône `Settings` et le bouton "Paramètres" dans la colonne de droite.
+- Gérer l'état d'ouverture de la nouvelle modal.
 
 ## Verification Plan
 
 ### Manual Verification
-1. Déployer sur Cloud Run.
-2. Vérifier les logs : l'erreur `❌ Failed /api/... app.firestore is not a function` doit disparaître.
-3. Consulter `/api/ping`. Si `mountErrors` affiche "none", le serveur est totalement opérationnel.
+1. Aller dans l'onglet "Moi" sur la version Web.
+2. Vérifier la présence du bouton "Paramètres" au-dessus de "Aide".
+3. Cliquer sur le bouton et vérifier que la modal s'ouvre.
+4. Changer la langue et vérifier que l'interface se met à jour instantanément.

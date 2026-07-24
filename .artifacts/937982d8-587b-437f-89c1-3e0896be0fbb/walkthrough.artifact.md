@@ -1,31 +1,20 @@
-# Walkthrough: Restored Missing Payment Verification Functions
+# Walkthrough : Ajout de l'option Paramètres (Web)
 
-I have successfully identified and resolved the cause of the latest server errors. The functions `verifyGooglePlayPurchase` and `verifyApplePurchase` were missing in the subscription service, which prevented the server from loading correctly.
+J'ai rétabli la parité entre la version mobile et la version web en ajoutant le menu "Paramètres" dans l'onglet Moi.
 
-## Changes made
+## Changements effectués
 
-### [Server Stability]
-- **[subscriptionService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/subscriptionService.js)**:
-    - Restored the actual implementation of `verifyGooglePlayPurchase` and `verifyApplePurchase`.
-    - Added the `getGoogleAccessToken` function using JWT for secure communication with Google Play APIs.
-    - This fix resolves the `ReferenceError: verifyGooglePlayPurchase is not defined` crash.
+### [Web Components]
+- **[SettingsModal.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/SettingsModal.tsx)** : Nouveau composant permettant de changer la langue de l'application (Français/Anglais) avec une interface élégante et des indicateurs visuels de sélection.
 
-## Verification Results
+### [Web Pages]
+- **[ProfilePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ProfilePage.tsx)** :
+    - Ajout du bouton "Paramètres" dans la liste des actions du profil.
+    - Intégration de l'icône `Settings` et gestion de l'état d'ouverture de la modal.
 
-### Automated Tests
-- Ran `npm run test:quality`.
-- **Status**: 100% Pass (70/70 tests).
-- This confirms that all required backend modules are now correctly defined and can be loaded by the server.
+## Déploiement
 
-### Deployment Status
-- **Synced Branches**: Both `staging` and `main` branches are now identical and include the restored functions.
-- **CI/CD**: The deployment to Cloud Run has been triggered.
+Les modifications ont été appliquées localement. Je vais maintenant procéder à la synchronisation des branches `staging` et `main` pour rendre ces changements effectifs en ligne.
 
-> [!IMPORTANT]
-> **Wait for the Build**: Please wait **7 minutes** for Cloud Run to complete the deployment.
->
-> After that, check the diagnostic link again:
-> [https://galant-backend-756651030930.europe-west4.run.app/api/ping](https://galant-backend-756651030930.europe-west4.run.app/api/ping)
->
-> - If `mountErrors` shows "none", your server is fully operational.
-> - You can then safely proceed with the profile creation flow on your phone.
+> [!TIP]
+> Une fois déployé, vous trouverez l'option juste au-dessus du menu "Aide" dans votre profil. Le changement de langue est instantané et persistant.
