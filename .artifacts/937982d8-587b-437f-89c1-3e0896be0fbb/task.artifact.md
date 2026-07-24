@@ -1,6 +1,8 @@
-# Task: Expose mountErrors for Deep Diagnostic
+# Task: Bulletproof Server Initialization
 
-- `[x]` Update `server/src/index.js` to add `/api/ping`
-- `[x]` Update `src/lib/api.ts` to show detailed error JSON
+- `[x]` Harden Firebase Admin setup
+    - `[x]` Update `server/src/config/firebase.js` with redundant safety checks
+- `[x]` Finalize Server entry point
+    - `[x]` Clean up and reorder `server/src/index.js`
 - `[/]` Deploy to all branches
-- `[ ]` Verify by checking `/api/ping` URL directly
+- `[ ]` Verify with direct `/api/ping`

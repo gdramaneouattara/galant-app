@@ -6,6 +6,7 @@ require('dotenv').config();
 
 const app = express();
 const PORT_TO_LISTEN = process.env.PORT || 8080;
+const mountErrors = {};
 
 // ==========================================
 // 2. CONFIGURATION ET ROUTES
@@ -13,16 +14,16 @@ const PORT_TO_LISTEN = process.env.PORT || 8080;
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '1mb' }));
 
-// Health check pour Google Cloud
-app.get('/', (req, res) => res.status(200).send('GALANT API LIVE'));
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+// Diagnostic public (Doit être avant les routes complexes pour rester accessible)
 app.get('/api/ping', (req, res) => res.json({
   status: 'ok',
   timestamp: new Date().toISOString(),
   mountErrors: Object.keys(mountErrors).length > 0 ? mountErrors : 'none'
 }));
 
-const mountErrors = {};
+// Health check pour Google Cloud
+app.get('/', (req, res) => res.status(200).send('GALANT API LIVE'));
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 // Initialisation sécurisée des routes (DO NOT REFACTOR - Tests depend on these exact strings)
 try { const aiRoutes = require('./routes/aiRoutes'); app.use('/api/ai', aiRoutes); } catch (e) { mountErrors['/api/ai'] = e.message; console.error('❌ Failed /api/ai', e.message); }

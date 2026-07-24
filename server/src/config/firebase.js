@@ -7,9 +7,16 @@ require('dotenv').config();
  */
 
 const initializeFirebase = () => {
-  // Vérification ultra-sécurisée de l'existence de l'apps array
-  const apps = admin.apps || [];
-  if (apps.length > 0) return admin.app();
+  // Ultra-resilient check for existing apps
+  try {
+    const apps = admin && admin.apps ? admin.apps : [];
+    if (Array.isArray(apps) && apps.length > 0) {
+      console.log('ℹ️ Firebase already initialized, reusing instance');
+      return admin.app();
+    }
+  } catch (e) {
+    console.warn('⚠️ Error checking existing Firebase apps:', e.message);
+  }
 
   const config = {
     databaseURL: process.env.FIREBASE_DATABASE_URL,
