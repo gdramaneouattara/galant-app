@@ -2,12 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { db, COLLECTIONS, fbStorage } from '../firebase';
-import { doc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   User as UserIcon, MapPin, Heart, Sparkles, Image as ImageIcon,
   Camera, CheckCircle2, ChevronRight, ChevronLeft, Loader2,
-  Rocket, Gem, ShieldCheck, AlignLeft
+  Rocket, Gem, ShieldCheck
 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { apiRequest } from '@shared/lib/api';
@@ -23,6 +23,13 @@ const RELATIONSHIP_GOALS = [
   { id: 'MARRIAGE', label: 'Mariage / Vie commune', icon: '💎', desc: 'L\'engagement ultime de l\'élégance.' },
   { id: 'FRIENDSHIP', label: 'Amitié sélective', icon: '🥂', desc: 'Des rencontres de haut vol, sans pression.' },
   { id: 'NETWORKING', label: 'Réseautage prestige', icon: '🤝', desc: 'Élargir son cercle d\'influence.' }
+];
+
+const BIO_PROMPTS = [
+  "Mon idée d'un premier rendez-vous parfait...",
+  "Ce qui me fait rire aux éclats...",
+  "Le trait de caractère que j'admire le plus...",
+  "Une passion qui me fait perdre la notion du temps..."
 ];
 
 const OnboardingPage: React.FC = () => {
@@ -49,6 +56,16 @@ const OnboardingPage: React.FC = () => {
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Calcul du Score de Rayonnement (0-100%)
+  const calculateRadiance = () => {
+    let score = 0;
+    if (formData.name && formData.age) score += 20;
+    if (formData.relationship_goal && formData.interests.length >= 3) score += 30;
+    if (formData.city && formData.bio.length >= 20) score += 25;
+    if (photoFiles.length >= 1) score += 25;
+    return score;
+  };
+
   useEffect(() => {
     if (profile && profile.onboarding_completed) {
       navigate('/');
@@ -64,6 +81,13 @@ const OnboardingPage: React.FC = () => {
       interests: prev.interests.includes(interest)
         ? prev.interests.filter(i => i !== interest)
         : [...prev.interests, interest]
+    }));
+  };
+
+  const addPromptToBio = (prompt: string) => {
+    setForm(prev => ({
+      ...prev,
+      bio: prev.bio ? `${prev.bio}\n\n${prompt}` : prompt
     }));
   };
 
@@ -117,7 +141,6 @@ const OnboardingPage: React.FC = () => {
 
     setLoading(true);
     try {
-      // 1. Upload Photos
       const uploadedUrls: string[] = [];
       for (const file of photoFiles) {
         const storageRef = ref(fbStorage, `profiles/${user.uid}/${Date.now()}_${file.name}`);
@@ -126,8 +149,6 @@ const OnboardingPage: React.FC = () => {
         uploadedUrls.push(url);
       }
 
-      // 2. Create/Update Profile in Firestore
-      // Use the new endpoint we created
       const token = await user.getIdToken();
       await apiRequest('/api/profiles/create', {
         method: 'POST',
@@ -139,7 +160,6 @@ const OnboardingPage: React.FC = () => {
         })
       });
 
-      // 3. Update with remaining info
       await apiRequest('/api/profiles/update', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -152,17 +172,17 @@ const OnboardingPage: React.FC = () => {
           latitude: formData.latitude,
           longitude: formData.longitude,
           photos: uploadedUrls,
-          onboarding_completed: true
+          onboarding_completed: true,
+          radiance_score: calculateRadiance()
         })
       });
 
-      // For safety, also update Firestore directly to ensure onboarding_completed is true
       await updateDoc(doc(db, COLLECTIONS.PROFILES, user.uid), {
         onboarding_completed: true,
         photos: uploadedUrls
       });
 
-      showAlert('Bienvenue', 'Votre profil est prêt. Bonne découverte !');
+      showAlert('Dossier Transmis 🌹', 'Bienvenue dans le Cercle Galant. Votre profil est en cours de revue par notre Conciergerie pour garantir l\'excellence de notre communauté.');
       navigate('/');
     } catch (error: any) {
       showAlert('Erreur', error.message || 'Échec de la création du profil.');
@@ -307,7 +327,7 @@ const OnboardingPage: React.FC = () => {
                <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto text-blue-500 mb-4">
                   <MapPin size={32} />
                </div>
-               <h3 className="text-3xl font-black italic tracking-tighter">Emplacement</h3>
+               <h3 className="text-3xl font-black italic tracking-tighter">Emplacement & Bio</h3>
                <p className="text-slate-500 font-medium">Où la magie doit-elle opérer ?</p>
             </div>
 
@@ -332,12 +352,23 @@ const OnboardingPage: React.FC = () => {
                   </div>
                </div>
 
-               <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Un mot sur vous (Bio)</label>
+               <div className="space-y-3">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Une accroche élégante (Bio)</label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                     {BIO_PROMPTS.map(p => (
+                       <button
+                         key={p}
+                         onClick={() => addPromptToBio(p)}
+                         className="text-[9px] font-bold bg-white border border-slate-200 text-slate-400 px-3 py-1.5 rounded-full hover:border-primary hover:text-primary transition-all"
+                       >
+                         + {p}
+                       </button>
+                     ))}
+                  </div>
                   <textarea
                     value={formData.bio}
                     onChange={e => setForm(prev => ({ ...prev, bio: e.target.value }))}
-                    className="w-full bg-slate-50 border-none rounded-3xl px-6 py-4 font-medium text-slate-900 outline-none focus:ring-2 focus:ring-primary/20 min-h-[120px] resize-none"
+                    className="w-full bg-slate-50 border-none rounded-3xl px-6 py-4 font-medium text-slate-900 outline-none focus:ring-2 focus:ring-primary/20 min-h-[140px] resize-none"
                     placeholder="Parlez-nous de ce qui vous rend unique..."
                   />
                </div>
@@ -349,7 +380,7 @@ const OnboardingPage: React.FC = () => {
               </button>
               <button
                 onClick={nextStep}
-                disabled={!formData.city || formData.bio.length < 10}
+                disabled={!formData.city || formData.bio.length < 15}
                 className="flex-1 bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black transition-all disabled:opacity-30"
               >
                 Dernière étape <ChevronRight size={16} />
@@ -395,11 +426,21 @@ const OnboardingPage: React.FC = () => {
             <div className="bg-slate-950 p-6 rounded-[2rem] space-y-4">
                <div className="flex items-center gap-3 text-white">
                   <ShieldCheck className="text-green-400" size={20} />
-                  <p className="text-xs font-black uppercase tracking-widest">Standard Qualité</p>
+                  <p className="text-xs font-black uppercase tracking-widest">Guide de Style</p>
                </div>
-               <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
-                  Vos photos sont la première impression que vous donnez au Cercle Galant. Privilégiez des clichés nets, lumineux et mettant en valeur votre distinction.
-               </p>
+               <ul className="space-y-2">
+                  {[
+                    "Privilégiez la lumière naturelle du jour.",
+                    "Évitez les lunettes de soleil (vos yeux brillent !).",
+                    "Montrez votre style de vie et vos passions.",
+                    "100% de rayonnement = 1 Rose d'Or offerte 🌹"
+                  ].map((tip, i) => (
+                    <li key={i} className="flex items-start gap-2 text-[10px] text-slate-400 font-medium leading-tight">
+                       <div className="w-1 h-1 rounded-full bg-primary mt-1.5 shrink-0" />
+                       {tip}
+                    </li>
+                  ))}
+               </ul>
             </div>
 
             <input
@@ -421,7 +462,7 @@ const OnboardingPage: React.FC = () => {
                 className="flex-1 bg-primary text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl shadow-red-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30"
               >
                 {loading ? <Loader2 className="animate-spin" /> : <Rocket size={16} />}
-                C'est parti !
+                Terminer le dossier
               </button>
             </div>
           </div>
@@ -432,15 +473,26 @@ const OnboardingPage: React.FC = () => {
     }
   };
 
+  const radiance = calculateRadiance();
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-md bg-white rounded-[3.5rem] shadow-2xl overflow-hidden">
-        {/* Progress Bar */}
-        <div className="h-1.5 w-full bg-slate-100 flex">
-           <div
-             className="h-full bg-primary transition-all duration-500 ease-out"
-             style={{ width: `${(step / 4) * 100}%` }}
-           />
+        {/* Progress & Radiance */}
+        <div className="bg-slate-900 px-10 py-3 flex items-center justify-between">
+           <div className="flex items-center gap-2">
+              <Sparkles className="text-amber-400" size={14} />
+              <span className="text-[10px] font-black text-white uppercase tracking-widest">Rayonnement</span>
+           </div>
+           <div className="flex items-center gap-3">
+              <div className="w-32 h-1 bg-white/10 rounded-full overflow-hidden">
+                 <div
+                   className="h-full bg-gradient-to-r from-amber-600 to-amber-300 transition-all duration-1000 ease-out"
+                   style={{ width: `${radiance}%` }}
+                 />
+              </div>
+              <span className="text-[10px] font-black text-amber-400">{radiance}%</span>
+           </div>
         </div>
 
         <div className="p-10">
@@ -449,8 +501,8 @@ const OnboardingPage: React.FC = () => {
       </div>
 
       <div className="mt-8 flex items-center gap-3">
-         <Gem className="text-amber-400" size={16} />
-         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Expérience Galant Intégrale</p>
+         <Gem className="text-slate-300" size={16} />
+         <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Dossier d'adhésion confidentiel</p>
       </div>
     </div>
   );
