@@ -1,8 +1,7 @@
-# Task: Bulletproof Server Initialization
+# Task: Migrate to Modular Firebase Admin SDK
 
-- `[x]` Harden Firebase Admin setup
-    - `[x]` Update `server/src/config/firebase.js` with redundant safety checks
-- `[x]` Finalize Server entry point
-    - `[x]` Clean up and reorder `server/src/index.js`
-- `[/]` Deploy to all branches
-- `[ ]` Verify with direct `/api/ping`
+- `[/]` Update `server/src/config/firebase.js`
+    - `[x]` Use modular imports from `firebase-admin/firestore`, `firebase-admin/auth`, etc.
+    - `[x]` Implement `getFirestore(app)`, `getAuth(app)`, etc.
+- `[ ]` Deploy to all branches
+- `[ ]` Verify with Cloud Run logs and `/api/ping`

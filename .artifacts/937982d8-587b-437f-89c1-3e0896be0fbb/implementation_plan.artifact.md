@@ -1,29 +1,25 @@
-# Plan de stabilisation finale du serveur
+# Plan de correction : Erreur "app.firestore is not a function"
 
-Le serveur Cloud Run semble toujours exécuter une version obsolète du code ou rencontre une erreur fatale au chargement de Firebase. Ce plan vise à rendre l'initialisation "blindée" et à garantir que le déploiement est effectif.
+Les logs indiquent que l'objet `app` retourné par l'initialisation de Firebase n'expose pas les méthodes classiques (`.firestore()`, `.auth()`, etc.). Cela arrive avec les versions récentes du SDK Firebase Admin (v10+) qui privilégient une approche modulaire.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - Le déploiement sur Cloud Run via GitHub Actions peut prendre jusqu'à 5-7 minutes.
-> - L'erreur actuelle (`reading 'length'`) confirme que le correctif précédent n'est pas encore actif ou a été partiellement appliqué.
+> - Nous allons migrer la configuration Firebase vers le style "Modulaire" (`getFirestore(app)` au lieu de `app.firestore()`).
+> - Ce style est beaucoup plus robuste et compatible avec toutes les versions récentes du SDK, évitant ainsi les erreurs "is not a function".
 
 ## Proposed Changes
 
-### [Server] Initialisation robuste
+### [Server] Migration Modulaire de Firebase
 
 #### [MODIFY] [firebase.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/config/firebase.js)
-- Rendre la détection des applications Firebase existantes encore plus sécurisée.
-- Ajouter des logs d'étape pour suivre l'initialisation dans Cloud Run.
-
-#### [MODIFY] [index.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/index.js)
-- Déplacer toutes les variables de diagnostic au sommet du fichier.
-- S'assurer que le handler 404 ne dépend d'aucune variable potentiellement non initialisée.
+- Importer les getters spécifiques pour chaque service : `getFirestore`, `getAuth`, `getDatabase`, `getStorage`.
+- Initialiser les services en utilisant ces fonctions au lieu d'appeler des méthodes sur l'instance `app`.
+- Simplifier la logique de détection des credentials pour Cloud Run.
 
 ## Verification Plan
 
 ### Manual Verification
-1. Pousser les modifications.
-2. **Attendre explicitement 7 minutes** pour être sûr que le build est terminé.
-3. Vérifier `/api/ping`. Si vous voyez `timestamp`, le nouveau code est en place.
-4. Tester l'onboarding.
+1. Déployer sur Cloud Run.
+2. Vérifier les logs : l'erreur `❌ Failed /api/... app.firestore is not a function` doit disparaître.
+3. Consulter `/api/ping`. Si `mountErrors` affiche "none", le serveur est totalement opérationnel.

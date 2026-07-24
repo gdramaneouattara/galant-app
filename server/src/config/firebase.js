@@ -1,9 +1,13 @@
 const admin = require('firebase-admin');
+const { getFirestore } = require('firebase-admin/firestore');
+const { getAuth } = require('firebase-admin/auth');
+const { getDatabase } = require('firebase-admin/database');
+const { getStorage } = require('firebase-admin/storage');
+
 require('dotenv').config();
 
 /**
- * FIREBASE ADMIN INITIALIZATION - FINAL COMPATIBILITY FIX
- * This version uses the most resilient check for Cloud Run environments.
+ * FIREBASE ADMIN INITIALIZATION - MODULAR SDK V10+ COMPATIBILITY
  */
 
 const initializeFirebase = () => {
@@ -24,28 +28,25 @@ const initializeFirebase = () => {
   };
 
   try {
-    // 1. Priorité au Service Account (Local ou spécifique)
+    // 1. Service Account from ENV
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
       console.log('ℹ️ Initializing Firebase with Service Account from ENV');
       config.credential = admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT));
     }
-    // 2. Repli sur le fichier JSON local si présent
+    // 2. Local JSON fallback
     else {
       try {
         const localKeys = require('../../firebase-service-account.json');
         console.log('✅ Initializing Firebase with local JSON file');
         config.credential = admin.credential.cert(localKeys);
       } catch (e) {
-        // 3. Cloud Run : Utilisation automatique des droits du projet
         console.log('ℹ️ No explicit credentials found, using Application Default Credentials');
-        // Sur Cloud Run, on ne définit PAS config.credential, initializeApp le trouve tout seul
       }
     }
 
     return admin.initializeApp(config);
   } catch (error) {
     console.error('⚠️ Firebase Initialization critical error:', error.message);
-    // On initialise vide pour ne pas crasher le container et permettre le déploiement
     return admin.initializeApp();
   }
 };
@@ -54,7 +55,7 @@ const app = initializeFirebase();
 
 let bucket = null;
 try {
-  bucket = app.storage().bucket();
+  bucket = getStorage(app).bucket();
   console.log('✅ Firebase Storage bucket initialized');
 } catch (e) {
   console.error('⚠️ Firebase Storage initialization failed:', e.message);
@@ -62,8 +63,8 @@ try {
 
 module.exports = {
   admin,
-  db: app.firestore(),
-  auth: app.auth(),
-  rtdb: app.database(),
+  db: getFirestore(app),
+  auth: getAuth(app),
+  rtdb: getDatabase(app),
   bucket
 };

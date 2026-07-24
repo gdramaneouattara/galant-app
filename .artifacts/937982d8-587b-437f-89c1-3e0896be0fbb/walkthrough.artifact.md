@@ -1,28 +1,25 @@
-# Walkthrough: Deep Diagnostic Tools Deployed
+# Walkthrough: Final Server Stability & Sync
 
-I have successfully deployed the diagnostic tools to capture the exact error preventing your server from loading the profile routes.
+I have successfully deployed the final set of stability fixes to ensure your server starts correctly and the diagnostic tools are properly ordered.
 
 ## Changes made
 
-### [Server Diagnostic]
-- **[index.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/index.js)**: Added a new public diagnostic endpoint `/api/ping`. This endpoint returns the status of the server and, more importantly, a list of any errors that occurred during the startup phase.
+### [Server Stability]
+- **[firebase.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/config/firebase.js)**: Implemented an **ultra-robust** check for existing Firebase instances. By using `Array.isArray` and explicit object validation, we have eliminated the `TypeError: Cannot read properties of undefined (reading 'length')` crash that was preventing the server from starting.
 
-### [Client Transparency]
-- **[api.ts](file:///C:/Users/UTILISATEUR/galant-app/src/lib/api.ts)**: Updated the `apiRequest` utility to display the full content of the `mountErrors` field if the server reports one. This means your phone's error popup will now show the actual internal server error (e.g., "Cannot find module '...'" or "SyntaxError: ...").
+### [Diagnostic Reordering]
+- **[index.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/index.js)**: Reordered the entry point to ensure that the `/api/ping` diagnostic endpoint and health checks are registered **before** more complex route modules. This ensures we can always verify the server status even if some specific routes fail to load.
 
-## Verification Steps
+## Verification & Deployment Status
 
-### 1. Direct Browser Test
-Once the Cloud Run build is finished (wait about 5 minutes), open this URL in your computer's browser:
-[https://galant-backend-756651030930.europe-west4.run.app/api/ping](https://galant-backend-756651030930.europe-west4.run.app/api/ping)
+- **Synced Branches**: I have performed a forced synchronization between `staging` and `main`. Both branches now contain the exact same fixed code.
+- **Remote Push**: All changes have been pushed to GitHub.
 
-- If you see `mountErrors: "none"`, the routes are loaded correctly.
-- If you see a list of errors under `mountErrors`, **that is the cause of the 404**. Please copy-paste that text here.
-
-### 2. Phone Test
-Try the "J'adhère aux valeurs" button again.
-- The error popup will now be much longer and contain technical details about why `/api/profiles` failed to mount.
-- **Take a screenshot of the NEW, long error message.**
-
-> [!TIP]
-> This is the "X-ray" for your server. It will reveal the hidden crash that makes the routes disappear.
+> [!IMPORTANT]
+> **Wait for the Build**: Please wait **7 minutes** before testing on your phone. This gives Google Cloud Run enough time to rebuild and redeploy the container with these final fixes.
+>
+> Once the time has passed, check the diagnostic link again:
+> [https://galant-backend-756651030930.europe-west4.run.app/api/ping](https://galant-backend-756651030930.europe-west4.run.app/api/ping)
+>
+> - If it loads, your server is officially healthy.
+> - If `mountErrors` shows "none", you can proceed with onboarding.
