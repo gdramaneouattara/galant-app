@@ -25,11 +25,11 @@ const DiscoverPage: React.FC = () => {
   });
 
   const loadSuggestions = useCallback(async () => {
-    // On ne charge les suggestions que si l'utilisateur ET son profil sont présents
-    if (user && myProfile) {
-      await fetchSuggestions(filters);
-    }
-  }, [user, myProfile, fetchSuggestions, filters]);
+    // Sécurité renforcée : On ne lance l'appel que si tout est prêt
+    if (!user || !myProfile || authLoading) return;
+
+    await fetchSuggestions(filters);
+  }, [user, myProfile, authLoading, fetchSuggestions, filters]);
 
   const fetchVisibilityRank = useCallback(async () => {
     if (!user || !myProfile) return;

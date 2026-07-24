@@ -61,10 +61,10 @@ const getSuggestions = async (req, res) => {
     });
 
     // 2. Fetch candidates from Firestore
+    // Note: We remove age filters from the Firestore query to avoid composite index requirements (Error 500)
+    // We will filter by age in memory below.
     let query = db.collection('profiles')
-      .where('onboarding_completed', '==', true)
-      .where('age', '>=', parseInt(minAge))
-      .where('age', '<=', parseInt(maxAge));
+      .where('onboarding_completed', '==', true);
 
     if (oppositeGenderForSerious) {
       query = query.where('gender', '==', oppositeGenderForSerious);
@@ -75,8 +75,16 @@ const getSuggestions = async (req, res) => {
     const snapshot = await query.get();
     let candidates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    // Remove self, suspended, and ALREADY SWIPED
-    candidates = candidates.filter(c => c.id !== me.id && !c.suspended_at && !alreadySwipedIds.has(c.id));
+    // 3. In-memory filtering (Removes need for complex indexes)
+    const minAgeNum = parseInt(minAge) || 18;
+    const maxAgeNum = parseInt(maxAge) || 100;
+
+    candidates = candidates.filter(c => {
+      return c.id !== me.id &&
+             !c.suspended_at &&
+             !alreadySwipedIds.has(c.id) &&
+             (c.age >= minAgeNum && c.age <= maxAgeNum);
+    });
 
     const candidateIds = candidates.map(c => c.id);
     const invisibleEligibleBySubscription = new Set();
