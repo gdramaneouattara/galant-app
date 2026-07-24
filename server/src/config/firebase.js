@@ -7,7 +7,9 @@ require('dotenv').config();
  */
 
 const initializeFirebase = () => {
-  if (admin.apps.length > 0) return admin.app();
+  // Vérification ultra-sécurisée de l'existence de l'apps array
+  const apps = admin.apps || [];
+  if (apps.length > 0) return admin.app();
 
   const config = {
     databaseURL: process.env.FIREBASE_DATABASE_URL,

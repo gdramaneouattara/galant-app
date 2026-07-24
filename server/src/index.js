@@ -57,11 +57,7 @@ try {
 // 404 Catch-all Handler
 app.use((req, res) => {
   console.warn(`🔍 404 NOT FOUND: ${req.method} ${req.originalUrl}`);
-  res.status(404).json({
-    error: 'route_not_found',
-    path: req.originalUrl,
-    mountErrors: Object.keys(mountErrors).length > 0 ? mountErrors : undefined
-  });
+  res.status(404).json({ error: 'route_not_found', path: req.originalUrl });
 });
 
 // ==========================================

@@ -1,26 +1,28 @@
-# Walkthrough: Enhanced Server Diagnostic
+# Walkthrough: Deep Diagnostic Tools Deployed
 
-I have deployed a "trap" on the server to catch and expose the exact errors preventing the profile routes from mounting.
+I have successfully deployed the diagnostic tools to capture the exact error preventing your server from loading the profile routes.
 
 ## Changes made
 
-### [Server Robustness]
-- **[firebase.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/config/firebase.js)**: Secured the storage bucket initialization. If the bucket fails to initialize (likely due to a missing environment variable), the server will now log the warning but **continue to start** instead of crashing or blocking modules.
+### [Server Diagnostic]
+- **[index.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/index.js)**: Added a new public diagnostic endpoint `/api/ping`. This endpoint returns the status of the server and, more importantly, a list of any errors that occurred during the startup phase.
 
-### [Deep Diagnostic]
-- **[index.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/index.js)**:
-    - Added a `mountErrors` registry that captures any failure during route registration.
-    - Updated the 404 handler to include these errors in its JSON response.
+### [Client Transparency]
+- **[api.ts](file:///C:/Users/UTILISATEUR/galant-app/src/lib/api.ts)**: Updated the `apiRequest` utility to display the full content of the `mountErrors` field if the server reports one. This means your phone's error popup will now show the actual internal server error (e.g., "Cannot find module '...'" or "SyntaxError: ...").
 
-## Next Steps for You
+## Verification Steps
 
-1.  Wait about 5 minutes for the Cloud Run deployment to finish.
-2.  Try the onboarding process again on your phone.
-3.  When the error popup appears:
-    - It should still say **API Error 404**.
-    - Look closely at the message or take a screenshot.
-    - If my trap is working, the response will now contain a `mountErrors` field.
-    - **Crucial**: If the error message is too long to see, I might need to adjust the UI to show the full JSON. For now, try to copy-paste or capture as much as possible.
+### 1. Direct Browser Test
+Once the Cloud Run build is finished (wait about 5 minutes), open this URL in your computer's browser:
+[https://galant-backend-756651030930.europe-west4.run.app/api/ping](https://galant-backend-756651030930.europe-west4.run.app/api/ping)
+
+- If you see `mountErrors: "none"`, the routes are loaded correctly.
+- If you see a list of errors under `mountErrors`, **that is the cause of the 404**. Please copy-paste that text here.
+
+### 2. Phone Test
+Try the "J'adhère aux valeurs" button again.
+- The error popup will now be much longer and contain technical details about why `/api/profiles` failed to mount.
+- **Take a screenshot of the NEW, long error message.**
 
 > [!TIP]
-> This data will tell us if a specific file is missing on the server or if a library is failing to load, which is the "invisible" cause of the 404.
+> This is the "X-ray" for your server. It will reveal the hidden crash that makes the routes disappear.

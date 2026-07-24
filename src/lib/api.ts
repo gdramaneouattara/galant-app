@@ -75,13 +75,7 @@ export const apiRequest = async <T>(path: string, options: ApiOptions = {}): Pro
 
     if (!response.ok) {
       const msg = payload?.error || payload?.message || 'API request failed';
-      let detailedMsg = `API Error ${response.status}: ${msg}`;
-
-      if (payload?.mountErrors) {
-        detailedMsg += `\nMountErrors: ${JSON.stringify(payload.mountErrors, null, 2)}`;
-      }
-
-      throw new Error(`${detailedMsg} (on ${fullUrl})`);
+      throw new Error(`API Error ${response.status}: ${msg} (on ${fullUrl})`);
     }
 
     return payload as T;
