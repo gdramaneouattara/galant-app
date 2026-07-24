@@ -216,7 +216,7 @@ const AppContent: React.FC = () => {
         <div
           className="fixed inset-0 w-full h-full z-0 animate-pulse-slow"
           style={{
-            backgroundImage: 'linear-gradient(rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.8)), url("/auth-bg.png")',
+            backgroundImage: 'linear-gradient(rgba(15, 23, 42, 0.6), rgba(15, 23, 42, 0.8)), url("auth-bg.png")',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',

@@ -378,31 +378,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     const unsubscribe = fbAuth.onAuthStateChanged(async (user) => {
-      setFbUser(user);
-      if (user) {
-        await updateLastActive(user.uid);
-        const refreshedUser = await refreshCurrentUser(user.uid);
-        if (refreshedUser) {
-          await refreshProfiles();
-          await refreshMatches(user.uid);
-          await registerPushToken(user.uid);
+      try {
+        setFbUser(user);
+        if (user) {
+          await updateLastActive(user.uid);
+          const refreshedUser = await refreshCurrentUser(user.uid);
+          if (refreshedUser) {
+            await Promise.all([
+              refreshProfiles(),
+              refreshMatches(user.uid),
+              registerPushToken(user.uid)
+            ]);
 
-          // Sécurité Admin : Tracker la connexion
-          if (refreshedUser.is_admin) {
-            void apiRequest('/api/tracking/event', {
-              method: 'POST',
-              requireAuth: true,
-              body: JSON.stringify({ eventType: 'LOGIN' })
-            });
+            // Sécurité Admin : Tracker la connexion
+            if (refreshedUser.is_admin) {
+              void apiRequest('/api/tracking/event', {
+                method: 'POST',
+                requireAuth: true,
+                body: JSON.stringify({ eventType: 'LOGIN' })
+              }).catch(() => {});
+            }
           }
+        } else {
+          setCurrentUser(null);
+          setUsers([]);
+          setMatches([]);
+          setMessages([]);
         }
-      } else {
-        setCurrentUser(null);
-        setUsers([]);
-        setMatches([]);
-        setMessages([]);
+      } catch (error) {
+        console.error('Auth state change error:', error);
+        setLastError("Une erreur est survenue lors de l'initialisation.");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {

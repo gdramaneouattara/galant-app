@@ -16,8 +16,16 @@ const normalizedApiBaseUrl = apiBaseUrl?.replace(/\/$/, '');
 
 const getRuntimeApiBaseUrl = () => {
   if (!normalizedApiBaseUrl) return normalizedApiBaseUrl;
-  // Sur Android (émulateur), localhost est à l'adresse 10.0.2.2
-  if (!isWeb && (process.env.EXPO_OS === 'android' || (global as any).HermesInternal)) {
+
+  // Si on est sur le Web, on évite tout accès à process.env ou Platform
+  if (isWeb) return normalizedApiBaseUrl;
+
+  // Sur Mobile (Android Emulator), localhost est à l'adresse 10.0.2.2
+  // On vérifie l'existence de process de manière sécurisée
+  const isAndroid = typeof process !== 'undefined' && process.env?.EXPO_OS === 'android';
+  const isHermes = !!(global as any).HermesInternal;
+
+  if (isAndroid || isHermes) {
     return normalizedApiBaseUrl
       .replace('://127.0.0.1', '://10.0.2.2')
       .replace('://localhost', '://10.0.2.2');

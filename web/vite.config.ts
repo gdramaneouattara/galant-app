@@ -5,10 +5,12 @@ import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  const isGitHubPages = mode === 'staging'; // On peut utiliser le mode pour distinguer
+  // Détecte si on est sur GitHub Pages (staging) via la variable d'env GITHUB_ACTIONS
+  // ou si le mode est explicitement staging
+  const isGitHubPages = process.env.GITHUB_ACTIONS === 'true' || mode === 'staging';
 
   return {
-    // Si on déploie sur GitHub Pages (staging), on utilise le sous-dossier, sinon la racine (Firebase/Prod)
+    // Utilise /galant-app/ pour GitHub Pages, sinon la racine
     base: isGitHubPages ? '/galant-app/' : '/',
     plugins: [
       react(),

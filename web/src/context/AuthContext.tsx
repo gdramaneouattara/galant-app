@@ -69,29 +69,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Auth & Profile
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(fbAuth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      if (firebaseUser) {
-        const profileDoc = await getDoc(doc(db, COLLECTIONS.PROFILES, firebaseUser.uid));
-        if (profileDoc.exists()) {
-          const profileData = { id: profileDoc.id, ...profileDoc.data() };
-          setProfile(profileData);
+      try {
+        setUser(firebaseUser);
+        if (firebaseUser) {
+          const profileDoc = await getDoc(doc(db, COLLECTIONS.PROFILES, firebaseUser.uid));
+          if (profileDoc.exists()) {
+            const profileData = { id: profileDoc.id, ...profileDoc.data() };
+            setProfile(profileData);
 
-          // Sécurité Admin : Tracker la connexion
-          if (profileData.is_admin) {
-            apiRequest('/api/tracking/event', {
-              method: 'POST',
-              requireAuth: true,
-              body: JSON.stringify({ eventType: 'LOGIN' })
-            }).catch(() => {});
+            // Sécurité Admin : Tracker la connexion
+            if (profileData.is_admin) {
+              apiRequest('/api/tracking/event', {
+                method: 'POST',
+                requireAuth: true,
+                body: JSON.stringify({ eventType: 'LOGIN' })
+              }).catch(() => {});
+            }
           }
+        } else {
+          setProfile(null);
+          setMatches([]);
+          setMessages([]);
+          setUsers([]);
         }
-      } else {
-        setProfile(null);
-        setMatches([]);
-        setMessages([]);
-        setUsers([]);
+      } catch (error) {
+        console.error('Auth Context Error:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -104,6 +109,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubUsers = onSnapshot(qUsers, (snapshot) => {
       const activeProfiles = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       setUsers(activeProfiles);
+    }, (error) => {
+      console.error('Firestore Users Snapshot error:', error);
     });
 
     const q1 = query(collection(db, COLLECTIONS.MATCHES), where('user_one_id', '==', user.uid));
@@ -115,6 +122,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const otherMatches = prev.filter(m => m.user_one_id !== user.uid);
         return [...otherMatches, ...m1];
       });
+    }, (error) => {
+      console.error('Firestore Matches Snapshot 1 error:', error);
     });
 
     const unsub2 = onSnapshot(q2, (snapshot) => {
@@ -123,6 +132,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const otherMatches = prev.filter(m => m.user_two_id !== user.uid);
         return [...otherMatches, ...m2];
       });
+    }, (error) => {
+      console.error('Firestore Matches Snapshot 2 error:', error);
     });
 
     return () => {
