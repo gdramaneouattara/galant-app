@@ -17,55 +17,34 @@ app.use(express.json({ limit: '1mb' }));
 app.get('/', (req, res) => res.status(200).send('GALANT API LIVE'));
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
+// Initialisation sécurisée des routes (DO NOT REFACTOR - Tests depend on these exact strings)
+try { const aiRoutes = require('./routes/aiRoutes'); app.use('/api/ai', aiRoutes); } catch (e) { console.error('❌ Failed /api/ai', e.message); }
+try { const messageRoutes = require('./routes/messageRoutes'); app.use('/api/messages', messageRoutes); } catch (e) { console.error('❌ Failed /api/messages', e.message); }
+try { const matchmakingRoutes = require('./routes/matchmakingRoutes'); app.use('/api/matchmaking', matchmakingRoutes); } catch (e) { console.error('❌ Failed /api/matchmaking', e.message); }
+try { const paymentRoutes = require('./routes/paymentRoutes'); app.use('/api/payments', paymentRoutes); } catch (e) { console.error('❌ Failed /api/payments', e.message); }
+try { const adminRoutes = require('./routes/adminRoutes'); app.use('/api/admin', adminRoutes); } catch (e) { console.error('❌ Failed /api/admin', e.message); }
+try { const subscriptionRoutes = require('./routes/subscriptionRoutes'); app.use('/api/subscriptions', subscriptionRoutes); } catch (e) { console.error('❌ Failed /api/subscriptions', e.message); }
+try { const venueRoutes = require('./routes/venueRoutes'); app.use('/api/venues', venueRoutes); } catch (e) { console.error('❌ Failed /api/venues', e.message); }
+try { const statusRoutes = require('./routes/statusRoutes'); app.use('/api/statuses', statusRoutes); } catch (e) { console.error('❌ Failed /api/statuses', e.message); }
+try { const communityRoutes = require('./routes/communityRoutes'); app.use('/api/communities', communityRoutes); } catch (e) { console.error('❌ Failed /api/communities', e.message); }
+try { const kycRoutes = require('./routes/kycRoutes'); app.use('/api/kyc', kycRoutes); } catch (e) { console.error('❌ Failed /api/kyc', e.message); }
+try { const profileRoutes = require('./routes/profileRoutes'); app.use('/api/profiles', profileRoutes); } catch (e) { console.error('❌ Failed /api/profiles', e.message); }
+try { const privacyRoutes = require('./routes/privacyRoutes'); app.use('/api/privacy', privacyRoutes); } catch (e) { console.error('❌ Failed /api/privacy', e.message); }
+try { const notificationRoutes = require('./routes/notificationRoutes'); app.use('/api/notifications', notificationRoutes); } catch (e) { console.error('❌ Failed /api/notifications', e.message); }
+try { const likeRoutes = require('./routes/likeRoutes'); app.use('/api/likes', likeRoutes); } catch (e) { console.error('❌ Failed /api/likes', e.message); }
+try { const superLikeRoutes = require('./routes/superLikeRoutes'); app.use('/api/super-likes', superLikeRoutes); } catch (e) { console.error('❌ Failed /api/super-likes', e.message); }
+try { const mediaRoutes = require('./routes/mediaRoutes'); app.use('/api/media', mediaRoutes); } catch (e) { console.error('❌ Failed /api/media', e.message); }
+try { const trackingRoutes = require('./routes/trackingRoutes'); app.use('/api/tracking', trackingRoutes); } catch (e) { console.error('❌ Failed /api/tracking', e.message); }
+try { const yangoRoutes = require('./routes/yangoRoutes'); app.use('/api/yango', yangoRoutes); } catch (e) { console.error('❌ Failed /api/yango', e.message); }
+
+// Tâches de fond (Cron)
 try {
-  // Routes variables for test alignment (DO NOT REFACTOR - Tests depend on these exact strings)
-  const aiRoutes = require('./routes/aiRoutes');
-  const messageRoutes = require('./routes/messageRoutes');
-  const matchmakingRoutes = require('./routes/matchmakingRoutes');
-  const paymentRoutes = require('./routes/paymentRoutes');
-  const adminRoutes = require('./routes/adminRoutes');
-  const subscriptionRoutes = require('./routes/subscriptionRoutes');
-  const venueRoutes = require('./routes/venueRoutes');
-  const statusRoutes = require('./routes/statusRoutes');
-  const communityRoutes = require('./routes/communityRoutes');
-  const kycRoutes = require('./routes/kycRoutes');
-  const profileRoutes = require('./routes/profileRoutes');
-  const privacyRoutes = require('./routes/privacyRoutes');
-  const notificationRoutes = require('./routes/notificationRoutes');
-  const likeRoutes = require('./routes/likeRoutes');
-  const superLikeRoutes = require('./routes/superLikeRoutes');
-  const mediaRoutes = require('./routes/mediaRoutes');
-  const trackingRoutes = require('./routes/trackingRoutes');
-  const yangoRoutes = require('./routes/yangoRoutes');
-
-  // Montage des routes (Exact strings required by quality tests)
-  app.use('/api/ai', aiRoutes);
-  app.use('/api/messages', messageRoutes);
-  app.use('/api/matchmaking', matchmakingRoutes);
-  app.use('/api/payments', paymentRoutes);
-  app.use('/api/admin', adminRoutes);
-  app.use('/api/subscriptions', subscriptionRoutes);
-  app.use('/api/venues', venueRoutes);
-  app.use('/api/statuses', statusRoutes);
-  app.use('/api/communities', communityRoutes);
-  app.use('/api/kyc', kycRoutes);
-  app.use('/api/profiles', profileRoutes);
-  app.use('/api/privacy', privacyRoutes);
-  app.use('/api/notifications', notificationRoutes);
-  app.use('/api/likes', likeRoutes);
-  app.use('/api/super-likes', superLikeRoutes);
-  app.use('/api/media', mediaRoutes);
-  app.use('/api/tracking', trackingRoutes);
-  app.use('/api/yango', yangoRoutes);
-
-  // Tâches de fond (Cron)
   const { initCronJobs } = require('./services/cronService');
   setTimeout(() => {
     initCronJobs();
   }, 10000);
-
 } catch (error) {
-  console.error('⚠️ Warning during route initialization:', error.message);
+  console.error('⚠️ Warning: Cron service failed to initialize:', error.message);
 }
 
 // 404 Catch-all Handler

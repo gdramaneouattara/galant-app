@@ -52,7 +52,9 @@ export const apiRequest = async <T>(path: string, options: ApiOptions = {}): Pro
   }
 
   const runtimeApiBaseUrl = getRuntimeApiBaseUrl();
-  if (!runtimeApiBaseUrl) throw new Error('EXPO_PUBLIC_API_BASE_URL is missing.');
+  if (!runtimeApiBaseUrl || runtimeApiBaseUrl === '/') {
+     throw new Error(`Configuration Error: VITE_API_BASE_URL is missing. Please check your GitHub Secrets or environment variables.`);
+  }
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
