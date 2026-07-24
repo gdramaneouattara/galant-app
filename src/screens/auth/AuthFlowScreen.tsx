@@ -17,10 +17,11 @@ import BioStep from './components/BioStep';
 import InterestsStep from './components/InterestsStep';
 import GoalStep from './components/GoalStep';
 import LocationStep from './components/LocationStep';
+import ManifestoStep from './components/ManifestoStep';
 import PartnerSignupStep from './components/PartnerSignupStep';
 import AuthMethodStep from './components/AuthMethodStep';
 
-type Step = 'welcome' | 'signup' | 'login' | 'identity' | 'photos' | 'bio' | 'preferences' | 'goal' | 'location' | 'partner_signup';
+type Step = 'welcome' | 'signup' | 'login' | 'identity' | 'photos' | 'bio' | 'preferences' | 'goal' | 'location' | 'manifesto' | 'partner_signup';
 
 const AuthFlowScreen: React.FC = () => {
   const { refreshCurrentUser, colors, t } = useApp();
@@ -44,7 +45,7 @@ const AuthFlowScreen: React.FC = () => {
     longitude: null as number | null,
   });
 
-  const profileSteps: Step[] = ['identity', 'photos', 'bio', 'preferences', 'goal', 'location'];
+  const profileSteps: Step[] = ['identity', 'photos', 'bio', 'preferences', 'goal', 'location', 'manifesto'];
   const progress = useMemo(() => {
     const index = Math.max(0, profileSteps.indexOf(step));
     return Math.round((index / (profileSteps.length - 1)) * 100);
@@ -173,7 +174,8 @@ const AuthFlowScreen: React.FC = () => {
       case 'bio': return <BioStep form={form} setForm={setForm} onNext={() => setStep('preferences')} />;
       case 'preferences': return <InterestsStep form={form} setForm={setForm} onNext={() => setStep('goal')} />;
       case 'goal': return <GoalStep form={form} setForm={setForm} onNext={() => setStep('location')} />;
-      case 'location': return <LocationStep form={form} setForm={setForm} onComplete={completeOnboarding} loading={loading} />;
+      case 'location': return <LocationStep form={form} setForm={setForm} onComplete={() => setStep('manifesto')} loading={loading} />;
+      case 'manifesto': return <ManifestoStep onComplete={completeOnboarding} loading={loading} />;
       case 'partner_signup': return <PartnerSignupStep onBack={() => setStep('welcome')} onRegister={handlePartnerSignup} loading={loading} />;
       default: return <WelcomeStep onGoTo={setStep} />;
     }

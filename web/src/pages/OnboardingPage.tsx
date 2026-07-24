@@ -7,7 +7,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   User as UserIcon, MapPin, Heart, Sparkles, Image as ImageIcon,
   Camera, CheckCircle2, ChevronRight, ChevronLeft, Loader2,
-  Rocket, Gem, ShieldCheck
+  Rocket, Gem, ShieldCheck, Lock
 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { apiRequest } from '@shared/lib/api';
@@ -372,7 +372,7 @@ const OnboardingPage: React.FC = () => {
                 disabled={!formData.city || formData.bio.length < 15}
                 className="flex-1 bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black transition-all disabled:opacity-30"
               >
-                Dernière étape <ChevronRight size={16} />
+                Suivant <ChevronRight size={16} />
               </button>
             </div>
           </div>
@@ -446,13 +446,72 @@ const OnboardingPage: React.FC = () => {
                 <ChevronLeft size={20} />
               </button>
               <button
-                onClick={handleFinalSubmit}
+                onClick={nextStep}
                 disabled={loading || photoFiles.length === 0}
-                className="flex-1 bg-primary text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl shadow-red-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30"
+                className="flex-1 bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black transition-all disabled:opacity-30"
               >
-                {loading ? <Loader2 className="animate-spin" /> : <Rocket size={16} />}
-                Terminer le dossier
+                Signer le Manifeste <ChevronRight size={16} />
               </button>
+            </div>
+          </div>
+        );
+
+      case 5: // Manifesto
+        return (
+          <div className="space-y-10 animate-in fade-in zoom-in-95 duration-700 py-4">
+            <div className="text-center space-y-3">
+               <h3 className="text-4xl font-black italic tracking-tighter text-slate-900">Le Manifeste</h3>
+               <p className="text-amber-600 font-black text-[10px] uppercase tracking-[0.3em]">Contrat de Prestige</p>
+            </div>
+
+            <div className="space-y-8">
+               {[
+                 {
+                   title: "Discrétion Absolue",
+                   desc: "Ce qui se passe dans le Cercle reste dans le Cercle. La vie privée de nos membres est sacrée.",
+                   icon: Lock
+                 },
+                 {
+                   title: "Respect & Courtoisie",
+                   desc: "La galanterie n'est pas une option, c'est notre langage commun. Chaque échange doit être empreint d'élégance.",
+                   icon: Heart
+                 },
+                 {
+                   title: "Authenticité",
+                   desc: "Votre vérité fait votre rayonnement. Seuls les profils sincères et vérifiés font la force de Galant.",
+                   icon: ShieldCheck
+                 }
+               ].map((item, i) => (
+                 <div key={i} className="flex gap-5 items-start group">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-amber-50 group-hover:text-amber-600 transition-colors shrink-0">
+                       <item.icon size={24} />
+                    </div>
+                    <div className="space-y-1">
+                       <h4 className="font-black text-xs uppercase tracking-widest text-slate-900">{item.title}</h4>
+                       <p className="text-sm font-medium text-slate-500 leading-relaxed">{item.desc}</p>
+                    </div>
+                 </div>
+               ))}
+            </div>
+
+            <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100/50">
+               <p className="text-[10px] text-amber-700 font-bold leading-relaxed text-center">
+                  En rejoignant Galant, vous vous engagez à porter haut les valeurs de distinction et de bienveillance qui animent notre communauté.
+               </p>
+            </div>
+
+            <div className="flex gap-4">
+               <button onClick={prevStep} disabled={loading} className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100">
+                  <ChevronLeft size={20} />
+               </button>
+               <button
+                 onClick={handleFinalSubmit}
+                 disabled={loading}
+                 className="flex-1 bg-primary text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-2xl shadow-red-500/30 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+               >
+                 {loading ? <Loader2 className="animate-spin" /> : <Sparkles size={16} fill="currentColor" />}
+                 J'ADHÈRE AUX VALEURS
+               </button>
             </div>
           </div>
         );
