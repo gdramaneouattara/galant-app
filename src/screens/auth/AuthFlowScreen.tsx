@@ -98,25 +98,33 @@ const AuthFlowScreen: React.FC = () => {
         photoUrls.push(url);
       }
 
-      const profileData = {
-        name: form.name,
-        age: Number(form.age),
-        gender: form.gender,
-        bio: form.bio,
-        interests: form.interests,
-        city: form.city,
-        country: form.country,
-        latitude: form.latitude,
-        longitude: form.longitude,
-        photos: photoUrls,
-        onboarding_completed: true,
-        is_premium: false,
-        is_verified: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+      // Calcul du Score de Rayonnement (identique au Web)
+      let radiance_score = 0;
+      if (form.name && form.age) radiance_score += 20;
+      if (form.relationshipGoal && form.interests.length >= 3) radiance_score += 30;
+      if (form.city && form.bio.length >= 15) radiance_score += 25;
+      if (photoUrls.length >= 1) radiance_score += 25;
 
-      await db.collection(COLLECTIONS.PROFILES).doc(user.uid).set(profileData, { merge: true });
+      // Utilisation de l'API Serveur pour activer la logique de récompense
+      await apiRequest('/api/profiles/complete-onboarding', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({
+          name: form.name,
+          age: Number(form.age),
+          gender: form.gender,
+          bio: form.bio,
+          interests: form.interests,
+          relationship_goal: form.relationshipGoal,
+          city: form.city,
+          country: form.country,
+          latitude: form.latitude,
+          longitude: form.longitude,
+          photos: photoUrls,
+          radiance_score
+        })
+      });
+
       logEvent('auth', 'profile_completed', { userId: user.uid });
 
       // Notifier le Concierge pour le message de bienvenue

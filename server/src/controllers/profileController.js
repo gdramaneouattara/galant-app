@@ -1,16 +1,37 @@
 const { db } = require('../config/firebase');
 const { isTrialActive } = require('../services/accessService');
 const { getDailyUsage, incrementUsage } = require('../services/usageService');
+const { sendPushNotification } = require('../services/notificationService');
 const { QUOTAS, BOOST_SCORES } = require('../config/constants');
 
 const updateProfile = async (req, res) => {
-  const { bio, interests, relationship_goal, passport_city, passport_country, passport_latitude, passport_longitude, is_passport_active } = req.body;
+  const {
+    bio, interests, relationship_goal,
+    passport_city, passport_country, passport_latitude, passport_longitude, is_passport_active,
+    radiance_score, onboarding_completed
+  } = req.body;
   const userId = req.user.id;
 
   const updates = {};
   if (bio !== undefined) updates.bio = bio;
   if (interests !== undefined) updates.interests = interests;
   if (relationship_goal !== undefined) updates.relationship_goal = relationship_goal;
+  if (radiance_score !== undefined) updates.radiance_score = radiance_score;
+  if (onboarding_completed !== undefined) updates.onboarding_completed = onboarding_completed;
+
+  // --- LOGIQUE DE RÉCOMPENSE ONBOARDING ---
+  // Si le profil atteint 100% pour la première fois, on offre une Rose d'Or
+  if (radiance_score === 100 && !req.user.onboarding_reward_granted) {
+    updates.roses_count = (req.user.roses_count || 0) + 1;
+    updates.onboarding_reward_granted = true;
+
+    // Notification de félicitations
+    void sendPushNotification(
+      userId,
+      'Récompense d\'Élégance 🌹',
+      'Félicitations ! Votre profil est à 100%. Une Rose d\'Or vous a été offerte pour votre première rencontre d\'exception.'
+    );
+  }
 
   if (req.user.is_premium) {
     if (passport_city !== undefined) updates.passport_city = is_passport_active ? passport_city : null;
@@ -141,4 +162,47 @@ const createProfile = async (req, res) => {
   }
 };
 
-module.exports = { createProfile, updateProfile, boostProfile, completePartnerProfile };
+const completeOnboarding = async (req, res) => {
+  const {
+    name, age, gender, bio, interests, relationship_goal,
+    city, country, latitude, longitude, photos, radiance_score
+  } = req.body;
+  const userId = req.user.id;
+
+  try {
+    const updates = {
+      name,
+      age: parseInt(age),
+      gender: String(gender).toUpperCase(),
+      bio,
+      interests,
+      relationship_goal,
+      city,
+      country,
+      latitude,
+      longitude,
+      photos,
+      radiance_score,
+      onboarding_completed: true,
+      updated_at: new Date().toISOString()
+    };
+
+    // Reward Logic
+    if (radiance_score === 100 && !req.user.onboarding_reward_granted) {
+      updates.roses_count = (req.user.roses_count || 0) + 1;
+      updates.onboarding_reward_granted = true;
+      void sendPushNotification(
+        userId,
+        'Récompense d\'Élégance 🌹',
+        'Félicitations ! Votre profil est à 100%. Une Rose d\'Or vous a été offerte.'
+      );
+    }
+
+    await db.collection('profiles').doc(userId).update(updates);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { createProfile, updateProfile, boostProfile, completePartnerProfile, completeOnboarding };

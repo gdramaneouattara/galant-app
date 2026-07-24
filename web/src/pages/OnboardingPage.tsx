@@ -61,7 +61,7 @@ const OnboardingPage: React.FC = () => {
     let score = 0;
     if (formData.name && formData.age) score += 20;
     if (formData.relationship_goal && formData.interests.length >= 3) score += 30;
-    if (formData.city && formData.bio.length >= 20) score += 25;
+    if (formData.city && formData.bio.length >= 15) score += 25;
     if (photoFiles.length >= 1) score += 25;
     return score;
   };
@@ -150,20 +150,15 @@ const OnboardingPage: React.FC = () => {
       }
 
       const token = await user.getIdToken();
-      await apiRequest('/api/profiles/create', {
+
+      // Complete Onboarding via Server to trigger reward logic
+      await apiRequest('/api/profiles/complete-onboarding', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           name: formData.name,
-          age: parseInt(formData.age),
-          gender: formData.gender
-        })
-      });
-
-      await apiRequest('/api/profiles/update', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
+          age: formData.age,
+          gender: formData.gender,
           relationship_goal: formData.relationship_goal,
           interests: formData.interests,
           bio: formData.bio,
@@ -172,14 +167,8 @@ const OnboardingPage: React.FC = () => {
           latitude: formData.latitude,
           longitude: formData.longitude,
           photos: uploadedUrls,
-          onboarding_completed: true,
           radiance_score: calculateRadiance()
         })
-      });
-
-      await updateDoc(doc(db, COLLECTIONS.PROFILES, user.uid), {
-        onboarding_completed: true,
-        photos: uploadedUrls
       });
 
       showAlert('Dossier Transmis 🌹', 'Bienvenue dans le Cercle Galant. Votre profil est en cours de revue par notre Conciergerie pour garantir l\'excellence de notre communauté.');
