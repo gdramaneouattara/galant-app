@@ -1,5 +1,5 @@
-import React from 'react';
-import { Pressable, StyleSheet, Text, ViewStyle, ActivityIndicator } from 'react-native';
+import React, { ReactNode } from 'react';
+import { Pressable, StyleSheet, Text, ViewStyle, ActivityIndicator, View } from 'react-native';
 import { COLORS } from '../data/mock';
 
 type PrimaryButtonProps = {
@@ -8,9 +8,10 @@ type PrimaryButtonProps = {
   disabled?: boolean;
   style?: ViewStyle;
   loading?: boolean;
+  icon?: ReactNode;
 };
 
-const PrimaryButton: React.FC<PrimaryButtonProps> = ({ label, onPress, disabled, style, loading }) => {
+const PrimaryButton: React.FC<PrimaryButtonProps> = ({ label, onPress, disabled, style, loading, icon }) => {
   return (
     <Pressable
       onPress={onPress}
@@ -28,7 +29,10 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({ label, onPress, disabled,
       {loading ? (
         <ActivityIndicator color="#fff" size="small" />
       ) : (
-        <Text style={styles.label}>{label}</Text>
+        <View style={styles.container}>
+          {icon && <View style={styles.iconContainer}>{icon}</View>}
+          <Text style={styles.label}>{label}</Text>
+        </View>
       )}
     </Pressable>
   );
@@ -50,6 +54,14 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.4,
+  },
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconContainer: {
+    marginRight: 8,
   },
   label: {
     color: '#fff',
