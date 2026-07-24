@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { fbAuth } from '../firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  GoogleAuthProvider,
+  OAuthProvider,
+  signInWithPopup
+} from 'firebase/auth';
 import { useNavigate, Link } from 'react-router-dom';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { useAuth } from '../context/AuthContext';
@@ -58,6 +65,34 @@ const AuthPage: React.FC = () => {
       }
 
       showAlert('Authentification', friendlyMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(fbAuth, provider);
+      navigate('/');
+    } catch (error: any) {
+      showAlert('Google Error', "Impossible de se connecter avec Google.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    setLoading(true);
+    try {
+      const provider = new OAuthProvider('apple.com');
+      provider.addScope('email');
+      provider.addScope('name');
+      await signInWithPopup(fbAuth, provider);
+      navigate('/');
+    } catch (error: any) {
+      showAlert('Apple Error', "Impossible de se connecter avec Apple.");
     } finally {
       setLoading(false);
     }
@@ -167,6 +202,29 @@ const AuthPage: React.FC = () => {
               ) : (mode === 'login' ? t('login') : mode === 'signup' ? t('continue') : 'Envoyer le lien')}
             </button>
           </form>
+
+          <div className="mt-8 flex items-center gap-4">
+            <div className="h-px bg-slate-100 flex-1"></div>
+            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">OU</span>
+            <div className="h-px bg-slate-100 flex-1"></div>
+          </div>
+
+          <div className="mt-8 grid grid-cols-2 gap-4">
+            <button
+              onClick={handleGoogleLogin}
+              className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-white border border-slate-200 hover:bg-slate-50 transition-all group"
+            >
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+              <span className="text-xs font-bold text-slate-600">Google</span>
+            </button>
+            <button
+              onClick={handleAppleLogin}
+              className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-black hover:bg-slate-900 transition-all group"
+            >
+              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 384 512"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 21.8-88.5 21.8-11.4 0-51.1-18.1-81.9-18.1-41.9 0-82.6 23.3-104 63.8-43.2 81.3-11.1 201 31 262.3 20.6 29.8 44.4 63.3 76.5 63.3 32.1 0 44.2-20.1 82.9-20.1 38.7 0 49.3 20.1 82.9 20.1 32.7 0 54.5-30.4 75.1-60.5 24.3-35.6 34.3-70 34.6-71.8-1-.4-66.2-25.5-66.4-101.4zM240.4 103.9c18.5-22.3 31-53.3 27.5-84.3-26.7 1.1-59 17.8-78.1 40.5-17.1 20.2-32.2 52.1-28.7 82.2 29.7 2.3 59.8-16 79.3-38.4z"/></svg>
+              <span className="text-xs font-bold text-white">Apple</span>
+            </button>
+          </div>
 
           <div className="mt-10 flex flex-col gap-4">
             {mode !== 'reset' && (

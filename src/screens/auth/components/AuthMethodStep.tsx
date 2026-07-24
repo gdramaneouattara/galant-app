@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert, Linking } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert, Linking, Image } from 'react-native';
 import { ChevronLeft, Eye, EyeOff, CheckSquare, Square } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import PrimaryButton from '../../../components/PrimaryButton';
@@ -130,6 +130,30 @@ const AuthMethodStep: React.FC<AuthMethodStepProps> = ({ mode, onBack, onSuccess
         loading={loading}
         disabled={loading || !identifier || !password || (mode === 'signup' && !hasAcceptedLegal)}
       />
+
+      <View style={styles.dividerRow}>
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+        <Text style={[styles.dividerText, { color: colors.textMuted }]}>OU</Text>
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+      </View>
+
+      <View style={styles.socialRow}>
+        <Pressable
+          onPress={() => Alert.alert('Google Auth', 'La connexion Google nécessite une configuration native. Utilise l\'email pour le moment.')}
+          style={[styles.socialButton, { borderColor: colors.border }]}
+        >
+          <Image source={{ uri: "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" }} style={{ width: 20, height: 20 }} />
+          <Text style={[styles.socialText, { color: colors.text }]}>Google</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => Alert.alert('Apple Auth', 'La connexion Apple arrive bientôt sur mobile.')}
+          style={[styles.socialButton, { backgroundColor: '#000', borderColor: '#000' }]}
+        >
+          <Text style={{ fontSize: 18, color: '#fff' }}></Text>
+          <Text style={styles.socialTextApple}>Apple</Text>
+        </Pressable>
+      </View>
     </ScrollView>
   );
 };
@@ -155,6 +179,13 @@ const styles = StyleSheet.create({
   legalLink: { color: COLORS.primary, fontWeight: '800', textDecorationLine: 'underline' },
   forgotBtn: { alignSelf: 'flex-end', marginTop: -8 },
   forgotText: { fontSize: 12, fontWeight: '700', color: COLORS.primary },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 10 },
+  divider: { flex: 1, height: 1 },
+  dividerText: { fontSize: 10, fontWeight: '900' },
+  socialRow: { flexDirection: 'row', gap: 12 },
+  socialButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 16, borderWidth: 1 },
+  socialText: { fontSize: 13, fontWeight: '700' },
+  socialTextApple: { fontSize: 13, fontWeight: '700', color: '#fff' },
 });
 
 export default AuthMethodStep;
