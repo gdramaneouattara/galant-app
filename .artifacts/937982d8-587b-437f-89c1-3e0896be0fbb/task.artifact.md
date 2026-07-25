@@ -1,7 +1,7 @@
-# Implémentation de la véritable Boîte de Roses sur le Web
+# Intégration des Boîtes de Likes et Roses dans l'onglet Messages
 
-- `[ ]` Créer la page `web/src/pages/RosesInboxPage.tsx`
-- `[ ]` Modifier `web/src/pages/LikesInboxPage.tsx` (renommage et nettoyage)
-- `[ ]` Mettre à jour `web/src/pages/ProfilePage.tsx` avec les deux entrées de menu
-- `[ ]` Ajouter la route `/roses` dans `web/src/App.tsx`
-- `[ ]` Vérifier le déploiement et la synchronisation
+- `[ ]` Ajouter les imports et états nécessaires dans `web/src/pages/MatchesPage.tsx`
+- `[ ]` Implémenter la récupération des compteurs (Likes et Roses)
+- `[ ]` Créer la section UI "Notifications d'Intérêt" en haut de la page
+- `[ ]` Harmoniser le style avec le mode sombre
+- `[ ]` Vérifier les redirections vers `/likes` et `/roses`

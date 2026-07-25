@@ -1,12 +1,32 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, Gem, ChevronRight, MessageSquare, Search, Sparkles } from 'lucide-react';
+import { ShieldCheck, Gem, ChevronRight, MessageSquare, Search, Sparkles, Heart, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { apiRequest } from '@shared/lib/api';
 
 const MatchesPage: React.FC = () => {
   const { user, matches, users, messages, loading, t } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [likesCount, setLikesCount] = useState(0);
+  const [rosesCount, setRosesCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchCounts = async () => {
+      try {
+        const [likesRes, rosesRes] = await Promise.all([
+          apiRequest<any[]>('/api/likes/received', { requireAuth: true }),
+          apiRequest<any[]>('/api/super-likes/received', { requireAuth: true })
+        ]);
+        setLikesCount((likesRes || []).filter(l => !l.is_matched && !l.liked_back).length);
+        setRosesCount((rosesRes || []).filter(r => r.status === 'PENDING').length);
+      } catch (e) {
+        console.error("Error fetching match page counts", e);
+      }
+    };
+    fetchCounts();
+  }, [user]);
 
   const recentMatches = useMemo(() => {
     if (!user) return [];
@@ -70,6 +90,31 @@ const MatchesPage: React.FC = () => {
             className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
           />
         </div>
+      </div>
+
+      {/* Interest Notifications */}
+      <div className="grid grid-cols-2 gap-4">
+        <button
+          onClick={() => navigate('/likes')}
+          className="relative bg-gradient-to-br from-rose-500 to-rose-600 dark:from-rose-900 dark:to-rose-950 p-6 rounded-[2.5rem] shadow-xl shadow-rose-500/20 text-white text-left overflow-hidden group hover:scale-[1.02] transition-all"
+        >
+          <div className="absolute -right-4 -bottom-4 bg-white/10 w-24 h-24 rounded-full blur-2xl group-hover:bg-white/20 transition-all"></div>
+          <Heart size={24} className="mb-3 opacity-80 group-hover:scale-110 transition-transform" fill="currentColor" />
+          <p className="text-2xl font-[1000] tracking-tighter leading-none">{likesCount}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest mt-1 opacity-80">Likes Reçus</p>
+          {likesCount > 0 && <div className="absolute top-4 right-4 w-2 h-2 bg-white rounded-full animate-ping"></div>}
+        </button>
+
+        <button
+          onClick={() => navigate('/roses')}
+          className="relative bg-gradient-to-br from-amber-400 to-amber-600 dark:from-amber-900 dark:to-amber-950 p-6 rounded-[2.5rem] shadow-xl shadow-amber-500/20 text-white text-left overflow-hidden group hover:scale-[1.02] transition-all"
+        >
+          <div className="absolute -right-4 -bottom-4 bg-white/10 w-24 h-24 rounded-full blur-2xl group-hover:bg-white/20 transition-all"></div>
+          <Star size={24} className="mb-3 opacity-80 group-hover:rotate-12 transition-transform" fill="currentColor" />
+          <p className="text-2xl font-[1000] tracking-tighter leading-none">{rosesCount}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest mt-1 opacity-80">Boîte de Roses</p>
+          {rosesCount > 0 && <div className="absolute top-4 right-4 w-2 h-2 bg-white rounded-full animate-ping"></div>}
+        </button>
       </div>
 
       {/* Nouveaux Matches (Horizontal) */}

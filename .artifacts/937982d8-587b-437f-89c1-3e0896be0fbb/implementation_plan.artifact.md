@@ -1,37 +1,29 @@
-# Implémentation de la véritable Boîte de Roses sur le Web
+# Intégration des Boîtes de Likes et Roses dans l'onglet Messages
 
-Ce plan vise à séparer la gestion des likes classiques et des Super Likes (Roses) sur la version Web, afin d'atteindre une parité fonctionnelle complète avec l'application mobile.
+Ce plan vise à rendre les "Likes Reçus" et la "Boîte de Roses" accessibles directement depuis l'onglet Messages (MatchesPage), offrant ainsi un point d'accès rapide aux nouvelles attentions reçues, comme sur l'application mobile.
+
+## User Review Required
+
+> [!NOTE]
+> Nous allons ajouter une section de "Notifications d'Intérêt" en haut de la page des messages. Cette section affichera le nombre de nouveaux likes et de nouvelles roses pour inciter l'utilisateur à les consulter.
 
 ## Proposed Changes
 
 ### [Web Pages]
 
-#### [NEW] [RosesInboxPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/RosesInboxPage.tsx)
-- Créer une nouvelle page pour afficher les Super Likes reçus.
-- Appeler l'endpoint `/api/super-likes/received`.
-- Gérer l'affichage des cartes de Roses avec :
-    - La photo (floutée si non Premium pour les hommes).
-    - La note parfumée (si présente et débloquée).
-    - Les actions : Accepter (Match) ou Ignorer.
-- Intégrer la logique de déblocage de note via Paystack.
-
-#### [MODIFY] [LikesInboxPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/LikesInboxPage.tsx)
-- Renommer le titre de la page en "Likes Reçus".
-- Garder uniquement la logique des likes standards (déjà fonctionnelle).
-
-#### [MODIFY] [ProfilePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ProfilePage.tsx)
-- Séparer le menu en deux entrées distinctes :
-    1.  **Likes Reçus** (icône Cœur) -> redirige vers `/likes`.
-    2.  **Boîte de Roses** (icône Rose 🌹) -> redirige vers `/roses`.
-
-#### [MODIFY] [App.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/App.tsx)
-- Ajouter la route `/roses` pointant vers `RosesInboxPage`.
+#### [MODIFY] [MatchesPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/MatchesPage.tsx)
+- Ajouter un état pour stocker les compteurs de likes et de roses.
+- Implémenter un `useEffect` pour récupérer ces compteurs via les API `/api/likes/received` et `/api/super-likes/received`.
+- Ajouter une nouvelle section de composants visuels (deux cartes stylisées) juste au-dessus de la liste des "Nouveaux Matchs".
+    - **Carte Likes** : Couleur Rose/Rouge, icône Cœur, affiche le nombre de likes en attente.
+    - **Carte Roses** : Couleur Or/Ambre, icône Rose, affiche le nombre de Super Likes en attente.
+- Harmoniser le design avec le mode sombre.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Aller sur le profil Web.
-2.  Vérifier qu'il y a deux boutons : "Likes Reçus" et "Boîte de Roses".
-3.  Cliquer sur "Likes Reçus" et voir les likes classiques.
-4.  Cliquer sur "Boîte de Roses" et voir les Super Likes reçus avec leurs notes.
-5.  Tester l'action "Accepter" sur une Rose et vérifier la création du match.
+1. Aller sur l'onglet **Messages** sur le Web.
+2. Vérifier que les deux nouvelles cartes ("Likes Reçus" et "Boîte de Roses") apparaissent en haut.
+3. Vérifier que les compteurs s'affichent correctement (si l'utilisateur a des likes/roses).
+4. Cliquer sur chaque carte et vérifier la redirection vers les pages correspondantes.
+5. Vérifier le rendu en mode sombre.
