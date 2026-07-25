@@ -1,7 +1,8 @@
-# Task: Discover Actions Parity (Web)
+# Task: Web Swipe Implementation
 
-- `[ ]` Add `InteractionPurchaseModal` and logic to `DiscoverPage.tsx`
-- `[ ]` Implement `handleSuperLike` and `handleDirectMessage` in `DiscoverPage.tsx`
-- `[ ]` Update action bar UI (4 buttons: Skip, Message, Super Like, Like)
-- `[ ]` Run quality tests
-- `[ ]` Deploy and synchronize branches
+- `[ ]` Install `framer-motion` in web directory
+- `[ ]` Update `DiscoverPage.tsx` with `motion` components
+- `[ ]` Implement drag gestures and transformation (rotation, opacity)
+- `[ ]` Implement visual feedback badges (LIKE/NOPE)
+- `[ ]` Connect drag completion to `onSwipe` logic
+- `[ ]` Run quality tests and verify UI fluidity
