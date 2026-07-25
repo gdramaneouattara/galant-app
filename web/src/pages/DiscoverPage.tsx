@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useMatchmaking } from '@shared/hooks/useMatchmaking';
 import { useAuth } from '../context/AuthContext';
-import { Star, ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIcon, SlidersHorizontal, Sparkles, RefreshCw, ChevronRight, Crown, Gem } from 'lucide-react';
+import { Star, ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIcon, SlidersHorizontal, Sparkles, RefreshCw, ChevronRight, Crown, Gem, MessageCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import FilterModal from '../components/FilterModal';
+import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
 import { apiRequest } from '@shared/lib/api';
 import logoImg from '../assets/galant-logo.png';
 
@@ -12,6 +13,7 @@ const DiscoverPage: React.FC = () => {
   const { suggestions, loading, fetchSuggestions, handleSwipe } = useMatchmaking();
   const [currentIndex, setCurrentCardIndex] = useState(0);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean; type: 'SUPER_LIKE' | 'DIRECT_MESSAGE'; userName: string } | null>(null);
   const [visibilityRank, setVisibilityRank] = useState<{ rank: number | null, total: number }>({ rank: null, total: 0 });
   const navigate = useNavigate();
 
@@ -62,6 +64,31 @@ const DiscoverPage: React.FC = () => {
 
     await handleSwipe(target.id, direction);
     setCurrentCardIndex(prev => prev + 1);
+  };
+
+  const handleSuperLike = async () => {
+    const target = suggestions[currentIndex];
+    if (!target) return;
+
+    if (!myProfile?.is_premium) {
+      setPurchaseModal({ isOpen: true, type: 'SUPER_LIKE', userName: target.name });
+      return;
+    }
+
+    await handleSwipe(target.id, 'RIGHT', true);
+    setCurrentCardIndex(prev => prev + 1);
+  };
+
+  const handleDirectMessage = async () => {
+    const target = suggestions[currentIndex];
+    if (!target) return;
+
+    if (!myProfile?.is_premium) {
+      setPurchaseModal({ isOpen: true, type: 'DIRECT_MESSAGE', userName: target.name });
+      return;
+    }
+
+    navigate(`/chat/${target.id}`, { state: { profile: target } });
   };
 
   const openDetail = (profile: any) => {
@@ -255,25 +282,33 @@ const DiscoverPage: React.FC = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-center items-center gap-8 py-4 px-4">
+          <div className="flex justify-center items-center gap-6 py-4 px-4">
             <button
               onClick={() => onSwipe('LEFT')}
-              className="w-20 h-20 rounded-[1.8rem] bg-white shadow-2xl shadow-slate-200/50 flex items-center justify-center text-slate-300 hover:text-red-500 hover:border-red-500/20 hover:bg-red-50 hover:scale-110 active:scale-95 transition-all border border-slate-100"
+              className="w-16 h-16 rounded-2xl bg-white shadow-xl shadow-slate-200/50 flex items-center justify-center text-slate-300 hover:text-red-500 hover:border-red-500/20 hover:bg-red-50 hover:scale-110 active:scale-95 transition-all border border-slate-100"
             >
-              <X size={32} strokeWidth={3} />
+              <X size={28} strokeWidth={3} />
             </button>
 
             <button
-              className="w-16 h-16 rounded-[1.5rem] bg-white shadow-2xl shadow-slate-200/50 flex items-center justify-center text-amber-500 hover:scale-110 active:scale-95 transition-all border border-slate-100 group"
+              onClick={handleDirectMessage}
+              className="w-16 h-16 rounded-2xl bg-white shadow-xl shadow-slate-200/50 flex items-center justify-center text-blue-500 hover:scale-110 active:scale-95 transition-all border border-slate-100"
             >
-              <Rocket size={24} className="group-hover:-translate-y-1 transition-transform" />
+              <MessageCircle size={28} fill="currentColor" className="opacity-20" />
+            </button>
+
+            <button
+              onClick={handleSuperLike}
+              className="w-16 h-16 rounded-2xl bg-white shadow-xl shadow-slate-200/50 flex items-center justify-center text-amber-500 hover:scale-110 active:scale-95 transition-all border border-slate-100 group"
+            >
+              <Star size={28} fill="currentColor" className="group-hover:rotate-12 transition-transform" />
             </button>
 
             <button
               onClick={() => onSwipe('RIGHT')}
-              className="w-24 h-24 rounded-[2.2rem] bg-primary shadow-2xl shadow-red-500/30 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all group"
+              className="w-20 h-20 rounded-[1.8rem] bg-primary shadow-2xl shadow-red-500/30 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all group"
             >
-              <Heart size={44} fill="currentColor" className="group-hover:scale-110 transition-transform" />
+              <Heart size={38} fill="currentColor" className="group-hover:scale-110 transition-transform" />
             </button>
           </div>
         </div>
@@ -300,6 +335,17 @@ const DiscoverPage: React.FC = () => {
         filters={filters}
         setFilters={setFilters}
         is_premium={!!myProfile?.is_premium}
+      />
+
+      <InteractionPurchaseModal
+        isOpen={!!purchaseModal}
+        onClose={() => setPurchaseModal(null)}
+        type={purchaseModal?.type || 'SUPER_LIKE'}
+        userName={purchaseModal?.userName || ''}
+        onSuccess={() => {
+          setPurchaseModal(null);
+          loadSuggestions();
+        }}
       />
     </div>
   );

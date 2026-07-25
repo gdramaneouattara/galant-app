@@ -1,7 +1,7 @@
-# Task: Automated Return After Email Verification
+# Task: Discover Actions Parity (Web)
 
-- `[ ]` Configure `ActionCodeSettings` and polling in Web `AuthPage.tsx`
-- `[ ]` Configure `ActionCodeSettings` and verification logic in Mobile `AuthMethodStep.tsx`
-- `[ ]` Add verification polling in Mobile `AuthFlowScreen.tsx`
+- `[ ]` Add `InteractionPurchaseModal` and logic to `DiscoverPage.tsx`
+- `[ ]` Implement `handleSuperLike` and `handleDirectMessage` in `DiscoverPage.tsx`
+- `[ ]` Update action bar UI (4 buttons: Skip, Message, Super Like, Like)
 - `[ ]` Run quality tests
 - `[ ]` Deploy and synchronize branches
