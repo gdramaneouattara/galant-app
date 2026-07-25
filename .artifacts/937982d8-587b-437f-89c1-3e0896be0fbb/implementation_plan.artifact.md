@@ -1,35 +1,37 @@
-# Implémentation du Swipe Tactile sur le Web
+# Implémentation de la véritable Boîte de Roses sur le Web
 
-Ce plan vise à ajouter le support des gestes de "Swipe" (glissement) sur la version Web de Galant, afin de retrouver la fluidité et l'intuitivité de l'application mobile.
-
-## User Review Required
-
-> [!IMPORTANT]
-> - L'implémentation utilisera la bibliothèque **framer-motion**, qui est la référence pour les animations fluides et les gestes dans React.
-> - Le geste de glissement sera supporté sur ordinateur (souris) et mobile (tactile).
+Ce plan vise à séparer la gestion des likes classiques et des Super Likes (Roses) sur la version Web, afin d'atteindre une parité fonctionnelle complète avec l'application mobile.
 
 ## Proposed Changes
 
-### [Web Core] Dépendances
+### [Web Pages]
 
-#### [ACTION] Installation de framer-motion
-- Exécuter `npm install framer-motion` dans le dossier `web`.
+#### [NEW] [RosesInboxPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/RosesInboxPage.tsx)
+- Créer une nouvelle page pour afficher les Super Likes reçus.
+- Appeler l'endpoint `/api/super-likes/received`.
+- Gérer l'affichage des cartes de Roses avec :
+    - La photo (floutée si non Premium pour les hommes).
+    - La note parfumée (si présente et débloquée).
+    - Les actions : Accepter (Match) ou Ignorer.
+- Intégrer la logique de déblocage de note via Paystack.
 
-### [Web Components] Écran Découverte
+#### [MODIFY] [LikesInboxPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/LikesInboxPage.tsx)
+- Renommer le titre de la page en "Likes Reçus".
+- Garder uniquement la logique des likes standards (déjà fonctionnelle).
 
-#### [MODIFY] [DiscoverPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/DiscoverPage.tsx)
-- Importer `motion` et `useMotionValue`, `useTransform` de `framer-motion`.
-- Remplacer le conteneur de la carte par un `motion.div` draggable.
-- Ajouter des contraintes de glissement horizontales.
-- Implémenter l'apparition dynamique de badges "LIKE" (vert) et "NOPE" (rouge) sur la carte pendant le glissement.
-- Relier la fin du glissement (`onDragEnd`) aux fonctions `onSwipe('LEFT')` et `onSwipe('RIGHT')` si la distance est suffisante.
-- Ajouter un effet de rotation élégant pendant que l'utilisateur fait glisser la carte.
+#### [MODIFY] [ProfilePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ProfilePage.tsx)
+- Séparer le menu en deux entrées distinctes :
+    1.  **Likes Reçus** (icône Cœur) -> redirige vers `/likes`.
+    2.  **Boîte de Roses** (icône Rose 🌹) -> redirige vers `/roses`.
+
+#### [MODIFY] [App.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/App.tsx)
+- Ajouter la route `/roses` pointant vers `RosesInboxPage`.
 
 ## Verification Plan
 
 ### Manual Verification
-1. Aller sur l'écran Découverte sur le Web.
-2. Cliquer et faire glisser la carte vers la droite : vérifier que le badge "LIKE" apparaît et que la carte s'envole si on lâche loin.
-3. Faire glisser vers la gauche : vérifier le badge "NOPE" et l'action de refus.
-4. Vérifier que les boutons classiques en dessous fonctionnent toujours en complément.
-5. Tester sur un navigateur mobile pour valider la fluidité tactile.
+1.  Aller sur le profil Web.
+2.  Vérifier qu'il y a deux boutons : "Likes Reçus" et "Boîte de Roses".
+3.  Cliquer sur "Likes Reçus" et voir les likes classiques.
+4.  Cliquer sur "Boîte de Roses" et voir les Super Likes reçus avec leurs notes.
+5.  Tester l'action "Accepter" sur une Rose et vérifier la création du match.

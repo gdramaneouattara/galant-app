@@ -384,7 +384,7 @@ const ProfilePage: React.FC = () => {
               </button>
             )}
 
-            {/* Action Item: Rose Box (Likes) */}
+            {/* Action Item: Standard Likes */}
             <button
               onClick={() => navigate('/likes')}
               className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-left group"
@@ -393,10 +393,25 @@ const ProfilePage: React.FC = () => {
                 <Heart size={24} />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">{t('rose_box')}</p>
-                <p className="text-[10px] font-bold text-slate-400">Voir vos likes reçus</p>
+                <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Likes Reçus</p>
+                <p className="text-[10px] font-bold text-slate-400">Voir vos admirateurs</p>
               </div>
               <ChevronRight size={16} className="text-slate-200 dark:text-slate-700" />
+            </button>
+
+            {/* Action Item: Rose Box (Super Likes) */}
+            <button
+              onClick={() => navigate('/roses')}
+              className="flex items-center gap-4 p-4 rounded-2xl bg-amber-50/30 dark:bg-amber-900/10 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all text-left group"
+            >
+              <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-xl flex items-center justify-center group-hover:bg-amber-100 dark:group-hover:bg-amber-900/40 transition-colors">
+                <Star size={24} fill="currentColor" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-black text-amber-900 dark:text-amber-400 uppercase tracking-tight">Boîte de Roses</p>
+                <p className="text-[10px] font-bold text-amber-600">Vos Super Likes & Notes</p>
+              </div>
+              <ChevronRight size={16} className="text-amber-200" />
             </button>
 
             {/* Action Item: Boosts */}

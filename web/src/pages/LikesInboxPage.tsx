@@ -78,12 +78,12 @@ const LikesInboxPage: React.FC = () => {
 
   if (!canAccess) {
     return (
-      <div className="max-w-md mx-auto text-center py-20 bg-white rounded-[3rem] shadow-xl border border-slate-100 p-10">
-        <div className="w-24 h-24 bg-rose-50 text-primary rounded-full flex items-center justify-center mx-auto mb-8">
+      <div className="max-w-md mx-auto text-center py-20 bg-white dark:bg-slate-900 rounded-[3rem] shadow-xl border border-slate-100 dark:border-white/5 p-10">
+        <div className="w-24 h-24 bg-rose-50 dark:bg-rose-900/20 text-primary rounded-full flex items-center justify-center mx-auto mb-8">
           <Lock size={48} />
         </div>
-        <h2 className="text-3xl font-black mb-4 italic">{t('rose_box')}</h2>
-        <p className="text-slate-500 mb-10 font-medium leading-relaxed">
+        <h2 className="text-3xl font-black mb-4 italic dark:text-white">Likes Reçus</h2>
+        <p className="text-slate-500 dark:text-slate-400 mb-10 font-medium leading-relaxed">
           Découvrez qui a eu un coup de cœur pour vous. Cette fonctionnalité est réservée à nos membres Premium.
         </p>
         <Link to="/premium" className="block w-full bg-primary text-white py-5 rounded-2xl font-bold shadow-lg shadow-red-200">
@@ -94,10 +94,15 @@ const LikesInboxPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto pb-20 space-y-8">
-      <div>
-        <h2 className="text-3xl font-black italic">{t('rose_box')}</h2>
-        <p className="text-slate-500 font-medium">Profils qui vous ont envoyé un like</p>
+    <div className="max-w-4xl mx-auto pb-20 px-4 space-y-8">
+      <div className="flex items-center gap-4">
+        <button onClick={() => navigate('/profile')} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-400">
+          <ChevronLeft size={24} />
+        </button>
+        <div>
+          <h2 className="text-3xl font-black italic dark:text-white">Likes Reçus</h2>
+          <p className="text-slate-500 font-medium">Profils qui ont manifesté leur intérêt</p>
+        </div>
       </div>
 
       {likes.length === 0 ? (

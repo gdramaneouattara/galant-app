@@ -1,8 +1,7 @@
-# Task: Web Swipe Implementation
+# Implémentation de la véritable Boîte de Roses sur le Web
 
-- `[ ]` Install `framer-motion` in web directory
-- `[ ]` Update `DiscoverPage.tsx` with `motion` components
-- `[ ]` Implement drag gestures and transformation (rotation, opacity)
-- `[ ]` Implement visual feedback badges (LIKE/NOPE)
-- `[ ]` Connect drag completion to `onSwipe` logic
-- `[ ]` Run quality tests and verify UI fluidity
+- `[ ]` Créer la page `web/src/pages/RosesInboxPage.tsx`
+- `[ ]` Modifier `web/src/pages/LikesInboxPage.tsx` (renommage et nettoyage)
+- `[ ]` Mettre à jour `web/src/pages/ProfilePage.tsx` avec les deux entrées de menu
+- `[ ]` Ajouter la route `/roses` dans `web/src/App.tsx`
+- `[ ]` Vérifier le déploiement et la synchronisation

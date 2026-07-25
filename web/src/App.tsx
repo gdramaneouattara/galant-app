@@ -24,6 +24,7 @@ import GuidePage from './pages/GuidePage';
 import ExperiencesPage from './pages/ExperiencesPage';
 import StoriesPage from './pages/StoriesPage';
 import LikesInboxPage from './pages/LikesInboxPage';
+import RosesInboxPage from './pages/RosesInboxPage';
 import BoostPage from './pages/BoostPage';
 import {
   Crown,
@@ -239,6 +240,7 @@ const AppContent: React.FC = () => {
           <Route path="/stories" element={<StoriesPage />} />
           <Route path="/matches" element={<MatchesPage />} />
           <Route path="/likes" element={<LikesInboxPage />} />
+          <Route path="/roses" element={<RosesInboxPage />} />
           <Route path="/boost" element={<BoostPage />} />
           <Route path="/chat/:matchId" element={<ChatPage />} />
           <Route path="/profile" element={<ProfilePage />} />
