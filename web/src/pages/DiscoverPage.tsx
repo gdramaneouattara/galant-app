@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useMatchmaking } from '@shared/hooks/useMatchmaking';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, MapPin, X, Heart, Lock, Info, User as UserIcon, SlidersHorizontal, Sparkles, RefreshCw, ChevronRight, Crown, Gem, MessageCircle } from 'lucide-react';
+import { ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIcon, SlidersHorizontal, Sparkles, RefreshCw, ChevronRight, Crown, Gem, MessageCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
 import FilterModal from '../components/FilterModal';
