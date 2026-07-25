@@ -165,7 +165,7 @@ const DiscoverPage: React.FC = () => {
   const currentProfile = suggestions[currentIndex];
 
   return (
-    <div className="max-w-xl mx-auto pb-10 px-4">
+    <div className="max-w-2xl mx-auto pb-10 px-4">
       {/* Header avec un look plus "App" */}
       <div className="flex justify-between items-center mb-10">
         <div>
