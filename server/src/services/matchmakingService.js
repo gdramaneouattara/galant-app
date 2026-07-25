@@ -14,7 +14,10 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 };
 
 const calculateMatchScore = ({ candidate, me, isGoldenRose }) => {
-  let score = (candidate.is_vip ? 200 : (candidate.is_premium ? 50 : 0)) + (candidate.city === me.city ? 30 : 0);
+  const meCity = String(me.city || '').trim().toLowerCase();
+  const candCity = String(candidate.city || '').trim().toLowerCase();
+
+  let score = (candidate.is_vip ? 200 : (candidate.is_premium ? 50 : 0)) + (candCity === meCity ? 30 : 0);
 
   // 1. Common Interests (High quality matching)
   const myInterests = new Set(me.interests || []);

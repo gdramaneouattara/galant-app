@@ -1,6 +1,7 @@
-# Task: Gender Filtering & Index Fix
+# Task: Fix Visibility & Ranking Issues
 
-- `[ ]` Update `matchmakingController.js` logic for gender and index removal
+- `[/]` Update `matchmakingService.js` for case-insensitive city bonus
+- `[ ]` Update `matchmakingController.js` for city-based fallback visibility
+- `[ ]` Update `matchmakingController.js` for robust city ranking
 - `[ ]` Run quality tests
-- `[ ]` Deploy to staging and main
-- `[ ]` Verify with `/api/ping`
+- `[ ]` Deploy and synchronize branches

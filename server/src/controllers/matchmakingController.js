@@ -144,12 +144,20 @@ const getSuggestions = async (req, res) => {
         const haystack = `${c.name || ''} ${c.bio || ''} ${c.city || ''} ${c.country || ''}`.toLowerCase();
         if (!haystack.includes(searchQuery)) return null;
       } else {
+        const candidateCity = String(c.city || '').trim().toLowerCase();
         if (cityFilter) {
-          const candidateCity = String(c.city || '').trim().toLowerCase();
           if (candidateCity !== cityFilter) return null;
         }
+
         if (maxDistance !== null) {
-          if (distanceKm === null || distanceKm > maxDistance) return null;
+          // If distance is available, check it.
+          // If distance is null (no GPS), we allow it ONLY if the city matches perfectly.
+          if (distanceKm !== null) {
+             if (distanceKm > maxDistance) return null;
+          } else if (candidateCity !== myCity) {
+             // Distance unknown and city doesn't match => hide
+             return null;
+          }
         }
       }
 
@@ -193,17 +201,19 @@ const getSuggestions = async (req, res) => {
 
 const getVisibilityInsight = async (req, res) => {
   const me = req.user;
-  const meCity = me.city;
+  const meCity = String(me.city || '').trim().toLowerCase();
   if (!meCity) return res.json({ rank: null, total: 0, recommendation: null });
 
   try {
     const now = new Date().toISOString();
+    // Fetch all profiles to calculate rank in memory (avoids index issues with city filter)
     const snapshot = await db.collection('profiles')
-      .where('city', '==', meCity)
       .where('onboarding_completed', '==', true)
       .get();
 
-    const competitors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(c => !c.suspended_at);
+    const competitors = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(c => !c.suspended_at && String(c.city || '').trim().toLowerCase() === meCity);
 
     const grSnapshot = await db.collection('golden_roses').where('expires_at', '>', now).get();
     const goldenRoseUserIds = new Set(grSnapshot.docs.map(doc => doc.data().user_id));
