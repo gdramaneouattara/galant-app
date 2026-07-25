@@ -7,7 +7,7 @@ import {
   Camera, ShieldCheck, MapPin, Edit3, Save, LogOut,
   Sparkles, Plane, Globe, ChevronRight, Share2,
   EyeOff, Eye, Crown, Gem, Settings, User, Bell,
-  CreditCard, HelpCircle, FileText, Heart
+  CreditCard, HelpCircle, FileText, Heart, Rocket
 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { apiRequest } from '@shared/lib/api';
