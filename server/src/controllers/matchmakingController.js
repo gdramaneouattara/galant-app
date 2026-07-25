@@ -1,5 +1,6 @@
 const { db, admin } = require('../config/firebase');
 const { calculateDistance, calculateMatchScore } = require('../services/matchmakingService');
+const { normalizeCity } = require('../utils/geo');
 const { hasInvisiblePremiumAccessForPlan, isHiddenByInvisibleMode, hasQuarterlyLimitedInvisibleAccess, isTrialActive } = require('../services/accessService');
 const { getDailyUsage, incrementUsage } = require('../services/usageService');
 const { sendPushNotification } = require('../services/notificationService');
@@ -26,7 +27,7 @@ const getSuggestions = async (req, res) => {
 
   const myLat = Number(me.passport_latitude || me.latitude);
   const myLon = Number(me.passport_longitude || me.longitude);
-  const myCity = String(me.passport_city || me.city || '').trim().toLowerCase();
+  const myCity = normalizeCity(me.passport_city || me.city);
 
   // Logic: Serious goals see opposite gender only. Casual/Friendship see all.
   const isStrictGoal = meGoal === 'SERIOUS' || meGoal === 'MARRIAGE';
@@ -35,7 +36,7 @@ const getSuggestions = async (req, res) => {
       ? (meGender === 'MALE' ? 'FEMALE' : meGender === 'FEMALE' ? 'MALE' : null)
       : null;
 
-  const cityFilter = (city || myCity).trim().toLowerCase();
+  const cityFilter = normalizeCity(city || myCity);
   const searchQuery = String(search || '').trim().toLowerCase();
   const maxDistance = Number.isFinite(parseFloat(maxDistanceKm))
     ? Math.max(1, parseFloat(maxDistanceKm))
@@ -201,7 +202,7 @@ const getSuggestions = async (req, res) => {
 
 const getVisibilityInsight = async (req, res) => {
   const me = req.user;
-  const meCity = String(me.city || '').trim().toLowerCase();
+  const meCity = normalizeCity(me.city);
   if (!meCity) return res.json({ rank: null, total: 0, recommendation: null });
 
   try {
@@ -213,7 +214,7 @@ const getVisibilityInsight = async (req, res) => {
 
     const competitors = snapshot.docs
       .map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter(c => !c.suspended_at && String(c.city || '').trim().toLowerCase() === meCity);
+      .filter(c => !c.suspended_at && normalizeCity(c.city) === meCity);
 
     const grSnapshot = await db.collection('golden_roses').where('expires_at', '>', now).get();
     const goldenRoseUserIds = new Set(grSnapshot.docs.map(doc => doc.data().user_id));

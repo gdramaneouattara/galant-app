@@ -1,4 +1,4 @@
-const { toRadians } = require('../utils/geo');
+const { toRadians, normalizeCity } = require('../utils/geo');
 
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   if (!lat1 || !lon1 || !lat2 || !lon2) return null;
@@ -14,8 +14,8 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 };
 
 const calculateMatchScore = ({ candidate, me, isGoldenRose }) => {
-  const meCity = String(me.city || '').trim().toLowerCase();
-  const candCity = String(candidate.city || '').trim().toLowerCase();
+  const meCity = normalizeCity(me.city);
+  const candCity = normalizeCity(candidate.city);
 
   let score = (candidate.is_vip ? 200 : (candidate.is_premium ? 50 : 0)) + (candCity === meCity ? 30 : 0);
 
