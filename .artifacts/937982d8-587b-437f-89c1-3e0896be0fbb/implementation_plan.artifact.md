@@ -1,29 +1,27 @@
-# Intégration des Boîtes de Likes et Roses dans l'onglet Messages
+# Réorganisation des onglets de navigation
 
-Ce plan vise à rendre les "Likes Reçus" et la "Boîte de Roses" accessibles directement depuis l'onglet Messages (MatchesPage), offrant ainsi un point d'accès rapide aux nouvelles attentions reçues, comme sur l'application mobile.
+Ce plan vise à déplacer l'onglet "Messages" pour qu'il soit placé immédiatement après l'onglet "Découvrir" sur toutes les plateformes (Web et Mobile).
 
 ## User Review Required
 
 > [!NOTE]
-> Nous allons ajouter une section de "Notifications d'Intérêt" en haut de la page des messages. Cette section affichera le nombre de nouveaux likes et de nouvelles roses pour inciter l'utilisateur à les consulter.
+> Ce changement affectera l'ordre visuel des menus de navigation en bas de l'écran (mobile/web mobile) et dans l'en-tête (web desktop).
 
 ## Proposed Changes
 
-### [Web Pages]
+### [Web] Navigation
 
-#### [MODIFY] [MatchesPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/MatchesPage.tsx)
-- Ajouter un état pour stocker les compteurs de likes et de roses.
-- Implémenter un `useEffect` pour récupérer ces compteurs via les API `/api/likes/received` et `/api/super-likes/received`.
-- Ajouter une nouvelle section de composants visuels (deux cartes stylisées) juste au-dessus de la liste des "Nouveaux Matchs".
-    - **Carte Likes** : Couleur Rose/Rouge, icône Cœur, affiche le nombre de likes en attente.
-    - **Carte Roses** : Couleur Or/Ambre, icône Rose, affiche le nombre de Super Likes en attente.
-- Harmoniser le design avec le mode sombre.
+#### [MODIFY] [App.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/App.tsx)
+- Dans le composant `MobileNav`, déplacer le lien `/matches` (Messages) en deuxième position, juste après `/` (Découvrir).
+- Dans le composant `Header`, déplacer le lien `/matches` (Messages) en deuxième position, juste après `/` (Découvrir).
+
+### [Mobile] Navigation
+
+#### [MODIFY] [MainNavigator.tsx](file:///C:/Users/UTILISATEUR/galant-app/src/navigation/MainNavigator.tsx)
+- Dans le `UserTabNavigator`, réorganiser les écrans pour placer `MessagesTab` en deuxième position, immédiatement après `DiscoverTab`.
 
 ## Verification Plan
 
 ### Manual Verification
-1. Aller sur l'onglet **Messages** sur le Web.
-2. Vérifier que les deux nouvelles cartes ("Likes Reçus" et "Boîte de Roses") apparaissent en haut.
-3. Vérifier que les compteurs s'affichent correctement (si l'utilisateur a des likes/roses).
-4. Cliquer sur chaque carte et vérifier la redirection vers les pages correspondantes.
-5. Vérifier le rendu en mode sombre.
+1. Lancer la version Web et vérifier que "Messages" est bien le deuxième élément dans le menu du haut et dans la barre de navigation mobile.
+2. Lancer l'application Mobile et vérifier que l'icône de message est la deuxième dans la barre d'onglets en bas.

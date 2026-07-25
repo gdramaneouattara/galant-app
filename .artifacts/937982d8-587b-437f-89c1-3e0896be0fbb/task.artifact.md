@@ -1,7 +1,6 @@
-# Intégration des Boîtes de Likes et Roses dans l'onglet Messages
+# Réorganisation des onglets de navigation
 
-- `[ ]` Ajouter les imports et états nécessaires dans `web/src/pages/MatchesPage.tsx`
-- `[ ]` Implémenter la récupération des compteurs (Likes et Roses)
-- `[ ]` Créer la section UI "Notifications d'Intérêt" en haut de la page
-- `[ ]` Harmoniser le style avec le mode sombre
-- `[ ]` Vérifier les redirections vers `/likes` et `/roses`
+- `[ ]` Déplacer l'onglet Messages dans `web/src/App.tsx` (Header & MobileNav)
+- `[ ]` Déplacer l'onglet Messages dans `src/navigation/MainNavigator.tsx` (Mobile)
+- `[ ]` Exécuter les tests de qualité
+- `[ ]` Déployer et synchroniser

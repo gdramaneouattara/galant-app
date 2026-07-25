@@ -132,6 +132,11 @@ const UserTabNavigator = () => {
         options={{ title: t('discover'), tabBarIcon: ({ color, size }) => <Search color={color} size={size} /> }}
       />
       <UserTab.Screen
+        name="MessagesTab"
+        component={MessagesScreen}
+        options={{ title: t('messages'), tabBarIcon: ({ color, size }) => <MessageCircle color={color} size={size} /> }}
+      />
+      <UserTab.Screen
         name="AgendaTab"
         component={AgendaScreen}
         options={{ title: t('agenda'), tabBarIcon: ({ color, size }) => <Calendar color={color} size={size} /> }}
@@ -140,11 +145,6 @@ const UserTabNavigator = () => {
         name="GuideTab"
         component={GuideScreen}
         options={{ title: t('guide'), tabBarIcon: ({ color, size }) => <MapPin color={color} size={size} /> }}
-      />
-      <UserTab.Screen
-        name="MessagesTab"
-        component={MessagesScreen}
-        options={{ title: t('messages'), tabBarIcon: ({ color, size }) => <MessageCircle color={color} size={size} /> }}
       />
       <UserTab.Screen
         name="ProfileTab"
