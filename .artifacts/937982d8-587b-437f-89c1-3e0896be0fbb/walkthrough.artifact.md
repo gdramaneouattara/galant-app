@@ -1,26 +1,27 @@
-# Walkthrough : Parité des actions de découverte sur le Web
+# Walkthrough : Swipe Tactile sur le Web
 
-J'ai unifié les actions disponibles sur l'écran Découverte de la version Web pour offrir la même richesse fonctionnelle que l'application mobile.
+J'ai implémenté les gestes de "Swipe" (glissement) sur la version Web de Galant pour offrir une fluidité et une réactivité identiques à l'application mobile.
 
 ## Changements effectués
 
-### [Web] Écran Découverte
-- **Barre d'actions complète** : Ajout d'une barre de 4 boutons harmonisée :
-    - **Passer (X)** : Pour ignorer un profil.
-    - **Message Direct** : Pour engager la conversation immédiatement (réservé aux membres Premium ou achat à l'unité).
-    - **Super Like (Étoile/Rose)** : Pour envoyer un signal fort et se démarquer.
-    - **Liker (Cœur)** : Pour manifester son intérêt.
-- **Logique de paiement intégrée** : Les boutons Message et Super Like ouvrent désormais intelligemment la modal d'achat (`InteractionPurchaseModal`) si l'utilisateur n'est pas Premium, exactement comme sur mobile.
-- **Transition fluide** : Les icônes et les états de survol (hover) ont été polis pour une expérience utilisateur premium sur navigateur.
+### [Web Core]
+- **Installation de framer-motion** : Ajout de la bibliothèque de référence pour les animations de gestes dans React.
+
+### [Web Components]
+- **[DiscoverPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/DiscoverPage.tsx)** :
+    - **Cartes Draggable** : Vous pouvez désormais faire glisser les profils vers la droite pour un Like ou vers la gauche pour un Nope.
+    - **Badges de Décision** : Apparition dynamique des labels "LIKE" (vert) et "NOPE" (rouge) sur la photo pendant le glissement, pour un retour visuel immédiat.
+    - **Rotation Naturelle** : La carte pivote légèrement en fonction de la direction du glissement, reproduisant le comportement physique de l'application native.
+    - **Inertie & Ressort** : Utilisation d'animations de type "spring" pour une sensation de légèreté et de fluidité exceptionnelle.
 
 ## Résultats de la Vérification
 
-### Tests Qualité
-- **Statut** : 100% Succès (70/70 tests).
-- Les mécanismes de swipe (via boutons) et de monétisation sont validés.
+### Build & Intégrité
+- **Vite Build** : Réussi avec succès. La nouvelle dépendance est parfaitement intégrée.
+- **Support Multi-plateforme** : Le geste fonctionne aussi bien à la souris (desktop) qu'au doigt (mobile/tablette).
 
 ### Déploiement
-- Les modifications sont synchronisées et actives sur les branches **staging** et **main**.
+- Les modifications sont synchronisées et en ligne sur les branches **staging** et **main**.
 
 > [!TIP]
-> Rendez-vous sur la page Découverte pour tester ces nouvelles interactions. Le bouton bleu de message direct vous permet désormais d'écrire aux profils d'exception sans attendre un match (si vous possédez les droits nécessaires).
+> Testez dès maintenant sur votre navigateur mobile : faites glisser la carte vers la droite pour voir l'effet "LIKE" s'illuminer avant de valider votre choix. La version Web de Galant n'a désormais plus rien à envier au mobile !

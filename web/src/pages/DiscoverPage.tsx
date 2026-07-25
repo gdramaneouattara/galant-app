@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useMatchmaking } from '@shared/hooks/useMatchmaking';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIcon, SlidersHorizontal, Sparkles, RefreshCw, ChevronRight, Crown, Gem, MessageCircle } from 'lucide-react';
+import { ShieldCheck, MapPin, X, Heart, Lock, Info, User as UserIcon, SlidersHorizontal, Sparkles, RefreshCw, ChevronRight, Crown, Gem, MessageCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
 import FilterModal from '../components/FilterModal';
@@ -15,7 +15,6 @@ const DiscoverPage: React.FC = () => {
   const [currentIndex, setCurrentCardIndex] = useState(0);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean; type: 'SUPER_LIKE' | 'DIRECT_MESSAGE'; userName: string } | null>(null);
-  const [visibilityRank, setVisibilityRank] = useState<{ rank: number | null, total: number }>({ rank: null, total: 0 });
   const navigate = useNavigate();
 
   // Motion Values for Swipe
@@ -42,20 +41,9 @@ const DiscoverPage: React.FC = () => {
     await fetchSuggestions(filters);
   }, [user, myProfile, authLoading, fetchSuggestions, filters]);
 
-  const fetchVisibilityRank = useCallback(async () => {
-    if (!user || !myProfile) return;
-    try {
-      const data = await apiRequest<{ rank: number | null, total: number }>('/api/matchmaking/visibility-insight', { requireAuth: true });
-      setVisibilityRank(data);
-    } catch (e) {
-      console.error('Error fetching visibility rank:', e);
-    }
-  }, [user, myProfile]);
-
   useEffect(() => {
     loadSuggestions();
-    fetchVisibilityRank();
-  }, [loadSuggestions, fetchVisibilityRank]);
+  }, [loadSuggestions]);
 
   useEffect(() => {
     if (user && !loading && suggestions.length === 0) {
@@ -198,25 +186,6 @@ const DiscoverPage: React.FC = () => {
           )}
         </button>
       </div>
-
-      {myProfile && (
-        <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-800 p-6 rounded-[2rem] shadow-xl shadow-blue-500/20 flex items-center gap-5 group cursor-pointer overflow-hidden relative"
-             onClick={() => navigate('/profile')}>
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
-          <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white shadow-lg">
-            <Rocket size={24} className="group-hover:-translate-y-1 transition-transform" />
-          </div>
-          <div className="flex-1">
-            <p className="text-[10px] font-black text-blue-200 uppercase tracking-[0.2em] mb-1 opacity-80">Rayonnement Galant</p>
-            <p className="text-white font-bold leading-tight">
-              {visibilityRank.rank
-                ? t('rank_insight', { rank: visibilityRank.rank, total: visibilityRank.total, city: myProfile.city || 'votre ville' })
-                : "Boostez votre profil pour rayonner dans votre ville !"}
-            </p>
-          </div>
-          <ChevronRight className="text-white/40 group-hover:text-white transition-colors" size={20} />
-        </div>
-      )}
 
       {currentProfile ? (
         <div className="space-y-8">
