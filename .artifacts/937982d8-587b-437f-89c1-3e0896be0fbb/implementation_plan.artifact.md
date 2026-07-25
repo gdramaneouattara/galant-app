@@ -1,44 +1,29 @@
-# Parité Totale Mobile/Web de l'onglet Moi
+# Filtrage par genre basé sur l'objectif de rencontre
 
-Ce plan vise à implémenter sur la version Web toutes les fonctionnalités manquantes identifiées par rapport à la version mobile, garantissant une expérience utilisateur cohérente et complète.
+Ce plan vise à implémenter une logique de filtrage par genre intelligente : les utilisateurs cherchant du sérieux ou le mariage ne verront que le sexe opposé, tandis que ceux cherchant l'amitié ou des rencontres décontractées verront tout le monde par défaut.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> Les fonctions RGPD (Export et Suppression) impliquent des actions irréversibles ou sensibles. Les appels API seront protégés par le token d'authentification Firebase comme sur mobile.
+> - L'objectif **MARRIAGE** est désormais traité avec la même rigueur que **SERIOUS**.
+> - Le filtrage par âge et la vérification des abonnements resteront effectués en mémoire pour éviter de nouvelles erreurs d'index Firestore.
 
 ## Proposed Changes
 
-### [Web Pages & Navigation]
+### [Server] Logique de Matchmaking
 
-#### [NEW] [BoostPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/BoostPage.tsx)
-- Création de la page de gestion des Boosts.
-- Affichage des plans (1 jour, 3 jours, 7 jours).
-- Intégration du paiement via Paystack (Mobile Money).
-- Gestion de l'activation du boost gratuit (si éligible).
-
-#### [MODIFY] [App.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/App.tsx)
-- Ajouter la route `/boost` pour la nouvelle page.
-
-#### [MODIFY] [ProfilePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ProfilePage.tsx)
-- Ajouter les boutons manquants dans le menu de droite :
-    - **Vérification d'identité** (si non vérifié).
-    - **Boîte de Roses** (redirection vers `/likes`).
-    - **Boosts de visibilité** (redirection vers `/boost`).
-    - **Export des données** (téléchargement JSON).
-    - **Suppression du compte** (avec confirmation).
-
-### [Web Features Logic]
-
-#### [MODIFY] [VerifyPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/VerifyPage.tsx)
-- Améliorer la récupération du statut KYC via `/api/kyc/me` pour afficher l'état réel (En attente, Rejeté, etc.).
+#### [MODIFY] [matchmakingController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/matchmakingController.js)
+- Mettre à jour la condition `isStrictGoal` pour inclure `SERIOUS` et `MARRIAGE`.
+- Si `isStrictGoal` est vrai, forcer le filtrage sur le sexe opposé (Homme -> Femme, Femme -> Homme).
+- Si l'objectif est `FRIENDSHIP` ou `CASUAL`, laisser le filtre de genre libre (utilise la valeur `ALL` par défaut du client).
+- **Correctif permanent** : Supprimer l'inégalité sur `current_period_end` dans la requête Firestore des abonnements pour éliminer l'erreur 500 rapportée.
 
 ## Verification Plan
 
+### Automated Tests
+- Exécuter `npm run test:quality` pour s'assurer que les modifications respectent l'architecture globale.
+
 ### Manual Verification
-1. **Boosts** : Accéder à `/boost`, vérifier que les prix s'affichent et que le bouton Paystack redirige correctement.
-2. **Likes** : Cliquer sur "Boîte de Roses" dans le profil et vérifier la liste des likes reçus.
-3. **KYC** : Cliquer sur "Vérifier mon identité" et s'assurer que le formulaire fonctionne.
-4. **RGPD** :
-    - Cliquer sur "Télécharger mes données" et vérifier qu'un fichier JSON est généré.
-    - Cliquer sur "Supprimer mon compte", confirmer, et vérifier la déconnexion et suppression.
+1. Se connecter avec un profil Homme / Objectif : Mariage. Vérifier qu'on ne voit que des femmes.
+2. Changer l'objectif en : Amitié. Vérifier qu'on voit des profils de tous genres.
+3. Vérifier que l'erreur 500 sur les index n'apparaît plus.

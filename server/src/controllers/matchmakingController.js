@@ -28,10 +28,13 @@ const getSuggestions = async (req, res) => {
   const myLon = Number(me.passport_longitude || me.longitude);
   const myCity = String(me.passport_city || me.city || '').trim().toLowerCase();
 
-  const oppositeGenderForSerious =
-    meGoal === 'SERIOUS'
+  // Logic: Serious goals see opposite gender only. Casual/Friendship see all.
+  const isStrictGoal = meGoal === 'SERIOUS' || meGoal === 'MARRIAGE';
+  const forcedOppositeGender =
+    isStrictGoal
       ? (meGender === 'MALE' ? 'FEMALE' : meGender === 'FEMALE' ? 'MALE' : null)
       : null;
+
   const cityFilter = (city || myCity).trim().toLowerCase();
   const searchQuery = String(search || '').trim().toLowerCase();
   const maxDistance = Number.isFinite(parseFloat(maxDistanceKm))
@@ -66,8 +69,8 @@ const getSuggestions = async (req, res) => {
     let query = db.collection('profiles')
       .where('onboarding_completed', '==', true);
 
-    if (oppositeGenderForSerious) {
-      query = query.where('gender', '==', oppositeGenderForSerious);
+    if (forcedOppositeGender) {
+      query = query.where('gender', '==', forcedOppositeGender);
     } else if (gender && gender !== 'ALL') {
       query = query.where('gender', '==', gender);
     }
@@ -107,11 +110,13 @@ const getSuggestions = async (req, res) => {
 
           if (!isExpired) {
             const profile = candidates.find(c => c.id === data.user_id);
-            if (hasInvisiblePremiumAccessForPlan(profile, data.plan_id)) {
+            if (profile && hasInvisiblePremiumAccessForPlan(profile, data.plan_id)) {
               invisibleEligibleBySubscription.add(data.user_id);
             }
           }
         });
+      }
+    }
       }
     }
 
