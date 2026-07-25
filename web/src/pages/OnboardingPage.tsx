@@ -188,44 +188,44 @@ const OnboardingPage: React.FC = () => {
         return (
           <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="text-center space-y-2">
-               <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto text-primary mb-4">
+               <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/20 rounded-2xl flex items-center justify-center mx-auto text-primary mb-4">
                   <UserIcon size={32} />
                </div>
-               <h3 className="text-3xl font-black italic tracking-tighter">Qui êtes-vous ?</h3>
-               <p className="text-slate-500 font-medium">L'élégance commence par la transparence.</p>
+               <h3 className="text-3xl font-black italic tracking-tighter dark:text-white">Qui êtes-vous ?</h3>
+               <p className="text-slate-500 dark:text-slate-400 font-medium">L'élégance commence par la transparence.</p>
             </div>
 
             <div className="space-y-5">
                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nom et prénom(s)</label>
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Nom et prénom(s)</label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary/20"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/20 transition-colors"
                     placeholder="Votre nom complet"
                   />
                </div>
                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Âge</label>
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Âge</label>
                   <input
                     type="number"
                     value={formData.age}
                     onChange={e => setForm(prev => ({ ...prev, age: e.target.value }))}
-                    className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary/20"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/20 transition-colors"
                     placeholder="25"
                     min="18"
                   />
                </div>
                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Genre</label>
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Genre</label>
                   <div className="grid grid-cols-2 gap-4">
                     {['MALE', 'FEMALE'].map(g => (
                       <button
                         key={g}
                         onClick={() => setForm(prev => ({ ...prev, gender: g }))}
                         className={`py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${
-                          formData.gender === g ? 'bg-primary text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
+                          formData.gender === g ? 'bg-primary text-white shadow-lg' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
                         }`}
                       >
                         {g === 'MALE' ? 'Homme' : 'Femme'}
@@ -249,11 +249,11 @@ const OnboardingPage: React.FC = () => {
         return (
           <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
              <div className="text-center space-y-2">
-               <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto text-amber-500 mb-4">
+               <div className="w-16 h-16 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center mx-auto text-amber-500 mb-4">
                   <Heart size={32} />
                </div>
-               <h3 className="text-3xl font-black italic tracking-tighter">Vos Intentions</h3>
-               <p className="text-slate-500 font-medium">Pour des rencontres qui vous ressemblent.</p>
+               <h3 className="text-3xl font-black italic tracking-tighter dark:text-white">Vos Intentions</h3>
+               <p className="text-slate-500 dark:text-slate-400 font-medium">Pour des rencontres qui vous ressemblent.</p>
             </div>
 
             <div className="space-y-6">
@@ -263,13 +263,13 @@ const OnboardingPage: React.FC = () => {
                       key={goal.id}
                       onClick={() => setForm(prev => ({ ...prev, relationship_goal: goal.id }))}
                       className={`p-5 rounded-3xl text-left transition-all border-2 flex items-center gap-5 ${
-                        formData.relationship_goal === goal.id ? 'bg-white border-primary shadow-xl shadow-red-500/5' : 'bg-slate-50 border-transparent text-slate-400 hover:bg-slate-100'
+                        formData.relationship_goal === goal.id ? 'bg-white dark:bg-slate-800 border-primary shadow-xl shadow-red-500/5' : 'bg-slate-50 dark:bg-white/5 border-transparent text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10'
                       }`}
                     >
                       <span className="text-3xl">{goal.icon}</span>
                       <div className="flex-1">
-                        <p className={`font-black text-sm uppercase tracking-tight ${formData.relationship_goal === goal.id ? 'text-primary' : 'text-slate-900'}`}>{goal.label}</p>
-                        <p className="text-[10px] font-bold text-slate-400 mt-1">{goal.desc}</p>
+                        <p className={`font-black text-sm uppercase tracking-tight ${formData.relationship_goal === goal.id ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>{goal.label}</p>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1">{goal.desc}</p>
                       </div>
                       {formData.relationship_goal === goal.id && <CheckCircle2 className="text-primary" size={20} />}
                     </button>
@@ -277,7 +277,7 @@ const OnboardingPage: React.FC = () => {
                </div>
 
                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Centres d'intérêt (choisissez-en 3 ou plus)</label>
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Centres d'intérêt (choisissez-en 3 ou plus)</label>
                   <div className="flex flex-wrap gap-2">
                     {INTERESTS_OPTIONS.map(interest => (
                       <button
@@ -285,8 +285,8 @@ const OnboardingPage: React.FC = () => {
                         onClick={() => toggleInterest(interest)}
                         className={`px-4 py-2.5 rounded-xl font-bold text-[11px] transition-all border ${
                           formData.interests.includes(interest)
-                          ? 'bg-slate-900 text-white border-slate-900'
-                          : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'
+                          ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white'
+                          : 'bg-white dark:bg-white/5 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/30'
                         }`}
                       >
                         {interest}
@@ -297,13 +297,13 @@ const OnboardingPage: React.FC = () => {
             </div>
 
             <div className="flex gap-4 pt-4">
-              <button onClick={prevStep} className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100">
+              <button onClick={prevStep} className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-white/5 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
                 <ChevronLeft size={20} />
               </button>
               <button
                 onClick={nextStep}
                 disabled={formData.interests.length < 3}
-                className="flex-1 bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black transition-all disabled:opacity-30"
+                className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black dark:hover:bg-slate-200 transition-all disabled:opacity-30"
               >
                 Suivant <ChevronRight size={16} />
               </button>
@@ -315,11 +315,11 @@ const OnboardingPage: React.FC = () => {
         return (
           <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
              <div className="text-center space-y-2">
-               <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto text-blue-500 mb-4">
+               <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mx-auto text-blue-500 mb-4">
                   <MapPin size={32} />
                </div>
-               <h3 className="text-3xl font-black italic tracking-tighter">Emplacement & Bio</h3>
-               <p className="text-slate-500 font-medium">Où la magie doit-elle opérer ?</p>
+               <h3 className="text-3xl font-black italic tracking-tighter dark:text-white">Emplacement & Bio</h3>
+               <p className="text-slate-500 dark:text-slate-400 font-medium">Où la magie doit-elle opérer ?</p>
             </div>
 
             <div className="space-y-6">
@@ -327,7 +327,7 @@ const OnboardingPage: React.FC = () => {
                   <button
                     onClick={handleGeoLocation}
                     disabled={loading}
-                    className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-blue-100"
+                    className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-blue-100 dark:shadow-none transition-transform active:scale-95"
                   >
                     {loading ? <Loader2 className="animate-spin" /> : <Sparkles size={16} />}
                     Détecter ma position
@@ -337,20 +337,20 @@ const OnboardingPage: React.FC = () => {
                       type="text"
                       value={formData.city}
                       onChange={e => setForm(prev => ({ ...prev, city: e.target.value }))}
-                      className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-200"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
                       placeholder="Votre ville (ex: Douala)"
                     />
                   </div>
                </div>
 
                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Une accroche élégante (Bio)</label>
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Une accroche élégante (Bio)</label>
                   <div className="flex flex-wrap gap-2 mb-3">
                      {BIO_PROMPTS.map(p => (
                        <button
                          key={p}
                          onClick={() => addPromptToBio(p)}
-                         className="text-[9px] font-bold bg-white border border-slate-200 text-slate-400 px-3 py-1.5 rounded-full hover:border-primary hover:text-primary transition-all"
+                         className="text-[9px] font-bold bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-400 dark:text-slate-500 px-3 py-1.5 rounded-full hover:border-primary hover:text-primary dark:hover:text-primary transition-all"
                        >
                          + {p}
                        </button>
@@ -359,20 +359,20 @@ const OnboardingPage: React.FC = () => {
                   <textarea
                     value={formData.bio}
                     onChange={e => setForm(prev => ({ ...prev, bio: e.target.value }))}
-                    className="w-full bg-slate-50 border-none rounded-3xl px-6 py-4 font-medium text-slate-900 outline-none focus:ring-2 focus:ring-primary/20 min-h-[140px] resize-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-3xl px-6 py-4 font-medium text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20 min-h-[140px] resize-none transition-colors"
                     placeholder="Parlez-nous de ce qui vous rend unique..."
                   />
                </div>
             </div>
 
             <div className="flex gap-4 pt-4">
-              <button onClick={prevStep} className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100">
+              <button onClick={prevStep} className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-white/5 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
                 <ChevronLeft size={20} />
               </button>
               <button
                 onClick={nextStep}
                 disabled={!formData.city || formData.bio.length < 15}
-                className="flex-1 bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black transition-all disabled:opacity-30"
+                className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black dark:hover:bg-slate-200 transition-all disabled:opacity-30"
               >
                 Suivant <ChevronRight size={16} />
               </button>
@@ -387,13 +387,13 @@ const OnboardingPage: React.FC = () => {
                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto text-primary mb-4">
                   <Camera size={32} />
                </div>
-               <h3 className="text-3xl font-black italic tracking-tighter">Votre Galerie</h3>
-               <p className="text-slate-500 font-medium">L'élégance en image (1 photo minimum).</p>
+               <h3 className="text-3xl font-black italic tracking-tighter dark:text-white">Votre Galerie</h3>
+               <p className="text-slate-500 dark:text-slate-400 font-medium">L'élégance en image (1 photo minimum).</p>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
                {photoFiles.map((file, idx) => (
-                 <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden group">
+                 <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden group border border-slate-100 dark:border-white/5">
                     <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="Preview" />
                     <button
                       onClick={() => removePhoto(idx)}
@@ -406,7 +406,7 @@ const OnboardingPage: React.FC = () => {
                {photoFiles.length < 6 && (
                  <button
                    onClick={() => fileInputRef.current?.click()}
-                   className="aspect-square rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 transition-colors"
+                   className="aspect-square rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
                  >
                    <ImageIcon size={24} />
                    <span className="text-[8px] font-black uppercase mt-2">Ajouter</span>
@@ -414,7 +414,7 @@ const OnboardingPage: React.FC = () => {
                )}
             </div>
 
-            <div className="bg-slate-950 p-6 rounded-[2rem] space-y-4">
+            <div className="bg-slate-950 dark:bg-black p-6 rounded-[2rem] space-y-4 border border-transparent dark:border-white/5">
                <div className="flex items-center gap-3 text-white">
                   <ShieldCheck className="text-green-400" size={20} />
                   <p className="text-xs font-black uppercase tracking-widest">Guide de Style</p>
@@ -426,7 +426,7 @@ const OnboardingPage: React.FC = () => {
                     "Montrez votre style de vie et vos passions.",
                     "100% de rayonnement = 1 Rose d'Or offerte 🌹"
                   ].map((tip, i) => (
-                    <li key={i} className="flex items-start gap-2 text-[10px] text-slate-400 font-medium leading-tight">
+                    <li key={i} className="flex items-start gap-2 text-[10px] text-slate-400 dark:text-slate-500 font-medium leading-tight">
                        <div className="w-1 h-1 rounded-full bg-primary mt-1.5 shrink-0" />
                        {tip}
                     </li>
@@ -444,13 +444,13 @@ const OnboardingPage: React.FC = () => {
             />
 
             <div className="flex gap-4 pt-4">
-              <button onClick={prevStep} disabled={loading} className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 disabled:opacity-50">
+              <button onClick={prevStep} disabled={loading} className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-white/5 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 disabled:opacity-50 transition-colors">
                 <ChevronLeft size={20} />
               </button>
               <button
                 onClick={nextStep}
                 disabled={loading || photoFiles.length === 0}
-                className="flex-1 bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black transition-all disabled:opacity-30"
+                className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black dark:hover:bg-slate-200 transition-all disabled:opacity-30"
               >
                 Signer le Manifeste <ChevronRight size={16} />
               </button>
@@ -462,7 +462,7 @@ const OnboardingPage: React.FC = () => {
         return (
           <div className="space-y-10 animate-in fade-in zoom-in-95 duration-700 py-4">
             <div className="text-center space-y-3">
-               <h3 className="text-4xl font-black italic tracking-tighter text-slate-900">Le Manifeste</h3>
+               <h3 className="text-4xl font-black italic tracking-tighter text-slate-900 dark:text-white transition-colors">Le Manifeste</h3>
                <p className="text-amber-600 font-black text-[10px] uppercase tracking-[0.3em]">Contrat de Prestige</p>
             </div>
 
@@ -485,25 +485,25 @@ const OnboardingPage: React.FC = () => {
                  }
                ].map((item, i) => (
                  <div key={i} className="flex gap-5 items-start group">
-                    <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-amber-50 group-hover:text-amber-600 transition-colors shrink-0">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-white/5 flex items-center justify-center text-slate-400 dark:text-slate-600 group-hover:bg-amber-50 dark:group-hover:bg-amber-900/20 group-hover:text-amber-600 transition-colors shrink-0">
                        <item.icon size={24} />
                     </div>
                     <div className="space-y-1">
-                       <h4 className="font-black text-xs uppercase tracking-widest text-slate-900">{item.title}</h4>
-                       <p className="text-sm font-medium text-slate-500 leading-relaxed">{item.desc}</p>
+                       <h4 className="font-black text-xs uppercase tracking-widest text-slate-900 dark:text-white transition-colors">{item.title}</h4>
+                       <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed transition-colors">{item.desc}</p>
                     </div>
                  </div>
                ))}
             </div>
 
-            <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100/50">
-               <p className="text-[10px] text-amber-700 font-bold leading-relaxed text-center">
+            <div className="bg-amber-50 dark:bg-amber-900/10 p-6 rounded-3xl border border-amber-100/50 dark:border-amber-900/20">
+               <p className="text-[10px] text-amber-700 dark:text-amber-400 font-bold leading-relaxed text-center">
                   En rejoignant Galant, vous vous engagez à porter haut les valeurs de distinction et de bienveillance qui animent notre communauté.
                </p>
             </div>
 
             <div className="flex gap-4">
-               <button onClick={prevStep} disabled={loading} className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100">
+               <button onClick={prevStep} disabled={loading} className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-white/5 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
                   <ChevronLeft size={20} />
                </button>
                <button
@@ -526,8 +526,8 @@ const OnboardingPage: React.FC = () => {
   const radiance = calculateRadiance();
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-md bg-white rounded-[3.5rem] shadow-2xl overflow-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 transition-colors duration-300">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[3.5rem] shadow-2xl overflow-hidden border border-transparent dark:border-white/5 transition-colors">
         {/* Progress & Radiance */}
         <div className="bg-slate-900 px-10 py-3 flex items-center justify-between">
            <div className="flex items-center gap-2">
@@ -551,8 +551,8 @@ const OnboardingPage: React.FC = () => {
       </div>
 
       <div className="mt-8 flex items-center gap-3">
-         <Gem className="text-slate-300" size={16} />
-         <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Dossier d'adhésion confidentiel</p>
+         <Gem className="text-slate-300 dark:text-slate-700" size={16} />
+         <p className="text-[10px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-[0.2em]">Dossier d'adhésion confidentiel</p>
       </div>
     </div>
   );
