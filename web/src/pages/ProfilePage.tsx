@@ -404,8 +404,8 @@ const ProfilePage: React.FC = () => {
               onClick={() => navigate('/roses')}
               className="flex items-center gap-4 p-4 rounded-2xl bg-amber-50/30 dark:bg-amber-900/10 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all text-left group"
             >
-              <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-xl flex items-center justify-center group-hover:bg-amber-100 dark:group-hover:bg-amber-900/40 transition-colors">
-                <Star size={24} fill="currentColor" />
+              <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center group-hover:bg-amber-100 dark:group-hover:bg-amber-900/40 transition-colors text-xl">
+                🌹
               </div>
               <div className="flex-1">
                 <p className="text-sm font-black text-amber-900 dark:text-amber-400 uppercase tracking-tight">Boîte de Roses</p>

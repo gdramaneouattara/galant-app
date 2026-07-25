@@ -110,7 +110,7 @@ const MatchesPage: React.FC = () => {
           className="relative bg-gradient-to-br from-amber-400 to-amber-600 dark:from-amber-900 dark:to-amber-950 p-6 rounded-[2.5rem] shadow-xl shadow-amber-500/20 text-white text-left overflow-hidden group hover:scale-[1.02] transition-all"
         >
           <div className="absolute -right-4 -bottom-4 bg-white/10 w-24 h-24 rounded-full blur-2xl group-hover:bg-white/20 transition-all"></div>
-          <Star size={24} className="mb-3 opacity-80 group-hover:rotate-12 transition-transform" fill="currentColor" />
+          <div className="text-2xl mb-2 group-hover:rotate-12 transition-transform">🌹</div>
           <p className="text-2xl font-[1000] tracking-tighter leading-none">{rosesCount}</p>
           <p className="text-[10px] font-black uppercase tracking-widest mt-1 opacity-80">Boîte de Roses</p>
           {rosesCount > 0 && <div className="absolute top-4 right-4 w-2 h-2 bg-white rounded-full animate-ping"></div>}
