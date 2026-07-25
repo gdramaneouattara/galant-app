@@ -1,7 +1,6 @@
-# Task: Fix Visibility & Ranking Issues
+# Task: Mandatory Geolocation on Onboarding
 
-- `[/]` Update `matchmakingService.js` for case-insensitive city bonus
-- `[ ]` Update `matchmakingController.js` for city-based fallback visibility
-- `[ ]` Update `matchmakingController.js` for robust city ranking
+- `[ ]` Modify Mobile `LocationStep.tsx` to remove manual input and enforce GPS
+- `[ ]` Modify Web `OnboardingPage.tsx` to remove manual input and enforce GPS
 - `[ ]` Run quality tests
 - `[ ]` Deploy and synchronize branches

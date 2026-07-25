@@ -327,20 +327,20 @@ const OnboardingPage: React.FC = () => {
                   <button
                     onClick={handleGeoLocation}
                     disabled={loading}
-                    className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-blue-100 dark:shadow-none transition-transform active:scale-95"
+                    className={`w-full py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
+                      formData.latitude
+                        ? 'bg-green-500 text-white shadow-lg shadow-green-100 dark:shadow-none'
+                        : 'bg-blue-600 text-white shadow-lg shadow-blue-100 dark:shadow-none'
+                    }`}
                   >
                     {loading ? <Loader2 className="animate-spin" /> : <Sparkles size={16} />}
-                    Détecter ma position
+                    {formData.latitude ? `Position détectée : ${formData.city} ✓` : 'Détecter ma position GPS'}
                   </button>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={formData.city}
-                      onChange={e => setForm(prev => ({ ...prev, city: e.target.value }))}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
-                      placeholder="Votre ville (ex: Douala)"
-                    />
-                  </div>
+                  {!formData.latitude && (
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-center italic">
+                      L'autorisation GPS est requise pour continuer.
+                    </p>
+                  )}
                </div>
 
                <div className="space-y-3">
@@ -371,7 +371,7 @@ const OnboardingPage: React.FC = () => {
               </button>
               <button
                 onClick={nextStep}
-                disabled={!formData.city || formData.bio.length < 15}
+                disabled={!formData.latitude || !formData.city || formData.bio.length < 15}
                 className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black dark:hover:bg-slate-200 transition-all disabled:opacity-30"
               >
                 Suivant <ChevronRight size={16} />

@@ -53,38 +53,37 @@ const LocationStep: React.FC<LocationStepProps> = ({ form, setForm, onComplete, 
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={[styles.title, { color: colors.text }]}>Localisation</Text>
-      <Text style={[styles.caption, { color: colors.textMuted }]}>Pour te proposer des profils proches de toi.</Text>
+      <Text style={[styles.caption, { color: colors.textMuted }]}>L'accès à votre position est indispensable pour vous proposer des profils proches de vous avec élégance.</Text>
       <Pressable
-        style={[styles.locationCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+        style={[styles.locationCard, { backgroundColor: colors.card, borderColor: form.latitude ? '#22c55e' : colors.border }]}
         onPress={detectLocation}
         disabled={detectingLocation}
       >
-        <MapPin color={COLORS.primary} size={24} />
+        <MapPin color={form.latitude ? '#22c55e' : COLORS.primary} size={24} />
         <View style={styles.locationCopy}>
           <Text style={[styles.locationTitle, { color: colors.text }]}>
-            {detectingLocation ? 'Détection...' : 'Détecter ma position GPS'}
+            {detectingLocation ? 'Détection en cours...' : 'Détecter ma position GPS'}
           </Text>
-          <Text style={[styles.locationSubtitle, { color: colors.textMuted }]}>
-            {form.latitude ? 'Coordonnées capturées ✓' : form.city}
+          <Text style={[styles.locationSubtitle, { color: form.latitude ? '#22c55e' : colors.textMuted }]}>
+            {form.latitude ? `Position capturée : ${form.city} ✓` : 'Appuyez pour activer'}
           </Text>
         </View>
         {detectingLocation && <ActivityIndicator size="small" color={COLORS.primary} />}
       </Pressable>
-      <TextInput
-        value={form.city}
-        onChangeText={(text) => setForm({ ...form, city: text })}
-        placeholder="Ville"
-        placeholderTextColor={colors.textMuted}
-        style={[styles.input, { backgroundColor: colors.input, borderColor: colors.border, color: colors.text, marginTop: 10 }]}
-      />
-      <TextInput
-        value={form.country}
-        onChangeText={(text) => setForm({ ...form, country: text })}
-        placeholder="Pays"
-        placeholderTextColor={colors.textMuted}
-        style={[styles.input, { backgroundColor: colors.input, borderColor: colors.border, color: colors.text, marginTop: 10 }]}
-      />
-      <PrimaryButton label="Terminer" onPress={onComplete} loading={loading} />
+
+      <View style={{ marginTop: 20 }}>
+        <PrimaryButton
+          label="Terminer"
+          onPress={onComplete}
+          loading={loading}
+          disabled={!form.latitude}
+        />
+      </View>
+      {!form.latitude && (
+        <Text style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center', marginTop: 10, fontStyle: 'italic' }}>
+          Vous devez activer la localisation pour continuer.
+        </Text>
+      )}
     </ScrollView>
   );
 };

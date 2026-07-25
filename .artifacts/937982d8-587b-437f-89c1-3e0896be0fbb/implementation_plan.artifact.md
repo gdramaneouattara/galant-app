@@ -1,28 +1,32 @@
-# Amélioration de la visibilité et correction du rang de matchmaking
+# Géolocalisation obligatoire lors de l'Onboarding
 
-Ce plan vise à corriger les problèmes de visibilité entre profils de même sexe (pour les objectifs non-strict) et à stabiliser le calcul du rang dans la ville.
+Ce plan vise à rendre la géolocalisation GPS obligatoire pour tous les nouveaux utilisateurs, supprimant ainsi la saisie manuelle de la ville afin de garantir l'intégrité des données de matchmaking.
 
-## Problèmes identifiés
-1.  **Filtrage par distance trop strict** : Si un utilisateur n'a pas de coordonnées GPS (latitude/longitude), la distance est `null`. Le système filtre actuellement ces profils si un filtre de distance est actif, même s'ils sont dans la même ville.
-2.  **Calcul du rang erroné (1/1)** : La requête Firestore pour compter les membres dans une ville est sensible à la casse (ex: "Abidjan" vs "abidjan"). Si deux utilisateurs écrivent leur ville différemment, ils ne se "voient" pas dans le classement.
-3.  **Objectifs "Amitié" et "On verra bien"** : Bien que la logique serveur soit correcte, le filtrage par distance empêche probablement la visibilité mutuelle.
+## User Review Required
+
+> [!IMPORTANT]
+> Cette modification empêchera les utilisateurs de s'inscrire s'ils refusent l'accès GPS ou si leur appareil n'est pas capable de se géolocaliser.
 
 ## Proposed Changes
 
-### [Server] Logique de Matchmaking
+### [Mobile] Écran de Localisation
 
-#### [MODIFY] [matchmakingController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/matchmakingController.js)
-- **Suggestions** : Dans `getSuggestions`, si la distance est indisponible (`null`), autoriser l'affichage du profil si la ville correspond (`cityFilter`), même si une distance maximum est définie.
-- **Visibilité (Rang)** : Dans `getVisibilityInsight`, récupérer tous les profils complétés de la base (puisque nous filtrons déjà en mémoire pour éviter les index) et effectuer le calcul du rang avec une comparaison de ville insensible à la casse.
-- **Score** : Mettre à jour `calculateMatchScore` pour que le bonus de ville soit insensible à la casse.
+#### [MODIFY] [LocationStep.tsx](file:///C:/Users/UTILISATEUR/galant-app/src/screens/auth/components/LocationStep.tsx)
+- Supprimer les champs `TextInput` pour la ville et le pays.
+- Bloquer le bouton "Terminer" tant que les coordonnées GPS n'ont pas été capturées avec succès.
+- Ajuster le message d'instruction pour souligner le caractère obligatoire.
 
-#### [MODIFY] [matchmakingService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/matchmakingService.js)
-- Rendre le bonus `city === me.city` insensible à la casse et robuste aux espaces.
+### [Web] Page d'Onboarding
+
+#### [MODIFY] [OnboardingPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/OnboardingPage.tsx)
+- Supprimer le champ `input` pour la ville dans l'étape 3.
+- Désactiver le bouton "Suivant" tant que `formData.latitude` est nul.
+- Forcer l'appel à `handleGeoLocation` pour progresser.
 
 ## Verification Plan
 
 ### Manual Verification
-1. Créer deux profils Homme avec l'objectif "Amitié" à "Abidjan".
-2. S'assurer qu'ils se voient dans l'écran Découverte même sans GPS activé.
-3. Vérifier que le rang affiche bien "1/2" ou "2/2" au lieu de "1/1".
-4. Tester avec des variations de casse (Abidjan vs abidjan).
+1. Lancer le flux d'inscription sur Mobile et Web.
+2. Vérifier qu'il n'y a plus de champ texte pour taper sa ville.
+3. Vérifier que le bouton de progression est grisé par défaut.
+4. Cliquer sur "Détecter ma position" et vérifier que le bouton se débloque une fois la ville détectée.
