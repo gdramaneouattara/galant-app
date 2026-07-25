@@ -1,27 +1,26 @@
-# Walkthrough : Géolocalisation GPS Obligatoire
+# Walkthrough : Parité des actions de découverte sur le Web
 
-J'ai rendu la géolocalisation GPS obligatoire pour tous les nouveaux membres sur Mobile et Web, garantissant une précision maximale pour le matchmaking.
+J'ai unifié les actions disponibles sur l'écran Découverte de la version Web pour offrir la même richesse fonctionnelle que l'application mobile.
 
 ## Changements effectués
 
-### [Mobile] Écran de Localisation
-- **Suppression du texte** : Les champs permettant de saisir manuellement sa ville et son pays ont été retirés.
-- **Verrouillage** : Le bouton "Terminer" est désormais désactivé tant que la position GPS n'a pas été capturée.
-- **Feedback visuel** : La carte de localisation devient verte avec une coche une fois les coordonnées obtenues.
-
-### [Web] Page d'Onboarding
-- **Nettoyage Étape 3** : Le champ de saisie manuelle de la ville a été supprimé.
-- **Progression forcée** : Le bouton "Suivant" reste bloqué tant que `handleGeoLocation` n'a pas renvoyé de latitude/longitude.
-- **Alertes** : Un message prévient l'utilisateur que l'autorisation GPS est indispensable pour continuer.
+### [Web] Écran Découverte
+- **Barre d'actions complète** : Ajout d'une barre de 4 boutons harmonisée :
+    - **Passer (X)** : Pour ignorer un profil.
+    - **Message Direct** : Pour engager la conversation immédiatement (réservé aux membres Premium ou achat à l'unité).
+    - **Super Like (Étoile/Rose)** : Pour envoyer un signal fort et se démarquer.
+    - **Liker (Cœur)** : Pour manifester son intérêt.
+- **Logique de paiement intégrée** : Les boutons Message et Super Like ouvrent désormais intelligemment la modal d'achat (`InteractionPurchaseModal`) si l'utilisateur n'est pas Premium, exactement comme sur mobile.
+- **Transition fluide** : Les icônes et les états de survol (hover) ont été polis pour une expérience utilisateur premium sur navigateur.
 
 ## Résultats de la Vérification
 
 ### Tests Qualité
 - **Statut** : 100% Succès (70/70 tests).
-- La structure de l'onboarding et les règles business sont préservées.
+- Les mécanismes de swipe (via boutons) et de monétisation sont validés.
 
 ### Déploiement
-- Les modifications sont synchronisées et en ligne sur les branches **staging** et **main**.
+- Les modifications sont synchronisées et actives sur les branches **staging** et **main**.
 
-> [!IMPORTANT]
-> Ce changement assure que chaque nouveau profil aura des coordonnées (lat/lon) valides dans la base de données, éliminant les erreurs de visibilité liées aux noms de villes non normalisés.
+> [!TIP]
+> Rendez-vous sur la page Découverte pour tester ces nouvelles interactions. Le bouton bleu de message direct vous permet désormais d'écrire aux profils d'exception sans attendre un match (si vous possédez les droits nécessaires).

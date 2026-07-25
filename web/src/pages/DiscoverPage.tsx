@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useMatchmaking } from '@shared/hooks/useMatchmaking';
 import { useAuth } from '../context/AuthContext';
-import { Star, ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIcon, SlidersHorizontal, Sparkles, RefreshCw, ChevronRight, Crown, Gem, MessageCircle } from 'lucide-react';
+import { ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIcon, SlidersHorizontal, Sparkles, RefreshCw, ChevronRight, Crown, Gem, MessageCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import FilterModal from '../components/FilterModal';
 import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
@@ -299,9 +299,9 @@ const DiscoverPage: React.FC = () => {
 
             <button
               onClick={handleSuperLike}
-              className="w-16 h-16 rounded-2xl bg-white shadow-xl shadow-slate-200/50 flex items-center justify-center text-amber-500 hover:scale-110 active:scale-95 transition-all border border-slate-100 group"
+              className="w-16 h-16 rounded-2xl bg-white shadow-xl shadow-slate-200/50 flex items-center justify-center hover:scale-110 active:scale-95 transition-all border border-slate-100 group"
             >
-              <Star size={28} fill="currentColor" className="group-hover:rotate-12 transition-transform" />
+              <span className="text-2xl group-hover:rotate-12 transition-transform">🌹</span>
             </button>
 
             <button

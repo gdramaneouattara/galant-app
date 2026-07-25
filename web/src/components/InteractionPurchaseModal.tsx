@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, CreditCard, Sparkles, MessageCircle, Star } from 'lucide-react';
+import { X, CreditCard, Sparkles, MessageCircle } from 'lucide-react';
 import { useSubscription } from '@shared/hooks/useSubscription';
 import { showAlert } from '@shared/lib/ui-bridge';
 
@@ -40,9 +40,9 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, user
           </div>
 
           <div className={`w-20 h-20 mx-auto rounded-[2rem] flex items-center justify-center shadow-lg ${
-            type === 'SUPER_LIKE' ? 'bg-amber-50 text-amber-500 shadow-amber-100' : 'bg-blue-50 text-blue-500 shadow-blue-100'
+            type === 'SUPER_LIKE' ? 'bg-rose-50 shadow-rose-100' : 'bg-blue-50 text-blue-500 shadow-blue-100'
           }`}>
-            {type === 'SUPER_LIKE' ? <Star size={40} fill="currentColor" /> : <MessageCircle size={40} fill="currentColor" />}
+            {type === 'SUPER_LIKE' ? <span className="text-4xl">🌹</span> : <MessageCircle size={40} fill="currentColor" />}
           </div>
 
           <div className="space-y-2">
