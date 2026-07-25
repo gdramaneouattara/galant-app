@@ -27,6 +27,19 @@ const AuthPage: React.FC = () => {
     }
   }, [user]);
 
+  // Polling for email verification status
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (mode === 'verify' && user && !user.emailVerified) {
+      interval = setInterval(async () => {
+        await reloadUser();
+      }, 3000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [mode, user, reloadUser]);
+
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [hasAcceptedLegal, setHasAcceptedLegal] = useState(false);
@@ -41,16 +54,22 @@ const AuthPage: React.FC = () => {
     }
     setLoading(true);
     try {
+      const actionCodeSettings = {
+        url: window.location.origin + '/auth',
+        handleCodeInApp: true,
+      };
+
       if (mode === 'login') {
         const cred = await signInWithEmailAndPassword(fbAuth, email, password);
         if (cred.user && !cred.user.emailVerified) {
+          await sendEmailVerification(cred.user, actionCodeSettings);
           setMode('verify');
         } else {
           navigate('/');
         }
       } else if (mode === 'signup') {
         const cred = await createUserWithEmailAndPassword(fbAuth, email, password);
-        await sendEmailVerification(cred.user);
+        await sendEmailVerification(cred.user, actionCodeSettings);
         setMode('verify');
       } else if (mode === 'reset') {
         await sendPasswordResetEmail(fbAuth, (email || '').trim().toLowerCase());

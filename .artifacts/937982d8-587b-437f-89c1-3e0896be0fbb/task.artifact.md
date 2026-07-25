@@ -1,6 +1,7 @@
-# Task: Mandatory Geolocation on Onboarding
+# Task: Automated Return After Email Verification
 
-- `[ ]` Modify Mobile `LocationStep.tsx` to remove manual input and enforce GPS
-- `[ ]` Modify Web `OnboardingPage.tsx` to remove manual input and enforce GPS
+- `[ ]` Configure `ActionCodeSettings` and polling in Web `AuthPage.tsx`
+- `[ ]` Configure `ActionCodeSettings` and verification logic in Mobile `AuthMethodStep.tsx`
+- `[ ]` Add verification polling in Mobile `AuthFlowScreen.tsx`
 - `[ ]` Run quality tests
 - `[ ]` Deploy and synchronize branches

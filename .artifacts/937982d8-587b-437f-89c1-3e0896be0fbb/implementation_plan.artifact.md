@@ -1,32 +1,35 @@
-# Géolocalisation obligatoire lors de l'Onboarding
+# Automatisation du retour après vérification d'email
 
-Ce plan vise à rendre la géolocalisation GPS obligatoire pour tous les nouveaux utilisateurs, supprimant ainsi la saisie manuelle de la ville afin de garantir l'intégrité des données de matchmaking.
+Ce plan vise à fluidifier l'expérience utilisateur après l'inscription en automatisant la redirection vers l'application dès que l'email est vérifié, sans action manuelle requise.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> Cette modification empêchera les utilisateurs de s'inscrire s'ils refusent l'accès GPS ou si leur appareil n'est pas capable de se géolocaliser.
+> - L'utilisateur sera redirigé vers l'application via un paramètre `continueUrl` dans l'email de vérification Firebase.
+> - Si l'onglet d'inscription reste ouvert, l'application détectera automatiquement la validation de l'email via un mécanisme de "polling" (vérification périodique en arrière-plan).
 
 ## Proposed Changes
 
-### [Mobile] Écran de Localisation
+### [Web] Authentification
 
-#### [MODIFY] [LocationStep.tsx](file:///C:/Users/UTILISATEUR/galant-app/src/screens/auth/components/LocationStep.tsx)
-- Supprimer les champs `TextInput` pour la ville et le pays.
-- Bloquer le bouton "Terminer" tant que les coordonnées GPS n'ont pas été capturées avec succès.
-- Ajuster le message d'instruction pour souligner le caractère obligatoire.
+#### [MODIFY] [AuthPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/AuthPage.tsx)
+- Configurer `ActionCodeSettings` pour inclure une URL de redirection (`window.location.origin + '/auth'`).
+- Mettre à jour l'appel à `sendEmailVerification` pour utiliser ces réglages.
+- Ajouter un `useEffect` qui, lorsque le mode est `verify`, appelle `user.reload()` toutes les 3 secondes.
+- Si `user.emailVerified` devient vrai, rediriger automatiquement vers la page d'accueil.
 
-### [Web] Page d'Onboarding
+### [Mobile] Authentification
 
-#### [MODIFY] [OnboardingPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/OnboardingPage.tsx)
-- Supprimer le champ `input` pour la ville dans l'étape 3.
-- Désactiver le bouton "Suivant" tant que `formData.latitude` est nul.
-- Forcer l'appel à `handleGeoLocation` pour progresser.
+#### [MODIFY] [AuthMethodStep.tsx](file:///C:/Users/UTILISATEUR/galant-app/src/screens/auth/components/AuthMethodStep.tsx)
+- Ajouter l'appel à `sendEmailVerification` après la création de compte réussie.
+- Utiliser `ActionCodeSettings` avec le package Android (`com.ouattara.galant`) pour tenter d'ouvrir l'application directement lors du clic sur le lien.
+- Implémenter la même logique de détection automatique (polling) du statut de vérification.
 
 ## Verification Plan
 
 ### Manual Verification
-1. Lancer le flux d'inscription sur Mobile et Web.
-2. Vérifier qu'il n'y a plus de champ texte pour taper sa ville.
-3. Vérifier que le bouton de progression est grisé par défaut.
-4. Cliquer sur "Détecter ma position" et vérifier que le bouton se débloque une fois la ville détectée.
+1. Créer un nouveau compte sur la version Web.
+2. Rester sur la page "Vérification".
+3. Dans un autre onglet ou sur votre téléphone, valider l'email reçu.
+4. Vérifier que la page d'inscription se ferme toute seule et vous amène à l'onboarding.
+5. Tester le bouton "Continuer" sur la page de succès de Firebase pour voir s'il ramène bien à l'application.

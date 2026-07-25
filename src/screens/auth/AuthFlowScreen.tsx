@@ -20,13 +20,30 @@ import LocationStep from './components/LocationStep';
 import ManifestoStep from './components/ManifestoStep';
 import PartnerSignupStep from './components/PartnerSignupStep';
 import AuthMethodStep from './components/AuthMethodStep';
+import { Mail, RefreshCw } from 'lucide-react-native';
 
-type Step = 'welcome' | 'signup' | 'login' | 'identity' | 'photos' | 'bio' | 'preferences' | 'goal' | 'location' | 'manifesto' | 'partner_signup';
+type Step = 'welcome' | 'signup' | 'login' | 'verify' | 'identity' | 'photos' | 'bio' | 'preferences' | 'goal' | 'location' | 'manifesto' | 'partner_signup';
 
 const AuthFlowScreen: React.FC = () => {
-  const { refreshCurrentUser, colors, t } = useApp();
+  const { currentUser, refreshCurrentUser, colors, t } = useApp();
   const [step, setStep] = useState<Step>('welcome');
   const [loading, setLoading] = useState(false);
+
+  // Polling for verification status on mobile
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (step === 'verify' && fbAuth.currentUser && !fbAuth.currentUser.emailVerified) {
+      interval = setInterval(async () => {
+        await fbAuth.currentUser?.reload();
+        if (fbAuth.currentUser?.emailVerified) {
+          handleAuthSuccess(fbAuth.currentUser.uid);
+        }
+      }, 3000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [step]);
 
   const [form, setForm] = useState({
     name: '',
@@ -67,6 +84,12 @@ const AuthFlowScreen: React.FC = () => {
     // Quality requirement: profileError.code === "PGRST116"
     setLoading(true);
     try {
+      const user = fbAuth.currentUser;
+      if (user && !user.emailVerified) {
+        setStep('verify');
+        return;
+      }
+
       const doc = await db.collection(COLLECTIONS.PROFILES).doc(userId).get();
       if (!doc.exists) {
         setStep('identity');
@@ -169,6 +192,42 @@ const AuthFlowScreen: React.FC = () => {
       case 'signup':
       case 'login':
         return <AuthMethodStep mode={step} onBack={() => setStep('welcome')} onSuccess={handleAuthSuccess} loading={loading} setLoading={setLoading} />;
+      case 'verify':
+        return (
+          <View style={{ flex: 1, padding: 24, justifyContent: 'center', alignItems: 'center', gap: 20 }}>
+            <View style={{ width: 80, height: 80, borderRadius: 30, backgroundColor: '#fff1f2', justifyContent: 'center', alignItems: 'center' }}>
+               <Mail size={40} color={COLORS.primary} />
+            </View>
+            <Text style={{ fontSize: 24, fontWeight: '900', textAlign: 'center', color: colors.text }}>Vérifie tes emails 🌹</Text>
+            <Text style={{ fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 22 }}>
+               Un lien de confirmation a été envoyé à l'adresse {fbAuth.currentUser?.email}.{"\n"}
+               Clique sur le lien pour activer ton compte.
+            </Text>
+            <Pressable
+              onPress={async () => {
+                await fbAuth.currentUser?.reload();
+                if (fbAuth.currentUser?.emailVerified) {
+                  handleAuthSuccess(fbAuth.currentUser.uid);
+                } else {
+                  Alert.alert('Non vérifié', 'Clique sur le lien dans ton email pour continuer.');
+                }
+              }}
+              style={{ backgroundColor: COLORS.primary, paddingVertical: 16, paddingHorizontal: 32, borderRadius: 16, flexDirection: 'row', gap: 10, alignItems: 'center', marginTop: 20 }}
+            >
+               <RefreshCw size={18} color="#fff" />
+               <Text style={{ color: '#fff', fontWeight: '800' }}>J'ai confirmé mon email</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                fbAuth.signOut();
+                setStep('welcome');
+              }}
+              style={{ marginTop: 10 }}
+            >
+               <Text style={{ color: colors.textMuted, fontWeight: '700', fontSize: 12 }}>Utiliser une autre adresse</Text>
+            </Pressable>
+          </View>
+        );
       case 'identity': return <IdentityStep form={form} setForm={setForm} onNext={() => setStep('photos')} />;
       case 'photos': return <PhotosStep form={form} setForm={setForm} onNext={() => setStep('bio')} />;
       case 'bio': return <BioStep form={form} setForm={setForm} onNext={() => setStep('preferences')} />;

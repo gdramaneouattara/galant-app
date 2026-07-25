@@ -38,11 +38,28 @@ const AuthMethodStep: React.FC<AuthMethodStepProps> = ({ mode, onBack, onSuccess
     setLoading(true);
     try {
       const safeIdentifier = (identifier || '').trim().toLowerCase();
+      const actionCodeSettings = {
+        url: 'https://galant.app/auth',
+        handleCodeInApp: true,
+        android: {
+          packageName: 'com.ouattara.galant',
+          installApp: true,
+          minimumVersion: '12',
+        },
+        iOS: {
+          bundleId: 'com.ouattara.galant',
+        },
+      };
+
       if (mode === 'signup') {
         const cred = await fbAuth.createUserWithEmailAndPassword(safeIdentifier, password);
+        await cred.user.sendEmailVerification(actionCodeSettings);
         onSuccess(cred.user.uid);
       } else {
         const cred = await fbAuth.signInWithEmailAndPassword(safeIdentifier, password);
+        if (cred.user && !cred.user.emailVerified) {
+          await cred.user.sendEmailVerification(actionCodeSettings);
+        }
         onSuccess(cred.user.uid);
       }
     } catch (error: any) {
