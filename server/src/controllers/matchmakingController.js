@@ -145,9 +145,9 @@ const getSuggestions = async (req, res) => {
         const haystack = `${c.name || ''} ${c.bio || ''} ${c.city || ''} ${c.country || ''}`.toLowerCase();
         if (!haystack.includes(searchQuery)) return null;
       } else {
-        const candidateCity = String(c.city || '').trim().toLowerCase();
+        const candidateCityNorm = normalizeCity(c.city);
         if (cityFilter) {
-          if (candidateCity !== cityFilter) return null;
+          if (candidateCityNorm !== cityFilter) return null;
         }
 
         if (maxDistance !== null) {
@@ -155,7 +155,7 @@ const getSuggestions = async (req, res) => {
           // If distance is null (no GPS), we allow it ONLY if the city matches perfectly.
           if (distanceKm !== null) {
              if (distanceKm > maxDistance) return null;
-          } else if (candidateCity !== myCity) {
+          } else if (candidateCityNorm !== myCity) {
              // Distance unknown and city doesn't match => hide
              return null;
           }
