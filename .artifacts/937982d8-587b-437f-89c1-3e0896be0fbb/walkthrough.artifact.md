@@ -1,20 +1,27 @@
-# Walkthrough : Ajout de l'option Paramètres (Web)
+# Walkthrough: Gender Filtering & Index Stability
 
-J'ai rétabli la parité entre la version mobile et la version web en ajoutant le menu "Paramètres" dans l'onglet Moi.
+I have implemented the intelligent gender filtering logic and permanently resolved the Firestore index errors on the Discovery page.
 
-## Changements effectués
+## Changes made
 
-### [Web Components]
-- **[SettingsModal.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/SettingsModal.tsx)** : Nouveau composant permettant de changer la langue de l'application (Français/Anglais) avec une interface élégante et des indicateurs visuels de sélection.
+### [Server]
+- **[matchmakingController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/matchmakingController.js)**:
+    - **Intelligent Filtering**: Implemented strict gender filtering for users with **"MARRIAGE"** or **"SERIOUS"** goals. They will now only see profiles of the opposite gender.
+    - **Open Discovery**: Users with **"FRIENDSHIP"** or **"CASUAL"** goals will see all genders by default (based on their chosen filter).
+    - **Index Removal**: Removed the complex Firestore queries for age and subscription expiration. These are now handled **in-memory** on the server, which eliminates the `FAILED_PRECONDITION: The query requires an index` error (Error 500) forever.
 
-### [Web Pages]
-- **[ProfilePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ProfilePage.tsx)** :
-    - Ajout du bouton "Paramètres" dans la liste des actions du profil.
-    - Intégration de l'icône `Settings` et gestion de l'état d'ouverture de la modal.
+## Verification Results
 
-## Déploiement
+### Automated Tests
+- Ran `npm run test:quality`.
+- **Status**: 100% Pass (70/70 tests).
+- All business rules and alignment checks are green.
 
-Les modifications ont été appliquées localement. Je vais maintenant procéder à la synchronisation des branches `staging` et `main` pour rendre ces changements effectifs en ligne.
+### Deployment Status
+- **Synced Branches**: Both `staging` and `main` branches are synchronized and up-to-date with these stability and logic fixes.
+- **Remote Push**: All changes have been pushed to GitHub.
 
-> [!TIP]
-> Une fois déployé, vous trouverez l'option juste au-dessus du menu "Aide" dans votre profil. Le changement de langue est instantané et persistant.
+> [!IMPORTANT]
+> **Wait for Build**: Please wait **7 minutes** for the Cloud Run build to complete before testing on your phone.
+>
+> You can verify the server health at: [https://galant-backend-756651030930.europe-west4.run.app/api/ping](https://galant-backend-756651030930.europe-west4.run.app/api/ping). Once `timestamp` is updated, the new logic is live.

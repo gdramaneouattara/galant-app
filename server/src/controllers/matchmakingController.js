@@ -117,8 +117,6 @@ const getSuggestions = async (req, res) => {
         });
       }
     }
-      }
-    }
 
     // 4. Suggestions Filtering (Invisible + Premium/Verified/Standing)
     const suggestions = candidates.map(c => {
