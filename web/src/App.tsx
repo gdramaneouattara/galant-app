@@ -68,8 +68,8 @@ const AuthButton: React.FC = () => {
           </Link>
         )}
         <Link to="/profile" className="flex items-center gap-3 group">
-          <span className="hidden sm:inline font-bold text-sm text-slate-700 group-hover:text-primary transition-colors">{profile?.name || user.email}</span>
-          <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-primary overflow-hidden shadow-sm group-hover:scale-105 transition-transform">
+          <span className="hidden sm:inline font-bold text-sm text-slate-700 dark:text-slate-300 group-hover:text-primary transition-colors">{profile?.name || user.email}</span>
+          <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-primary overflow-hidden shadow-sm group-hover:scale-105 transition-transform">
             <img
               src={profile?.photos?.[0] || 'https://placehold.co/100x100?text=User'}
               alt="Avatar"
@@ -95,7 +95,7 @@ const LanguageSwitcher = () => {
   return (
     <button
       onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all font-black text-[10px] uppercase tracking-wider"
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/20 transition-all font-black text-[10px] uppercase tracking-wider"
     >
       <Languages size={14} />
       {language}
@@ -106,8 +106,8 @@ const LanguageSwitcher = () => {
 const MobileNav: React.FC = () => {
   const { profile, t } = useAuth();
   return (
-    <nav className="md:hidden bg-white/90 backdrop-blur-lg border-t border-slate-200 py-3 px-2 flex justify-around items-center fixed bottom-0 left-0 right-0 z-50">
-      <Link to="/" className="flex flex-col items-center gap-1 text-slate-400 group">
+    <nav className="md:hidden bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-t border-slate-200 dark:border-white/10 py-3 px-2 flex justify-around items-center fixed bottom-0 left-0 right-0 z-50 transition-colors">
+      <Link to="/" className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500 group">
         <div className="p-1 group-hover:text-primary transition-colors">
           <Search size={22} />
         </div>
@@ -151,7 +151,7 @@ const MobileNav: React.FC = () => {
 const Header = () => {
   const { t } = useAuth();
   return (
-    <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 py-4 px-6 sticky top-0 z-50">
+    <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-white/10 py-4 px-6 sticky top-0 z-50 transition-colors">
       <div className="max-w-6xl mx-auto flex justify-between items-center">
         <div className="flex items-center gap-6">
           <Link to="/" className="flex items-center gap-2 group">
@@ -160,7 +160,7 @@ const Header = () => {
               GALANT
             </h1>
           </Link>
-          <nav className="hidden md:flex gap-8 font-bold text-sm text-slate-500">
+          <nav className="hidden md:flex gap-8 font-bold text-sm text-slate-500 dark:text-slate-400">
             <Link to="/" className="hover:text-primary transition-colors">{t('discover')}</Link>
             <Link to="/stories" className="hover:text-primary transition-colors">{t('stories')}</Link>
             <Link to="/matches" className="hover:text-primary transition-colors">{t('messages')}</Link>
@@ -182,7 +182,7 @@ const Header = () => {
 };
 
 const AppContent: React.FC = () => {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, activeTheme } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const isAuthPage = location.pathname === '/auth';
@@ -210,7 +210,7 @@ const AppContent: React.FC = () => {
   }, [user, profile, loading, location.pathname, navigate]);
 
   return (
-    <div className={`min-h-screen flex flex-col font-sans ${(isAuthPage || isWelcomePage) ? '' : 'bg-slate-50'}`}>
+    <div className={`min-h-screen flex flex-col font-sans ${activeTheme === 'dark' ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'} transition-colors duration-300`}>
       {/* Background Image Unifiée pour Auth et Welcome */}
       {(isAuthPage || isWelcomePage) && (
         <div

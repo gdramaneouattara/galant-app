@@ -7,6 +7,7 @@ import { TRANSLATIONS } from '@shared/translations';
 import { apiRequest } from '@shared/lib/api';
 
 type Language = 'fr' | 'en';
+type ThemePreference = 'light' | 'dark' | 'system';
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -17,6 +18,9 @@ interface AuthContextType {
   loading: boolean;
   language: Language;
   setLanguage: (lang: Language) => void;
+  themePreference: ThemePreference;
+  activeTheme: 'light' | 'dark';
+  setThemePreference: (theme: ThemePreference) => void;
   t: (key: keyof typeof TRANSLATIONS.fr, params?: Record<string, any>) => string;
   logout: () => Promise<void>;
   reloadUser: () => Promise<void>;
@@ -31,6 +35,9 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   language: 'fr',
   setLanguage: () => {},
+  themePreference: 'system',
+  activeTheme: 'light',
+  setThemePreference: () => {},
   t: (key) => key,
   logout: async () => {},
   reloadUser: async () => {}
@@ -51,9 +58,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return navigator.language.startsWith('fr') ? 'fr' : 'en';
   });
 
+  const [themePreference, setThemePreferenceState] = useState<ThemePreference>(() => {
+    const saved = localStorage.getItem('galant_theme');
+    if (saved === 'light' || saved === 'dark' || saved === 'system') return saved;
+    return 'system';
+  });
+
+  const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(
+    window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => setSystemTheme(e.matches ? 'dark' : 'light');
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
+
+  const activeTheme = useMemo(() => {
+    if (themePreference === 'system') return systemTheme;
+    return themePreference;
+  }, [themePreference, systemTheme]);
+
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem('galant_lang', lang);
+  };
+
+  const setThemePreference = (theme: ThemePreference) => {
+    setThemePreferenceState(theme);
+    localStorage.setItem('galant_theme', theme);
   };
 
   const t = (key: keyof typeof TRANSLATIONS.fr, params?: Record<string, any>) => {
@@ -200,10 +234,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
     language,
     setLanguage,
+    themePreference,
+    activeTheme,
+    setThemePreference,
     t,
     logout,
     reloadUser
-  }), [user, profile, matches, messages, users, loading, language]);
+  }), [user, profile, matches, messages, users, loading, language, themePreference, activeTheme]);
 
   return (
     <AuthContext.Provider value={value}>
