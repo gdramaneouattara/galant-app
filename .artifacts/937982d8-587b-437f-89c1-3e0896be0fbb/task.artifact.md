@@ -1,6 +1,7 @@
-# Ajout de l'option Paramètres sur le Web
+# Parité Totale Web/Mobile de l'onglet Moi
 
-- `[x]` Créer le composant `web/src/components/SettingsModal.tsx`
-- `[x]` Intégrer le bouton Paramètres dans `web/src/pages/ProfilePage.tsx`
-- `[x]` Gérer l'état d'affichage de la modal dans `ProfilePage.tsx`
-- `[x]` Déployer et vérifier
+- `[ ]` Créer la page de Boosts (`web/src/pages/BoostPage.tsx`)
+- `[ ]` Ajouter la route `/boost` dans `web/src/App.tsx`
+- `[ ]` Mettre à jour `web/src/pages/ProfilePage.tsx` avec toutes les options manquantes
+- `[ ]` Améliorer le suivi KYC dans `web/src/pages/VerifyPage.tsx`
+- `[ ]` Déployer et vérifier la synchronisation
