@@ -141,20 +141,20 @@ const AuthPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="w-full p-8 bg-white/95 backdrop-blur-xl rounded-[3rem] shadow-2xl border border-white/20">
+        <div className="w-full p-8 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-[3rem] shadow-2xl border border-white/20 dark:border-white/10 transition-colors">
           <div className="mb-8 text-center md:text-left">
             {mode === 'reset' && (
               <button
                 onClick={() => setMode('login')}
-                className="mb-4 text-slate-400 hover:text-primary transition-colors flex items-center gap-2 font-bold text-xs uppercase"
+                className="mb-4 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors flex items-center gap-2 font-bold text-xs uppercase"
               >
                 <ArrowLeft size={16} /> Retour
               </button>
             )}
-            <h2 className="text-3xl font-black text-slate-900 leading-none">
+            <h2 className="text-3xl font-black text-slate-900 dark:text-white leading-none transition-colors">
               {mode === 'login' ? t('login') : mode === 'signup' ? t('welcome') : mode === 'reset' ? 'Réinitialisation' : 'Vérification'}
             </h2>
-            <p className="text-slate-500 mt-3 font-medium text-sm">
+            <p className="text-slate-500 dark:text-slate-400 mt-3 font-medium text-sm transition-colors">
               {mode === 'login' ? 'Heureux de vous revoir parmi nous.' :
                mode === 'signup' ? t('welcome_subtitle') :
                mode === 'reset' ? 'Saisissez votre email pour recevoir un lien.' :
@@ -164,14 +164,14 @@ const AuthPage: React.FC = () => {
 
           {mode === 'verify' ? (
             <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500 text-center py-4">
-               <div className="w-20 h-20 bg-rose-50 rounded-[2rem] flex items-center justify-center mx-auto text-primary mb-6 animate-bounce">
+               <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 rounded-[2rem] flex items-center justify-center mx-auto text-primary mb-6 animate-bounce">
                   <Mail size={40} />
                </div>
                <div className="space-y-4">
-                  <p className="text-slate-600 font-medium leading-relaxed">
-                     Un email de confirmation vient d'être envoyé à <span className="font-bold text-slate-900">{email}</span>.
+                  <p className="text-slate-600 dark:text-slate-300 font-medium leading-relaxed transition-colors">
+                     Un email de confirmation vient d'être envoyé à <span className="font-bold text-slate-900 dark:text-white">{email}</span>.
                   </p>
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest leading-loose">
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest leading-loose transition-colors">
                      Cliquez sur le lien contenu dans l'email pour activer votre accès au Cercle Galant.
                   </p>
                </div>
@@ -186,7 +186,7 @@ const AuthPage: React.FC = () => {
                         showAlert('Non vérifié', 'Votre email n\'est pas encore confirmé. Vérifiez vos messages.');
                       }
                     }}
-                    className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black transition-all"
+                    className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black dark:hover:bg-slate-100 transition-all"
                   >
                     <RefreshCw size={16} /> J'ai confirmé l'email
                   </button>
@@ -203,12 +203,12 @@ const AuthPage: React.FC = () => {
             <>
             <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 ml-1">Adresse Email</label>
+              <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1 transition-colors">Adresse Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium"
+                className="w-full px-6 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
                 placeholder="exemple@galant.com"
                 required
               />
@@ -216,20 +216,20 @@ const AuthPage: React.FC = () => {
 
             {mode !== 'reset' && (
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 ml-1">Mot de passe</label>
+                <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1 transition-colors">Mot de passe</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium"
+                    className="w-full px-6 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
                     placeholder="••••••••"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors"
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
@@ -252,10 +252,10 @@ const AuthPage: React.FC = () => {
                 onClick={() => setHasAcceptedLegal(!hasAcceptedLegal)}
                 className="flex items-start gap-3 text-left group"
               >
-                <div className={`mt-0.5 shrink-0 transition-colors ${hasAcceptedLegal ? 'text-primary' : 'text-slate-300 group-hover:text-slate-400'}`}>
+                <div className={`mt-0.5 shrink-0 transition-colors ${hasAcceptedLegal ? 'text-primary' : 'text-slate-300 dark:text-slate-700 group-hover:text-slate-400 dark:group-hover:text-slate-600'}`}>
                   {hasAcceptedLegal ? <CheckSquare size={20} /> : <Square size={20} />}
                 </div>
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
+                <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest leading-relaxed transition-colors">
                   J'accepte les <Link to="/cgu" className="text-primary hover:underline">CGU</Link> et la <Link to="/privacy" className="text-primary hover:underline">Politique de confidentialité</Link>.
                 </p>
               </button>
@@ -279,25 +279,25 @@ const AuthPage: React.FC = () => {
           {mode !== 'verify' && (
             <>
             <div className="mt-8 flex items-center gap-4">
-              <div className="h-px bg-slate-100 flex-1"></div>
-              <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">OU</span>
-              <div className="h-px bg-slate-100 flex-1"></div>
+              <div className="h-px bg-slate-100 dark:bg-white/5 flex-1 transition-colors"></div>
+              <span className="text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest transition-colors">OU</span>
+              <div className="h-px bg-slate-100 dark:bg-white/5 flex-1 transition-colors"></div>
             </div>
 
             <div className="mt-8 grid grid-cols-2 gap-4">
               <button
                 onClick={handleGoogleLogin}
-                className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-white border border-slate-200 hover:bg-slate-50 transition-all group"
+                className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all group shadow-sm"
               >
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
-                <span className="text-xs font-bold text-slate-600">Google</span>
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-300 transition-colors">Google</span>
               </button>
               <button
                 onClick={handleAppleLogin}
-                className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-black hover:bg-slate-900 transition-all group"
+                className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-black dark:bg-white hover:bg-slate-900 dark:hover:bg-slate-100 transition-all group shadow-sm"
               >
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 384 512"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 21.8-88.5 21.8-11.4 0-51.1-18.1-81.9-18.1-41.9 0-82.6 23.3-104 63.8-43.2 81.3-11.1 201 31 262.3 20.6 29.8 44.4 63.3 76.5 63.3 32.1 0 44.2-20.1 82.9-20.1 38.7 0 49.3 20.1 82.9 20.1 32.7 0 54.5-30.4 75.1-60.5 24.3-35.6 34.3-70 34.6-71.8-1-.4-66.2-25.5-66.4-101.4zM240.4 103.9c18.5-22.3 31-53.3 27.5-84.3-26.7 1.1-59 17.8-78.1 40.5-17.1 20.2-32.2 52.1-28.7 82.2 29.7 2.3 59.8-16 79.3-38.4z"/></svg>
-                <span className="text-xs font-bold text-white">Apple</span>
+                <svg className="w-5 h-5 text-white dark:text-black" fill="currentColor" viewBox="0 0 384 512"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 21.8-88.5 21.8-11.4 0-51.1-18.1-81.9-18.1-41.9 0-82.6 23.3-104 63.8-43.2 81.3-11.1 201 31 262.3 20.6 29.8 44.4 63.3 76.5 63.3 32.1 0 44.2-20.1 82.9-20.1 38.7 0 49.3 20.1 82.9 20.1 32.7 0 54.5-30.4 75.1-60.5 24.3-35.6 34.3-70 34.6-71.8-1-.4-66.2-25.5-66.4-101.4zM240.4 103.9c18.5-22.3 31-53.3 27.5-84.3-26.7 1.1-59 17.8-78.1 40.5-17.1 20.2-32.2 52.1-28.7 82.2 29.7 2.3 59.8-16 79.3-38.4z"/></svg>
+                <span className="text-xs font-bold text-white dark:text-black transition-colors">Apple</span>
               </button>
             </div>
             </>
@@ -307,7 +307,7 @@ const AuthPage: React.FC = () => {
             {mode !== 'reset' && mode !== 'verify' && (
               <button
                 onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-                className="text-slate-500 font-bold hover:text-primary transition-colors text-sm uppercase"
+                className="text-slate-500 dark:text-slate-400 font-bold hover:text-primary transition-colors text-sm uppercase"
               >
                 {mode === 'login' ? "Pas encore membre ? S'inscrire" : "Déjà un compte ? Se connecter"}
               </button>
@@ -318,20 +318,20 @@ const AuthPage: React.FC = () => {
                   fbAuth.signOut();
                   setMode('login');
                 }}
-                className="text-slate-400 font-bold hover:text-slate-600 transition-colors text-[10px] uppercase tracking-widest"
+                className="text-slate-400 dark:text-slate-500 font-bold hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-[10px] uppercase tracking-widest"
               >
                 Utiliser une autre adresse email
               </button>
             )}
           </div>
 
-          <div className="mt-12 pt-8 border-t border-slate-100 text-center">
+          <div className="mt-12 pt-8 border-t border-slate-100 dark:border-white/5 text-center transition-colors">
             <button
               onClick={() => navigate('/partner-signup')}
               className="group flex flex-col items-center gap-2 mx-auto"
             >
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] group-hover:text-primary transition-colors">Vous êtes un établissement ?</span>
-              <span className="text-sm font-black italic text-slate-900 border-b-2 border-slate-900 group-hover:border-primary group-hover:text-primary transition-all">Devenez Partenaire Galant</span>
+              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] group-hover:text-primary transition-colors">Vous êtes un établissement ?</span>
+              <span className="text-sm font-black italic text-slate-900 dark:text-white border-b-2 border-slate-900 dark:border-white group-hover:border-primary group-hover:text-primary transition-all">Devenez Partenaire Galant</span>
             </button>
           </div>
         </div>
