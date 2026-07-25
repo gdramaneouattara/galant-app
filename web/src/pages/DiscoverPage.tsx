@@ -169,10 +169,10 @@ const DiscoverPage: React.FC = () => {
       {/* Header avec un look plus "App" */}
       <div className="flex justify-between items-center mb-10">
         <div>
-          <h2 className="text-4xl font-black tracking-tight text-slate-900 leading-none">
+          <h2 className="text-2xl font-black tracking-tight text-slate-900 leading-none">
             {t('discover') || "Découverte"}
           </h2>
-          <p className="text-slate-400 font-bold mt-2 text-sm uppercase tracking-widest">
+          <p className="text-slate-400 font-bold mt-2 text-xs uppercase tracking-widest">
             {t('discover_subtitle') || "Pour vous"}
           </p>
         </div>
@@ -239,7 +239,7 @@ const DiscoverPage: React.FC = () => {
 
               <div className="absolute inset-x-8 bottom-10 text-white pointer-events-none">
                 <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-4xl font-black tracking-tight leading-none">
+                  <h3 className="text-2xl font-black tracking-tight leading-none">
                     {currentProfile.name}, {currentProfile.age}
                   </h3>
                   {currentProfile.galanterie_score >= 4.5 && (
