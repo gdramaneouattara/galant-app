@@ -310,13 +310,13 @@ const ChatPage: React.FC = () => {
           </button>
         )}
 
-        <form onSubmit={handleSend} className="flex gap-3 items-center">
-          <div className="flex gap-1">
+        <form onSubmit={handleSend} className="flex gap-2 md:gap-3 items-center">
+          <div className="flex gap-0.5 md:gap-1 flex-shrink-0">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="p-3 hover:bg-slate-100 rounded-xl text-slate-400 transition-colors"
+              className="p-2 md:p-3 hover:bg-slate-100 rounded-xl text-slate-400 transition-colors"
             >
               <ImageIcon size={20} />
             </button>
@@ -324,7 +324,7 @@ const ChatPage: React.FC = () => {
               type="button"
               onClick={() => videoInputRef.current?.click()}
               disabled={uploading}
-              className="p-3 hover:bg-slate-100 rounded-xl text-slate-400 transition-colors"
+              className="p-2 md:p-3 hover:bg-slate-100 rounded-xl text-slate-400 transition-colors"
             >
               <Video size={20} />
             </button>
@@ -337,14 +337,14 @@ const ChatPage: React.FC = () => {
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             disabled={uploading}
-            placeholder={uploading ? "Envoi du fichier..." : t('write_message')}
-            className="flex-1 bg-slate-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium disabled:opacity-50"
+            placeholder={uploading ? "Envoi..." : t('write_message')}
+            className="flex-1 bg-slate-50 border-none px-4 md:px-6 py-3 md:py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium disabled:opacity-50 text-sm md:text-base"
           />
           <button
             disabled={(!inputText.trim() && !uploading) || sending || uploading}
-            className="w-12 h-12 bg-primary text-white rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shadow-red-100 disabled:opacity-30"
+            className="w-10 h-10 md:w-12 md:h-12 bg-primary text-white rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shadow-red-100 disabled:opacity-30 flex-shrink-0"
           >
-            {uploading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} fill="currentColor" />}
+            {uploading ? <Loader2 size={18} className="animate-spin" /> : <Send size={20} fill="currentColor" />}
           </button>
         </form>
       </div>
