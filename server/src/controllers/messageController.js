@@ -45,9 +45,15 @@ const sendMessage = async (req, res) => {
         const isEngagement = !lastMsg || lastMsg.sender_id === me.id;
 
         if (isEngagement) {
-          const purchased = await hasDirectMessagePurchase(me.id, targetUserId);
-          if (!purchased) {
-            return res.status(403).json({ error: 'subscription_required', message: "L'engagement nécessite Premium ou un achat direct." });
+          // Allow the VERY FIRST message in a match for free (Mutual match)
+          // Consecutive messages (double-texting) still require Premium or Purchase
+          const isConsecutive = !!lastMsg && lastMsg.sender_id === me.id;
+
+          if (isConsecutive) {
+            const purchased = await hasDirectMessagePurchase(me.id, targetUserId);
+            if (!purchased) {
+              return res.status(403).json({ error: 'subscription_required', message: "La relance nécessite Premium ou un achat direct." });
+            }
           }
         } else if (!targetProfile?.is_premium) {
           // Count messages sent by me in this match

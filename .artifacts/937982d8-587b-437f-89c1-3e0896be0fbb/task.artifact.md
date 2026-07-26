@@ -1,5 +1,5 @@
-# Task: Fix Rose Count Increment
+# Task: Fix 403 error on message send after match
 
-- `[ ]` [Server] Update `handleSwipe` to increment `roses_count` for Super Likes
+- `[ ]` [Server] Update `sendMessage` logic in `messageController.js` to allow mutual match engagement
 - `[ ]` Run quality tests
 - `[ ]` Deploy and synchronize branches
