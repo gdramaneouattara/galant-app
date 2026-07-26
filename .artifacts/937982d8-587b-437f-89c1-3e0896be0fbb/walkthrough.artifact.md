@@ -1,25 +1,23 @@
-# Walkthrough : Optimisation visuelle de la page Profil
+# Walkthrough : Correction de la visibilité du bouton d'envoi dans le Chat
 
-J'ai effectué une série de retouches esthétiques sur la page de profil pour corriger les conflits visuels et renforcer l'élégance de l'interface.
+J'ai corrigé le bug visuel qui empêchait l'affichage du bouton d'envoi des messages sur les écrans mobiles (Web).
 
 ## Changements effectués
 
-### [Web] Page Profil
-- **[ProfilePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ProfilePage.tsx)** :
-    - **Appareil Photo** : Déplacé du bas-droite vers le **haut-droite** (`top-6 right-6`). Il ne cache plus les Roses et les Likes, et il est plus accessible.
-    - **Position du Nom** : Le nom et l'âge ont été descendus et recentrés. La taille de la police est plus équilibrée (`text-2xl` sur mobile) pour ne plus masquer le visage.
-    - **Statistiques affinées** : Les trois boîtes (Galanterie, Likes, Roses) ont été réduites en largeur (`min-w-[75px]`) et en rembourrage (`p-3`) pour un alignement parfait sur tous les écrans.
-    - **Structure** : Le titre "MA BIOGRAPHIE" a été agrandi pour une meilleure hiérarchie visuelle.
+### [Web] Page Chat
+- **[ChatPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ChatPage.tsx)** :
+    - **Fix du bouton d'envoi** : Ajout de la classe `flex-shrink-0` sur le bouton d'envoi pour éviter qu'il ne soit écrasé par le champ de texte sur les petits écrans.
+    - **Optimisation responsive** : Réduction légère de l'espacement (`gap`) et des marges intérieures (`padding`) sur mobile pour garantir que les icônes d'attachement, le texte et le bouton d'envoi tiennent tous parfaitement sur une seule ligne.
+    - **Ajustement des icônes** : Les icônes ont été redimensionnées pour être parfaitement centrées et visibles, même sur les appareils les plus étroits.
 
 ## Résultats de la Vérification
 
 ### Rendu Visuel
-- **Espace libéré** : Le bas de la photo est désormais entièrement visible.
-- **Équilibre** : Les statistiques sont mieux espacées et ne se touchent plus sur les petits écrans.
-- **Standing** : Le bouton photo en haut à droite donne un aspect plus "Studio" et professionnel.
+- Le bouton rouge d'envoi (avion en papier) est désormais toujours visible à droite du champ de saisie.
+- Le champ de saisie s'ajuste dynamiquement à la largeur de l'écran sans pousser les autres éléments hors de la vue.
 
 ### Déploiement
 - Les modifications sont synchronisées et actives sur les branches **staging** et **main**.
 
 > [!TIP]
-> Votre profil est maintenant une véritable vitrine d'élégance. La photo est mise en valeur, vos statistiques sont claires, et l'ergonomie générale est optimisée pour une consultation fluide.
+> Vous pouvez maintenant envoyer vos messages en toute fluidité depuis votre smartphone. Le bouton d'envoi restera fidèlement à sa place, prêt à expédier vos plus belles accroches !
