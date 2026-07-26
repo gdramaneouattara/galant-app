@@ -326,6 +326,15 @@ const handleSwipe = async (req, res) => {
       created_at: new Date().toISOString()
     });
 
+    // 5.1 Increment likes_count on target profile
+    try {
+      await db.collection('profiles').doc(safeTargetUserId).update({
+        likes_count: admin.firestore.FieldValue.increment(1)
+      });
+    } catch (countError) {
+      console.error(`Failed to increment likes_count for user ${safeTargetUserId}:`, countError.message);
+    }
+
     if (meHiddenByInvisibleMode) return res.json({ matched: false, matchId: null, invisible_like: true });
 
     // 6. Check Reciprocal

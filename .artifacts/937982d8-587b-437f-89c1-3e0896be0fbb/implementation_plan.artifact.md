@@ -1,23 +1,29 @@
-# Ajout de la gestion du tarif "Déblocage Likes (2h)" dans l'interface Admin
+# Correction du compteur de likes et synchronisation temps-réel
 
-Ce plan vise à permettre aux administrateurs de modifier dynamiquement le prix du déblocage temporaire de la boîte de likes depuis le tableau de bord de gestion des tarifs.
+Ce plan vise à corriger le problème de mise à jour du compteur de likes lorsqu'un utilisateur reçoit un nouveau like.
+
+## Problème identifié
+Lorsqu'un utilisateur effectue un "Swipe Right" (Like), la relation est bien enregistrée dans la collection `likes`, mais le champ `likes_count` du profil de la personne likée n'est pas incrémenté. Par conséquent, certains écrans (notamment sur Web) affichent un compteur obsolète ou à zéro.
 
 ## Proposed Changes
 
-### [Web] Administration
+### [Server] Logique de Matchmaking
 
-#### [MODIFY] [AdminPricing.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminPricing.tsx)
-- Ajouter l'entrée `LIKES_INBOX_2H` dans la liste des interactions individuelles.
-- Utiliser l'icône `Heart` pour ce champ.
-- S'assurer que la valeur est correctement synchronisée avec l'état local et envoyée au serveur lors de l'enregistrement.
+#### [MODIFY] [matchmakingController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/matchmakingController.js)
+- Dans la fonction `handleSwipe`, lors d'un Like réussi (direction RIGHT) :
+    - Incrémenter atomiquement le champ `likes_count` dans le document `profiles` de l'utilisateur cible via `admin.firestore.FieldValue.increment(1)`.
+    - Envoyer une notification push silencieuse ou une notification d'intérêt à l'utilisateur cible (si pertinent).
+
+### [Web] Synchronisation UI
+
+#### [MODIFY] [MatchesPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/MatchesPage.tsx)
+- S'assurer que le compteur affiché dans les cartes "Likes Reçus" utilise une source de données fiable (soit l'API, soit le profil rafraîchi).
 
 ## Verification Plan
 
 ### Manual Verification
-1. Se connecter avec un compte Administrateur.
-2. Aller dans **Admin > Tarifs**.
-3. Vérifier que le champ "Déblocage Likes (2h)" est présent.
-4. Modifier la valeur (ex: passer de 1000 à 1500).
-5. Cliquer sur **Enregistrer**.
-6. Rafraîchir la page et vérifier que la nouvelle valeur est persistée.
-7. Vérifier sur un compte utilisateur que le nouveau prix est bien appliqué dans la boîte de likes.
+1.  Utiliser deux comptes de test (A et B).
+2.  Noter le nombre de likes sur le compte B (ex: 0).
+3.  Liker le compte B depuis le compte A.
+4.  Vérifier sur le compte B que le compteur de likes passe instantanément (ou après rafraîchissement) à 1.
+5.  Vérifier dans la console Firestore que le champ `likes_count` du profil B a bien été incrémenté.

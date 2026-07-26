@@ -1,5 +1,7 @@
-# Ajout du tarif "Déblocage Likes (2h)" dans l'Admin
+# Task: Fix Like Count Increment
 
-- `[ ]` Modifier `web/src/pages/admin/AdminPricing.tsx` pour inclure le champ LIKES_INBOX_2H
-- `[ ]` Vérifier la cohérence avec le serveur
-- `[ ]` Déployer et synchroniser
+- `[ ]` [Server] Update `handleSwipe` to increment `likes_count` in target profile
+- `[ ]` [Server] Send push notification for new interest (optional/silent)
+- `[ ]` [Web] Ensure `MatchesPage.tsx` count is reliable
+- `[ ]` Run quality tests
+- `[ ]` Deploy and sync branches
