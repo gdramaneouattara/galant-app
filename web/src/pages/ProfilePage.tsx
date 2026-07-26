@@ -251,17 +251,17 @@ const ProfilePage: React.FC = () => {
           </div>
 
           <div className="flex gap-2 w-full md:w-auto justify-center md:justify-end">
-            <div className="bg-white/10 backdrop-blur-2xl p-3 rounded-2xl shadow-2xl flex flex-col items-center min-w-[75px] border border-white/20 transition-all">
-              <span className="text-lg font-black text-white leading-none">{profile.galanterie_score || '5.0'}</span>
-              <span className="text-[7px] font-black text-white/60 uppercase tracking-[0.2em] mt-1">Galanterie</span>
+            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl shadow-xl flex flex-col items-center min-w-[75px] border border-white/50 dark:border-white/10 transition-all">
+              <span className="text-lg font-black text-primary leading-none">{profile.galanterie_score || '5.0'}</span>
+              <span className="text-[7px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mt-1">Galanterie</span>
             </div>
-            <div className="bg-white/10 backdrop-blur-2xl p-3 rounded-2xl shadow-2xl flex flex-col items-center min-w-[75px] border border-white/20 transition-all">
-              <span className="text-lg font-black text-white leading-none">{profile.likes_count || 0}</span>
-              <span className="text-[7px] font-black text-white/60 uppercase tracking-[0.2em] mt-1">Likes</span>
+            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl shadow-xl flex flex-col items-center min-w-[75px] border border-white/50 dark:border-white/10 transition-all">
+              <span className="text-lg font-black text-rose-500 leading-none">{profile.likes_count || 0}</span>
+              <span className="text-[7px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mt-1">Likes</span>
             </div>
-            <div className="bg-white/10 backdrop-blur-2xl p-3 rounded-2xl shadow-2xl flex flex-col items-center min-w-[75px] border border-white/20 transition-all">
-              <span className="text-lg font-black text-white leading-none">{profile.roses_count || 0}</span>
-              <span className="text-[7px] font-black text-white/60 uppercase tracking-[0.2em] mt-1">Roses</span>
+            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl shadow-xl flex flex-col items-center min-w-[75px] border border-white/50 dark:border-white/10 transition-all">
+              <span className="text-lg font-black text-amber-600 leading-none">{profile.roses_count || 0}</span>
+              <span className="text-[7px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mt-1">Roses</span>
             </div>
           </div>
         </div>
