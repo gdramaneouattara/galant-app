@@ -2,6 +2,7 @@ const { db, admin, auth } = require('../config/firebase');
 const { buildUserSegmentFilter, appendAdminAuditLog } = require('../services/accessService');
 const { sendPushNotification } = require('../services/notificationService');
 const { processUserAction } = require('../services/conciergeService');
+const { reconcileAllCounters } = require('../services/maintenanceService');
 
 const getStats = async (req, res) => {
   try {
@@ -334,45 +335,16 @@ const updatePricing = async (req, res) => {
 
 const reconcileCounters = async (req, res) => {
   try {
-    const profilesSnap = await db.collection('profiles').get();
-    const profiles = profilesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    const likesSnap = await db.collection('likes').get();
-    const allLikes = likesSnap.docs.map(doc => doc.data());
-
-    const batch = db.batch();
-    let updatedCount = 0;
-
-    for (const profile of profiles) {
-      const receivedLikes = allLikes.filter(l => l.liked_id === profile.id);
-      const standardLikesCount = receivedLikes.filter(l => !l.is_super_like).length;
-      const superLikesCount = receivedLikes.filter(l => !!l.is_super_like).length;
-
-      // Only update if counts are different
-      if (profile.likes_count !== standardLikesCount || profile.roses_count !== superLikesCount) {
-        const ref = db.collection('profiles').doc(profile.id);
-        batch.update(ref, {
-          likes_count: standardLikesCount,
-          roses_count: superLikesCount,
-          updated_at: new Date().toISOString()
-        });
-        updatedCount++;
-      }
-    }
-
-    if (updatedCount > 0) {
-      await batch.commit();
-    }
+    const result = await reconcileAllCounters();
 
     await appendAdminAuditLog({
       adminId: req.user.id,
       action: 'RECONCILE_COUNTERS',
-      metadata: { profilesProcessed: profiles.length, profilesUpdated: updatedCount }
+      metadata: { profilesProcessed: result.processed, profilesUpdated: result.updated }
     });
 
-    res.json({ success: true, processed: profiles.length, updated: updatedCount });
+    res.json({ success: true, processed: result.processed, updated: result.updated });
   } catch (error) {
-    console.error('reconcileCounters error:', error);
     res.status(500).json({ error: error.message });
   }
 };

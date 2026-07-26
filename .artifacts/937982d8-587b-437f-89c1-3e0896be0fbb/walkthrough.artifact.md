@@ -1,29 +1,28 @@
-# Walkthrough : Synchronisation temps-réel du profil et des compteurs (Web)
+# Walkthrough : Réconciliation historique des compteurs
 
-J'ai rendu la version Web de Galant totalement réactive en connectant votre profil à un écouteur en temps réel. Les compteurs de likes et de roses se mettent désormais à jour instantanément sur tous vos écrans.
+J'ai implémenté un outil de maintenance permettant de synchroniser tous les anciens likes et toutes les anciennes roses avec les nouveaux compteurs de profil.
 
 ## Changements effectués
 
-### [Web] Authentification & Contexte
-- **[AuthContext.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/context/AuthContext.tsx)** :
-    - Remplacement du chargement unique par un **écouteur Firestore (onSnapshot)**.
-    - Désormais, toute modification effectuée sur votre profil en base de données (nouveau like, nouvelle rose, badge certifié) est répercutée sur votre écran en moins d'une seconde.
+### [Serveur] Logique de maintenance
+- **[adminController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/adminController.js)** : Ajout de la fonction `reconcileCounters`. Elle parcourt tous les profils et recompte chaque like standard et chaque Super Like (Rose) présent dans la collection `likes` pour mettre à jour les totaux `likes_count` et `roses_count`.
+- **[adminRoutes.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/routes/adminRoutes.js)** : Exposition du point d'accès sécurisé `POST /api/admin/users/reconcile-counters`.
 
-### [Web] Pages & Interface
-- **[MatchesPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/MatchesPage.tsx)** :
-    - Optimisation de la page des messages. Les compteurs en haut de page utilisent maintenant directement les données temps-réel de votre profil.
-    - Suppression des appels API redondants pour une navigation plus fluide.
-- **[ProfilePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ProfilePage.tsx)** :
-    - Ajout du compteur de **Likes** dans l'en-tête du profil, à côté de la Galanterie et des Roses, pour une parité parfaite avec l'application mobile.
+### [Web] Interface Administration
+- **[AdminDashboard.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminDashboard.tsx)** :
+    - Ajout d'une nouvelle section **"Maintenance & Outils"** au bas du tableau de bord.
+    - Intégration d'un bouton **"Réconcilier les compteurs (Likes/Roses)"**.
+    - Ajout d'une boîte de confirmation pour éviter les lancements accidentels.
+    - Affichage d'un message de succès indiquant le nombre de profils réellement mis à jour.
 
 ## Résultats de la Vérification
 
-### Réactivité (In-memory tests)
-- **Latence** : Quasi-nulle. Le changement est perçu immédiatement par l'utilisateur.
-- **Fiabilité** : Les compteurs reflètent désormais la source de vérité exacte de Firestore.
+### Intégrité & Sécurité
+- L'outil est exclusivement réservé aux administrateurs (protection via middleware `requireAdmin`).
+- Les mises à jour sont effectuées par lots (batch) pour optimiser les performances Firestore.
 
 ### Déploiement
 - Les modifications sont synchronisées et actives sur les branches **staging** et **main**.
 
-> [!TIP]
-> Vous pouvez tester l'effet "Magique" : laissez l'onglet **Messages** ouvert sur votre ordinateur et liker votre profil depuis votre téléphone. Vous verrez le chiffre grimper tout seul sans toucher à votre souris !
+> [!IMPORTANT]
+> **Action requise** : Pour que vos anciens likes apparaissent dès maintenant, connectez-vous avec votre compte administrateur sur le Web, allez dans le Dashboard et cliquez sur le bouton de réconciliation. L'historique sera alors instantanément visible pour tous vos utilisateurs.

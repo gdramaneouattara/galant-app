@@ -1,4 +1,5 @@
 const { db, bucket } = require('../config/firebase');
+const { reconcileAllCounters } = require('./maintenanceService');
 
 /**
  * Service to handle periodic cleanup tasks.
@@ -103,11 +104,13 @@ const initCronJobs = () => {
   // Run once on startup
   cleanupExpiredStatuses();
   cleanupExpiredChatMedia();
+  reconcileAllCounters();
 
   // Then run every hour (3600000 ms)
   setInterval(() => {
     cleanupExpiredStatuses();
     cleanupExpiredChatMedia();
+    reconcileAllCounters();
   }, 3600000);
 };
 
