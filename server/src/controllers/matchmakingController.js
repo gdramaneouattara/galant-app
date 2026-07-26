@@ -7,6 +7,61 @@ const { getDailyUsage, incrementUsage } = require('../services/usageService');
 const { sendPushNotification } = require('../services/notificationService');
 const { QUOTAS } = require('../config/constants');
 
+const normalizeText = (value) => String(value || '').trim().toLowerCase()
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '');
+
+const normalizeGender = (value) => String(value || '').trim().toUpperCase();
+
+const normalizeGenderList = (value) => {
+  if (!Array.isArray(value)) return [];
+  return value.map(normalizeGender).filter(Boolean);
+};
+
+const getProfileTargetGenders = (profile) => normalizeGenderList(
+  profile?.target_gender || profile?.preferences?.targetGender
+);
+
+const getCandidateAgePreference = (candidate) => ({
+  min: Number(candidate?.min_age || candidate?.minAge || candidate?.preferences?.minAge || 18),
+  max: Number(candidate?.max_age || candidate?.maxAge || candidate?.preferences?.maxAge || 100),
+});
+
+const acceptsAge = (age, preference) => {
+  const numericAge = Number(age);
+  if (!Number.isFinite(numericAge)) return true;
+  const min = Number.isFinite(preference.min) ? preference.min : 18;
+  const max = Number.isFinite(preference.max) ? preference.max : 100;
+  return numericAge >= min && numericAge <= max;
+};
+
+const getDesiredGenders = ({ me, forcedOppositeGender, gender }) => {
+  if (forcedOppositeGender) return [forcedOppositeGender];
+  const explicitGender = normalizeGender(gender);
+  if (explicitGender && explicitGender !== 'ALL') return [explicitGender];
+  return getProfileTargetGenders(me);
+};
+
+const getDiscoveryTier = ({ candidateCity, candidateCountry, distanceKm, cityFilter, myCity, myCountry, maxDistance }) => {
+  const preferredCity = cityFilter || myCity;
+  if (preferredCity && candidateCity === preferredCity) return 'SAME_CITY';
+  if (Number.isFinite(distanceKm) && distanceKm <= maxDistance) return 'NEARBY';
+  if (myCountry && candidateCountry && candidateCountry === myCountry) return 'SAME_COUNTRY';
+  return 'OPEN';
+};
+
+const selectWithLocationFallback = (rows, limit) => {
+  const orderedTiers = ['SAME_CITY', 'NEARBY', 'SAME_COUNTRY', 'OPEN'];
+  const selected = [];
+
+  for (const tier of orderedTiers) {
+    selected.push(...rows.filter(row => row.discovery_tier === tier));
+    if (selected.length >= limit) break;
+  }
+
+  return selected;
+};
+
 const getSuggestions = async (req, res) => {
   const me = req.user;
   const {
@@ -29,6 +84,7 @@ const getSuggestions = async (req, res) => {
   const myLat = Number(me.passport_latitude || me.latitude);
   const myLon = Number(me.passport_longitude || me.longitude);
   const myCity = normalizeCity(me.passport_city || me.city);
+  const myCountry = normalizeText(me.passport_country || me.country);
 
   // Logic: Serious goals see opposite gender only. Casual/Friendship see all.
   const isStrictGoal = meGoal === 'SERIOUS' || meGoal === 'MARRIAGE';
@@ -42,20 +98,28 @@ const getSuggestions = async (req, res) => {
   const maxDistance = Number.isFinite(parseFloat(maxDistanceKm))
     ? Math.max(1, parseFloat(maxDistanceKm))
     : null;
+  const effectiveMaxDistance = maxDistance || 100;
+  const safeLimit = Math.max(1, Math.min(100, parseInt(limit, 10) || 40));
+  const desiredGenders = getDesiredGenders({ me, forcedOppositeGender, gender });
 
   try {
     const now = new Date().toISOString();
 
-    // 1. Fetch Golden Roses, My Likes (swipes), My Matches, and Super Likes received
-    const [grSnapshot, myLikesSnapshot, myMatchesSnapshot, incomingSuperLikesSnapshot] = await Promise.all([
+    // 1. Fetch Golden Roses, My positive likes, dismissed profiles, matches, and Super Likes received
+    const [grSnapshot, myLikesSnapshot, myDismissedSnapshot, myMatchesSnapshot, incomingSuperLikesSnapshot] = await Promise.all([
       db.collection('golden_roses').where('expires_at', '>', now).get(),
       db.collection('likes').where('liker_id', '==', me.id).get(),
+      db.collection('swipes').where('swiper_id', '==', me.id).get(),
       db.collection('matches').where('status', '==', 'ACTIVE').get(),
       db.collection('likes').where('liked_id', '==', me.id).where('is_super_like', '==', true).get(),
     ]);
 
     const goldenRoseUserIds = new Set(grSnapshot.docs.map(doc => doc.data().user_id));
     const alreadySwipedIds = new Set(myLikesSnapshot.docs.map(doc => doc.data().liked_id));
+    myDismissedSnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      if (data.direction === 'LEFT') alreadySwipedIds.add(data.target_id);
+    });
     const incomingSuperLikesByCandidate = new Set(incomingSuperLikesSnapshot.docs.map(doc => doc.data().liker_id));
 
     // Add existing matches to already swiped
@@ -71,10 +135,8 @@ const getSuggestions = async (req, res) => {
     let query = db.collection('profiles')
       .where('onboarding_completed', '==', true);
 
-    if (forcedOppositeGender) {
-      query = query.where('gender', '==', forcedOppositeGender);
-    } else if (gender && gender !== 'ALL') {
-      query = query.where('gender', '==', gender);
+    if (desiredGenders.length === 1) {
+      query = query.where('gender', '==', desiredGenders[0]);
     }
 
     const snapshot = await query.get();
@@ -85,9 +147,16 @@ const getSuggestions = async (req, res) => {
     const maxAgeNum = parseInt(maxAge) || 100;
 
     candidates = candidates.filter(c => {
+      const candidateGender = normalizeGender(c.gender);
+      const candidateTargetGenders = getProfileTargetGenders(c);
+      const candidateAgePreference = getCandidateAgePreference(c);
+
       return c.id !== me.id &&
              !c.suspended_at &&
              !alreadySwipedIds.has(c.id) &&
+             (desiredGenders.length === 0 || desiredGenders.includes(candidateGender)) &&
+             (candidateTargetGenders.length === 0 || candidateTargetGenders.includes(meGender)) &&
+             acceptsAge(me.age, candidateAgePreference) &&
              (c.age >= minAgeNum && c.age <= maxAgeNum);
     });
 
@@ -120,8 +189,8 @@ const getSuggestions = async (req, res) => {
       }
     }
 
-    // 4. Suggestions Filtering (Invisible + Premium/Verified/Standing)
-    const suggestions = candidates.map(c => {
+    // 4. Suggestions filtering and location-tiering.
+    const assessedSuggestions = candidates.map(c => {
       // Filter by Invisible Mode
       const hiddenByInvisible = isHiddenByInvisibleMode(
         c,
@@ -141,43 +210,54 @@ const getSuggestions = async (req, res) => {
         Number(c.longitude)
       );
 
-      // In-memory filters for city/distance/search
+      const candidateCityNorm = normalizeCity(c.city);
+      const candidateCountryNorm = normalizeText(c.country);
+      const discoveryTier = getDiscoveryTier({
+        candidateCity: candidateCityNorm,
+        candidateCountry: candidateCountryNorm,
+        distanceKm,
+        cityFilter,
+        myCity,
+        myCountry,
+        maxDistance: effectiveMaxDistance
+      });
+
+      // Search stays explicit: when the user searches, do not constrain by location fallback.
       if (searchQuery) {
         const haystack = `${c.name || ''} ${c.bio || ''} ${c.city || ''} ${c.country || ''}`.toLowerCase();
         if (!haystack.includes(searchQuery)) return null;
-      } else {
-        const candidateCityNorm = normalizeCity(c.city);
-        if (cityFilter) {
-          if (candidateCityNorm !== cityFilter) return null;
-        }
-
-        if (maxDistance !== null) {
-          // If distance is available, check it.
-          // If distance is null (no GPS), we allow it ONLY if the city matches perfectly.
-          if (distanceKm !== null) {
-             if (distanceKm > maxDistance) return null;
-          } else if (candidateCityNorm !== myCity) {
-             // Distance unknown and city doesn't match => hide
-             return null;
-          }
-        }
       }
 
-      const { score, commonInterestsCount } = calculateMatchScore({
+      const {
+        score,
+        compatibilityScore,
+        commercialScore,
+        commonInterestsCount,
+      } = calculateMatchScore({
         candidate: c,
         me,
-        isGoldenRose: goldenRoseUserIds.has(c.id)
+        isGoldenRose: goldenRoseUserIds.has(c.id),
+        distanceKm,
+        maxDistanceKm: effectiveMaxDistance,
+        discoveryTier
       });
 
       return {
         ...c,
         score,
+        compatibility_score: compatibilityScore,
+        commercial_score: commercialScore,
         common_interests_count: commonInterestsCount,
-        distance_km: distanceKm ? parseFloat(distanceKm.toFixed(1)) : null,
+        distance_km: Number.isFinite(distanceKm) ? parseFloat(distanceKm.toFixed(1)) : null,
+        discovery_tier: discoveryTier,
         super_liked_me: incomingSuperLikesByCandidate.has(c.id),
         has_golden_rose: goldenRoseUserIds.has(c.id),
       };
     }).filter(Boolean);
+
+    const suggestions = searchQuery
+      ? assessedSuggestions
+      : selectWithLocationFallback(assessedSuggestions, safeLimit);
 
     if (includeSelf && me.boosted_until && new Date(me.boosted_until) > new Date()) {
        const selfScore = (me.is_vip ? 200 : (me.is_premium ? 50 : 0)) + 15 + 500;
@@ -188,8 +268,6 @@ const getSuggestions = async (req, res) => {
 
     const rankedSuggestions = suggestions.sort((a, b) => b.score - a.score);
     const selfRank = rankedSuggestions.findIndex((profile) => profile?.id === me.id) + 1;
-    const safeLimit = parseInt(limit) || 40;
-
     res.json({
       suggestions: rankedSuggestions.slice(0, safeLimit),
       current_user_rank: selfRank > 0 ? selfRank : null
@@ -278,7 +356,17 @@ const handleSwipe = async (req, res) => {
     const targetProfile = { id: targetDoc.id, ...targetDoc.data() };
     if (targetProfile.suspended_at) return res.status(404).json({ error: 'target_not_found' });
 
-    if (direction === 'LEFT') return res.json({ matched: false, matchId: null });
+    if (direction === 'LEFT') {
+      const now = new Date().toISOString();
+      await db.collection('swipes').doc(`${me.id}_${safeTargetUserId}`).set({
+        swiper_id: me.id,
+        target_id: safeTargetUserId,
+        direction: 'LEFT',
+        created_at: now,
+        updated_at: now
+      }, { merge: true });
+      return res.json({ matched: false, matchId: null, dismissed: true });
+    }
 
     // 2. Invisible Mode check
     const meHasInvisiblePremiumAccess = hasInvisiblePremiumAccessForPlan(me, req.subscription?.plan_id);
