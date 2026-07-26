@@ -12,7 +12,6 @@ import logoImg from '../assets/galant-logo.png';
 const DiscoverPage: React.FC = () => {
   const { user, profile: myProfile, loading: authLoading, t } = useAuth();
   const { suggestions, loading, fetchSuggestions, handleSwipe } = useMatchmaking();
-  const [currentIndex, setCurrentCardIndex] = useState(0);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean; type: 'SUPER_LIKE' | 'DIRECT_MESSAGE'; userName: string } | null>(null);
   const navigate = useNavigate();
@@ -45,6 +44,17 @@ const DiscoverPage: React.FC = () => {
     loadSuggestions();
   }, [loadSuggestions]);
 
+  // Auto-reload when almost empty
+  useEffect(() => {
+    if (user && !loading && !authLoading && suggestions.length === 0) {
+      // Small delay to let the animation finish or handle empty state gracefully
+      const timer = setTimeout(() => {
+        loadSuggestions();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [user, loading, authLoading, suggestions.length, loadSuggestions]);
+
   useEffect(() => {
     if (user && !loading && suggestions.length === 0) {
       apiRequest('/api/tracking/event', {
@@ -56,11 +66,10 @@ const DiscoverPage: React.FC = () => {
   }, [user, loading, suggestions.length]);
 
   const onSwipe = async (direction: 'LEFT' | 'RIGHT') => {
-    const target = suggestions[currentIndex];
+    const target = suggestions[0];
     if (!target) return;
 
     await handleSwipe(target.id, direction);
-    setCurrentCardIndex(prev => prev + 1);
     x.set(0); // Reset position for next card
   };
 
@@ -74,7 +83,7 @@ const DiscoverPage: React.FC = () => {
   };
 
   const handleSuperLike = async () => {
-    const target = suggestions[currentIndex];
+    const target = suggestions[0];
     if (!target) return;
 
     if (!myProfile?.is_premium) {
@@ -83,11 +92,10 @@ const DiscoverPage: React.FC = () => {
     }
 
     await handleSwipe(target.id, 'RIGHT', true);
-    setCurrentCardIndex(prev => prev + 1);
   };
 
   const handleDirectMessage = async () => {
-    const target = suggestions[currentIndex];
+    const target = suggestions[0];
     if (!target) return;
 
     if (!myProfile?.is_premium) {
@@ -162,7 +170,7 @@ const DiscoverPage: React.FC = () => {
     );
   }
 
-  const currentProfile = suggestions[currentIndex];
+  const currentProfile = suggestions[0];
 
   return (
     <div className="max-w-2xl mx-auto pb-10 px-4">
@@ -332,7 +340,7 @@ const DiscoverPage: React.FC = () => {
             <p className="text-slate-400 font-medium">Revenez plus tard pour de nouvelles étincelles.</p>
           </div>
           <button
-            onClick={() => { setCurrentCardIndex(0); fetchSuggestions(); }}
+            onClick={() => loadSuggestions()}
             className="w-full bg-primary text-white font-black text-xs uppercase tracking-[0.2em] py-5 rounded-2xl shadow-xl shadow-red-500/20 hover:scale-105 transition-all active:scale-95"
           >
             {t('reload') || "Relancer le charme"}

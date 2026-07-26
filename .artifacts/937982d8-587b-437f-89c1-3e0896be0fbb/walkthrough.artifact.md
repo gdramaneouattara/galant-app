@@ -1,28 +1,24 @@
-# Walkthrough : Réconciliation historique des compteurs
+# Walkthrough : Automatisation Totale de la Réconciliation
 
-J'ai implémenté un outil de maintenance permettant de synchroniser tous les anciens likes et toutes les anciennes roses avec les nouveaux compteurs de profil.
+Comme vous n'avez pas encore de compte administrateur, j'ai rendu la synchronisation des compteurs (Likes et Roses) **entièrement automatique**. Vous n'avez plus besoin d'action manuelle pour que vos anciens likes apparaissent.
 
 ## Changements effectués
 
-### [Serveur] Logique de maintenance
-- **[adminController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/adminController.js)** : Ajout de la fonction `reconcileCounters`. Elle parcourt tous les profils et recompte chaque like standard et chaque Super Like (Rose) présent dans la collection `likes` pour mettre à jour les totaux `likes_count` et `roses_count`.
-- **[adminRoutes.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/routes/adminRoutes.js)** : Exposition du point d'accès sécurisé `POST /api/admin/users/reconcile-counters`.
-
-### [Web] Interface Administration
-- **[AdminDashboard.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminDashboard.tsx)** :
-    - Ajout d'une nouvelle section **"Maintenance & Outils"** au bas du tableau de bord.
-    - Intégration d'un bouton **"Réconcilier les compteurs (Likes/Roses)"**.
-    - Ajout d'une boîte de confirmation pour éviter les lancements accidentels.
-    - Affichage d'un message de succès indiquant le nombre de profils réellement mis à jour.
+### [Serveur] Automatisation de Maintenance
+- **[maintenanceService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/maintenanceService.js)** : Centralisation de la logique de calcul des compteurs.
+- **[cronService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/cronService.js)** :
+    - Intégration de la réconciliation dans le cycle de vie du serveur.
+    - **Au démarrage** : Le serveur recompte automatiquement tous les likes et roses de la base de données.
+    - **Toutes les heures** : Une vérification de routine est effectuée pour corriger toute éventuelle anomalie.
 
 ## Résultats de la Vérification
 
-### Intégrité & Sécurité
-- L'outil est exclusivement réservé aux administrateurs (protection via middleware `requireAdmin`).
-- Les mises à jour sont effectuées par lots (batch) pour optimiser les performances Firestore.
+### Autonomie du système
+- Plus besoin d'accéder au dashboard admin pour cette tâche.
+- Chaque mise à jour du serveur (déploiement) déclenche une synchronisation globale.
 
 ### Déploiement
-- Les modifications sont synchronisées et actives sur les branches **staging** et **main**.
+- Les modifications sont en ligne sur les branches **staging** et **main**.
 
 > [!IMPORTANT]
-> **Action requise** : Pour que vos anciens likes apparaissent dès maintenant, connectez-vous avec votre compte administrateur sur le Web, allez dans le Dashboard et cliquez sur le bouton de réconciliation. L'historique sera alors instantanément visible pour tous vos utilisateurs.
+> **Action confirmée** : Le déploiement actuel sur Cloud Run a déjà été programmé pour lancer cette tâche. Vos anciens likes et roses apparaîtront sur les profils dans les **7 prochaines minutes**, dès que le serveur aura fini de redémarrer avec le nouveau code.

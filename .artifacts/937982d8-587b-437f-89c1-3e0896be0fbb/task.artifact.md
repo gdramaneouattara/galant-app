@@ -1,7 +1,6 @@
-# Réconciliation historique des compteurs
+# Automatisation du chargement des profils (Discovery)
 
-- `[ ]` Implémenter `reconcileCounters` dans `server/src/controllers/adminController.js`
-- `[ ]` Ajouter la route dans `server/src/routes/adminRoutes.js`
-- `[ ]` Ajouter le bouton de maintenance dans `web/src/pages/admin/AdminDashboard.tsx`
-- `[ ]` Lancer les tests de qualité
+- `[/]` [Web] Implémenter la recharge automatique dans `DiscoverPage.tsx`
+- `[ ]` [Mobile] Implémenter la recharge automatique dans `HomeScreen.tsx`
+- `[ ]` Exécuter les tests de qualité
 - `[ ]` Déployer et synchroniser les branches

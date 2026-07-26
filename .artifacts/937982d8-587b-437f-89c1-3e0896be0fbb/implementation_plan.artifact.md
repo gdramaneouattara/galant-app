@@ -1,38 +1,26 @@
-# Réconciliation historique des compteurs de Likes et Roses
+# Automatisation du chargement des profils (Discovery)
 
-Ce plan vise à synchroniser les compteurs `likes_count` et `roses_count` de tous les profils existants en comptabilisant réellement les interactions présentes dans la collection `likes` de Firestore.
-
-## User Review Required
-
-> [!IMPORTANT]
-> - Cette opération va écraser les valeurs actuelles des compteurs par la réalité du terrain (comptage manuel de la collection `likes`).
-> - L'opération peut prendre quelques secondes selon le nombre d'utilisateurs en base.
+Ce plan vise à fluidifier l'expérience de découverte sur Web et Mobile en rechargeant automatiquement de nouvelles suggestions dès que la liste actuelle est épuisée, supprimant ainsi le besoin de cliquer manuellement sur un bouton "Recharger".
 
 ## Proposed Changes
 
-### [Server] Administration et Maintenance
+### [Web] Écran Découverte
 
-#### [MODIFY] [adminController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/adminController.js)
-- Implémenter une nouvelle fonction `reconcileCounters` :
-    - Récupérer tous les documents de la collection `profiles`.
-    - Pour chaque profil :
-        - Compter les documents dans `likes` où `liked_id` correspond à l'utilisateur.
-        - Séparer les likes standards des Super Likes (`is_super_like: true`).
-        - Mettre à jour le document `profiles` avec les totaux exacts.
-- Exporter la fonction.
+#### [MODIFY] [DiscoverPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/DiscoverPage.tsx)
+- Ajouter un `useEffect` qui surveille la longueur des suggestions restantes.
+- Si le nombre de suggestions descend en dessous d'un seuil (ex: 2 profils restants) ou atteint 0, déclencher automatiquement l'appel à `fetchSuggestions`.
+- S'assurer qu'un indicateur de chargement discret (spinner) apparaît si l'utilisateur arrive au bout de la liste avant que les nouveaux profils ne soient chargés.
 
-#### [MODIFY] [adminRoutes.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/routes/adminRoutes.js)
-- Ajouter la route `POST /api/admin/users/reconcile-counters` pointant vers la nouvelle fonction.
+### [Mobile] Écran d'accueil
 
-### [Web] Interface Admin
-
-#### [MODIFY] [AdminDashboard.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminDashboard.tsx)
-- Ajouter un bouton "Réconcilier les compteurs" dans la section maintenance pour permettre à l'administrateur de lancer cette tâche manuellement.
+#### [MODIFY] [HomeScreen.tsx](file:///C:/Users/UTILISATEUR/galant-app/src/screens/home/HomeScreen.tsx)
+- Implémenter la même logique de surveillance : dès que la liste des `suggestions` s'approche de la fin, appeler `fetchSuggestions` en arrière-plan.
+- Améliorer la transition pour que l'utilisateur ne voie jamais l'écran "Plus de profils" s'il reste des candidats compatibles en base de données.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Identifier un utilisateur qui a des likes en base mais un compteur à zéro.
-2.  Se connecter en tant qu'admin.
-3.  Lancer la réconciliation depuis le dashboard.
-4.  Vérifier que le compteur de l'utilisateur a été mis à jour correctement.
+1. Aller sur l'écran Découverte (Web et Mobile).
+2. Swiper/Liker les profils un par un.
+3. Vérifier que de nouveaux profils apparaissent automatiquement dès que la pile est presque vide.
+4. Confirmer qu'il n'est plus nécessaire de cliquer sur le bouton "Recharger" tant qu'il y a des profils compatibles.

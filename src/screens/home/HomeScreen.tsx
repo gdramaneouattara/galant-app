@@ -185,6 +185,13 @@ const HomeScreen: React.FC = () => {
     }, [loadSuggestions, fetchLikesInboxCount, fetchRosesInboxCount, fetchVisibilityInsight, appResumeVersion])
   );
 
+  // Auto-reload when empty
+  useEffect(() => {
+    if (suggestions.length === 0 && !loading && currentUser && !trialLocked) {
+      void loadSuggestions();
+    }
+  }, [suggestions.length, loading, currentUser, trialLocked, loadSuggestions]);
+
   const performSwipe = async (direction: 'LEFT' | 'RIGHT', isSuper = false) => {
     const target = suggestions[0];
     if (!target) return;
