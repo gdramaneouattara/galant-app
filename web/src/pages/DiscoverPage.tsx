@@ -13,6 +13,7 @@ const DiscoverPage: React.FC = () => {
   const { user, profile: myProfile, loading: authLoading, t } = useAuth();
   const { suggestions, loading, fetchSuggestions, handleSwipe } = useMatchmaking();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean; type: 'SUPER_LIKE' | 'DIRECT_MESSAGE'; userName: string } | null>(null);
   const navigate = useNavigate();
 
@@ -37,23 +38,36 @@ const DiscoverPage: React.FC = () => {
     // Sécurité renforcée : On ne lance l'appel que si tout est prêt
     if (!user || !myProfile || authLoading) return;
 
-    await fetchSuggestions(filters);
+    try {
+      await fetchSuggestions(filters);
+    } catch (e) {
+      console.error("Error loading suggestions", e);
+    }
   }, [user, myProfile, authLoading, fetchSuggestions, filters]);
 
   useEffect(() => {
     loadSuggestions();
+    setHasMore(true); // Reset on filter change
   }, [loadSuggestions]);
 
   // Auto-reload when almost empty
   useEffect(() => {
-    if (user && !loading && !authLoading && suggestions.length === 0) {
+    if (user && !loading && !authLoading && suggestions.length === 0 && hasMore) {
       // Small delay to let the animation finish or handle empty state gracefully
-      const timer = setTimeout(() => {
-        loadSuggestions();
+      const timer = setTimeout(async () => {
+        await loadSuggestions();
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [user, loading, authLoading, suggestions.length, loadSuggestions]);
+  }, [user, loading, authLoading, suggestions.length, loadSuggestions, hasMore]);
+
+  // If loading finished and we STILL have 0 suggestions, we mark as out of profiles
+  useEffect(() => {
+    if (!loading && suggestions.length === 0 && hasMore && !authLoading) {
+       // We only do this if a request was actually made
+       setHasMore(false);
+    }
+  }, [loading, suggestions.length, authLoading]);
 
   useEffect(() => {
     if (user && !loading && suggestions.length === 0) {

@@ -85,6 +85,7 @@ const HomeScreen: React.FC = () => {
   const { purchaseLoading, purchaseWithPaystack, purchaseWithStore, initIAP, endIAP } = useSubscription();
 
   const [trialLocked, setTrialLocked] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [matchModal, setMatchModal] = useState<MatchModalState | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showSuperLikeModal, setShowSuperLikeModal] = useState(false);
@@ -148,6 +149,7 @@ const HomeScreen: React.FC = () => {
   }, [fetchSuggestions, filters, searchQuery]);
 
   useEffect(() => {
+    setHasMore(true);
     const timer = setTimeout(() => void loadSuggestions(), 500);
     return () => clearTimeout(timer);
   }, [searchQuery, filters]);
@@ -187,10 +189,17 @@ const HomeScreen: React.FC = () => {
 
   // Auto-reload when empty
   useEffect(() => {
-    if (suggestions.length === 0 && !loading && currentUser && !trialLocked) {
+    if (suggestions.length === 0 && !loading && currentUser && !trialLocked && hasMore) {
       void loadSuggestions();
     }
-  }, [suggestions.length, loading, currentUser, trialLocked, loadSuggestions]);
+  }, [suggestions.length, loading, currentUser, trialLocked, loadSuggestions, hasMore]);
+
+  // If loading finished and we STILL have 0 suggestions, we mark as out of profiles
+  useEffect(() => {
+    if (!loading && suggestions.length === 0 && hasMore && currentUser) {
+       setHasMore(false);
+    }
+  }, [loading, suggestions.length, currentUser]);
 
   const performSwipe = async (direction: 'LEFT' | 'RIGHT', isSuper = false) => {
     const target = suggestions[0];
