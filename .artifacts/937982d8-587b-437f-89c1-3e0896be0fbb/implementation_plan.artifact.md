@@ -1,29 +1,24 @@
-# Correction du compteur de likes et synchronisation temps-réel
+# Correction du compteur de Roses (Super Likes)
 
-Ce plan vise à corriger le problème de mise à jour du compteur de likes lorsqu'un utilisateur reçoit un nouveau like.
+Ce plan vise à assurer que le compteur de roses (`roses_count`) sur le profil d'un utilisateur est correctement incrémenté lorsqu'il reçoit un Super Like (une Rose).
 
 ## Problème identifié
-Lorsqu'un utilisateur effectue un "Swipe Right" (Like), la relation est bien enregistrée dans la collection `likes`, mais le champ `likes_count` du profil de la personne likée n'est pas incrémenté. Par conséquent, certains écrans (notamment sur Web) affichent un compteur obsolète ou à zéro.
+Actuellement, seul le compteur de likes standards (`likes_count`) est incrémenté lors d'un swipe. Bien qu'un Super Like soit techniquement un like, il doit également alimenter le compteur de "Roses" affiché sur le profil pour refléter le prestige de l'utilisateur (le "Jardin de Roses").
 
 ## Proposed Changes
 
 ### [Server] Logique de Matchmaking
 
 #### [MODIFY] [matchmakingController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/matchmakingController.js)
-- Dans la fonction `handleSwipe`, lors d'un Like réussi (direction RIGHT) :
-    - Incrémenter atomiquement le champ `likes_count` dans le document `profiles` de l'utilisateur cible via `admin.firestore.FieldValue.increment(1)`.
-    - Envoyer une notification push silencieuse ou une notification d'intérêt à l'utilisateur cible (si pertinent).
-
-### [Web] Synchronisation UI
-
-#### [MODIFY] [MatchesPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/MatchesPage.tsx)
-- S'assurer que le compteur affiché dans les cartes "Likes Reçus" utilise une source de données fiable (soit l'API, soit le profil rafraîchi).
+- Dans la fonction `handleSwipe`, si `isSuperLike` est vrai :
+    - Incrémenter atomiquement le champ `roses_count` dans le document `profiles` de l'utilisateur cible.
+    - Continuer d'incrémenter `likes_count` (car un Super Like reste un Like).
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Utiliser deux comptes de test (A et B).
-2.  Noter le nombre de likes sur le compte B (ex: 0).
-3.  Liker le compte B depuis le compte A.
-4.  Vérifier sur le compte B que le compteur de likes passe instantanément (ou après rafraîchissement) à 1.
-5.  Vérifier dans la console Firestore que le champ `likes_count` du profil B a bien été incrémenté.
+1.  Utiliser deux comptes (A et B).
+2.  Noter le nombre de Roses sur le profil B (ex: 0).
+3.  Envoyer un Super Like (Rose) depuis le compte A vers le compte B.
+4.  Vérifier sur le profil B que le compteur de Roses est passé à 1.
+5.  Vérifier également que le compteur de Likes est passé à 1.

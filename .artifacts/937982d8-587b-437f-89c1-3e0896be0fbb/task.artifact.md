@@ -1,7 +1,5 @@
-# Task: Fix Like Count Increment
+# Task: Fix Rose Count Increment
 
-- `[ ]` [Server] Update `handleSwipe` to increment `likes_count` in target profile
-- `[ ]` [Server] Send push notification for new interest (optional/silent)
-- `[ ]` [Web] Ensure `MatchesPage.tsx` count is reliable
+- `[ ]` [Server] Update `handleSwipe` to increment `roses_count` for Super Likes
 - `[ ]` Run quality tests
-- `[ ]` Deploy and sync branches
+- `[ ]` Deploy and synchronize branches

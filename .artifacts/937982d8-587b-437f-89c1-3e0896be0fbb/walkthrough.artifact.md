@@ -1,33 +1,23 @@
-# Walkthrough : Ouverture gratuite de la Boîte de Roses
+# Walkthrough : Correction du compteur de Likes
 
-J'ai rendu la consultation des Roses reçues (Super Likes) totalement gratuite pour tous les utilisateurs sur Mobile et Web. Cela inclut la visibilité des photos, des noms et la lecture des notes parfumées.
+J'ai corrigé le problème où le nombre de likes d'un profil ne s'incrémentait pas automatiquement lors d'un nouveau Like reçu.
 
 ## Changements effectués
 
 ### [Serveur]
-- **[matchmakingController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/matchmakingController.js)** : Suppression de la logique de verrouillage pour les Super Likes. Le système ne floute plus les photos et ne masque plus les noms pour les hommes non-Premium lorsqu'ils reçoivent une Rose.
-
-### [Web]
-- **[RosesInboxPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/RosesInboxPage.tsx)** :
-    - Retrait complet du flou sur les photos de profil.
-    - Suppression du bouton "Débloquer" et de la modal de paiement associée.
-    - Affichage direct et élégant de la **Note Parfumée** jointe à la Rose.
-
-### [Mobile]
-- **[SuperLikeCard.tsx](file:///C:/Users/UTILISATEUR/galant-app/src/screens/premium/components/SuperLikeCard.tsx)** :
-    - Suppression des styles de verrouillage (`lockedCard`, `lockOverlay`).
-    - Les photos apparaissent désormais nettes pour tous.
-    - La note parfumée est immédiatement lisible dans une bulle dédiée.
-- **[LikesReceivedScreen.tsx](file:///C:/Users/UTILISATEUR/galant-app/src/screens/premium/LikesReceivedScreen.tsx)** : Nettoyage du code pour retirer les fonctions de paiement devenues inutiles pour cette page.
+- **[matchmakingController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/matchmakingController.js)** :
+    - Ajout d'une étape de mise à jour atomique dans la fonction `handleSwipe`.
+    - Désormais, dès qu'un utilisateur clique sur "Like" (Cœur), le champ `likes_count` du profil de la personne visée est immédiatement incrémenté de **+1** dans la base de données Firestore.
+    - Cette opération est sécurisée et garantit que le compteur reflète toujours la réalité des marques d'intérêt reçues.
 
 ## Résultats de la Vérification
 
-### Tests Qualité
-- **Statut** : 100% Succès (70/70 tests).
-- La fluidité du parcours utilisateur est grandement améliorée.
+### Intégrité des données
+- L'incrémentation est gérée côté serveur pour éviter toute fraude ou erreur de calcul.
+- La persistance est assurée dans la collection `profiles`.
 
 ### Déploiement
-- Les modifications sont synchronisées et actives sur les branches **staging** et **main**.
+- Les modifications sont déployées et actives sur les branches **staging** et **main**.
 
-> [!IMPORTANT]
-> Cette mise à jour valorise l'investissement des expéditeurs de Roses en garantissant que leurs attentions soient vues et lues par leurs destinataires, augmentant ainsi considérablement les chances de Match.
+> [!NOTE]
+> Pour voir le compteur passer de 0 à 1 sur votre profil, l'utilisateur destinataire doit simplement rafraîchir sa page ou naviguer vers l'onglet Messages. Le serveur renvoie désormais la valeur exacte mise à jour.

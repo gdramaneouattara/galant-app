@@ -328,11 +328,18 @@ const handleSwipe = async (req, res) => {
 
     // 5.1 Increment likes_count on target profile
     try {
-      await db.collection('profiles').doc(safeTargetUserId).update({
+      const profileUpdates = {
         likes_count: admin.firestore.FieldValue.increment(1)
-      });
+      };
+
+      // Also increment roses_count if it's a super like
+      if (isSuperLike) {
+        profileUpdates.roses_count = admin.firestore.FieldValue.increment(1);
+      }
+
+      await db.collection('profiles').doc(safeTargetUserId).update(profileUpdates);
     } catch (countError) {
-      console.error(`Failed to increment likes_count for user ${safeTargetUserId}:`, countError.message);
+      console.error(`Failed to update counters for user ${safeTargetUserId}:`, countError.message);
     }
 
     if (meHiddenByInvisibleMode) return res.json({ matched: false, matchId: null, invisible_like: true });
