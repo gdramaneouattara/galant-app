@@ -375,6 +375,57 @@ const unmatch = async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
 
+const respondToSuperLike = async (req, res) => {
+  const { id } = req.params;
+  const { action } = req.body; // 'ACCEPT' | 'IGNORE'
+  const me = req.user;
+
+  try {
+    const likeRef = db.collection('likes').doc(id);
+    const likeDoc = await likeRef.get();
+    if (!likeDoc.exists) return res.status(404).json({ error: 'rose_not_found' });
+
+    const likeData = likeDoc.data();
+    if (likeData.liked_id !== me.id) return res.status(403).json({ error: 'unauthorized' });
+
+    if (action === 'IGNORE') {
+      await likeRef.update({ status: 'IGNORED' });
+      return res.json({ success: true });
+    }
+
+    if (action === 'ACCEPT') {
+      // 1. Update status
+      await likeRef.update({ status: 'ACCEPTED' });
+
+      // 2. Create Match
+      const senderId = likeData.liker_id;
+      const [userOneId, userTwoId] = [me.id, senderId].sort();
+      const matchId = `${userOneId}_${userTwoId}`;
+      const matchRef = db.collection('matches').doc(matchId);
+      const matchDoc = await matchRef.get();
+
+      if (!matchDoc.exists) {
+        await matchRef.set({
+          user_one_id: userOneId,
+          user_two_id: userTwoId,
+          status: 'ACTIVE',
+          created_at: new Date().toISOString(),
+          last_message_at: new Date().toISOString()
+        });
+
+        // 3. Notify sender
+        void sendPushNotification(senderId, "Rose Acceptée ! 🌹", `${me.name} a accepté votre rose. Discutez maintenant !`, { matchId, type: 'MATCH' });
+      }
+
+      return res.json({ success: true, matchId });
+    }
+
+    res.status(400).json({ error: 'invalid_action' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const getSuperLikesReceived = async (req, res) => {
   const me = req.user;
   try {
@@ -443,5 +494,5 @@ const getLikesReceived = async (req, res) => {
 
 module.exports = {
   getSuggestions, getVisibilityInsight, handleSwipe, unmatch,
-  getSuperLikesReceived, getLikesReceived
+  getSuperLikesReceived, getLikesReceived, respondToSuperLike
 };
