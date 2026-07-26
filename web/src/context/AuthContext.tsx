@@ -109,17 +109,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(fbAuth, async (firebaseUser) => {
-      try {
-        setUser(firebaseUser);
-        if (firebaseUser) {
-          const profileDoc = await getDoc(doc(db, COLLECTIONS.PROFILES, firebaseUser.uid));
+    const unsubscribe = onAuthStateChanged(fbAuth, (firebaseUser) => {
+      setUser(firebaseUser);
+      let unsubProfile: (() => void) | null = null;
+
+      if (firebaseUser) {
+        // Listen to Profile changes in real-time
+        unsubProfile = onSnapshot(doc(db, COLLECTIONS.PROFILES, firebaseUser.uid), (profileDoc) => {
           if (profileDoc.exists()) {
             const profileData = { id: profileDoc.id, ...profileDoc.data() };
             setProfile(profileData);
 
-            // Sécurité Admin : Tracker la connexion
-            if (profileData.is_admin) {
+            // Admin Login tracking (once)
+            if (profileData.is_admin && !profile) {
               apiRequest('/api/tracking/event', {
                 method: 'POST',
                 requireAuth: true,
@@ -127,17 +129,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }).catch(() => {});
             }
           }
-        } else {
-          setProfile(null);
-          setMatches([]);
-          setMessages([]);
-          setUsers([]);
-        }
-      } catch (error) {
-        console.error('Auth Context Error:', error);
-      } finally {
+          setLoading(false);
+        }, (error) => {
+          console.error('Profile Snapshot error:', error);
+          setLoading(false);
+        });
+      } else {
+        setProfile(null);
+        setMatches([]);
+        setMessages([]);
+        setUsers([]);
         setLoading(false);
       }
+
+      return () => {
+        if (unsubProfile) unsubProfile();
+      };
     });
     return () => unsubscribe();
   }, []);

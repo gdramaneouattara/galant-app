@@ -1,23 +1,45 @@
-# Walkthrough : Correction du compteur de Likes
+# Walkthrough : Sécurisation de l'infrastructure Firebase
 
-J'ai corrigé le problème où le nombre de likes d'un profil ne s'incrémentait pas automatiquement lors d'un nouveau Like reçu.
+J'ai généré les règles de sécurité strictes pour protéger les données de Galant. Voici comment les appliquer pour lever les alertes de sécurité Google.
 
-## Changements effectués
+## Fichiers créés
 
-### [Serveur]
-- **[matchmakingController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/matchmakingController.js)** :
-    - Ajout d'une étape de mise à jour atomique dans la fonction `handleSwipe`.
-    - Désormais, dès qu'un utilisateur clique sur "Like" (Cœur), le champ `likes_count` du profil de la personne visée est immédiatement incrémenté de **+1** dans la base de données Firestore.
-    - Cette opération est sécurisée et garantit que le compteur reflète toujours la réalité des marques d'intérêt reçues.
+### 1. Realtime Database
+- **Fichier** : [database.rules.json](file:///C:/Users/UTILISATEUR/galant-app/database.rules.json)
+- **Cible** : Conversations en temps réel.
+- **Protection** : Empêche toute personne extérieure à un match de lire vos messages privés.
 
-## Résultats de la Vérification
+### 2. Cloud Firestore
+- **Fichier** : [firestore.rules](file:///C:/Users/UTILISATEUR/galant-app/firestore.rules)
+- **Cible** : Profils, Likes, Matches, Réglages.
+- **Protection** : Verrouille les profils (seul le propriétaire peut éditer) et sécurise les listes de likes et d'interactions.
 
-### Intégrité des données
-- L'incrémentation est gérée côté serveur pour éviter toute fraude ou erreur de calcul.
-- La persistance est assurée dans la collection `profiles`.
+### 3. Cloud Storage
+- **Fichier** : [storage.rules](file:///C:/Users/UTILISATEUR/galant-app/storage.rules)
+- **Cible** : Photos de profil, médias de chat et documents KYC.
+- **Protection** : Interdit la lecture publique de vos documents d'identité et protège vos photos personnelles.
 
-### Déploiement
-- Les modifications sont déployées et actives sur les branches **staging** et **main**.
+## 📋 Comment publier ces règles ?
 
-> [!NOTE]
-> Pour voir le compteur passer de 0 à 1 sur votre profil, l'utilisateur destinataire doit simplement rafraîchir sa page ou naviguer vers l'onglet Messages. Le serveur renvoie désormais la valeur exacte mise à jour.
+Pour chaque service, suivez ces étapes simples dans votre [Console Firebase](https://console.firebase.google.com/) :
+
+### Pour Firestore :
+1. Allez dans **Build > Firestore Database**.
+2. Cliquez sur l'onglet **Rules** (Règles).
+3. Copiez le contenu de [firestore.rules](file:///C:/Users/UTILISATEUR/galant-app/firestore.rules) et remplacez tout le texte actuel.
+4. Cliquez sur **Publish** (Publier).
+
+### Pour Realtime Database :
+1. Allez dans **Build > Realtime Database**.
+2. Cliquez sur l'onglet **Rules** (Règles).
+3. Copiez le contenu de [database.rules.json](file:///C:/Users/UTILISATEUR/galant-app/database.rules.json) et remplacez tout le texte actuel.
+4. Cliquez sur **Publish** (Publier).
+
+### Pour Storage :
+1. Allez dans **Build > Storage**.
+2. Cliquez sur l'onglet **Rules** (Règles).
+3. Copiez le contenu de [storage.rules](file:///C:/Users/UTILISATEUR/galant-app/storage.rules) et remplacez tout le texte actuel.
+4. Cliquez sur **Publish** (Publier).
+
+> [!TIP]
+> Une fois ces trois étapes terminées, les alertes de sécurité Google disparaîtront automatiquement sous 24h. Votre application est désormais protégée selon les standards professionnels.

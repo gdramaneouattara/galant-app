@@ -251,11 +251,15 @@ const ProfilePage: React.FC = () => {
           </div>
 
           <div className="flex gap-2">
-            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-4 rounded-2xl shadow-xl flex flex-col items-center min-w-[100px] border border-white/50 dark:border-white/10 transition-colors">
+            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-4 rounded-2xl shadow-xl flex flex-col items-center min-w-[80px] border border-white/50 dark:border-white/10 transition-colors">
               <span className="text-xl font-black text-primary">{profile.galanterie_score || '5.0'}</span>
               <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors">Galanterie</span>
             </div>
-            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-4 rounded-2xl shadow-xl flex flex-col items-center min-w-[100px] border border-white/50 dark:border-white/10 transition-colors">
+            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-4 rounded-2xl shadow-xl flex flex-col items-center min-w-[80px] border border-white/50 dark:border-white/10 transition-colors">
+              <span className="text-xl font-black text-rose-500">{profile.likes_count || 0}</span>
+              <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors">Likes</span>
+            </div>
+            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-4 rounded-2xl shadow-xl flex flex-col items-center min-w-[80px] border border-white/50 dark:border-white/10 transition-colors">
               <span className="text-xl font-black text-amber-600">{profile.roses_count || 0}</span>
               <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors">Roses</span>
             </div>

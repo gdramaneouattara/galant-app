@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Fonction utilitaire pour vérifier si l'utilisateur est admin
+    function isAdmin() {
+      return request.auth != null && get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.is_admin == true;
+    }
+
+    // Profils : Lecture par tous les membres (pour la découverte), écriture par le propriétaire ou admin
+    match /profiles/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    }
+
+    // Matches : Accès restreint aux participants du match
+    match /matches/{matchId} {
+      allow read, write: if request.auth != null && (
+        request.auth.uid == resource.data.user_one_id ||
+        request.auth.uid == resource.data.user_two_id ||
+        request.auth.uid == request.resource.data.user_one_id ||
+        request.auth.uid == request.resource.data.user_two_id ||
+        isAdmin()
+      );
+    }
+
+    // Likes : Lecture par les intéressés, écriture par l'expéditeur
+    match /likes/{likeId} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.liker_id || request.auth.uid == resource.data.liked_id || isAdmin());
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.liker_id;
+      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.liker_id || isAdmin());
+    }
+
+    // Souscriptions : Privé pour l'utilisateur
+    match /subscriptions/{subId} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.user_id || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // KYC : Envoi par l'utilisateur, lecture par le propriétaire ou admin
+    match /kyc_verifications/{kycId} {
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.user_id;
+      allow read: if request.auth != null && (request.auth.uid == resource.data.user_id || isAdmin());
+      allow update, delete: if isAdmin();
+    }
+
+    // Réglages : Lecture par tous les membres, écriture Admin
+    match /app_settings/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Signalements : Écriture par tous les membres
+    match /reports/{reportId} {
+      allow create: if request.auth != null;
+      allow read, write: if isAdmin();
+    }
+
+    // Événements et Notifications
+    match /events/{eventId} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.user_id || isAdmin());
+      allow write: if request.auth != null;
+    }
+
+    // Tokens Push
+    match /push_tokens/{tokenId} {
+      allow read, write: if request.auth != null && (request.auth.uid == resource.data.user_id || request.auth.uid == request.resource.data.user_id);
+    }
+
+    // Par défaut : Bloquer tout le reste
+    match /{path=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

@@ -5,28 +5,12 @@ import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '@shared/lib/api';
 
 const MatchesPage: React.FC = () => {
-  const { user, matches, users, messages, loading, t } = useAuth();
+  const { user, profile, matches, users, messages, loading, t } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [likesCount, setLikesCount] = useState(0);
-  const [rosesCount, setRosesCount] = useState(0);
 
-  useEffect(() => {
-    if (!user) return;
-    const fetchCounts = async () => {
-      try {
-        const [likesRes, rosesRes] = await Promise.all([
-          apiRequest<any[]>('/api/likes/received', { requireAuth: true }),
-          apiRequest<any[]>('/api/super-likes/received', { requireAuth: true })
-        ]);
-        setLikesCount((likesRes || []).filter(l => !l.is_matched && !l.liked_back).length);
-        setRosesCount((rosesRes || []).filter(r => r.status === 'PENDING').length);
-      } catch (e) {
-        console.error("Error fetching match page counts", e);
-      }
-    };
-    fetchCounts();
-  }, [user]);
+  const likesCount = profile?.likes_count || 0;
+  const rosesCount = profile?.roses_count || 0;
 
   const recentMatches = useMemo(() => {
     if (!user) return [];

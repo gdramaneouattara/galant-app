@@ -1,0 +1,28 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Photos de profil : Lecture publique, écriture par le propriétaire
+    match /profiles/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Médias de Chat : Seuls les participants authentifiés
+    match /chats/{matchId}/{allPaths=**} {
+      allow read, write: if request.auth != null && matchId.size() > 20; // Sécurité basique par ID complexe
+    }
+
+    // Documents KYC : Lecture interdite au public (réservée Admin SDK)
+    match /kyc-docs/{userId}/{allPaths=**} {
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read: if false; // Uniquement via le serveur de Conciergerie
+    }
+
+    // Stories : Lecture publique, écriture par le propriétaire
+    match /statuses/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

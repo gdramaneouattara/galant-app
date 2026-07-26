@@ -1,5 +1,6 @@
-# Task: Fix 403 error on message send after match
+# Task: Real-time Profile & Counter Sync (Web)
 
-- `[ ]` [Server] Update `sendMessage` logic in `messageController.js` to allow mutual match engagement
+- `[ ]` [Web] Update `AuthContext.tsx` to use `onSnapshot` for real-time profile updates
+- `[ ]` [Web] Refactor `MatchesPage.tsx` to use `profile.likes_count` and `profile.roses_count`
 - `[ ]` Run quality tests
 - `[ ]` Deploy and synchronize branches
