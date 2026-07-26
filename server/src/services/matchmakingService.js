@@ -51,13 +51,13 @@ const getStableDailyJitter = (meId, candidateId) => {
 };
 
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+  if (![lat1, lon1, lat2, lon2].every(value => Number.isFinite(Number(value)))) return null;
   const R = 6371; // Earth radius in km
-  const dLat = toRadians(lat2 - lat1);
-  const dLon = toRadians(lon2 - lon1);
+  const dLat = toRadians(Number(lat2) - Number(lat1));
+  const dLon = toRadians(Number(lon2) - Number(lon1));
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+    Math.cos(toRadians(Number(lat1))) * Math.cos(toRadians(Number(lat2))) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;

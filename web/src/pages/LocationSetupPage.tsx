@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { db, COLLECTIONS } from '../firebase';
-import { doc, updateDoc } from 'firebase/firestore';
-import { MapPin, Navigation, Loader2, ChevronRight, Globe } from 'lucide-react';
+import { MapPin, Navigation, Loader2, Globe } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
+import { apiRequest } from '@shared/lib/api';
 
 const LocationSetupPage: React.FC = () => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [manualCity, setManualCity] = useState('');
@@ -69,14 +68,16 @@ const LocationSetupPage: React.FC = () => {
   const saveLocation = async (lat: number, lon: number, city: string, country: string) => {
     if (!user) return;
     try {
-      const userRef = doc(db, COLLECTIONS.PROFILES, user.uid);
-      await updateDoc(userRef, {
-        latitude: lat,
-        longitude: lon,
-        city: city,
-        country: country,
-        onboarding_completed: true, // On finalise l'onboarding ici pour le web
-        updated_at: new Date().toISOString()
+      await apiRequest('/api/profiles/update', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({
+          latitude: lat,
+          longitude: lon,
+          city: city,
+          country: country,
+          onboarding_completed: true // On finalise l'onboarding ici pour le web
+        })
       });
       showAlert('Bienvenue', `Votre position à ${city} a été enregistrée.`);
       navigate('/');

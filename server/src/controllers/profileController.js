@@ -2,10 +2,12 @@ const { db } = require('../config/firebase');
 const { isTrialActive } = require('../services/accessService');
 const { getDailyUsage, incrementUsage } = require('../services/usageService');
 const { QUOTAS, BOOST_SCORES } = require('../config/constants');
+const { buildProfileGeohashUpdate } = require('../utils/geohash');
 
 const updateProfile = async (req, res) => {
   const {
     bio, interests, relationship_goal,
+    city, country, latitude, longitude,
     passport_city, passport_country, passport_latitude, passport_longitude, is_passport_active,
     radiance_score, onboarding_completed
   } = req.body;
@@ -15,8 +17,23 @@ const updateProfile = async (req, res) => {
   if (bio !== undefined) updates.bio = bio;
   if (interests !== undefined) updates.interests = interests;
   if (relationship_goal !== undefined) updates.relationship_goal = relationship_goal;
+  if (city !== undefined) updates.city = city;
+  if (country !== undefined) updates.country = country;
+  if (latitude !== undefined) updates.latitude = latitude;
+  if (longitude !== undefined) updates.longitude = longitude;
   if (radiance_score !== undefined) updates.radiance_score = radiance_score;
   if (onboarding_completed !== undefined) updates.onboarding_completed = onboarding_completed;
+  updates.updated_at = new Date().toISOString();
+
+  if (latitude !== undefined || longitude !== undefined) {
+    Object.assign(
+      updates,
+      buildProfileGeohashUpdate(
+        latitude !== undefined ? latitude : req.user.latitude,
+        longitude !== undefined ? longitude : req.user.longitude
+      )
+    );
+  }
 
 
   if (req.user.is_premium) {
@@ -169,6 +186,7 @@ const completeOnboarding = async (req, res) => {
       country,
       latitude,
       longitude,
+      ...buildProfileGeohashUpdate(latitude, longitude),
       photos,
       radiance_score,
       onboarding_completed: true,

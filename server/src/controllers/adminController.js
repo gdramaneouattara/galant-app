@@ -2,7 +2,7 @@ const { db, admin, auth } = require('../config/firebase');
 const { buildUserSegmentFilter, appendAdminAuditLog } = require('../services/accessService');
 const { sendPushNotification } = require('../services/notificationService');
 const { processUserAction } = require('../services/conciergeService');
-const { reconcileAllCounters } = require('../services/maintenanceService');
+const { reconcileAllCounters, backfillProfileGeohashes } = require('../services/maintenanceService');
 
 const getStats = async (req, res) => {
   try {
@@ -349,9 +349,25 @@ const reconcileCounters = async (req, res) => {
   }
 };
 
+const backfillGeohashes = async (req, res) => {
+  try {
+    const result = await backfillProfileGeohashes();
+
+    await appendAdminAuditLog({
+      adminId: req.user.id,
+      action: 'BACKFILL_GEOHASHES',
+      metadata: { profilesProcessed: result.processed, profilesUpdated: result.updated }
+    });
+
+    res.json({ success: true, processed: result.processed, updated: result.updated });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   getStats, getPendingVenues, approveVenue, rejectVenue, reconcileProfiles,
   getPrivacyRequests, resolvePrivacyRequest, getPhotoReviews, reviewPhoto,
   getKycRequests, reviewKyc, getBroadcastAudience, broadcastMessage, getCampaignHistory,
-  getUsers, toggleUserStatus, getPricing, updatePricing, reconcileCounters
+  getUsers, toggleUserStatus, getPricing, updatePricing, reconcileCounters, backfillGeohashes
 };

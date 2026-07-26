@@ -2,6 +2,7 @@ const { db } = require('../config/firebase');
 const { FieldPath, FieldValue } = require('firebase-admin/firestore');
 const { calculateDistance, calculateMatchScore } = require('../services/matchmakingService');
 const { normalizeCity } = require('../utils/geo');
+const { getGeohashPrefixesForRadius, getGeohashRangeForPrefix } = require('../utils/geohash');
 const { hasInvisiblePremiumAccessForPlan, isHiddenByInvisibleMode, hasQuarterlyLimitedInvisibleAccess, isTrialActive } = require('../services/accessService');
 const { getDailyUsage, incrementUsage } = require('../services/usageService');
 const { sendPushNotification } = require('../services/notificationService');
@@ -60,6 +61,55 @@ const selectWithLocationFallback = (rows, limit) => {
   }
 
   return selected;
+};
+
+const fetchProfilesByGeohash = async ({ latitude, longitude, radiusKm, maxDocs = 300 }) => {
+  const prefixes = getGeohashPrefixesForRadius({ latitude, longitude, radiusKm });
+  if (prefixes.length === 0) return [];
+
+  const docsById = new Map();
+  const perPrefixLimit = Math.max(20, Math.ceil(maxDocs / prefixes.length));
+
+  for (const prefix of prefixes) {
+    if (docsById.size >= maxDocs) break;
+    const [start, end] = getGeohashRangeForPrefix(prefix);
+    const snap = await db.collection('profiles')
+      .orderBy('geohash')
+      .startAt(start)
+      .endAt(end)
+      .limit(perPrefixLimit)
+      .get();
+
+    snap.docs.forEach(doc => {
+      if (docsById.has(doc.id) || docsById.size >= maxDocs) return;
+      const profile = { id: doc.id, ...doc.data() };
+      const distanceKm = calculateDistance(latitude, longitude, Number(profile.latitude), Number(profile.longitude));
+      if (!Number.isFinite(distanceKm) || distanceKm > radiusKm) return;
+      docsById.set(doc.id, profile);
+    });
+  }
+
+  return [...docsById.values()];
+};
+
+const buildBroadProfilesQuery = (desiredGenders) => {
+  let query = db.collection('profiles')
+    .where('onboarding_completed', '==', true);
+
+  if (desiredGenders.length === 1) {
+    query = query.where('gender', '==', desiredGenders[0]);
+  }
+
+  return query;
+};
+
+const mergeProfilesById = (primary, fallback) => {
+  const rowsById = new Map();
+  primary.forEach(profile => rowsById.set(profile.id, profile));
+  fallback.forEach(profile => {
+    if (!rowsById.has(profile.id)) rowsById.set(profile.id, profile);
+  });
+  return [...rowsById.values()];
 };
 
 const getSuggestions = async (req, res) => {
@@ -129,18 +179,26 @@ const getSuggestions = async (req, res) => {
       else if (data.user_two_id === me.id) alreadySwipedIds.add(data.user_one_id);
     });
 
-    // 2. Fetch candidates from Firestore
-    // Note: We remove age filters from the Firestore query to avoid composite index requirements (Error 500)
-    // We will filter by age in memory below.
-    let query = db.collection('profiles')
-      .where('onboarding_completed', '==', true);
+    // 2. Fetch candidates from Firestore. Prefer geohash-bounded reads when GPS is available.
+    // Fallback to the broad query only when search is explicit or the geohash index is not populated enough yet.
+    const canUseGeohash = Number.isFinite(myLat) && Number.isFinite(myLon) && !searchQuery;
+    const broadQuery = buildBroadProfilesQuery(desiredGenders);
+    let candidates = [];
 
-    if (desiredGenders.length === 1) {
-      query = query.where('gender', '==', desiredGenders[0]);
+    if (canUseGeohash) {
+      candidates = await fetchProfilesByGeohash({
+        latitude: myLat,
+        longitude: myLon,
+        radiusKm: effectiveMaxDistance,
+        maxDocs: safeLimit * 8
+      });
     }
 
-    const snapshot = await query.get();
-    let candidates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    if (!canUseGeohash || candidates.length < safeLimit) {
+      const snapshot = await broadQuery.limit(canUseGeohash ? safeLimit * 8 : 500).get();
+      const fallbackCandidates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      candidates = mergeProfilesById(candidates, fallbackCandidates);
+    }
 
     // 3. In-memory filtering (Removes need for complex indexes)
     const minAgeNum = parseInt(minAge) || 18;
@@ -152,6 +210,7 @@ const getSuggestions = async (req, res) => {
       const candidateAgePreference = getCandidateAgePreference(c);
 
       return c.id !== me.id &&
+             c.onboarding_completed === true &&
              !c.suspended_at &&
              !alreadySwipedIds.has(c.id) &&
              (desiredGenders.length === 0 || desiredGenders.includes(candidateGender)) &&
