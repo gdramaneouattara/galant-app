@@ -73,6 +73,7 @@ export type ProfileDetailParam = {
   relationship_goal?: string | null;
   distance_km?: number | null;
   roses_count?: number | null;
+  rose_balance?: number | null;
   last_active_at?: string | null;
   likes_count?: number | null;
 };

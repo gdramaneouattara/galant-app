@@ -215,7 +215,7 @@ const PremiumPage: React.FC = () => {
             <div className="text-center space-y-3 relative z-10">
                <p className="text-[10px] font-black text-amber-600 uppercase tracking-[0.3em] leading-none">Votre Solde Privé</p>
                <div className="flex items-center justify-center gap-3">
-                  <span className="text-5xl font-black text-slate-950 tracking-tighter">{profile?.roses_count || 0}</span>
+                  <span className="text-5xl font-black text-slate-950 tracking-tighter">{profile?.rose_balance || 0}</span>
                   <span className="text-2xl">🌹</span>
                </div>
             </div>

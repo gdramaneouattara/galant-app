@@ -86,7 +86,7 @@ const GuidePage: React.FC = () => {
   });
 
   const handleContactVenue = async (venueId: string, venueName: string) => {
-    if (!profile?.is_premium && !profile?.is_vip && (profile?.roses_count || 0) < 1) {
+    if (!profile?.is_premium && !profile?.is_vip && (profile?.rose_balance || 0) < 1) {
       showAlert('Accès Conciergerie', 'Le chat direct avec les établissements est un privilège Premium.');
       navigate('/premium');
       return;

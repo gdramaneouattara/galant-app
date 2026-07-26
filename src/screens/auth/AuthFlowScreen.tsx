@@ -129,7 +129,7 @@ const AuthFlowScreen: React.FC = () => {
       if (form.city && form.bio.length >= 15) radiance_score += 25;
       if (photoUrls.length >= 1) radiance_score += 25;
 
-      // Utilisation de l'API Serveur pour activer la logique de récompense
+      // Utilisation de l'API Serveur pour centraliser la finalisation du profil
       await apiRequest('/api/profiles/complete-onboarding', {
         method: 'POST',
         requireAuth: true,

@@ -1,7 +1,6 @@
 const { db } = require('../config/firebase');
 const { isTrialActive } = require('../services/accessService');
 const { getDailyUsage, incrementUsage } = require('../services/usageService');
-const { sendPushNotification } = require('../services/notificationService');
 const { QUOTAS, BOOST_SCORES } = require('../config/constants');
 
 const updateProfile = async (req, res) => {
@@ -19,19 +18,6 @@ const updateProfile = async (req, res) => {
   if (radiance_score !== undefined) updates.radiance_score = radiance_score;
   if (onboarding_completed !== undefined) updates.onboarding_completed = onboarding_completed;
 
-  // --- LOGIQUE DE RÉCOMPENSE ONBOARDING ---
-  // Si le profil atteint 100% pour la première fois, on offre une Rose d'Or
-  if (radiance_score === 100 && !req.user.onboarding_reward_granted) {
-    updates.roses_count = (req.user.roses_count || 0) + 1;
-    updates.onboarding_reward_granted = true;
-
-    // Notification de félicitations
-    void sendPushNotification(
-      userId,
-      'Récompense d\'Élégance 🌹',
-      'Félicitations ! Votre profil est à 100%. Une Rose d\'Or vous a été offerte pour votre première rencontre d\'exception.'
-    );
-  }
 
   if (req.user.is_premium) {
     if (passport_city !== undefined) updates.passport_city = is_passport_active ? passport_city : null;
@@ -152,6 +138,7 @@ const createProfile = async (req, res) => {
       onboarding_completed: false,
       likes_count: 0,
       roses_count: 0,
+      rose_balance: 0,
       created_at: new Date().toISOString()
     };
 
@@ -171,9 +158,6 @@ const completeOnboarding = async (req, res) => {
 
   try {
     const profileRef = db.collection('profiles').doc(userId);
-    const profileDoc = await profileRef.get();
-    const profile = profileDoc.exists ? profileDoc.data() : {};
-
     const updates = {
       name,
       age: parseInt(age),
@@ -191,16 +175,6 @@ const completeOnboarding = async (req, res) => {
       updated_at: new Date().toISOString()
     };
 
-    // Reward Logic
-    if (radiance_score === 100 && !profile.onboarding_reward_granted) {
-      updates.roses_count = (profile.roses_count || 0) + 1;
-      updates.onboarding_reward_granted = true;
-      void sendPushNotification(
-        userId,
-        'Récompense d\'Élégance 🌹',
-        'Félicitations ! Votre profil est à 100%. Une Rose d\'Or vous a été offerte.'
-      );
-    }
 
     await profileRef.set(updates, { merge: true });
     res.json({ success: true });

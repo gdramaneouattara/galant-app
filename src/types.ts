@@ -40,6 +40,7 @@ export interface User {
   last_active_at?: string | null;
   likes_count: number;
   roses_count?: number;
+  rose_balance?: number;
   galanterie_score?: number;
   galanterie_ratings_count?: number;
   is_invisible?: boolean;

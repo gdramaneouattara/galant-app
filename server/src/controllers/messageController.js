@@ -240,7 +240,7 @@ const createVenueThread = async (req, res) => {
       // Si pas premium, on vérifie s'il a au moins 1 Rose d'Or
       const profileRef = db.collection('profiles').doc(me.id);
       const profileSnap = await profileRef.get();
-      const currentRoses = profileSnap.data().roses_count || 0;
+      const currentRoses = profileSnap.data().rose_balance || 0;
 
       if (currentRoses < 1) {
         return res.status(403).json({
@@ -251,7 +251,7 @@ const createVenueThread = async (req, res) => {
 
       // Débit de 1 Rose d'Or
       await profileRef.update({
-        roses_count: currentRoses - 1,
+        rose_balance: currentRoses - 1,
         updated_at: new Date().toISOString()
       });
     }

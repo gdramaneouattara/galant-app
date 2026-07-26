@@ -320,32 +320,43 @@ const handleSwipe = async (req, res) => {
     // 5. Persist Like
     const likeId = `${me.id}_${safeTargetUserId}`;
     const likeRef = db.collection('likes').doc(likeId);
-    const existingLike = await likeRef.get();
+    const targetProfileRef = db.collection('profiles').doc(safeTargetUserId);
+    const now = new Date().toISOString();
+    const nextIsSuperLike = !!isSuperLike;
 
-    await likeRef.set({
-      liker_id: me.id,
-      liked_id: safeTargetUserId,
-      is_super_like: !!isSuperLike,
-      created_at: new Date().toISOString()
-    });
+    await db.runTransaction(async (transaction) => {
+      const existingLike = await transaction.get(likeRef);
 
-    // 5.1 Increment counters ONLY if it's a new like
-    if (!existingLike.exists) {
-      try {
-        const profileUpdates = {};
+      if (!existingLike.exists) {
+        transaction.set(likeRef, {
+          liker_id: me.id,
+          liked_id: safeTargetUserId,
+          is_super_like: nextIsSuperLike,
+          status: nextIsSuperLike ? 'PENDING' : null,
+          created_at: now
+        });
 
-        if (isSuperLike) {
-          profileUpdates.roses_count = admin.firestore.FieldValue.increment(1);
-        } else {
-          profileUpdates.likes_count = admin.firestore.FieldValue.increment(1);
-        }
-
-        await db.collection('profiles').doc(safeTargetUserId).update(profileUpdates);
-        console.log(`[COUNTER] Successfully incremented ${isSuperLike ? 'roses' : 'likes'} for user ${safeTargetUserId}`);
-      } catch (countError) {
-        console.error(`[COUNTER ERROR] Failed to update user ${safeTargetUserId}:`, countError.message);
+        transaction.update(targetProfileRef, nextIsSuperLike
+          ? { roses_count: admin.firestore.FieldValue.increment(1) }
+          : { likes_count: admin.firestore.FieldValue.increment(1) }
+        );
+        return;
       }
-    }
+
+      const previousIsSuperLike = !!existingLike.data()?.is_super_like;
+      if (previousIsSuperLike === nextIsSuperLike) return;
+
+      transaction.set(likeRef, {
+        is_super_like: nextIsSuperLike,
+        status: nextIsSuperLike ? 'PENDING' : null,
+        updated_at: now
+      }, { merge: true });
+
+      transaction.update(targetProfileRef, {
+        likes_count: admin.firestore.FieldValue.increment(nextIsSuperLike ? -1 : 1),
+        roses_count: admin.firestore.FieldValue.increment(nextIsSuperLike ? 1 : -1)
+      });
+    });
 
     if (meHiddenByInvisibleMode) return res.json({ matched: false, matchId: null, invisible_like: true });
 
@@ -465,6 +476,7 @@ const getSuperLikesReceived = async (req, res) => {
 
       return {
         ...row,
+        status: row.status || 'PENDING',
         sender_id: row.liker_id,
         is_locked: false, // Now free for everyone
         user: senderProfile

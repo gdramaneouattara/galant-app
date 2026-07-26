@@ -151,7 +151,7 @@ const OnboardingPage: React.FC = () => {
 
       const token = await user.getIdToken();
 
-      // Complete Onboarding via Server to trigger reward logic
+      // Complete onboarding via the server so profile defaults and moderation hooks stay centralized.
       await apiRequest('/api/profiles/complete-onboarding', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -424,7 +424,7 @@ const OnboardingPage: React.FC = () => {
                     "Privilégiez la lumière naturelle du jour.",
                     "Évitez les lunettes de soleil (vos yeux brillent !).",
                     "Montrez votre style de vie et vos passions.",
-                    "100% de rayonnement = 1 Rose d'Or offerte 🌹"
+                    "Un profil complet augmente votre visibilité auprès des membres"
                   ].map((tip, i) => (
                     <li key={i} className="flex items-start gap-2 text-[10px] text-slate-400 dark:text-slate-500 font-medium leading-tight">
                        <div className="w-1 h-1 rounded-full bg-primary mt-1.5 shrink-0" />
