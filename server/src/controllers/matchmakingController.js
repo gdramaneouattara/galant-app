@@ -319,27 +319,32 @@ const handleSwipe = async (req, res) => {
 
     // 5. Persist Like
     const likeId = `${me.id}_${safeTargetUserId}`;
-    await db.collection('likes').doc(likeId).set({
+    const likeRef = db.collection('likes').doc(likeId);
+    const existingLike = await likeRef.get();
+
+    await likeRef.set({
       liker_id: me.id,
       liked_id: safeTargetUserId,
       is_super_like: !!isSuperLike,
       created_at: new Date().toISOString()
     });
 
-    // 5.1 Increment likes_count on target profile
-    try {
-      const profileUpdates = {
-        likes_count: admin.firestore.FieldValue.increment(1)
-      };
+    // 5.1 Increment counters ONLY if it's a new like
+    if (!existingLike.exists) {
+      try {
+        const profileUpdates = {};
 
-      if (isSuperLike) {
-        profileUpdates.roses_count = admin.firestore.FieldValue.increment(1);
+        if (isSuperLike) {
+          profileUpdates.roses_count = admin.firestore.FieldValue.increment(1);
+        } else {
+          profileUpdates.likes_count = admin.firestore.FieldValue.increment(1);
+        }
+
+        await db.collection('profiles').doc(safeTargetUserId).update(profileUpdates);
+        console.log(`[COUNTER] Successfully incremented ${isSuperLike ? 'roses' : 'likes'} for user ${safeTargetUserId}`);
+      } catch (countError) {
+        console.error(`[COUNTER ERROR] Failed to update user ${safeTargetUserId}:`, countError.message);
       }
-
-      await db.collection('profiles').doc(safeTargetUserId).update(profileUpdates);
-      console.log(`[COUNTER] Successfully incremented counters for user ${safeTargetUserId} (SuperLike: ${isSuperLike})`);
-    } catch (countError) {
-      console.error(`[COUNTER ERROR] Failed to update user ${safeTargetUserId}:`, countError.message);
     }
 
     if (meHiddenByInvisibleMode) return res.json({ matched: false, matchId: null, invisible_like: true });
