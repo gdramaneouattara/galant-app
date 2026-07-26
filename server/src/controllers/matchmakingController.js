@@ -1,4 +1,5 @@
-const { db, admin } = require('../config/firebase');
+const { db } = require('../config/firebase');
+const { FieldPath, FieldValue } = require('firebase-admin/firestore');
 const { calculateDistance, calculateMatchScore } = require('../services/matchmakingService');
 const { normalizeCity } = require('../utils/geo');
 const { hasInvisiblePremiumAccessForPlan, isHiddenByInvisibleMode, hasQuarterlyLimitedInvisibleAccess, isTrialActive } = require('../services/accessService');
@@ -337,8 +338,8 @@ const handleSwipe = async (req, res) => {
         });
 
         transaction.update(targetProfileRef, nextIsSuperLike
-          ? { roses_count: admin.firestore.FieldValue.increment(1) }
-          : { likes_count: admin.firestore.FieldValue.increment(1) }
+          ? { roses_count: FieldValue.increment(1) }
+          : { likes_count: FieldValue.increment(1) }
         );
         return;
       }
@@ -353,8 +354,8 @@ const handleSwipe = async (req, res) => {
       }, { merge: true });
 
       transaction.update(targetProfileRef, {
-        likes_count: admin.firestore.FieldValue.increment(nextIsSuperLike ? -1 : 1),
-        roses_count: admin.firestore.FieldValue.increment(nextIsSuperLike ? 1 : -1)
+        likes_count: FieldValue.increment(nextIsSuperLike ? -1 : 1),
+        roses_count: FieldValue.increment(nextIsSuperLike ? 1 : -1)
       });
     });
 
@@ -506,7 +507,7 @@ const getLikesReceived = async (req, res) => {
     const likerIds = [...new Set(rows.map(r => r.liker_id))];
     if (likerIds.length === 0) return res.json([]);
 
-    const profileSnapshot = await db.collection('profiles').where(admin.firestore.FieldPath.documentId(), 'in', likerIds.slice(0, 30)).get();
+    const profileSnapshot = await db.collection('profiles').where(FieldPath.documentId(), 'in', likerIds.slice(0, 30)).get();
     const profiles = profileSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(p => !p.suspended_at && p.onboarding_completed);
 
     const myMatchesSnapshot = await db.collection('matches').where('status', '==', 'ACTIVE').get();
