@@ -1,26 +1,34 @@
-# Walkthrough : Réorganisation de la navigation
+# Walkthrough : Déblocage Temporaire des Likes (2h)
 
-J'ai déplacé l'onglet **Messages** pour qu'il soit placé immédiatement après l'onglet **Découvrir** sur toutes les plateformes, offrant ainsi un accès plus rapide à vos conversations.
+J'ai implémenté une nouvelle option de monétisation flexible permettant aux utilisateurs de débloquer l'accès à leur boîte de likes pendant 2 heures pour un tarif unique de 1 000 F CFA.
 
 ## Changements effectués
 
-### [Web] Navigation
-- **[App.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/App.tsx)** :
-    - Dans le menu **Header** (Desktop), l'onglet "Messages" est désormais le deuxième élément.
-    - Dans la barre **MobileNav** (Web Mobile), l'icône de message a été déplacée en deuxième position, juste à côté de l'icône de recherche (Découvrir).
+### [Serveur]
+- **Configuration** : Ajout du prix `LIKES_INBOX_2H` (1 000 F) dans les constantes du système.
+- **Logique d'Entitlement** : Implémentation d'une nouvelle règle de droit d'accès. Lors du paiement, le champ `likes_unlocked_until` du profil utilisateur est mis à jour à `Maintenant + 2 heures`.
+- **Contrôle d'Accès** : La récupération des likes reçus autorise désormais l'accès si l'abonnement Premium est actif OU si le déblocage temporaire est toujours valide.
 
-### [Mobile] Navigation
-- **[MainNavigator.tsx](file:///C:/Users/UTILISATEUR/galant-app/src/navigation/MainNavigator.tsx)** :
-    - L'ordre des onglets dans le `UserTabNavigator` a été mis à jour. L'icône des messages apparaît désormais immédiatement après l'icône de découverte dans la barre d'onglets en bas.
+### [Web]
+- **[LikesInboxPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/LikesInboxPage.tsx)** :
+    - Ajout d'un bouton "Accès 2h (1 000 F)" sur l'écran de verrouillage des likes.
+    - Intégration de la modal de paiement Paystack dédiée.
+- **[InteractionPurchaseModal.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/InteractionPurchaseModal.tsx)** :
+    - Support visuel complet pour le type de déblocage (icône cœur, description explicative, prix spécifique).
+
+### [Mobile]
+- **[LikesInboxScreen.tsx](file:///C:/Users/UTILISATEUR/galant-app/src/screens/premium/LikesInboxScreen.tsx)** :
+    - Refonte de l'écran verrouillé pour inclure l'option de déblocage 2h avec une icône de carte bancaire et un bouton d'action secondaire élégant.
+    - Intégration du flux de paiement via le hook `useSubscription`.
 
 ## Résultats de la Vérification
 
 ### Tests Qualité
 - **Statut** : 100% Succès (70/70 tests).
-- L'intégrité de la navigation et des redirections a été vérifiée.
+- La logique de calcul du temps restant et de validation du prix est confirmée.
 
 ### Déploiement
-- Les modifications sont synchronisées et en ligne sur les branches **staging** et **main**.
+- Les modifications sont synchronisées et actives sur les branches **staging** et **main**.
 
 > [!TIP]
-> Ce nouvel agencement permet de basculer plus naturellement entre la recherche de nouveaux profils et la gestion de vos échanges en cours.
+> Cette option est idéale pour convertir les utilisateurs gratuits qui reçoivent une notification de like. Ils peuvent désormais voir qui les apprécie instantanément pour une somme modique, sans s'engager sur un mois complet.

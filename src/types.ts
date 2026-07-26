@@ -34,6 +34,7 @@ export interface User {
   is_verified: boolean;
   is_premium: boolean;
   boosted_until?: string | null;
+  likes_unlocked_until?: string | null;
   golden_rose_until?: string | null;
   relationship_goal?: string | null;
   last_active_at?: string | null;
