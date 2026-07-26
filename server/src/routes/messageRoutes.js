@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
-const { sendMessage, markAsRead, createDirectThread, reportUser, markMessagePlayed } = require('../controllers/messageController');
+const { sendMessage, markAsRead, createDirectThread, createVenueThread, reportUser, markMessagePlayed } = require('../controllers/messageController');
 
 router.post('/send', requireAuth, sendMessage);
 router.post('/mark-read', requireAuth, markAsRead);
