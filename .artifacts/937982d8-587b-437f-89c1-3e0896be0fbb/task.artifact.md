@@ -1,6 +1,7 @@
-# Automatisation du chargement des profils (Discovery)
+# Task: Final Fix for Like/Rose Counters & Stability
 
-- `[ ]` [Web] Stabiliser la recharge automatique dans `DiscoverPage.tsx` avec un état `hasMore`
-- `[ ]` [Mobile] Stabiliser la recharge automatique dans `HomeScreen.tsx` avec un état `hasMore`
-- `[ ]` Exécuter les tests de qualité
-- `[ ]` Déployer et synchroniser les branches
+- `[ ]` [Server] Harden counter increment logic in `matchmakingController.js`
+- `[ ]` [Server] Ensure default counter values in `maintenanceService.js`
+- `[ ]` [Web] Double-check icon imports in `InteractionPurchaseModal.tsx`
+- `[ ]` Run quality tests
+- `[ ]` Deploy and sync branches

@@ -1,28 +1,36 @@
-# Optimisation du chargement automatique (Discovery)
+# Correction finale du compteur de Likes et Roses
 
-Ce plan vise à stabiliser la recharge automatique des profils en empêchant les boucles infinies de chargement lorsque la base de données est réellement vide.
+Ce plan vise à sécuriser l'incrémentation des compteurs et à garantir leur affichage en temps réel, en corrigeant les instabilités potentielles du serveur et du client.
+
+## Problèmes identifiés
+1.  **Fiabilité de l'incrément** : L'utilisation de `admin.firestore.FieldValue.increment` peut être instable selon la version exacte du SDK. Nous allons utiliser l'import direct du module `firestore`.
+2.  **État initial** : Certains profils anciens n'ont pas les champs `likes_count` ou `roses_count`, ce qui peut ralentir la première mise à jour.
+3.  **Crashes Frontend** : Les erreurs de type `Heart is not defined` empêchaient l'application de fonctionner correctement, bloquant potentiellement l'envoi des swipes.
 
 ## Proposed Changes
 
-### [Web] Écran Découverte
+### [Server] Logique de Compteurs
 
-#### [MODIFY] [DiscoverPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/DiscoverPage.tsx)
-- Ajouter un état `hasMore` (booléen) initialisé à `true`.
-- Dans `loadSuggestions`, si le serveur renvoie une liste vide, passer `hasMore` à `false`.
-- Mettre à jour le `useEffect` de recharge automatique pour qu'il ne se déclenche que si `hasMore` est vrai.
-- Réinitialiser `hasMore` à `true` lorsque l'utilisateur modifie ses filtres.
+#### [MODIFY] [matchmakingController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/matchmakingController.js)
+- Importer `FieldValue` directement depuis `firebase-admin/firestore`.
+- Utiliser `FieldValue.increment(1)` pour plus de robustesse.
+- Ajouter des logs plus verbeux pour confirmer chaque incrémentation réussie en base.
 
-### [Mobile] Écran d'Accueil
+#### [MODIFY] [maintenanceService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/maintenanceService.js)
+- S'assurer que tous les profils ont au moins `0` dans ces champs lors de la réconciliation.
 
-#### [MODIFY] [HomeScreen.tsx](file:///C:/Users/UTILISATEUR/galant-app/src/screens/home/HomeScreen.tsx)
-- Ajouter un état `hasMore` similaire.
-- Bloquer la recharge automatique si aucun profil n'a été trouvé lors de la tentative précédente.
-- S'assurer que le message "Plus de profils pour le moment" reste visible sans clignotement de chargement incessant.
+### [Web] Interface
+
+#### [MODIFY] [InteractionPurchaseModal.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/InteractionPurchaseModal.tsx)
+- S'assurer que toutes les icônes (`Heart`, `Star`, `MessageCircle`) sont correctement importées pour éviter tout crash.
 
 ## Verification Plan
 
+### Automated Tests
+- Relancer `npm run test:quality` pour valider l'absence de régressions.
+
 ### Manual Verification
-1. Aller sur l'onglet Découverte avec des filtres très restrictifs (pour vider la pile).
-2. Vérifier que le système tente de charger une fois, puis s'arrête proprement s'il n'y a rien.
-3. Vérifier que le message "Plus de profils..." s'affiche de manière stable.
-4. Modifier les filtres pour élargir la recherche et vérifier que le chargement repart normalement.
+1.  Lancer la réconciliation automatique (en redémarrant le serveur).
+2.  Effectuer un Like depuis un compte de test.
+3.  Vérifier les logs serveur pour la mention `[COUNTER] Increment success`.
+4.  Vérifier sur le profil destinataire que le chiffre a bien augmenté sans rafraîchir (grâce à l'écouteur temps réel déjà en place).
