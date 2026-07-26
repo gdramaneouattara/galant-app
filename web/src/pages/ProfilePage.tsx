@@ -226,42 +226,42 @@ const ProfilePage: React.FC = () => {
             )}
           </div>
 
-          <label className="absolute top-6 right-6 w-12 h-12 bg-primary text-white rounded-2xl shadow-xl flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all border-4 border-white/20 backdrop-blur-sm z-20">
-            {uploading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Camera size={20} />}
+          <label className="absolute top-6 right-6 w-11 h-11 bg-primary/90 text-white rounded-2xl shadow-2xl flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all border-2 border-white/30 backdrop-blur-md z-20">
+            {uploading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Camera size={18} />}
             <input type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} />
           </label>
         </div>
 
-        {/* Floating Name & Stats */}
-        <div className="absolute bottom-10 left-8 right-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="text-white drop-shadow-lg text-center md:text-left">
+        {/* Floating Name & Stats - Lowered and refined */}
+        <div className="absolute bottom-6 left-8 right-8 flex flex-col md:flex-row items-end justify-between gap-6">
+          <div className="text-white drop-shadow-2xl text-left">
             {editing ? (
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="text-2xl md:text-4xl font-black border-b-2 border-primary outline-none bg-transparent w-full md:w-auto"
+                className="text-xl md:text-4xl font-black border-b-2 border-primary outline-none bg-transparent w-full md:w-auto"
               />
             ) : (
-              <h2 className="text-2xl md:text-4xl font-black tracking-tight leading-tight">{profile.name}, {profile.age}</h2>
+              <h2 className="text-xl md:text-4xl font-black tracking-tight leading-tight">{profile.name}, {profile.age}</h2>
             )}
-            <div className="flex items-center justify-center md:justify-start gap-2 text-white/80 font-bold text-xs uppercase tracking-wider mt-1">
-              <MapPin size={14} />
+            <div className="flex items-center gap-2 text-white/90 font-bold text-[10px] md:text-xs uppercase tracking-[0.2em] mt-1">
+              <MapPin size={12} className="text-primary" />
               <span>{(profile.city || 'Ville non renseignée').toUpperCase()}</span>
             </div>
           </div>
 
-          <div className="flex gap-2 w-full md:w-auto justify-center">
-            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-3 rounded-2xl shadow-xl flex flex-col items-center min-w-[75px] border border-white/50 dark:border-white/10 transition-colors">
-              <span className="text-lg font-black text-primary leading-none">{profile.galanterie_score || '5.0'}</span>
-              <span className="text-[7px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Galanterie</span>
+          <div className="flex gap-2 w-full md:w-auto justify-center md:justify-end">
+            <div className="bg-white/10 backdrop-blur-2xl p-3 rounded-2xl shadow-2xl flex flex-col items-center min-w-[75px] border border-white/20 transition-all">
+              <span className="text-lg font-black text-white leading-none">{profile.galanterie_score || '5.0'}</span>
+              <span className="text-[7px] font-black text-white/60 uppercase tracking-[0.2em] mt-1">Galanterie</span>
             </div>
-            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-3 rounded-2xl shadow-xl flex flex-col items-center min-w-[75px] border border-white/50 dark:border-white/10 transition-colors">
-              <span className="text-lg font-black text-rose-500 leading-none">{profile.likes_count || 0}</span>
-              <span className="text-[7px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Likes</span>
+            <div className="bg-white/10 backdrop-blur-2xl p-3 rounded-2xl shadow-2xl flex flex-col items-center min-w-[75px] border border-white/20 transition-all">
+              <span className="text-lg font-black text-white leading-none">{profile.likes_count || 0}</span>
+              <span className="text-[7px] font-black text-white/60 uppercase tracking-[0.2em] mt-1">Likes</span>
             </div>
-            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-3 rounded-2xl shadow-xl flex flex-col items-center min-w-[75px] border border-white/50 dark:border-white/10 transition-colors">
-              <span className="text-lg font-black text-amber-600 leading-none">{profile.roses_count || 0}</span>
-              <span className="text-[7px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Roses</span>
+            <div className="bg-white/10 backdrop-blur-2xl p-3 rounded-2xl shadow-2xl flex flex-col items-center min-w-[75px] border border-white/20 transition-all">
+              <span className="text-lg font-black text-white leading-none">{profile.roses_count || 0}</span>
+              <span className="text-[7px] font-black text-white/60 uppercase tracking-[0.2em] mt-1">Roses</span>
             </div>
           </div>
         </div>

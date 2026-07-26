@@ -1,26 +1,23 @@
-# Optimisation visuelle de la page Profil (Web)
+# Optimisation finale de l'en-tête de profil (Web)
 
-Ce plan vise à corriger les conflits visuels identifiés sur la page profil mobile/web afin de renforcer l'élégance et la lisibilité de l'interface Galant.
+Ce plan vise à corriger les derniers conflits visuels sur la page profil pour un rendu "Ultra Prestige", en repositionnant le nom et en rendant les statistiques plus élégantes.
 
 ## Proposed Changes
 
 ### [Web] Pages
 
 #### [MODIFY] [ProfilePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ProfilePage.tsx)
-- **Bouton Photo** : Déplacer le bouton d'importation de photo du bas-droite vers le **haut-droite** (`top-6 right-6`) de l'image de couverture. Cela évitera le chevauchement avec les boîtes de statistiques.
-- **Position du Nom et de l'Âge** :
-    - Réduire la taille de la police pour le nom de `text-4xl` à `text-2xl` sur mobile (tout en gardant `md:text-4xl` pour le desktop).
-    - Ajuster le décalage vertical (`bottom-12` au lieu de `-bottom-8`) pour que le nom ne masque plus le centre du visage.
-- **Boîtes de Statistiques** :
-    - Réduire le rembourrage interne de `p-4` à `p-3`.
-    - Ajuster la largeur minimale de `min-w-[80px]` à `min-w-[75px]` pour un aspect plus fin et mieux espacé sur les petits écrans.
-- **Titre de la Biographie** : Augmenter la taille du titre "MA BIOGRAPHIE" de `text-xs` à `text-sm` pour une meilleure hiérarchie visuelle.
+- **Position du Nom** : Descendre le bloc nom/âge encore plus bas (`bottom-6` au lieu de `bottom-10`) et réduire la taille de police sur mobile à `text-xl` pour éviter tout chevauchement avec le visage.
+- **Style des Statistiques** :
+    - Rendre les boîtes de statistiques **translucides** (`bg-white/20 backdrop-blur-xl`) pour un effet de transparence luxueux qui laisse deviner la photo derrière.
+    - Utiliser une bordure très fine et blanche (`border-white/20`).
+    - Changer la couleur du texte des étiquettes (Galanterie, Likes, Roses) en blanc pur pour une meilleure lisibilité sur fond sombre.
+- **Ajustement du Bouton Photo** : Réduire légèrement sa taille et l'opacité au repos pour qu'il soit moins intrusif.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Ouvrir la page Profil sur navigateur mobile et desktop.
-2.  Vérifier que le bouton photo est en haut à droite.
-3.  Vérifier que le nom est bien positionné et ne cache plus le visage de l'utilisateur.
-4.  Vérifier que les 3 boîtes de statistiques (Galanterie, Likes, Roses) sont bien alignées sans se chevaucher.
-5.  Confirmer que le titre de la biographie est plus lisible.
+1.  Ouvrir le profil sur navigateur mobile.
+2.  Vérifier que le nom "OUATTARA Dramane" est bien en bas de l'image et ne touche plus le menton/visage.
+3.  Vérifier l'effet de transparence "Glassmorphism" sur les 3 boîtes de statistiques.
+4.  Confirmer que l'icône appareil photo ne gêne plus la lecture des chiffres.
