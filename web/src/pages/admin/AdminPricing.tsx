@@ -86,7 +86,8 @@ const AdminPricing: React.FC = () => {
               { id: 'DIRECT_MESSAGE', label: 'Message Direct', icon: MessageSquare },
               { id: 'ROSE_NOTE_UNLOCK', label: 'Note Parfumée', icon: Sparkles },
               { id: 'GOLDEN_ROSE', label: 'Bouquet Royal (3h)', icon: Gem },
-              { id: 'STORY_UPLOAD', label: 'Publication Story', icon: Film }
+              { id: 'STORY_UPLOAD', label: 'Publication Story', icon: Film },
+              { id: 'LIKES_INBOX_2H', label: 'Déblocage Likes (2h)', icon: Heart }
             ].map(item => (
               <div key={item.id} className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.label}</label>

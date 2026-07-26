@@ -1,45 +1,23 @@
-# Ouverture gratuite de la Boîte de Roses
+# Ajout de la gestion du tarif "Déblocage Likes (2h)" dans l'interface Admin
 
-Ce plan vise à rendre la consultation des Roses reçues (Super Likes) totalement gratuite pour tous les utilisateurs. Puisque l'expéditeur a déjà payé pour envoyer une Rose, le destinataire doit pouvoir en apprécier le contenu (photo et note parfumée) sans barrière financière.
-
-## User Review Required
-
-> [!IMPORTANT]
-> - L'identité de l'expéditeur (nom et photos) ne sera plus floutée pour les hommes non-Premium.
-> - La "Note Parfumée" jointe à une Rose sera lisible instantanément et gratuitement par tous.
-> - L'option d'achat de déblocage de note sera supprimée car elle devient obsolète.
+Ce plan vise à permettre aux administrateurs de modifier dynamiquement le prix du déblocage temporaire de la boîte de likes depuis le tableau de bord de gestion des tarifs.
 
 ## Proposed Changes
 
-### [Serveur] Logique de Matchmaking
+### [Web] Administration
 
-#### [MODIFY] [matchmakingController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/matchmakingController.js)
-- Dans `getSuperLikesReceived`, supprimer la logique de verrouillage `isLocked`.
-- Toujours renvoyer le profil complet (`senderProfile`) et définir `is_locked: false`.
-- Supprimer la vérification des achats `ROSE_NOTE_UNLOCK`.
-
-### [Web] Interface Utilisateur
-
-#### [MODIFY] [RosesInboxPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/RosesInboxPage.tsx)
-- Supprimer l'état `unlockingId` et la fonction `handleUnlockNote`.
-- Retirer le rendu conditionnel basé sur `row.is_locked` (plus de flou, plus de bouton "Débloquer").
-- Afficher directement le nom, la photo et la note parfumée.
-
-### [Mobile] Interface Utilisateur
-
-#### [MODIFY] [SuperLikeCard.tsx](file:///C:/Users/UTILISATEUR/galant-app/src/screens/premium/components/SuperLikeCard.tsx)
-- Supprimer le style `lockedCard` et les overlays de verrouillage.
-- Toujours afficher l'âge et la ville du profil.
-- Remplacer le bloc `lockedNoteBox` par l'affichage direct de la note.
-
-#### [MODIFY] [LikesReceivedScreen.tsx](file:///C:/Users/UTILISATEUR/galant-app/src/screens/premium/LikesReceivedScreen.tsx)
-- Supprimer la fonction `handleUnlockNote` et les états de chargement associés.
+#### [MODIFY] [AdminPricing.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminPricing.tsx)
+- Ajouter l'entrée `LIKES_INBOX_2H` dans la liste des interactions individuelles.
+- Utiliser l'icône `Heart` pour ce champ.
+- S'assurer que la valeur est correctement synchronisée avec l'état local et envoyée au serveur lors de l'enregistrement.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Utiliser un compte Homme non-Premium.
-2.  Lui envoyer une Rose (Super Like) depuis un autre compte.
-3.  Vérifier que l'homme peut voir la photo nette et lire la note parfumée sans payer.
-4.  Confirmer qu'aucun bouton "Débloquer" n'apparaît.
-5.  Vérifier que l'action "Accepter" fonctionne toujours parfaitement pour créer le match.
+1. Se connecter avec un compte Administrateur.
+2. Aller dans **Admin > Tarifs**.
+3. Vérifier que le champ "Déblocage Likes (2h)" est présent.
+4. Modifier la valeur (ex: passer de 1000 à 1500).
+5. Cliquer sur **Enregistrer**.
+6. Rafraîchir la page et vérifier que la nouvelle valeur est persistée.
+7. Vérifier sur un compte utilisateur que le nouveau prix est bien appliqué dans la boîte de likes.

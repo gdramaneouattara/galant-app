@@ -1,8 +1,5 @@
-# Task: Free Roses Inbox Access
+# Ajout du tarif "Déblocage Likes (2h)" dans l'Admin
 
-- `[ ]` [Server] Remove locking logic from `matchmakingController.js`
-- `[ ]` [Web] Clean up `RosesInboxPage.tsx` (remove unlock UI/logic)
-- `[ ]` [Mobile] Remove `handleUnlockNote` from `LikesReceivedScreen.tsx`
-- `[ ]` [Mobile] Clean up `SuperLikeCard.tsx` (remove locked styles/overlays)
-- `[ ]` Run quality tests
-- `[ ]` Deploy and synchronize branches
+- `[ ]` Modifier `web/src/pages/admin/AdminPricing.tsx` pour inclure le champ LIKES_INBOX_2H
+- `[ ]` Vérifier la cohérence avec le serveur
+- `[ ]` Déployer et synchroniser

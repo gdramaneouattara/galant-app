@@ -9,6 +9,7 @@ const EXPO_PUSH_ACCESS_TOKEN = process.env.EXPO_PUSH_ACCESS_TOKEN || '';
  */
 const sendPushNotification = async (userId, title, body, data = {}) => {
   try {
+    console.log(`[PUSH] Triggering notification for user ${userId}: ${title}`);
     const snapshot = await db.collection('push_tokens')
       .where('user_id', '==', userId)
       .where('is_active', '==', true)

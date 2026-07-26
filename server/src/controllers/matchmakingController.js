@@ -381,6 +381,7 @@ const respondToSuperLike = async (req, res) => {
   const me = req.user;
 
   try {
+    console.log(`[ROSE] User ${me.id} responding to rose ${id} with action: ${action}`);
     const likeRef = db.collection('likes').doc(id);
     const likeDoc = await likeRef.get();
     if (!likeDoc.exists) return res.status(404).json({ error: 'rose_not_found' });
