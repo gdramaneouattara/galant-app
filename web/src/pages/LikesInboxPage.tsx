@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '@shared/lib/api';
-import { Heart, ShieldCheck, MapPin, MessageCircle, Lock, Star } from 'lucide-react';
+import { Heart, ShieldCheck, MapPin, MessageCircle, Lock, Star, ChevronLeft, CreditCard } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { Link, useNavigate } from 'react-router-dom';
+import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
 
 interface LikeInboxRow {
   liker_id: string;
@@ -23,14 +24,16 @@ interface LikeInboxRow {
 }
 
 const LikesInboxPage: React.FC = () => {
-  const { user, profile, t } = useAuth();
+  const { user, profile, t, reloadUser } = useAuth();
   const [likes, setLikes] = useState<LikeInboxRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [likingId, setLikingId] = useState<string | null>(null);
+  const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
   const navigate = useNavigate();
 
   const isFemaleFreePlan = profile?.gender === 'FEMALE' && !profile?.is_premium;
-  const canAccess = profile?.is_premium || isFemaleFreePlan;
+  const isTemporarilyUnlocked = profile?.likes_unlocked_until && new Date(profile.likes_unlocked_until) > new Date();
+  const canAccess = profile?.is_premium || isFemaleFreePlan || isTemporarilyUnlocked;
 
   const fetchLikes = useCallback(async () => {
     if (!canAccess) {
@@ -78,17 +81,41 @@ const LikesInboxPage: React.FC = () => {
 
   if (!canAccess) {
     return (
-      <div className="max-w-md mx-auto text-center py-20 bg-white dark:bg-slate-900 rounded-[3rem] shadow-xl border border-slate-100 dark:border-white/5 p-10">
-        <div className="w-24 h-24 bg-rose-50 dark:bg-rose-900/20 text-primary rounded-full flex items-center justify-center mx-auto mb-8">
+      <div className="max-w-md mx-auto text-center py-20 bg-white dark:bg-slate-900 rounded-[3rem] shadow-xl border border-slate-100 dark:border-white/5 p-10 space-y-8">
+        <div className="w-24 h-24 bg-rose-50 dark:bg-rose-900/20 text-primary rounded-full flex items-center justify-center mx-auto">
           <Lock size={48} />
         </div>
-        <h2 className="text-3xl font-black mb-4 italic dark:text-white">Likes Reçus</h2>
-        <p className="text-slate-500 dark:text-slate-400 mb-10 font-medium leading-relaxed">
-          Découvrez qui a eu un coup de cœur pour vous. Cette fonctionnalité est réservée à nos membres Premium.
-        </p>
-        <Link to="/premium" className="block w-full bg-primary text-white py-5 rounded-2xl font-bold shadow-lg shadow-red-200">
-          {t('become_premium')}
-        </Link>
+
+        <div className="space-y-4">
+          <h2 className="text-3xl font-black italic dark:text-white transition-colors">Likes Reçus</h2>
+          <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed transition-colors">
+            Découvrez qui a eu un coup de cœur pour vous. Cette fonctionnalité est réservée à nos membres d'exception.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 pt-4">
+          <Link to="/premium" className="block w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all hover:scale-[1.02] active:scale-95">
+            {t('become_premium')}
+          </Link>
+
+          <button
+            onClick={() => setIsUnlockModalOpen(true)}
+            className="w-full py-5 rounded-2xl border-2 border-slate-100 dark:border-white/10 text-slate-700 dark:text-slate-300 font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-all"
+          >
+            <CreditCard size={18} />
+            Accès 2h (1 000 F)
+          </button>
+        </div>
+
+        <InteractionPurchaseModal
+          isOpen={isUnlockModalOpen}
+          onClose={() => setIsUnlockModalOpen(false)}
+          type="LIKES_INBOX_2H"
+          onSuccess={async () => {
+            await reloadUser();
+            setIsUnlockModalOpen(false);
+          }}
+        />
       </div>
     );
   }

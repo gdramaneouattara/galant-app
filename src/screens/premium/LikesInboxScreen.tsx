@@ -12,10 +12,11 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { Heart, X } from 'lucide-react-native';
+import { Heart, X, CreditCard } from 'lucide-react-native';
 import { apiRequest } from '../../lib/api';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
+import { useSubscription } from '../../hooks/useSubscription';
 
 type LikeInboxRow = {
   liker_id: string;
@@ -42,7 +43,8 @@ const TRIAL_DAYS = 7;
 
 const LikesInboxScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { currentUser, appResumeVersion } = useApp();
+  const { currentUser, appResumeVersion, refreshCurrentUser } = useApp();
+  const { purchaseWithPaystack, purchaseLoading } = useSubscription();
   const [likes, setLikes] = useState<LikeInboxRow[]>([]);
   const [selectedLike, setSelectedLike] = useState<LikeInboxRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,7 +67,8 @@ const LikesInboxScreen: React.FC = () => {
   }, [currentUser?.gender, currentUser?.is_premium, currentUser?.trial_started_at]);
 
   const isFemaleFreePlan = String(currentUser?.gender || '').toUpperCase() === 'FEMALE' && !currentUser?.is_premium;
-  const canAccessLikesInbox = !!currentUser?.is_premium || trialInfo.active || isFemaleFreePlan;
+  const isTemporarilyUnlocked = currentUser?.likes_unlocked_until && new Date(currentUser.likes_unlocked_until) > new Date();
+  const canAccessLikesInbox = !!currentUser?.is_premium || trialInfo.active || isFemaleFreePlan || isTemporarilyUnlocked;
 
   const fetchLikesInbox = useCallback(async () => {
     if (!canAccessLikesInbox) {
@@ -163,13 +166,40 @@ const LikesInboxScreen: React.FC = () => {
   };
 
   if (!canAccessLikesInbox) {
+    const handleUnlock2h = async () => {
+      const ok = await purchaseWithPaystack('LIKES_INBOX_2H', 1000);
+      if (ok) {
+        await refreshCurrentUser();
+        fetchLikesInbox();
+      }
+    };
+
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.lockedWrap}>
+          <View style={{ width: 80, height: 80, borderRadius: 30, backgroundColor: '#fff1f2', justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
+            <Heart size={40} color={COLORS.primary} fill={COLORS.primary} />
+          </View>
           <Text style={styles.title}>Boîte Likes reçus</Text>
-          <Text style={styles.lockedText}>Cette boîte est réservée aux abonnés Premium.</Text>
-          <Pressable style={styles.lockedBtn} onPress={() => navigation.navigate('Premium' as never)}>
-            <Text style={styles.lockedBtnText}>Passer à Premium</Text>
+          <Text style={[styles.lockedText, { marginBottom: 30, paddingHorizontal: 40 }]}>
+            Découvrez qui a eu un coup de cœur pour vous. Cette boîte est réservée à nos membres d'exception.
+          </Text>
+
+          <Pressable style={[styles.lockedBtn, { width: '100%', paddingVertical: 16, marginBottom: 12 }]} onPress={() => navigation.navigate('Premium' as never)}>
+            <Text style={styles.lockedBtnText}>Passer Premium (Mois)</Text>
+          </Pressable>
+
+          <Pressable
+            style={[styles.secondaryButton, { width: '100%', paddingVertical: 16, flexDirection: 'row', justifyContent: 'center', gap: 10, alignItems: 'center' }]}
+            onPress={handleUnlock2h}
+            disabled={purchaseLoading}
+          >
+            {purchaseLoading ? <ActivityIndicator size="small" color={COLORS.ink} /> : (
+              <>
+                <CreditCard size={18} color={COLORS.ink} />
+                <Text style={styles.secondaryButtonText}>Accès 2h (1 000 F CFA)</Text>
+              </>
+            )}
           </Pressable>
         </View>
       </SafeAreaView>

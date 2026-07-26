@@ -194,6 +194,11 @@ const applyPurchasedEntitlement = async ({
       provider: paymentMethod,
       created_at: new Date().toISOString()
     });
+  } else if (normalizedType === 'LIKES_INBOX_2H') {
+    const expiresAt = new Date(Date.now() + 2 * 3600 * 1000).toISOString();
+    await db.collection('profiles').doc(userId).update({
+      likes_unlocked_until: expiresAt
+    });
   }
 
   return { success: true };

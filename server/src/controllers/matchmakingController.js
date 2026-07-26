@@ -415,7 +415,11 @@ const getSuperLikesReceived = async (req, res) => {
 
 const getLikesReceived = async (req, res) => {
   const isFemaleFreePlan = String(req.user?.gender || '').toUpperCase() === 'FEMALE' && !req.user?.is_premium;
-  if (!req.user?.is_premium && !isTrialActive(req.user) && !isFemaleFreePlan) return res.status(403).json({ error: 'subscription_required' });
+  const isTemporarilyUnlocked = req.user?.likes_unlocked_until && new Date(req.user.likes_unlocked_until) > new Date();
+
+  if (!req.user?.is_premium && !isTrialActive(req.user) && !isFemaleFreePlan && !isTemporarilyUnlocked) {
+    return res.status(403).json({ error: 'subscription_required' });
+  }
 
   try {
     const snapshot = await db.collection('likes')

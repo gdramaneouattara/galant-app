@@ -6,8 +6,8 @@ import { showAlert } from '@shared/lib/ui-bridge';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  type: 'SUPER_LIKE' | 'DIRECT_MESSAGE';
-  userName: string;
+  type: 'SUPER_LIKE' | 'DIRECT_MESSAGE' | 'LIKES_INBOX_2H';
+  userName?: string;
   onSuccess: () => void;
 }
 
@@ -18,8 +18,8 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, user
 
   const handlePurchase = async () => {
     try {
-      const amount = 500; // Prix fixe 500 FCFA pour une interaction unique
-      const ok = await purchaseWithPaystack(type, amount, undefined, { targetName: userName });
+      const amount = type === 'LIKES_INBOX_2H' ? 1000 : 500;
+      const ok = await purchaseWithPaystack(type, amount, undefined, { targetName: userName || 'Boîte de Likes' });
       if (ok) {
         onSuccess();
         onClose();
@@ -40,23 +40,32 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, user
           </div>
 
           <div className={`w-20 h-20 mx-auto rounded-[2rem] flex items-center justify-center shadow-lg ${
-            type === 'SUPER_LIKE' ? 'bg-rose-50 shadow-rose-100' : 'bg-blue-50 text-blue-500 shadow-blue-100'
+            type === 'SUPER_LIKE' ? 'bg-rose-50 shadow-rose-100' :
+            type === 'LIKES_INBOX_2H' ? 'bg-amber-50 text-amber-500 shadow-amber-100' :
+            'bg-blue-50 text-blue-500 shadow-blue-100'
           }`}>
-            {type === 'SUPER_LIKE' ? <span className="text-4xl">🌹</span> : <MessageCircle size={40} fill="currentColor" />}
+            {type === 'SUPER_LIKE' ? <span className="text-4xl">🌹</span> :
+             type === 'LIKES_INBOX_2H' ? <Heart size={40} fill="currentColor" /> :
+             <MessageCircle size={40} fill="currentColor" />}
           </div>
 
           <div className="space-y-2">
             <h3 className="text-2xl font-black italic">
-              {type === 'SUPER_LIKE' ? 'Offrir des Roses' : 'Message Privé'}
+              {type === 'SUPER_LIKE' ? 'Offrir des Roses' :
+               type === 'LIKES_INBOX_2H' ? 'Débloquer les Likes' :
+               'Message Privé'}
             </h3>
             <p className="text-slate-500 text-sm font-medium leading-relaxed">
-              Attirez immédiatement l'attention de <span className="text-slate-900 font-bold">{userName}</span> avec cette attention d'exception.
+              {type === 'LIKES_INBOX_2H'
+                ? "Accédez à l'intégralité de vos likes reçus pendant 2 heures et trouvez votre match immédiatement."
+                : <>Attirez immédiatement l'attention de <span className="text-slate-900 font-bold">{userName}</span> avec cette attention d'exception.</>
+              }
             </p>
           </div>
 
           <div className="bg-slate-50 p-4 rounded-2xl">
             <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Tarif Unique</span>
-            <p className="text-2xl font-black text-slate-900">500 F CFA</p>
+            <p className="text-2xl font-black text-slate-900">{type === 'LIKES_INBOX_2H' ? '1 000' : '500'} F CFA</p>
           </div>
 
           <button
