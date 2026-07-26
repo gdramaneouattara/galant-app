@@ -1,7 +1,28 @@
-import React from 'react';
-import { Users, Gem, Calendar, CreditCard, TrendingUp, TrendingDown, Info, PieChart } from 'lucide-react';
+import React, { useState } from 'react';
+import { Users, Gem, Calendar, CreditCard, TrendingUp, TrendingDown, Info, PieChart, RefreshCw, ShieldCheck } from 'lucide-react';
+import { apiRequest } from '@shared/lib/api';
+import { showAlert } from '@shared/lib/ui-bridge';
 
 const AdminDashboard: React.FC = () => {
+  const [reconciling, setReconciling] = useState(false);
+
+  const handleReconcileCounters = async () => {
+    if (!window.confirm("Cette action va recompter tous les likes et toutes les roses de la base de données pour synchroniser les compteurs. Continuer ?")) return;
+
+    setReconciling(true);
+    try {
+      const res = await apiRequest<any>('/api/admin/users/reconcile-counters', {
+        method: 'POST',
+        requireAuth: true
+      });
+      showAlert('Succès', `Réconciliation terminée. ${res.updated} profils ont été mis à jour.`);
+    } catch (e: any) {
+      showAlert('Erreur', e.message);
+    } finally {
+      setReconciling(false);
+    }
+  };
+
   const stats = [
     { label: 'Utilisateurs Totaux', value: '2,840', icon: Users, color: 'text-blue-500', bg: 'bg-blue-50', trend: '+12%', trendUp: true },
     { label: 'Membres Premium', value: '412', icon: Gem, color: 'text-amber-500', bg: 'bg-amber-50', trend: '+5%', trendUp: true },
@@ -104,6 +125,21 @@ const AdminDashboard: React.FC = () => {
             </div>
             {/* Autres news... */}
           </div>
+        </div>
+      </div>
+
+      {/* Maintenance & Tools */}
+      <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-50">
+        <h3 className="text-xl font-black mb-6 italic">Maintenance & Outils</h3>
+        <div className="flex flex-wrap gap-4">
+          <button
+            onClick={handleReconcileCounters}
+            disabled={reconciling}
+            className="flex items-center gap-3 bg-slate-900 text-white px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all disabled:opacity-50"
+          >
+            {reconciling ? <RefreshCw className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
+            Réconcilier les compteurs (Likes/Roses)
+          </button>
         </div>
       </div>
     </div>

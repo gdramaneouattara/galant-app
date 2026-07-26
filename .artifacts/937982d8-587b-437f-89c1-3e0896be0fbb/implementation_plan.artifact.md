@@ -1,27 +1,38 @@
-# Synchronisation en temps réel du profil et des compteurs (Web)
+# Réconciliation historique des compteurs de Likes et Roses
 
-Ce plan vise à rendre l'interface Web totalement réactive en utilisant des écouteurs Firestore (onSnapshot) pour le profil utilisateur. Cela permettra de voir les compteurs de likes et de roses se mettre à jour instantanément sans rafraîchir la page.
+Ce plan vise à synchroniser les compteurs `likes_count` et `roses_count` de tous les profils existants en comptabilisant réellement les interactions présentes dans la collection `likes` de Firestore.
+
+## User Review Required
+
+> [!IMPORTANT]
+> - Cette opération va écraser les valeurs actuelles des compteurs par la réalité du terrain (comptage manuel de la collection `likes`).
+> - L'opération peut prendre quelques secondes selon le nombre d'utilisateurs en base.
 
 ## Proposed Changes
 
-### [Web] Authentification et Contexte
+### [Server] Administration et Maintenance
 
-#### [MODIFY] [AuthContext.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/context/AuthContext.tsx)
-- Remplacer l'appel unique `getDoc` par un écouteur `onSnapshot` sur le document de profil de l'utilisateur connecté.
-- S'assurer que l'abonnement (listener) est correctement nettoyé lors de la déconnexion ou du changement d'utilisateur pour éviter les fuites de mémoire.
+#### [MODIFY] [adminController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/adminController.js)
+- Implémenter une nouvelle fonction `reconcileCounters` :
+    - Récupérer tous les documents de la collection `profiles`.
+    - Pour chaque profil :
+        - Compter les documents dans `likes` où `liked_id` correspond à l'utilisateur.
+        - Séparer les likes standards des Super Likes (`is_super_like: true`).
+        - Mettre à jour le document `profiles` avec les totaux exacts.
+- Exporter la fonction.
 
-### [Web] Pages
+#### [MODIFY] [adminRoutes.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/routes/adminRoutes.js)
+- Ajouter la route `POST /api/admin/users/reconcile-counters` pointant vers la nouvelle fonction.
 
-#### [MODIFY] [MatchesPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/MatchesPage.tsx)
-- Supprimer la logique de récupération manuelle des compteurs (`fetchCounts`) via les API.
-- Utiliser directement `profile.likes_count` et `profile.roses_count` pour alimenter les cartes de notification en haut de la page.
-- Cela garantit une mise à jour visuelle immédiate dès que le serveur incrémente les valeurs en base de données.
+### [Web] Interface Admin
+
+#### [MODIFY] [AdminDashboard.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminDashboard.tsx)
+- Ajouter un bouton "Réconcilier les compteurs" dans la section maintenance pour permettre à l'administrateur de lancer cette tâche manuellement.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Ouvrir deux navigateurs avec deux comptes différents (A et B).
-2.  Aller sur l'onglet **Messages** avec le compte B.
-3.  Liker le compte B avec le compte A depuis l'autre navigateur.
-4.  Vérifier sur le compte B que le chiffre "Likes Reçus" passe de 0 à 1 **instantanément** et sans action manuelle.
-5.  Faire de même avec une Rose (Super Like) et vérifier le compteur "Boîte de Roses".
+1.  Identifier un utilisateur qui a des likes en base mais un compteur à zéro.
+2.  Se connecter en tant qu'admin.
+3.  Lancer la réconciliation depuis le dashboard.
+4.  Vérifier que le compteur de l'utilisateur a été mis à jour correctement.

@@ -1,6 +1,7 @@
-# Task: Real-time Profile & Counter Sync (Web)
+# Réconciliation historique des compteurs
 
-- `[ ]` [Web] Update `AuthContext.tsx` to use `onSnapshot` for real-time profile updates
-- `[ ]` [Web] Refactor `MatchesPage.tsx` to use `profile.likes_count` and `profile.roses_count`
-- `[ ]` Run quality tests
-- `[ ]` Deploy and synchronize branches
+- `[ ]` Implémenter `reconcileCounters` dans `server/src/controllers/adminController.js`
+- `[ ]` Ajouter la route dans `server/src/routes/adminRoutes.js`
+- `[ ]` Ajouter le bouton de maintenance dans `web/src/pages/admin/AdminDashboard.tsx`
+- `[ ]` Lancer les tests de qualité
+- `[ ]` Déployer et synchroniser les branches
