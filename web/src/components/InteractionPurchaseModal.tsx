@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, CreditCard, Sparkles, MessageCircle } from 'lucide-react';
+import { X, CreditCard, Sparkles, MessageCircle, Heart } from 'lucide-react';
 import { useSubscription } from '@shared/hooks/useSubscription';
 import { showAlert } from '@shared/lib/ui-bridge';
 
