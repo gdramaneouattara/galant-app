@@ -1,10 +1,8 @@
-# Task: Temporary Likes Box Unlock (2h)
+# Task: Free Roses Inbox Access
 
-- `[ ]` [Server] Add `LIKES_INBOX_2H` price in `constants.js`
-- `[ ]` [Server] Handle `LIKES_INBOX_2H` in `paymentHelpers.js`
-- `[ ]` [Server] Implement entitlement logic in `subscriptionService.js`
-- `[ ]` [Server] Update access check in `matchmakingController.js`
-- `[ ]` [Web] Add UI for temporary unlock in `InteractionPurchaseModal.tsx`
-- `[ ]` [Web] Add unlock button in `LikesInboxPage.tsx`
-- `[ ]` [Mobile] Add unlock button in `LikesInboxScreen.tsx`
-- `[ ]` Run quality tests and deploy
+- `[ ]` [Server] Remove locking logic from `matchmakingController.js`
+- `[ ]` [Web] Clean up `RosesInboxPage.tsx` (remove unlock UI/logic)
+- `[ ]` [Mobile] Remove `handleUnlockNote` from `LikesReceivedScreen.tsx`
+- `[ ]` [Mobile] Clean up `SuperLikeCard.tsx` (remove locked styles/overlays)
+- `[ ]` Run quality tests
+- `[ ]` Deploy and synchronize branches

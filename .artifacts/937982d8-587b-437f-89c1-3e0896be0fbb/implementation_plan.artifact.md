@@ -1,51 +1,45 @@
-# Déblocage temporaire de la boîte des likes (2h)
+# Ouverture gratuite de la Boîte de Roses
 
-Ce plan vise à offrir une alternative à l'abonnement Premium en permettant aux utilisateurs de débloquer l'accès à leur boîte de likes pendant une durée limitée (2 heures) via un paiement unique de 1000 F CFA.
+Ce plan vise à rendre la consultation des Roses reçues (Super Likes) totalement gratuite pour tous les utilisateurs. Puisque l'expéditeur a déjà payé pour envoyer une Rose, le destinataire doit pouvoir en apprécier le contenu (photo et note parfumée) sans barrière financière.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - Le prix est fixé à **1000 F CFA** pour **2 heures** d'accès total.
-> - Cette option est idéale pour les utilisateurs qui reçoivent beaucoup de likes ponctuellement mais ne souhaitent pas s'abonner au mois.
+> - L'identité de l'expéditeur (nom et photos) ne sera plus floutée pour les hommes non-Premium.
+> - La "Note Parfumée" jointe à une Rose sera lisible instantanément et gratuitement par tous.
+> - L'option d'achat de déblocage de note sera supprimée car elle devient obsolète.
 
 ## Proposed Changes
 
-### [Server] Configuration et Prix
-
-#### [MODIFY] [constants.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/config/constants.js)
-- Ajouter `LIKES_INBOX_2H: 1000` dans l'objet `PRICES`.
-
-#### [MODIFY] [paymentHelpers.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/utils/paymentHelpers.js)
-- Gérer le type `LIKES_INBOX_2H` dans `getExpectedAmountForPurchase`.
-
-### [Server] Logique d'accès
-
-#### [MODIFY] [subscriptionService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/subscriptionService.js)
-- Dans `applyPurchasedEntitlement`, ajouter le cas `LIKES_INBOX_2H` pour mettre à jour le champ `likes_unlocked_until` (now + 2h) dans le document `profiles`.
+### [Serveur] Logique de Matchmaking
 
 #### [MODIFY] [matchmakingController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/matchmakingController.js)
-- Mettre à jour `getLikesReceived` pour autoriser l'accès si `likes_unlocked_until` est dans le futur.
+- Dans `getSuperLikesReceived`, supprimer la logique de verrouillage `isLocked`.
+- Toujours renvoyer le profil complet (`senderProfile`) et définir `is_locked: false`.
+- Supprimer la vérification des achats `ROSE_NOTE_UNLOCK`.
 
 ### [Web] Interface Utilisateur
 
-#### [MODIFY] [LikesInboxPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/LikesInboxPage.tsx)
-- Afficher un bouton "Débloquer l'accès (2h) - 1000 F" sur l'écran de verrouillage.
-- Intégrer l'appel à `InteractionPurchaseModal`.
-
-#### [MODIFY] [InteractionPurchaseModal.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/InteractionPurchaseModal.tsx)
-- Ajouter le support visuel (icône, textes) pour le type `LIKES_INBOX_2H`.
+#### [MODIFY] [RosesInboxPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/RosesInboxPage.tsx)
+- Supprimer l'état `unlockingId` et la fonction `handleUnlockNote`.
+- Retirer le rendu conditionnel basé sur `row.is_locked` (plus de flou, plus de bouton "Débloquer").
+- Afficher directement le nom, la photo et la note parfumée.
 
 ### [Mobile] Interface Utilisateur
 
-#### [MODIFY] [LikesInboxScreen.tsx](file:///C:/Users/UTILISATEUR/galant-app/src/screens/premium/LikesInboxScreen.tsx)
-- Ajouter le bouton de déblocage temporaire sur l'écran verrouillé.
-- Gérer le processus de paiement via Paystack.
+#### [MODIFY] [SuperLikeCard.tsx](file:///C:/Users/UTILISATEUR/galant-app/src/screens/premium/components/SuperLikeCard.tsx)
+- Supprimer le style `lockedCard` et les overlays de verrouillage.
+- Toujours afficher l'âge et la ville du profil.
+- Remplacer le bloc `lockedNoteBox` par l'affichage direct de la note.
+
+#### [MODIFY] [LikesReceivedScreen.tsx](file:///C:/Users/UTILISATEUR/galant-app/src/screens/premium/LikesReceivedScreen.tsx)
+- Supprimer la fonction `handleUnlockNote` et les états de chargement associés.
 
 ## Verification Plan
 
 ### Manual Verification
-1. Tenter d'accéder à la boîte de likes avec un compte gratuit.
-2. Vérifier la présence de l'option "Débloquer pour 2h".
-3. Simuler/Effectuer un paiement Paystack.
-4. Confirmer que la boîte devient consultable immédiatement.
-5. Vérifier que l'accès expire bien après 2h (via modification manuelle en base).
+1.  Utiliser un compte Homme non-Premium.
+2.  Lui envoyer une Rose (Super Like) depuis un autre compte.
+3.  Vérifier que l'homme peut voir la photo nette et lire la note parfumée sans payer.
+4.  Confirmer qu'aucun bouton "Débloquer" n'apparaît.
+5.  Vérifier que l'action "Accepter" fonctionne toujours parfaitement pour créer le match.

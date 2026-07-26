@@ -386,26 +386,15 @@ const getSuperLikesReceived = async (req, res) => {
 
     const rows = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    const unlocksSnapshot = await db.collection('purchased_interactions')
-      .where('user_id', '==', me.id)
-      .where('interaction_type', '==', 'ROSE_NOTE_UNLOCK')
-      .get();
-    const unlockedSenderIds = new Set(unlocksSnapshot.docs.map(d => d.data().target_id));
-
     const results = await Promise.all(rows.map(async row => {
       const senderDoc = await db.collection('profiles').doc(row.liker_id).get();
       const senderProfile = senderDoc.exists ? { id: senderDoc.id, ...senderDoc.data() } : null;
-      const isLocked = me.gender === 'MALE' && !me.is_premium && !unlockedSenderIds.has(row.liker_id);
 
       return {
         ...row,
         sender_id: row.liker_id,
-        is_locked: isLocked,
-        user: isLocked ? {
-          ...senderProfile,
-          photos: senderProfile?.photos?.map(() => 'BLURRED_PLACEHOLDER') || [],
-          name: 'Élégante Galante'
-        } : senderProfile
+        is_locked: false, // Now free for everyone
+        user: senderProfile
       };
     }));
 

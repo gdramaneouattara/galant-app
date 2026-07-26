@@ -27,24 +27,20 @@ interface SuperLikeCardProps {
   row: SuperLikeRow;
   onRespond: (row: any, action: 'ACCEPT' | 'IGNORE') => void;
   onLike: (row: any) => void;
-  onUnlock: (row: any) => void;
   onOpenProfile: (row: any) => void;
   isLiked: boolean;
   isResponding: boolean;
   isLiking: boolean;
-  isUnlocking: boolean;
 }
 
 const SuperLikeCard: React.FC<SuperLikeCardProps> = ({
   row,
   onRespond,
   onLike,
-  onUnlock,
   onOpenProfile,
   isLiked,
   isResponding,
   isLiking,
-  isUnlocking,
 }) => {
   const renderStatusPill = (status: SuperLikeStatus) => {
     if (status === 'ACCEPTED') {
@@ -69,74 +65,47 @@ const SuperLikeCard: React.FC<SuperLikeCardProps> = ({
   };
 
   return (
-    <View style={[styles.card, row.is_locked && styles.lockedCard]}>
+    <View style={styles.card}>
       <View style={styles.photoContainer}>
         <Image
           source={{
             uri: row.user.photos?.[0] || 'https://placehold.co/400x600',
           }}
           style={styles.photo}
-          blurRadius={row.is_locked ? 15 : 0}
         />
-        {row.is_locked && (
-          <View style={styles.lockOverlay}>
-            <Lock size={20} color="#fff" />
-          </View>
-        )}
       </View>
       <View style={styles.info}>
         <View style={styles.nameRow}>
-          <Text style={styles.name}>{row.user.name}{!row.is_locked && `, ${row.user.age}`}</Text>
+          <Text style={styles.name}>{row.user.name}, {row.user.age}</Text>
           <Text style={{ fontSize: 16 }}>🌹</Text>
           {renderStatusPill(row.status)}
         </View>
 
-        {row.is_locked ? (
-          <View style={styles.lockedNoteBox}>
-            <Text style={styles.lockedNoteText}>Une note parfumée vous attend...</Text>
-            <Pressable
-              style={styles.unlockSmallBtn}
-              onPress={() => onUnlock(row)}
-              disabled={isUnlocking}
-            >
-              {isUnlocking ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.unlockSmallBtnText}>Débloquer (500 F)</Text>
-              )}
-            </Pressable>
+        {row.note && (
+          <View style={styles.noteBubble}>
+            <Text style={styles.noteText}>"{row.note}"</Text>
           </View>
-        ) : (
-          <>
-            {row.note && (
-              <View style={styles.noteBubble}>
-                <Text style={styles.noteText}>"{row.note}"</Text>
-              </View>
-            )}
-            <Text style={styles.meta}>{row.user.city || 'Ville non renseignée'}</Text>
-            <Text style={styles.meta}>Reçu le {new Date(row.created_at).toLocaleString('fr-FR')}</Text>
-          </>
         )}
+        <Text style={styles.meta}>{row.user.city || 'Ville non renseignée'}</Text>
+        <Text style={styles.meta}>Reçu le {new Date(row.created_at).toLocaleString('fr-FR')}</Text>
 
         <View style={styles.actionsRow}>
-          {!row.is_locked && (
-            <Pressable style={styles.secondaryButton} onPress={() => onOpenProfile(row)}>
-              <Text style={styles.secondaryButtonText}>Fiche</Text>
-            </Pressable>
-          )}
+          <Pressable style={styles.secondaryButton} onPress={() => onOpenProfile(row)}>
+            <Text style={styles.secondaryButtonText}>Fiche</Text>
+          </Pressable>
+
           <Pressable
             style={[
               styles.likeButton,
               isLiked && styles.likeButtonDone,
-              isLiking && styles.buttonDisabled,
-              row.is_locked && { opacity: 0.5 }
+              isLiking && styles.buttonDisabled
             ]}
             onPress={() => onLike(row)}
-            disabled={isLiked || isLiking || row.is_locked}
+            disabled={isLiked || isLiking}
           >
             <Heart size={16} color="#fff" fill="#fff" />
           </Pressable>
-          {row.status === 'PENDING' && !row.is_locked && (
+          {row.status === 'PENDING' && (
             <>
               <Pressable
                 style={[styles.primaryButton, isResponding && styles.buttonDisabled]}

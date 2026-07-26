@@ -48,7 +48,6 @@ const LikesReceivedScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [likingId, setLikingId] = useState<string | null>(null);
-  const [unlockingId, setUnlockingId] = useState<string | null>(null);
   const [likedUserIds, setLikedUserIds] = useState<Set<string>>(new Set());
   const [superLikedUserIds, setSuperLikedUserIds] = useState<Set<string>>(new Set());
   const [showSuperLikePurchaseModal, setShowSuperLikePurchaseModal] = useState(false);
@@ -78,14 +77,6 @@ const LikesReceivedScreen: React.FC = () => {
     void initIAP([SUPER_LIKE_SKU]);
     return () => { void endIAP(); };
   }, []);
-
-  const handleUnlockNote = async (row: any) => {
-    try {
-      setUnlockingId(row.id);
-      const ok = await purchaseWithPaystack('ROSE_NOTE_UNLOCK', 500, row.sender_id);
-      if (ok) { Alert.alert('Succès', 'Note débloquée !'); void fetchSuperLikes(); }
-    } finally { setUnlockingId(null); }
-  };
 
   const handleRespond = async (row: any, action: 'ACCEPT' | 'IGNORE') => {
     if (respondingId) return;
