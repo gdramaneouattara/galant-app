@@ -248,7 +248,7 @@ const DiscoverPage: React.FC = () => {
               <div className="absolute inset-x-8 bottom-10 text-white pointer-events-none">
                 <div className="flex items-center gap-3 mb-2">
                   <h3 className="text-2xl font-black tracking-tight leading-none">
-                    {currentProfile.name}, {currentProfile.age}
+                    {(currentProfile.name || '').trim()}, {currentProfile.age}
                   </h3>
                   {currentProfile.galanterie_score >= 4.5 && (
                     <div className="bg-rose-500/30 backdrop-blur-md px-3 py-1 rounded-full border border-rose-500/20 flex items-center gap-1">
@@ -270,27 +270,27 @@ const DiscoverPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex gap-3">
-                  <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-2xl p-4 flex-1">
-                    <p className="text-[8px] font-black text-white/40 uppercase tracking-[0.2em] mb-1">Score de Charme</p>
+                <div className="flex gap-2">
+                  <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-2xl p-3 flex-1 min-w-0">
+                    <p className="text-[7px] font-black text-white/40 uppercase tracking-[0.2em] mb-1 truncate">Score de Charme</p>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-black text-white">{Math.round(currentProfile.score || 50)}</span>
-                      <span className="text-[10px] font-bold text-primary">pts</span>
+                      <span className="text-xl font-black text-white">{Math.round(currentProfile.score || 50)}</span>
+                      <span className="text-[8px] font-bold text-primary">pts</span>
                     </div>
                   </div>
                   {(currentProfile.common_interests_count || 0) > 0 ? (
-                    <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-2xl p-4 flex-1">
-                      <p className="text-[8px] font-black text-white/40 uppercase tracking-[0.2em] mb-1">Affinités</p>
-                      <p className="text-sm font-black text-white truncate uppercase tracking-widest flex items-center gap-2">
-                        <Sparkles size={12} className="text-primary" />
+                    <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-2xl p-3 flex-1 min-w-0">
+                      <p className="text-[7px] font-black text-white/40 uppercase tracking-[0.2em] mb-1 truncate">Affinités</p>
+                      <p className="text-[10px] font-black text-white truncate uppercase tracking-widest flex items-center gap-1.5">
+                        <Sparkles size={10} className="text-primary" />
                         {currentProfile.common_interests_count} communs
                       </p>
                     </div>
                   ) : (
-                    <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-2xl p-4 flex-1">
-                      <p className="text-[8px] font-black text-white/40 uppercase tracking-[0.2em] mb-1">Status</p>
-                      <p className="text-sm font-black text-white truncate uppercase tracking-widest">
-                        {currentProfile.is_premium ? t('premium_member') : 'Membre Classique'}
+                    <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-2xl p-3 flex-1 min-w-0">
+                      <p className="text-[7px] font-black text-white/40 uppercase tracking-[0.2em] mb-1 truncate">Status</p>
+                      <p className="text-[10px] font-black text-white truncate uppercase tracking-widest">
+                        {currentProfile.is_premium ? t('premium_member') : 'Classique'}
                       </p>
                     </div>
                   )}
