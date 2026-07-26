@@ -1,26 +1,27 @@
-# Walkthrough : Découverte Infinie (Recharge Automatique)
+# Walkthrough : Optimisation visuelle de la carte de profil (Web)
 
-J'ai implémenté le chargement automatique des profils sur Mobile et Web. Vous n'avez plus besoin de cliquer sur un bouton "Recharger" pour voir de nouveaux visages.
+J'ai appliqué plusieurs retouches esthétiques à la carte de découverte sur la version Web pour corriger les bugs visuels et améliorer la visibilité de la photo.
 
 ## Changements effectués
 
 ### [Web] Écran Découverte
-- **Suppression du bug d'index** : J'ai refondu la gestion des cartes pour qu'elle utilise toujours le haut de la pile (`suggestions[0]`), garantissant que vous ne sautiez jamais de profil.
-- **Détecteur de fin de pile** : Un écouteur surveille en permanence votre liste. Dès que la dernière carte est swipée, le système appelle automatiquement le serveur pour charger la pile suivante.
-- **Fluidité accrue** : La transition entre deux piles de profils est désormais quasi-invisible pour l'utilisateur.
-
-### [Mobile] Écran d'Accueil
-- **Chargement en arrière-plan** : Identique au Web, l'application mobile détecte quand vous arrivez au bout de vos suggestions et recharge une nouvelle série de profils sans interruption.
-- **Expérience sans couture** : Le verrou "Essai terminé" ou "Abonnement requis" s'affiche toujours si nécessaire, mais si vous avez les droits, la découverte ne s'arrête jamais.
+- **[DiscoverPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/DiscoverPage.tsx)** :
+    - **Correction de la ponctuation** : Suppression de l'espace inutile avant la virgule dans l'affichage "Nom, Âge".
+    - **Optimisation du texte de statut** : Remplacement de "Membre Classique" par **"Classique"** (et réduction de la taille de police) pour garantir que le texte ne soit plus jamais tronqué (fini le "MEMBRE CLASSI").
+    - **Visibilité de la photo accrue** :
+        - Réduction de la hauteur des boîtes de score et de statut (passage du padding `p-4` à `p-3`).
+        - Réduction de l'espacement entre les boîtes (`gap-2` au lieu de `gap-3`).
+        - Cela permet de libérer plus d'espace visuel pour admirer la photo de profil en bas de la carte.
 
 ## Résultats de la Vérification
 
-### Tests Qualité
-- **Statut** : 100% Succès (70/70 tests).
-- La logique de matchmaking et les quotas sont parfaitement respectés malgré l'automatisation.
+### Rendu Visuel
+- Le nom est maintenant proprement formaté : `Kouamé Bienvenue, 35`.
+- Les boîtes d'information en bas sont plus fines et discrètes.
+- Le statut est parfaitement lisible sans être coupé.
 
 ### Déploiement
 - Les modifications sont synchronisées et actives sur les branches **staging** et **main**.
 
 > [!TIP]
-> Allez sur l'écran Découverte et commencez à swiper. Vous remarquerez que dès que vous finissez vos profils actuels, de nouveaux apparaissent tout seuls après un bref chargement. L'élégance est maintenant sans fin !
+> Ces ajustements, bien que subtils, renforcent considérablement l'aspect "Prestige" et la finition de votre application Web.

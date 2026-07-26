@@ -226,42 +226,42 @@ const ProfilePage: React.FC = () => {
             )}
           </div>
 
-          <label className="absolute bottom-6 right-6 w-14 h-14 bg-primary text-white rounded-2xl shadow-xl flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all border-4 border-white/20 backdrop-blur-sm">
-            {uploading ? <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Camera size={24} />}
+          <label className="absolute top-6 right-6 w-12 h-12 bg-primary text-white rounded-2xl shadow-xl flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all border-4 border-white/20 backdrop-blur-sm z-20">
+            {uploading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Camera size={20} />}
             <input type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} />
           </label>
         </div>
 
         {/* Floating Name & Stats */}
-        <div className="absolute -bottom-8 left-10 right-10 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="text-white drop-shadow-lg">
+        <div className="absolute bottom-10 left-8 right-8 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="text-white drop-shadow-lg text-center md:text-left">
             {editing ? (
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="text-4xl font-black border-b-2 border-primary outline-none bg-transparent"
+                className="text-2xl md:text-4xl font-black border-b-2 border-primary outline-none bg-transparent w-full md:w-auto"
               />
             ) : (
-              <h2 className="text-4xl font-black tracking-tight">{profile.name}, {profile.age}</h2>
+              <h2 className="text-2xl md:text-4xl font-black tracking-tight leading-tight">{profile.name}, {profile.age}</h2>
             )}
-            <div className="flex items-center gap-2 text-white/70 font-bold text-sm uppercase tracking-wider mt-1">
-              <MapPin size={16} />
-              <span>{profile.city || 'Ville non renseignée'}</span>
+            <div className="flex items-center justify-center md:justify-start gap-2 text-white/80 font-bold text-xs uppercase tracking-wider mt-1">
+              <MapPin size={14} />
+              <span>{(profile.city || 'Ville non renseignée').toUpperCase()}</span>
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-4 rounded-2xl shadow-xl flex flex-col items-center min-w-[80px] border border-white/50 dark:border-white/10 transition-colors">
-              <span className="text-xl font-black text-primary">{profile.galanterie_score || '5.0'}</span>
-              <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors">Galanterie</span>
+          <div className="flex gap-2 w-full md:w-auto justify-center">
+            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-3 rounded-2xl shadow-xl flex flex-col items-center min-w-[75px] border border-white/50 dark:border-white/10 transition-colors">
+              <span className="text-lg font-black text-primary leading-none">{profile.galanterie_score || '5.0'}</span>
+              <span className="text-[7px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Galanterie</span>
             </div>
-            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-4 rounded-2xl shadow-xl flex flex-col items-center min-w-[80px] border border-white/50 dark:border-white/10 transition-colors">
-              <span className="text-xl font-black text-rose-500">{profile.likes_count || 0}</span>
-              <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors">Likes</span>
+            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-3 rounded-2xl shadow-xl flex flex-col items-center min-w-[75px] border border-white/50 dark:border-white/10 transition-colors">
+              <span className="text-lg font-black text-rose-500 leading-none">{profile.likes_count || 0}</span>
+              <span className="text-[7px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Likes</span>
             </div>
-            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-4 rounded-2xl shadow-xl flex flex-col items-center min-w-[80px] border border-white/50 dark:border-white/10 transition-colors">
-              <span className="text-xl font-black text-amber-600">{profile.roses_count || 0}</span>
-              <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors">Roses</span>
+            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-3 rounded-2xl shadow-xl flex flex-col items-center min-w-[75px] border border-white/50 dark:border-white/10 transition-colors">
+              <span className="text-lg font-black text-amber-600 leading-none">{profile.roses_count || 0}</span>
+              <span className="text-[7px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Roses</span>
             </div>
           </div>
         </div>
@@ -272,7 +272,7 @@ const ProfilePage: React.FC = () => {
         <div className="md:col-span-2 space-y-8">
           <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-white/10 transition-colors">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors">{t('my_bio')}</h3>
+              <h3 className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors">{t('my_bio')}</h3>
               <div className="flex gap-2">
                 {editing && (
                   <button
