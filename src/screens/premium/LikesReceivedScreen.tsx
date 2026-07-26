@@ -136,12 +136,10 @@ const LikesReceivedScreen: React.FC = () => {
                 row={row}
                 onRespond={handleRespond}
                 onLike={handleLike}
-                onUnlock={handleUnlockNote}
                 onOpenProfile={setSelectedSuperLike}
                 isLiked={likedUserIds.has(row.user.id)}
                 isResponding={respondingId === row.id}
                 isLiking={likingId === row.user.id}
-                isUnlocking={unlockingId === row.id}
               />
             ))}
           </View>
