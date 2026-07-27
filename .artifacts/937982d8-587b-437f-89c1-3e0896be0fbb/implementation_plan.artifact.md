@@ -1,37 +1,22 @@
-# Correction des compteurs et Gestion Administrateur
+# Optimisation visuelle finale du profil (Web)
 
-Ce plan vise à résoudre les problèmes d'incrémentation des compteurs de Likes/Roses, à expliquer la logique d'attribution automatique de Roses, et à fournir les outils pour créer un compte administrateur.
+Ce plan vise à corriger les derniers conflits visuels sur la page profil identifiés dans la capture d'écran de l'utilisateur, afin d'assurer un standing "Prestige".
 
-## 1. Création d'un compte Administrateur
+## Proposed Changes
 
-J'ai créé un script dédié pour promouvoir n'importe quel compte au rang d'administrateur.
+### [Web] Pages
 
-### Procédure :
-1.  Récupérez l'**UID** de votre compte (disponible dans la console Firebase > Authentication).
-2.  Exécutez la commande suivante dans votre terminal à la racine du projet :
-    ```bash
-    node scripts/make-admin.js VOTRE_UID_ICI
-    ```
-3.  Une fois fait, votre onglet "Moi" affichera un bouton "Admin" sur le Web et débloquera les fonctionnalités de gestion.
-
-## 2. Problème des compteurs (Likes / Roses)
-
-Les compteurs ne s'incrémentaient pas à cause d'une instabilité dans l'utilisation des transactions atomiques sur certains environnements.
-
-### Proposed Changes
-- **Simplification de `handleSwipe`** : Remplacer la transaction complexe par une mise à jour directe et sécurisée du document de profil pour garantir l'incrémentation systématique.
-- **Vérification de l'import** : M'assurer que `FieldValue` est utilisé via `admin.firestore.FieldValue` pour une compatibilité maximale avec le serveur Cloud Run.
-
-## 3. Attribution automatique d'une Rose
-
-Le fait qu'un utilisateur reçoive une rose à la création n'est pas un bug, mais une **fonctionnalité de bienvenue** :
-- **Règle actuelle** : Si un profil est complété à 100% (Rayonnement Galant), le système offre automatiquement **1 Rose d'Or** pour récompenser l'élégance et encourager la première rencontre.
-- **Action** : Je vais ajouter un journal de bord (Log) clair dans le code pour que cette récompense soit traçable.
+#### [MODIFY] [ProfilePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ProfilePage.tsx)
+- **Bouton Photo** : Déplacer l'icône caméra en **haut à droite** (`top-6 right-6`).
+- **Position du Nom** : Abaisser le bloc Nom/Âge pour qu'il soit juste au-dessus des statistiques et ne masque plus le visage.
+- **Style des Statistiques** :
+    - Réduire la largeur minimale (`min-w-[75px]`).
+    - Utiliser un fond blanc avec opacité (`bg-white/90`) pour une meilleure intégration visuelle sur la photo.
+    - S'assurer que les titres (Galanterie, Likes, Roses) sont parfaitement lisibles sur mobile.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Promouvoir un compte en Admin via le script.
-2.  Vérifier l'accès au Dashboard Admin.
-3.  Liker un profil et vérifier l'incrémentation immédiate sur le destinataire.
-4.  Compléter un profil à 100% et vérifier la notification de Rose offerte.
+1.  Ouvrir le profil sur navigateur mobile.
+2.  Vérifier que l'icône caméra est en haut et ne gêne plus la lecture des chiffres.
+3.  Confirmer que le nom est bien placé et que les statistiques sont élégamment alignées.
