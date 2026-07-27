@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db, COLLECTIONS, fbStorage } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -32,6 +32,33 @@ const ProfilePage: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGoalOpen, setIsGoalOpen] = useState(false);
   const [isTogglingInvisible, setIsTogglingInvisible] = useState(false);
+  const [hasAdminAccess, setHasAdminAccess] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!user) {
+      setHasAdminAccess(false);
+      return;
+    }
+
+    if (profile?.is_admin === true) {
+      setHasAdminAccess(true);
+      return;
+    }
+
+    apiRequest('/api/admin/stats', { requireAuth: true })
+      .then(() => {
+        if (!cancelled) setHasAdminAccess(true);
+      })
+      .catch(() => {
+        if (!cancelled) setHasAdminAccess(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, profile?.is_admin]);
 
   // Éviter l'écran blanc si les données ne sont pas encore là
   if (loading && !profile) {
@@ -267,7 +294,7 @@ const ProfilePage: React.FC = () => {
         </div>
       </div>
 
-      {profile.is_admin && (
+      {hasAdminAccess && (
         <button
           onClick={() => navigate('/admin')}
           className="mb-6 flex w-full items-center gap-4 rounded-[2rem] bg-primary p-4 text-left text-white shadow-xl shadow-primary/20 transition-all active:scale-[0.98]"
