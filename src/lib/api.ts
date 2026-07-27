@@ -75,7 +75,14 @@ export const apiRequest = async <T>(path: string, options: ApiOptions = {}): Pro
 
     if (!response.ok) {
       const msg = payload?.error || payload?.message || 'API request failed';
-      throw new Error(`API Error ${response.status}: ${msg} (on ${fullUrl})`);
+      const details = payload && typeof payload === 'object'
+        ? Object.entries(payload)
+          .filter(([key]) => !['error', 'message'].includes(key))
+          .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
+          .join(', ')
+        : '';
+      const suffix = details ? ` | ${details}` : '';
+      throw new Error(`API Error ${response.status}: ${msg}${suffix} (on ${fullUrl})`);
     }
 
     return payload as T;
