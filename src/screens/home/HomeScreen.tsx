@@ -126,9 +126,13 @@ const HomeScreen: React.FC = () => {
     return String(currentUser?.gender || '').toUpperCase() === 'FEMALE' && !currentUser?.is_premium;
   }, [currentUser?.gender, currentUser?.is_premium]);
 
+  const isLikesInboxTemporarilyUnlocked = useMemo(() => {
+    return !!currentUser?.likes_unlocked_until && new Date(currentUser.likes_unlocked_until) > new Date();
+  }, [currentUser?.likes_unlocked_until]);
+
   const canAccessLikesInbox = useMemo(() => {
-    return !!currentUser?.is_premium || trialInfo.active || isFemaleFreePlan;
-  }, [currentUser?.is_premium, trialInfo.active, isFemaleFreePlan]);
+    return !!currentUser?.is_premium || trialInfo.active || isFemaleFreePlan || isLikesInboxTemporarilyUnlocked;
+  }, [currentUser?.is_premium, trialInfo.active, isFemaleFreePlan, isLikesInboxTemporarilyUnlocked]);
 
   useEffect(() => {
     if (trialInfo.eligible && !trialInfo.active) setTrialLocked(true);

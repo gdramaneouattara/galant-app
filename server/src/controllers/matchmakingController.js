@@ -646,16 +646,24 @@ const getLikesReceived = async (req, res) => {
   try {
     const snapshot = await db.collection('likes')
       .where('liked_id', '==', req.user.id)
-      .where('is_super_like', '==', false)
-      .orderBy('created_at', 'desc')
       .get();
 
-    const rows = snapshot.docs.map(doc => doc.data());
+    const rows = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(row => !row.is_super_like)
+      .sort((left, right) => new Date(right.created_at || 0).getTime() - new Date(left.created_at || 0).getTime());
+
     const likerIds = [...new Set(rows.map(r => r.liker_id))];
     if (likerIds.length === 0) return res.json([]);
 
-    const profileSnapshot = await db.collection('profiles').where(FieldPath.documentId(), 'in', likerIds.slice(0, 30)).get();
-    const profiles = profileSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(p => !p.suspended_at && p.onboarding_completed);
+    const profiles = [];
+    for (let i = 0; i < likerIds.length; i += 30) {
+      const chunk = likerIds.slice(i, i + 30);
+      const profileSnapshot = await db.collection('profiles').where(FieldPath.documentId(), 'in', chunk).get();
+      profiles.push(...profileSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }
+
+    const activeProfiles = profiles.filter(p => !p.suspended_at && p.onboarding_completed);
 
     const myMatchesSnapshot = await db.collection('matches').where('status', '==', 'ACTIVE').get();
     const matchedIds = new Set();
@@ -666,15 +674,36 @@ const getLikesReceived = async (req, res) => {
     });
 
     res.json(rows.map(row => {
-      const profile = profiles.find(p => p.id === row.liker_id);
+      const profile = activeProfiles.find(p => p.id === row.liker_id);
       if (!profile) return null;
-      return { liker_id: row.liker_id, created_at: row.created_at, is_matched: matchedIds.has(row.liker_id), user: profile };
+      return {
+        id: row.id,
+        liker_id: row.liker_id,
+        created_at: row.created_at,
+        liked_back: false,
+        is_matched: matchedIds.has(row.liker_id),
+        user: profile
+      };
     }).filter(Boolean));
 
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
 
+const getLikesQuota = async (req, res) => {
+  const isFemaleFreePlan = String(req.user?.gender || '').toUpperCase() === 'FEMALE' && !req.user?.is_premium;
+  const isTemporarilyUnlocked = req.user?.likes_unlocked_until && new Date(req.user.likes_unlocked_until) > new Date();
+  const canAccess = !!req.user?.is_premium || isTrialActive(req.user) || isFemaleFreePlan || !!isTemporarilyUnlocked;
+
+  res.json({
+    canAccess,
+    is_premium: !!req.user?.is_premium,
+    trial_active: isTrialActive(req.user),
+    female_free_plan: isFemaleFreePlan,
+    likes_unlocked_until: req.user?.likes_unlocked_until || null
+  });
+};
+
 module.exports = {
   getSuggestions, getVisibilityInsight, handleSwipe, unmatch,
-  getSuperLikesReceived, getLikesReceived, respondToSuperLike
+  getSuperLikesReceived, getLikesReceived, getLikesQuota, respondToSuperLike
 };
