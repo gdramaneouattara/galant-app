@@ -116,7 +116,7 @@ const ProfilePage: React.FC = () => {
   }
 
   const handleToggleInvisible = async () => {
-    if (!profile.is_premium) {
+    if (!profile.is_premium || !profile.invisible_mode_eligible) {
       showAlert('Premium Requis', 'Le mode invisible est réservé aux membres Privilège (Trimestriel).');
       navigate('/premium');
       return;
@@ -161,7 +161,7 @@ const ProfilePage: React.FC = () => {
     }
     setDeletingAccount(true);
     try {
-      await apiRequest('/api/account/delete', { method: 'POST', requireAuth: true });
+      await apiRequest('/api/privacy/delete-account', { method: 'POST', requireAuth: true });
       showAlert('Compte supprimé', 'Votre compte et vos données ont été effacés. Au revoir.');
       logout();
     } catch (e: any) {
@@ -237,6 +237,16 @@ const ProfilePage: React.FC = () => {
       const storageRef = ref(fbStorage, `profiles/${user.uid}/${Date.now()}.webp`);
       await uploadBytes(storageRef, compressedBlob, { contentType: 'image/webp' });
       const url = await getDownloadURL(storageRef);
+
+      const moderation = await apiRequest<{ status?: string }>('/api/moderation/photos/check', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({ photoUrls: [url] }),
+      });
+      if (String(moderation?.status).toUpperCase() === 'REJECTED') {
+        showAlert('Photo refusee', "La photo ne respecte pas les regles.");
+        return;
+      }
 
       const userRef = doc(db, COLLECTIONS.PROFILES, user.uid);
       const newPhotos = [url, ...(profile.photos || [])];
@@ -536,7 +546,10 @@ const ProfilePage: React.FC = () => {
             <div className="h-[1px] bg-slate-50 dark:bg-white/5 mx-4 my-2"></div>
 
             {/* General Menu Items */}
-            <button className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-left group">
+            <button
+              onClick={() => showAlert('Notifications', 'Vos notifications administrateur et messages non lus apparaissent dans l onglet Messages.')}
+              className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-left group"
+            >
               <div className="w-12 h-12 bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-slate-600 rounded-xl flex items-center justify-center group-hover:bg-slate-100 dark:group-hover:bg-white/10 transition-colors">
                 <Bell size={20} />
               </div>
@@ -560,7 +573,10 @@ const ProfilePage: React.FC = () => {
               <p className="flex-1 text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">{t('settings') || 'Paramètres'}</p>
             </button>
 
-            <button className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-left group">
+            <button
+              onClick={() => window.open('mailto:support@galant.app?subject=Aide%20Galant', '_blank')}
+              className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-left group"
+            >
               <div className="w-12 h-12 bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-slate-600 rounded-xl flex items-center justify-center group-hover:bg-slate-100 dark:group-hover:bg-white/10 transition-colors">
                 <HelpCircle size={20} />
               </div>

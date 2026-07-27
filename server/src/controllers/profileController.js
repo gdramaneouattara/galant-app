@@ -6,7 +6,7 @@ const { buildProfileGeohashUpdate } = require('../utils/geohash');
 
 const updateProfile = async (req, res) => {
   const {
-    bio, interests, relationship_goal,
+    bio, interests, relationship_goal, photos,
     city, country, latitude, longitude,
     passport_city, passport_country, passport_latitude, passport_longitude, is_passport_active,
     radiance_score, onboarding_completed
@@ -17,6 +17,7 @@ const updateProfile = async (req, res) => {
   if (bio !== undefined) updates.bio = bio;
   if (interests !== undefined) updates.interests = interests;
   if (relationship_goal !== undefined) updates.relationship_goal = relationship_goal;
+  if (photos !== undefined) updates.photos = Array.isArray(photos) ? photos.slice(0, 6) : [];
   if (city !== undefined) updates.city = city;
   if (country !== undefined) updates.country = country;
   if (latitude !== undefined) updates.latitude = latitude;

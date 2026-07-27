@@ -14,7 +14,7 @@ const DiscoverPage: React.FC = () => {
   const { suggestions, loading, fetchSuggestions, handleSwipe } = useMatchmaking();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean; type: 'SUPER_LIKE' | 'DIRECT_MESSAGE'; userName: string } | null>(null);
+  const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean; type: 'SUPER_LIKE' | 'DIRECT_MESSAGE'; userName: string; targetId: string } | null>(null);
   const navigate = useNavigate();
 
   // Motion Values for Swipe
@@ -100,24 +100,65 @@ const DiscoverPage: React.FC = () => {
     const target = suggestions[0];
     if (!target) return;
 
-    if (!myProfile?.is_premium) {
-      setPurchaseModal({ isOpen: true, type: 'SUPER_LIKE', userName: target.name });
-      return;
+    try {
+      await apiRequest('/api/matchmaking/swipe', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({ targetUserId: target.id, direction: 'RIGHT', isSuperLike: true }),
+      });
+      await loadSuggestions();
+    } catch (error: any) {
+      const message = String(error?.message || '');
+      if (message.includes('premium_required_for_super_like') || message.includes('premium') || message.includes('required')) {
+        setPurchaseModal({ isOpen: true, type: 'SUPER_LIKE', userName: target.name, targetId: target.id });
+        return;
+      }
+      console.error('Error sending super like', error);
     }
+  };
 
-    await handleSwipe(target.id, 'RIGHT', true);
+  const openDirectThread = async (target: any) => {
+    const res = await apiRequest<{ matchId: string }>('/api/messages/direct-thread', {
+      method: 'POST',
+      requireAuth: true,
+      body: JSON.stringify({ targetUserId: target.id }),
+    });
+    navigate(`/chat/${res.matchId}`, { state: { profile: target } });
   };
 
   const handleDirectMessage = async () => {
     const target = suggestions[0];
     if (!target) return;
 
-    if (!myProfile?.is_premium) {
-      setPurchaseModal({ isOpen: true, type: 'DIRECT_MESSAGE', userName: target.name });
+    try {
+      await openDirectThread(target);
+    } catch (error: any) {
+      const message = String(error?.message || '');
+      if (message.includes('payment_required') || message.includes('Premium') || message.includes('achat direct')) {
+        setPurchaseModal({ isOpen: true, type: 'DIRECT_MESSAGE', userName: target.name, targetId: target.id });
+        return;
+      }
+      console.error('Error opening direct thread', error);
+    }
+  };
+
+  const handlePurchaseSuccess = async () => {
+    const modal = purchaseModal;
+    if (!modal) return;
+    setPurchaseModal(null);
+
+    const target = suggestions.find((item) => item.id === modal.targetId) || suggestions[0];
+    if (!target || target.id !== modal.targetId) {
+      await loadSuggestions();
       return;
     }
 
-    navigate(`/chat/${target.id}`, { state: { profile: target } });
+    if (modal.type === 'SUPER_LIKE') {
+      await handleSwipe(modal.targetId, 'RIGHT', true);
+      return;
+    }
+
+    await openDirectThread(target);
   };
 
   const openDetail = (profile: any) => {
@@ -373,11 +414,9 @@ const DiscoverPage: React.FC = () => {
         isOpen={!!purchaseModal}
         onClose={() => setPurchaseModal(null)}
         type={purchaseModal?.type || 'SUPER_LIKE'}
+        targetId={purchaseModal?.targetId}
         userName={purchaseModal?.userName || ''}
-        onSuccess={() => {
-          setPurchaseModal(null);
-          loadSuggestions();
-        }}
+        onSuccess={handlePurchaseSuccess}
       />
     </div>
   );

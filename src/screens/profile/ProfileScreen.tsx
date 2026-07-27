@@ -126,7 +126,12 @@ const ProfileScreen: React.FC = () => {
       if (String(moderation?.status).toUpperCase() === 'REJECTED') return Alert.alert('Photo refusée', "La photo ne respecte pas les règles.");
 
       const nextPhotos = [publicUrl, ...(currentUser.photos || []).slice(1)];
-      updateCurrentUser({ photos: nextPhotos.slice(0, 6) });
+      const payload = await apiRequest<{ profile?: any }>('/api/profiles/update', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({ photos: nextPhotos.slice(0, 6) }),
+      });
+      updateCurrentUser({ photos: payload.profile?.photos || nextPhotos.slice(0, 6) });
     } catch (e: any) { Alert.alert('Erreur', e.message); }
     finally { setUpdatingProfilePhoto(false); }
   };
@@ -145,7 +150,7 @@ const ProfileScreen: React.FC = () => {
       { text: 'Annuler', style: 'cancel' },
       { text: 'Supprimer', style: 'destructive', onPress: async () => {
         try {
-          await apiRequest('/api/account/delete', { method: 'POST', requireAuth: true });
+          await apiRequest('/api/privacy/delete-account', { method: 'POST', requireAuth: true });
           await logout();
         } catch (e: any) { Alert.alert('Erreur', e.message); }
       }},
@@ -235,7 +240,19 @@ const ProfileScreen: React.FC = () => {
         visible={showGoalModal}
         onClose={() => setShowGoalModal(false)}
         currentGoalId={currentUser.relationship_goal || ''}
-        onUpdateGoal={(id) => { updateCurrentUser({ relationship_goal: id }); setShowGoalModal(false); }}
+        onUpdateGoal={async (id) => {
+          try {
+            const payload = await apiRequest<{ profile?: any }>('/api/profiles/update', {
+              method: 'POST',
+              requireAuth: true,
+              body: JSON.stringify({ relationship_goal: id }),
+            });
+            updateCurrentUser({ relationship_goal: payload.profile?.relationship_goal || id });
+            setShowGoalModal(false);
+          } catch (e: any) {
+            Alert.alert('Erreur', e.message || 'Impossible de mettre a jour votre objectif.');
+          }
+        }}
         colors={colors}
       />
 

@@ -1,6 +1,6 @@
 const { db } = require('../config/firebase');
 const { hasStandardAccess, hasInvisiblePremiumAccessForPlan, isHiddenByInvisibleMode } = require('../services/accessService');
-const { getDailyUsage, incrementUsage, consumeStoryPurchase } = require('../services/usageService');
+const { getDailyUsage, incrementUsage, consumeStoryPurchase, hasUnusedStoryPurchase } = require('../services/usageService');
 const { createStoryLikeNotificationIfNeeded } = require('../services/notificationService');
 const { QUOTAS } = require('../config/constants');
 
@@ -108,6 +108,39 @@ const createStatus = async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
 
+const getUploadAccess = async (req, res) => {
+  const me = req.user;
+  const canPublishForFree = hasStandardAccess(me);
+  const hasPurchasedUpload = canPublishForFree ? false : await hasUnusedStoryPurchase(me.id);
+
+  res.json({
+    canPublishForFree,
+    hasPurchasedUpload,
+    canPublish: canPublishForFree || hasPurchasedUpload
+  });
+};
+
+const deleteStatus = async (req, res) => {
+  const statusId = req.params.id;
+  const me = req.user;
+
+  try {
+    const statusRef = db.collection('statuses').doc(statusId);
+    const statusDoc = await statusRef.get();
+    if (!statusDoc.exists) return res.status(404).json({ error: 'status_not_found' });
+    if (statusDoc.data().user_id !== me.id) return res.status(403).json({ error: 'unauthorized' });
+
+    const likesSnap = await db.collection('status_likes').where('status_id', '==', statusId).get();
+    const batch = db.batch();
+    likesSnap.docs.forEach(doc => batch.delete(doc.ref));
+    batch.delete(statusRef);
+    await batch.commit();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const likeStatus = async (req, res) => {
   const me = req.user;
   const statusId = req.params.id;
@@ -181,4 +214,4 @@ const getStatusLikes = async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
 
-module.exports = { getStatuses, createStatus, likeStatus, unlikeStatus, getStatusLikes };
+module.exports = { getStatuses, createStatus, getUploadAccess, deleteStatus, likeStatus, unlikeStatus, getStatusLikes };

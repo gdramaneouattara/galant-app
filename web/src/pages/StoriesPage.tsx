@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ref, getDownloadURL, uploadBytes } from 'firebase/storage';
-import { Plus, Heart, X, Play, Film, Lock, Share2, Users, Crown } from 'lucide-react';
+import { Plus, Heart, X, Play, Film, Lock, Share2, Users, Crown, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '@shared/lib/api';
 import { fbStorage } from '../firebase';
@@ -98,9 +98,25 @@ const StoriesPage: React.FC = () => {
     if (user) void fetchStatuses();
   }, [user, fetchStatuses]);
 
-  const openStoryPicker = () => {
+  const refreshUploadAccess = useCallback(async () => {
+    if (!user) return false;
+    try {
+      const access = await apiRequest<{ canPublish?: boolean; hasPurchasedUpload?: boolean }>('/api/statuses/upload-access', { requireAuth: true });
+      setStoryUploadUnlocked(!!access.hasPurchasedUpload);
+      return !!access.canPublish;
+    } catch {
+      return canPublishForFree;
+    }
+  }, [user, canPublishForFree]);
+
+  useEffect(() => {
+    if (user && !canPublishForFree) void refreshUploadAccess();
+  }, [user, canPublishForFree, refreshUploadAccess]);
+
+  const openStoryPicker = async () => {
     if (uploading) return;
-    if (!canPublishNow) {
+    const canPublish = canPublishNow || await refreshUploadAccess();
+    if (!canPublish) {
       setIsPurchaseOpen(true);
       return;
     }
@@ -305,6 +321,20 @@ const StoriesPage: React.FC = () => {
     } catch {}
   };
 
+  const handleDeleteStatus = async (status: Status) => {
+    if (status.user_id !== user?.uid) return;
+    if (!window.confirm('Supprimer cette story ?')) return;
+
+    try {
+      await apiRequest(`/api/statuses/${status.id}`, { method: 'DELETE', requireAuth: true });
+      setSelectedStatusId(null);
+      setStatuses((prev) => prev.filter((item) => item.id !== status.id));
+      showAlert('Story supprimee', 'Votre story a ete retiree.');
+    } catch (error: any) {
+      showAlert('Erreur', error?.message || 'Impossible de supprimer la story.');
+    }
+  };
+
   const formatPublishedAt = (value?: string) => {
     if (!value) return '';
     const date = new Date(value);
@@ -367,7 +397,7 @@ const StoriesPage: React.FC = () => {
 
         <button
           type="button"
-          onClick={openStoryPicker}
+          onClick={() => void openStoryPicker()}
           disabled={uploading}
           className="bg-slate-900 text-white px-6 sm:px-8 py-4 rounded-2xl shadow-2xl shadow-slate-900/20 hover:scale-[1.03] active:scale-95 transition-all flex items-center gap-3 font-black text-xs uppercase tracking-widest disabled:opacity-60"
         >
@@ -379,7 +409,7 @@ const StoriesPage: React.FC = () => {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
         <button
           type="button"
-          onClick={openStoryPicker}
+          onClick={() => void openStoryPicker()}
           disabled={uploading}
           className="relative aspect-[9/16] rounded-[2rem] overflow-hidden bg-slate-100 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-primary/50 hover:bg-rose-50/30 transition-all group disabled:opacity-60"
         >
@@ -505,15 +535,24 @@ const StoriesPage: React.FC = () => {
               </div>
 
               {selectedStatus.user_id === user?.uid && (
-                <button
-                  onClick={() => handleOpenLikers(selectedStatus)}
-                  className="bg-white/10 backdrop-blur-xl border border-white/10 px-3 sm:px-5 py-3 rounded-2xl flex items-center gap-2 text-white hover:bg-white/20 transition-all flex-shrink-0"
-                >
-                  <Users size={18} />
-                  <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest">
-                    {selectedStatus.likes_count || 0}
-                  </span>
-                </button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => handleOpenLikers(selectedStatus)}
+                    className="bg-white/10 backdrop-blur-xl border border-white/10 px-3 sm:px-5 py-3 rounded-2xl flex items-center gap-2 text-white hover:bg-white/20 transition-all"
+                  >
+                    <Users size={18} />
+                    <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest">
+                      {selectedStatus.likes_count || 0}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => void handleDeleteStatus(selectedStatus)}
+                    className="bg-red-500/20 backdrop-blur-xl border border-red-400/20 p-3 rounded-2xl text-white hover:bg-red-500/40 transition-all"
+                    aria-label="Supprimer"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
               )}
             </div>
 
