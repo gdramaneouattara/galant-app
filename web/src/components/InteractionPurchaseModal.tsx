@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, CreditCard, Sparkles, MessageCircle, Heart } from 'lucide-react';
+import { X, CreditCard, MessageCircle, Heart } from 'lucide-react';
 import { useSubscription } from '@shared/hooks/useSubscription';
 import { showAlert } from '@shared/lib/ui-bridge';
 
@@ -7,11 +7,12 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   type: 'SUPER_LIKE' | 'DIRECT_MESSAGE' | 'LIKES_INBOX_2H';
+  targetId?: string;
   userName?: string;
   onSuccess: () => void;
 }
 
-const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, userName, onSuccess }) => {
+const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targetId, userName, onSuccess }) => {
   const { purchaseWithPaystack, purchaseLoading } = useSubscription();
 
   if (!isOpen) return null;
@@ -19,7 +20,7 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, user
   const handlePurchase = async () => {
     try {
       const amount = type === 'LIKES_INBOX_2H' ? 1000 : 500;
-      const ok = await purchaseWithPaystack(type, amount, undefined, { targetName: userName || 'Boîte de Likes' });
+      const ok = await purchaseWithPaystack(type, amount, targetId, { targetName: userName || 'Boite de Likes' });
       if (ok) {
         onSuccess();
         onClose();
@@ -29,8 +30,11 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, user
     }
   };
 
+  const isSuperLike = type === 'SUPER_LIKE';
+  const isLikesInbox = type === 'LIKES_INBOX_2H';
+
   return (
-    <div className="fixed inset-0 z-[110] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[220] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="p-8 text-center space-y-6">
           <div className="flex justify-end">
@@ -40,32 +44,32 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, user
           </div>
 
           <div className={`w-20 h-20 mx-auto rounded-[2rem] flex items-center justify-center shadow-lg ${
-            type === 'SUPER_LIKE' ? 'bg-rose-50 shadow-rose-100' :
-            type === 'LIKES_INBOX_2H' ? 'bg-amber-50 text-amber-500 shadow-amber-100' :
+            isSuperLike ? 'bg-rose-50 shadow-rose-100' :
+            isLikesInbox ? 'bg-amber-50 text-amber-500 shadow-amber-100' :
             'bg-blue-50 text-blue-500 shadow-blue-100'
           }`}>
-            {type === 'SUPER_LIKE' ? <span className="text-4xl">🌹</span> :
-             type === 'LIKES_INBOX_2H' ? <Heart size={40} fill="currentColor" /> :
+            {isSuperLike ? <span className="text-4xl">🌹</span> :
+             isLikesInbox ? <Heart size={40} fill="currentColor" /> :
              <MessageCircle size={40} fill="currentColor" />}
           </div>
 
           <div className="space-y-2">
             <h3 className="text-2xl font-black italic">
-              {type === 'SUPER_LIKE' ? 'Offrir des Roses' :
-               type === 'LIKES_INBOX_2H' ? 'Débloquer les Likes' :
-               'Message Privé'}
+              {isSuperLike ? 'Offrir des Roses' :
+               isLikesInbox ? 'Debloquer les Likes' :
+               'Message prive'}
             </h3>
             <p className="text-slate-500 text-sm font-medium leading-relaxed">
-              {type === 'LIKES_INBOX_2H'
-                ? "Accédez à l'intégralité de vos likes reçus pendant 2 heures et trouvez votre match immédiatement."
-                : <>Attirez immédiatement l'attention de <span className="text-slate-900 font-bold">{userName}</span> avec cette attention d'exception.</>
+              {isLikesInbox
+                ? "Accedez a l'integralite de vos likes recus pendant 2 heures et trouvez votre match immediatement."
+                : <>Attirez immediatement l'attention de <span className="text-slate-900 font-bold">{userName}</span> avec cette attention d'exception.</>
               }
             </p>
           </div>
 
           <div className="bg-slate-50 p-4 rounded-2xl">
-            <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Tarif Unique</span>
-            <p className="text-2xl font-black text-slate-900">{type === 'LIKES_INBOX_2H' ? '1 000' : '500'} F CFA</p>
+            <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Tarif unique</span>
+            <p className="text-2xl font-black text-slate-900">{isLikesInbox ? '1 000' : '500'} F CFA</p>
           </div>
 
           <button
@@ -74,7 +78,7 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, user
             className="w-full bg-primary text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-red-100 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
           >
             {purchaseLoading ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               <>
                 <CreditCard size={18} />
@@ -84,7 +88,7 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, user
           </button>
 
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
-            Transaction sécurisée par Paystack
+            Transaction securisee par Paystack
           </p>
         </div>
       </div>

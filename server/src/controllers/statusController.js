@@ -4,6 +4,12 @@ const { getDailyUsage, incrementUsage, consumeStoryPurchase } = require('../serv
 const { createStoryLikeNotificationIfNeeded } = require('../services/notificationService');
 const { QUOTAS } = require('../config/constants');
 
+const chunkArray = (items, size = 30) => {
+  const chunks = [];
+  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
+  return chunks;
+};
+
 const getStatuses = async (req, res) => {
   const me = req.user;
   if (!hasStandardAccess(me)) return res.status(403).json({ error: 'subscription_required' });
@@ -17,7 +23,8 @@ const getStatuses = async (req, res) => {
 
     const now = new Date().toISOString();
     const snapshot = await db.collection('statuses').where('expires_at', '>', now).get();
-    let rows = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let rows = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
 
     // Hydrate Profiles
     const authors = await Promise.all(rows.map(async row => {
@@ -55,15 +62,17 @@ const getStatuses = async (req, res) => {
 
     // Likes hydration
     const statusIds = filtered.map(r => r.id);
-    const likesSnap = await db.collection('status_likes').where('status_id', 'in', statusIds.slice(0, 30)).get();
-
     const likesCount = {};
     const likedByMe = new Set();
-    likesSnap.forEach(doc => {
-      const data = doc.data();
-      likesCount[data.status_id] = (likesCount[data.status_id] || 0) + 1;
-      if (data.user_id === me.id) likedByMe.add(data.status_id);
-    });
+    for (const chunk of chunkArray(statusIds)) {
+      if (chunk.length === 0) continue;
+      const likesSnap = await db.collection('status_likes').where('status_id', 'in', chunk).get();
+      likesSnap.forEach(doc => {
+        const data = doc.data();
+        likesCount[data.status_id] = (likesCount[data.status_id] || 0) + 1;
+        if (data.user_id === me.id) likedByMe.add(data.status_id);
+      });
+    }
 
     res.json(filtered.map(r => ({
       ...r,
@@ -128,15 +137,47 @@ const unlikeStatus = async (req, res) => {
 
 const getStatusLikes = async (req, res) => {
   const statusId = req.params.id;
+  const me = req.user;
   try {
+    const statusDoc = await db.collection('statuses').doc(statusId).get();
+    if (!statusDoc.exists) return res.status(404).json({ error: 'status_not_found' });
+    if (statusDoc.data().user_id !== me.id) return res.status(403).json({ error: 'unauthorized' });
+
     const snap = await db.collection('status_likes').where('status_id', '==', statusId).get();
     const likes = await Promise.all(snap.docs.map(async doc => {
       const data = doc.data();
       const pDoc = await db.collection('profiles').doc(data.user_id).get();
       return { user_id: data.user_id, created_at: data.created_at, profile: pDoc.exists ? { id: pDoc.id, ...pDoc.data() } : null };
     }));
-    const filtered = likes.filter(l => !!l.profile);
-    res.json({ likes: filtered, count: filtered.length });
+
+    const filtered = likes
+      .filter(l => !!l.profile && !l.profile.suspended_at && l.profile.onboarding_completed !== false)
+      .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+
+    const likerIds = filtered.map(l => l.user_id);
+    const likedBackIds = new Set();
+    const matchedIds = new Set();
+
+    for (const chunk of chunkArray(likerIds)) {
+      if (chunk.length === 0) continue;
+      await Promise.all(chunk.map(async otherUserId => {
+        const likedBackDoc = await db.collection('likes').doc(`${me.id}_${otherUserId}`).get();
+        if (likedBackDoc.exists) likedBackIds.add(otherUserId);
+
+        const [userOneId, userTwoId] = [me.id, otherUserId].sort();
+        const matchDoc = await db.collection('matches').doc(`${userOneId}_${userTwoId}`).get();
+        if (matchDoc.exists && matchDoc.data().status === 'ACTIVE') matchedIds.add(otherUserId);
+      }));
+    }
+
+    res.json({
+      likes: filtered.map(l => ({
+        ...l,
+        liked_back: likedBackIds.has(l.user_id),
+        is_matched: matchedIds.has(l.user_id)
+      })),
+      count: filtered.length
+    });
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
 

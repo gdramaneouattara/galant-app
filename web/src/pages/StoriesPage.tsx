@@ -1,14 +1,16 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ref, getDownloadURL, uploadBytes } from 'firebase/storage';
+import { Plus, Heart, X, Play, Film, Lock, Share2, Users, Crown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '@shared/lib/api';
 import { fbStorage } from '../firebase';
-import { ref, getDownloadURL, uploadBytes } from 'firebase/storage';
-import { Plus, Heart, X, Play, Image as ImageIcon, Film, Lock, ChevronLeft, MoreHorizontal, Sparkles, Send, Share2, Users, Crown } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
-import { Link, useNavigate } from 'react-router-dom';
 import { compressImageWeb } from '../lib/imageCompression';
 import StatusLikersModal from '../components/StatusLikersModal';
 import StoryPurchaseModal from '../components/StoryPurchaseModal';
+import LikerProfileModal, { type StatusLiker } from '../components/LikerProfileModal';
+import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
 import { useMatchmaking } from '@shared/hooks/useMatchmaking';
 import { useSubscription } from '@shared/hooks/useSubscription';
 
@@ -30,81 +32,117 @@ interface Status {
 }
 
 const StoriesPage: React.FC = () => {
-  const { user, profile, t } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { handleSwipe } = useMatchmaking();
   const { purchaseWithPaystack, purchaseLoading } = useSubscription();
+
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [loading, setLoading] = useState(true);
   const [locked, setLocked] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<Status | null>(null);
+  const [selectedStatusId, setSelectedStatusId] = useState<string | null>(null);
   const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
+  const [likeLoadingByStatusId, setLikeLoadingByStatusId] = useState<Record<string, boolean>>({});
 
-  // Likers Management
   const [isLikersOpen, setIsLikersOpen] = useState(false);
-  const [likers, setLikers] = useState<any[]>([]);
+  const [likers, setLikers] = useState<StatusLiker[]>([]);
   const [likersLoading, setLikersLoading] = useState(false);
+  const [selectedLiker, setSelectedLiker] = useState<StatusLiker | null>(null);
+  const [likingBackUserId, setLikingBackUserId] = useState<string | null>(null);
+  const [purchaseAction, setPurchaseAction] = useState<{ isOpen: boolean; type: 'SUPER_LIKE' | 'DIRECT_MESSAGE' }>({
+    isOpen: false,
+    type: 'SUPER_LIKE',
+  });
 
-  // Purchase Management
   const [isPurchaseOpen, setIsPurchaseOpen] = useState(false);
+  const [storyUploadUnlocked, setStoryUploadUnlocked] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const storyTriggerRef = useRef<HTMLInputElement>(null);
+
+  const canPublishForFree = !!profile?.is_premium || !!profile?.is_vip;
+  const canPublishNow = canPublishForFree || storyUploadUnlocked;
+
+  const resolveMediaUrls = useCallback((items: Status[]) => {
+    items.forEach((status) => {
+      if (!status.media_url) return;
+      setResolvedUrls((prev) => {
+        if (prev[status.media_url]) return prev;
+        getDownloadURL(ref(fbStorage, `statuses/${status.media_url}`))
+          .then((url) => {
+            setResolvedUrls((current) => current[status.media_url] ? current : { ...current, [status.media_url]: url });
+          })
+          .catch(() => {});
+        return prev;
+      });
+    });
+  }, []);
 
   const fetchStatuses = useCallback(async () => {
     try {
       const data = await apiRequest<Status[]>('/api/statuses', { requireAuth: true });
-      setStatuses(data || []);
+      const nextStatuses = data || [];
+      setStatuses(nextStatuses);
       setLocked(false);
-
-      data?.forEach(async (s) => {
-        if (s.media_url && !resolvedUrls[s.media_url]) {
-          try {
-            const url = await getDownloadURL(ref(fbStorage, `statuses/${s.media_url}`));
-            setResolvedUrls(prev => ({ ...prev, [s.media_url]: url }));
-          } catch (e) {}
-        }
-      });
+      resolveMediaUrls(nextStatuses);
     } catch (e: any) {
       if (String(e?.message || '').toLowerCase().includes('subscription_required')) {
         setLocked(true);
+        setStatuses([]);
       }
     } finally {
       setLoading(false);
     }
-  }, [resolvedUrls]);
+  }, [resolveMediaUrls]);
 
   useEffect(() => {
-    if (user) fetchStatuses();
+    if (user) void fetchStatuses();
   }, [user, fetchStatuses]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!profile?.is_premium && !profile?.is_vip) {
+  const openStoryPicker = () => {
+    if (uploading) return;
+    if (!canPublishNow) {
       setIsPurchaseOpen(true);
       return;
     }
+    fileInputRef.current?.click();
+  };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
+
+    if (!canPublishNow) {
+      setIsPurchaseOpen(true);
+      e.target.value = '';
+      return;
+    }
 
     const type = file.type.startsWith('video') ? 'VIDEO' : 'IMAGE';
 
     if (type === 'VIDEO') {
-      const video = document.createElement('video');
-      video.preload = 'metadata';
-
-      const durationPromise = new Promise<number>((resolve) => {
+      const objectUrl = URL.createObjectURL(file);
+      const duration = await new Promise<number>((resolve, reject) => {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
         video.onloadedmetadata = () => {
-          window.URL.revokeObjectURL(video.src);
+          URL.revokeObjectURL(objectUrl);
           resolve(video.duration);
         };
-      });
+        video.onerror = () => {
+          URL.revokeObjectURL(objectUrl);
+          reject(new Error('invalid_video'));
+        };
+        video.src = objectUrl;
+      }).catch(() => null);
 
-      video.src = URL.createObjectURL(file);
-      const duration = await durationPromise;
+      if (!duration) {
+        showAlert('Erreur', "Impossible de lire cette video.");
+        e.target.value = '';
+        return;
+      }
 
       if (duration > 16) {
-        showAlert('Vidéo trop longue', 'Les stories sont limitées à 15 secondes. Veuillez raccourcir votre vidéo avant de l\'envoyer.');
+        showAlert('Video trop longue', "Les stories sont limitees a 15 secondes. Veuillez raccourcir votre video avant de l'envoyer.");
         e.target.value = '';
         return;
       }
@@ -136,35 +174,44 @@ const StoriesPage: React.FC = () => {
       await apiRequest('/api/statuses', {
         method: 'POST',
         requireAuth: true,
-        body: JSON.stringify({ mediaUrl, type, content: '' })
+        body: JSON.stringify({ mediaUrl, type, content: '' }),
       });
 
-      showAlert('Succès', 'Votre story a été publiée !');
-      fetchStatuses();
-    } catch (error: any) {
+      showAlert('Succes', 'Votre story a ete publiee !');
+      setStoryUploadUnlocked(false);
+      await fetchStatuses();
+    } catch {
       showAlert('Erreur', "Impossible de publier la story.");
     } finally {
       setUploading(false);
+      e.target.value = '';
     }
   };
 
   const toggleLike = async (status: Status) => {
-    if (!user || status.user_id === user.uid) return;
+    if (!user || status.user_id === user.uid || likeLoadingByStatusId[status.id]) return;
     const currentlyLiked = !!status.liked_by_me;
 
-    setStatuses(prev => prev.map(s => s.id === status.id ? {
+    setStatuses((prev) => prev.map((s) => s.id === status.id ? {
       ...s,
       liked_by_me: !currentlyLiked,
-      likes_count: (s.likes_count || 0) + (currentlyLiked ? -1 : 1)
+      likes_count: Math.max(0, (s.likes_count || 0) + (currentlyLiked ? -1 : 1)),
     } : s));
+    setLikeLoadingByStatusId((prev) => ({ ...prev, [status.id]: true }));
 
     try {
       await apiRequest(`/api/statuses/${status.id}/like`, {
         method: currentlyLiked ? 'DELETE' : 'POST',
-        requireAuth: true
+        requireAuth: true,
       });
-    } catch (e) {
-      fetchStatuses();
+    } catch {
+      await fetchStatuses();
+    } finally {
+      setLikeLoadingByStatusId((prev) => {
+        const next = { ...prev };
+        delete next[status.id];
+        return next;
+      });
     }
   };
 
@@ -172,42 +219,105 @@ const StoriesPage: React.FC = () => {
     setIsLikersOpen(true);
     setLikersLoading(true);
     try {
-      const data = await apiRequest<{ likes: any[] }>(`/api/statuses/${status.id}/likes`, { requireAuth: true });
+      const data = await apiRequest<{ likes: StatusLiker[] }>(`/api/statuses/${status.id}/likes`, { requireAuth: true });
       setLikers(data.likes || []);
-    } catch (e) {
+    } catch {
       setLikers([]);
+      showAlert('Erreur', "Impossible de charger les likes de cette story.");
     } finally {
       setLikersLoading(false);
     }
   };
 
-  const handleLikeBack = async (liker: any) => {
+  const updateLikerState = (targetUserId: string, patch: Partial<StatusLiker>) => {
+    setLikers((prev) => prev.map((entry) => entry.user_id === targetUserId ? { ...entry, ...patch } : entry));
+    setSelectedLiker((current) => current?.user_id === targetUserId ? { ...current, ...patch } : current);
+  };
+
+  const handleLikeBack = async (liker: StatusLiker) => {
+    const targetUserId = liker.profile?.id || liker.user_id;
+    if (!targetUserId || targetUserId === user?.uid || likingBackUserId) return;
+
     try {
-      const res = await handleSwipe(liker.user_id, 'RIGHT');
-      if (res?.matched) {
-        showAlert('Match 🎉', `Vous et ${liker.profile.name} vous plaisez !`);
-        setIsLikersOpen(false);
-        navigate('/matches');
-      } else {
-        setLikers(prev => prev.map(l => l.user_id === liker.user_id ? { ...l, is_matched: true } : l));
+      setLikingBackUserId(targetUserId);
+      const res = await handleSwipe(targetUserId, 'RIGHT');
+      if (res) {
+        updateLikerState(targetUserId, { liked_back: true, is_matched: !!res.matched });
+        if (res.matched) {
+          showAlert('Match', `Vous et ${liker.profile.name} vous plaisez mutuellement.`);
+        } else {
+          showAlert('Succes', 'Like envoye.');
+        }
       }
-    } catch (e) {
+    } catch {
       showAlert('Erreur', 'Impossible de liker en retour.');
+    } finally {
+      setLikingBackUserId(null);
     }
   };
 
-  const handlePurchase = async () => {
+  const handleInteractionSuccess = async () => {
+    if (!selectedLiker) return;
+    const targetUserId = selectedLiker.profile?.id || selectedLiker.user_id;
+
+    if (purchaseAction.type === 'SUPER_LIKE') {
+      const res = await handleSwipe(targetUserId, 'RIGHT', true);
+      updateLikerState(targetUserId, { liked_back: true, is_matched: !!res?.matched });
+      showAlert('Succes', res?.matched ? 'Super Like envoye et match cree.' : 'Super Like envoye !');
+      return;
+    }
+
+    try {
+      const res = await apiRequest<{ matchId: string }>('/api/messages/direct-thread', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({ targetUserId }),
+      });
+      showAlert('Succes', 'Message direct debloque !');
+      setSelectedLiker(null);
+      setIsLikersOpen(false);
+      navigate(`/chat/${res.matchId}`);
+    } catch (error: any) {
+      showAlert('Erreur', error?.message || 'Impossible d ouvrir cette discussion.');
+    }
+  };
+
+  const handleStoryPurchase = async () => {
     const ok = await purchaseWithPaystack('STORY_UPLOAD', 500);
     if (ok) {
       setIsPurchaseOpen(false);
-      showAlert('Achat réussi', 'Vous pouvez maintenant publier votre story !');
+      setStoryUploadUnlocked(true);
+      showAlert('Achat reussi', 'Vous pouvez maintenant publier votre story !');
+      window.setTimeout(() => fileInputRef.current?.click(), 600);
     }
   };
+
+  const handleShare = async (status: Status) => {
+    const url = resolvedUrls[status.media_url];
+    if (!url) return;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Story Galant', url });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+        showAlert('Lien copie', 'Le lien de la story a ete copie.');
+      }
+    } catch {}
+  };
+
+  const formatPublishedAt = (value?: string) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return `${date.toLocaleDateString('fr-FR')} ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+  };
+
+  const selectedStatus = selectedStatusId ? statuses.find((s) => s.id === selectedStatusId) || null : null;
 
   if (loading) return (
     <div className="flex justify-center py-40">
       <div className="relative">
-        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
         <div className="absolute inset-0 flex items-center justify-center">
           <Film className="text-primary/20" size={24} />
         </div>
@@ -217,14 +327,14 @@ const StoriesPage: React.FC = () => {
 
   if (locked) {
     return (
-      <div className="max-w-md mx-auto text-center py-20 bg-white rounded-[3.5rem] shadow-2xl border border-slate-100 p-12 space-y-8">
-        <div className="w-24 h-24 bg-gradient-to-br from-rose-50 to-rose-100 text-primary rounded-[2rem] flex items-center justify-center mx-auto shadow-xl shadow-red-500/10">
-          <Lock size={48} />
+      <div className="max-w-md mx-auto text-center py-16 bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-8 space-y-8">
+        <div className="w-20 h-20 bg-rose-50 text-primary rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-red-500/10">
+          <Lock size={40} />
         </div>
         <div>
-          <h2 className="text-3xl font-black mb-2 tracking-tight italic">Stories Exclusives</h2>
+          <h2 className="text-3xl font-black mb-2 tracking-tight">Stories exclusives</h2>
           <p className="text-slate-500 font-medium leading-relaxed">
-            Passez à Premium pour découvrir les moments de vie de la communauté Galant et partager les vôtres.
+            Passez a Premium pour decouvrir les moments de vie de la communaute Galant et partager les votres.
           </p>
         </div>
         <Link to="/premium" className="block w-full bg-primary text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-red-500/20 hover:scale-105 transition-all active:scale-95">
@@ -235,100 +345,132 @@ const StoriesPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto pb-20 px-4 space-y-12">
+    <div className="max-w-6xl mx-auto pb-20 px-4 space-y-10">
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        accept="image/*,video/*"
+        onChange={handleFileUpload}
+        disabled={uploading}
+      />
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
-          <h2 className="text-5xl font-black tracking-tighter text-slate-900 leading-none mb-3">
-            Status <span className="text-primary italic">Galant</span>
+          <h2 className="text-4xl sm:text-5xl font-black tracking-tighter text-slate-900 leading-none mb-3">
+            Galant <span className="text-primary italic">Stories</span>
           </h2>
           <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">
-            Les éclats de vie de la communauté
+            Les moments de la communaute
           </p>
         </div>
 
-        <label className="bg-slate-900 text-white px-8 py-5 rounded-[2rem] shadow-2xl shadow-slate-900/20 cursor-pointer hover:scale-[1.03] active:scale-95 transition-all flex items-center gap-3 font-black text-xs uppercase tracking-widest group">
-          {uploading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Plus size={20} className="group-hover:rotate-90 transition-transform" />}
+        <button
+          type="button"
+          onClick={openStoryPicker}
+          disabled={uploading}
+          className="bg-slate-900 text-white px-6 sm:px-8 py-4 rounded-2xl shadow-2xl shadow-slate-900/20 hover:scale-[1.03] active:scale-95 transition-all flex items-center gap-3 font-black text-xs uppercase tracking-widest disabled:opacity-60"
+        >
+          {uploading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Plus size={20} />}
           Partager un moment
-          <input type="file" className="hidden" accept="image/*,video/*" onChange={handleFileUpload} disabled={uploading} />
-        </label>
+        </button>
       </div>
 
-      {/* Stories Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-        {/* Your Story Trigger */}
-        <label className="relative aspect-[9/16] rounded-[2.5rem] overflow-hidden bg-slate-100 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-primary/50 hover:bg-rose-50/30 transition-all group">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+        <button
+          type="button"
+          onClick={openStoryPicker}
+          disabled={uploading}
+          className="relative aspect-[9/16] rounded-[2rem] overflow-hidden bg-slate-100 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-primary/50 hover:bg-rose-50/30 transition-all group disabled:opacity-60"
+        >
           <div className="w-14 h-14 rounded-2xl bg-white shadow-xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-            <Plus size={28} />
+            {uploading ? <div className="w-5 h-5 border-2 border-primary/20 border-t-primary rounded-full animate-spin" /> : <Plus size={28} />}
           </div>
           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary transition-colors">Ma Story</p>
-          <input type="file" className="hidden" accept="image/*,video/*" onChange={handleFileUpload} disabled={uploading} />
-        </label>
+        </button>
 
-        {statuses.map((status) => (
-          <div
-            key={status.id}
-            onClick={() => setSelectedStatus(status)}
-            className="relative aspect-[9/16] rounded-[2.5rem] overflow-hidden bg-slate-900 shadow-xl cursor-pointer group hover:scale-[1.02] transition-all border-4 border-white"
-          >
-            {status.message_type === 'VIDEO' ? (
-              <div className="w-full h-full relative">
-                <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-10">
-                  <Play className="text-white opacity-40 group-hover:opacity-100 group-hover:scale-110 transition-all" size={40} fill="white" />
+        {statuses.map((status) => {
+          const mediaUrl = resolvedUrls[status.media_url];
+          return (
+            <button
+              type="button"
+              key={status.id}
+              onClick={() => setSelectedStatusId(status.id)}
+              className="relative aspect-[9/16] rounded-[2rem] overflow-hidden bg-slate-900 shadow-xl cursor-pointer group hover:scale-[1.02] transition-all border-4 border-white text-left"
+            >
+              {status.message_type === 'VIDEO' ? (
+                <div className="w-full h-full relative bg-slate-900">
+                  {mediaUrl ? (
+                    <video
+                      src={mediaUrl}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
+                      muted
+                      playsInline
+                      preload="metadata"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-slate-800 flex items-center justify-center">
+                      <Film size={48} className="text-white/10" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-10">
+                    <Play className="text-white opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all" size={40} fill="white" />
+                  </div>
                 </div>
-                {/* Thumbnail placeholder if needed */}
+              ) : mediaUrl ? (
+                <img
+                  src={mediaUrl}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[3000ms]"
+                  alt=""
+                  loading="lazy"
+                />
+              ) : (
                 <div className="w-full h-full bg-slate-800 flex items-center justify-center">
-                   <Film size={48} className="text-white/10" />
+                  <Film size={48} className="text-white/10" />
+                </div>
+              )}
+
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+
+              <div className="absolute top-4 left-4 right-4 flex items-center gap-2 z-20">
+                <div className={`w-10 h-10 rounded-2xl border-2 p-0.5 ${status.profiles.is_premium ? 'border-amber-400' : 'border-primary'}`}>
+                  <img src={status.profiles.photos?.[0] || 'https://placehold.co/100x100'} className="w-full h-full object-cover rounded-[0.8rem]" alt="" />
                 </div>
               </div>
-            ) : (
-              <img
-                src={resolvedUrls[status.media_url]}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[3000ms]"
-                alt=""
-                loading="lazy"
-              />
-            )}
 
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
-
-            {/* Profile Info in Grid */}
-            <div className="absolute top-4 left-4 right-4 flex items-center gap-2 z-20">
-              <div className={`w-10 h-10 rounded-2xl border-2 p-0.5 ${status.profiles.is_premium ? 'border-amber-400' : 'border-primary'}`}>
-                <img src={status.profiles.photos?.[0]} className="w-full h-full object-cover rounded-[0.8rem]" alt="" />
+              <div className="absolute bottom-5 left-5 right-5 z-20">
+                <p className="text-sm font-black text-white truncate">{status.profiles.name}</p>
+                <p className="text-[9px] font-bold text-white/60 uppercase tracking-widest mt-1">{formatPublishedAt(status.created_at)}</p>
               </div>
-            </div>
 
-            <div className="absolute bottom-6 left-6 right-6 z-20">
-              <p className="text-sm font-black text-white truncate shadow-sm">{status.profiles.name}</p>
-              <p className="text-[9px] font-bold text-white/60 uppercase tracking-widest mt-1">Il y a 2h</p>
-            </div>
-
-            {status.likes_count ? (
-              <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-xl flex items-center gap-1.5 border border-white/10">
-                <Heart size={12} className="text-primary fill-primary" />
-                <span className="text-[10px] font-black text-white">{status.likes_count}</span>
-              </div>
-            ) : null}
-          </div>
-        ))}
+              {!!status.likes_count && (
+                <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-xl flex items-center gap-1.5 border border-white/10 z-20">
+                  <Heart size={12} className="text-primary fill-primary" />
+                  <span className="text-[10px] font-black text-white">{status.likes_count}</span>
+                </div>
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Modern Story Viewer */}
       {selectedStatus && (
         <div className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-2xl flex items-center justify-center p-0 md:p-10 animate-in fade-in duration-300">
           <button
-            onClick={() => setSelectedStatus(null)}
-            className="absolute top-10 right-10 text-white/30 hover:text-white transition-all z-[110] hover:rotate-90"
+            onClick={() => setSelectedStatusId(null)}
+            className="absolute top-6 right-6 md:top-10 md:right-10 text-white/50 hover:text-white transition-all z-[110]"
+            aria-label="Fermer"
           >
-            <X size={48} />
+            <X size={42} />
           </button>
 
-          <div className="relative w-full max-w-lg h-full md:h-[90vh] bg-black rounded-none md:rounded-[4rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] border-0 md:border-8 border-white/10">
+          <div className="relative w-full max-w-lg h-full md:h-[90vh] bg-black rounded-none md:rounded-[2.5rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] border-0 md:border-8 border-white/10">
             {selectedStatus.message_type === 'VIDEO' ? (
               <video
                 src={resolvedUrls[selectedStatus.media_url]}
                 autoPlay
                 loop
+                playsInline
                 className="w-full h-full object-cover"
                 controls={false}
               />
@@ -336,29 +478,28 @@ const StoriesPage: React.FC = () => {
               <img src={resolvedUrls[selectedStatus.media_url]} className="w-full h-full object-cover" alt="" />
             )}
 
-            {/* Progress Bars (Mock) */}
-            <div className="absolute top-6 left-10 right-10 flex gap-1.5 z-50">
+            <div className="absolute top-6 left-8 right-8 flex gap-1.5 z-50">
               <div className="h-1 flex-1 bg-white rounded-full overflow-hidden">
-                <div className="h-full bg-primary w-2/3"></div>
+                <div className="h-full bg-primary w-2/3" />
               </div>
-              <div className="h-1 flex-1 bg-white/20 rounded-full"></div>
-              <div className="h-1 flex-1 bg-white/20 rounded-full"></div>
+              <div className="h-1 flex-1 bg-white/20 rounded-full" />
+              <div className="h-1 flex-1 bg-white/20 rounded-full" />
             </div>
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 pointer-events-none" />
 
-            <div className="absolute top-12 left-10 right-10 flex justify-between items-center z-50">
-              <div className="flex items-center gap-4">
-                <div className={`w-14 h-14 rounded-2xl border-2 p-0.5 ${selectedStatus.profiles.is_premium ? 'border-amber-400' : 'border-primary shadow-lg shadow-red-500/20'}`}>
-                  <img src={selectedStatus.profiles.photos?.[0]} className="w-full h-full object-cover rounded-xl" alt="" />
+            <div className="absolute top-12 left-6 right-6 sm:left-10 sm:right-10 flex justify-between items-center gap-3 z-50">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border-2 p-0.5 flex-shrink-0 ${selectedStatus.profiles.is_premium ? 'border-amber-400' : 'border-primary shadow-lg shadow-red-500/20'}`}>
+                  <img src={selectedStatus.profiles.photos?.[0] || 'https://placehold.co/100x100'} className="w-full h-full object-cover rounded-xl" alt="" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="font-black text-white text-lg tracking-tight">{selectedStatus.profiles.name}</p>
-                    {selectedStatus.profiles.is_premium && <Crown size={14} className="text-amber-400" fill="currentColor" />}
+                    <p className="font-black text-white text-base sm:text-lg tracking-tight truncate">{selectedStatus.profiles.name}</p>
+                    {selectedStatus.profiles.is_premium && <Crown size={14} className="text-amber-400 flex-shrink-0" fill="currentColor" />}
                   </div>
                   <p className="text-[10px] font-black text-white/60 uppercase tracking-widest mt-0.5">
-                    {new Date(selectedStatus.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {formatPublishedAt(selectedStatus.created_at)}
                   </p>
                 </div>
               </div>
@@ -366,53 +507,80 @@ const StoriesPage: React.FC = () => {
               {selectedStatus.user_id === user?.uid && (
                 <button
                   onClick={() => handleOpenLikers(selectedStatus)}
-                  className="bg-white/10 backdrop-blur-xl border border-white/10 px-6 py-3 rounded-2xl flex items-center gap-3 text-white hover:bg-white/20 transition-all"
+                  className="bg-white/10 backdrop-blur-xl border border-white/10 px-3 sm:px-5 py-3 rounded-2xl flex items-center gap-2 text-white hover:bg-white/20 transition-all flex-shrink-0"
                 >
-                  <Users size={20} />
-                  <span className="text-xs font-black uppercase tracking-widest">
-                    {selectedStatus.likes_count || 0} Admirateurs
+                  <Users size={18} />
+                  <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest">
+                    {selectedStatus.likes_count || 0}
                   </span>
                 </button>
               )}
             </div>
 
-            <div className="absolute bottom-12 left-10 right-10 flex items-center gap-6 z-50">
-               <div className="flex-1 bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl p-6">
-                 <p className="text-white text-base font-medium leading-relaxed italic">
-                   {selectedStatus.content || "Vivre l'instant présent avec élégance... ✨"}
-                 </p>
-               </div>
+            <div className="absolute bottom-8 sm:bottom-12 left-6 right-6 sm:left-10 sm:right-10 flex items-end gap-4 z-50">
+              <div className="flex-1 bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl p-5 min-w-0">
+                <p className="text-white text-sm sm:text-base font-medium leading-relaxed italic">
+                  {selectedStatus.content || "Vivre l'instant present avec elegance..."}
+                </p>
+              </div>
 
-               <div className="flex flex-col gap-4">
-                 <button
-                  onClick={(e) => { e.stopPropagation(); toggleLike(selectedStatus); }}
-                  className={`w-16 h-16 rounded-[1.5rem] flex flex-col items-center justify-center transition-all shadow-2xl ${selectedStatus.liked_by_me ? 'bg-primary text-white scale-110' : 'bg-white/10 text-white backdrop-blur-xl border border-white/10 hover:bg-white/20'}`}
-                 >
-                   <Heart size={32} fill={selectedStatus.liked_by_me ? 'white' : 'none'} className={selectedStatus.liked_by_me ? 'animate-bounce' : ''} />
-                   {selectedStatus.likes_count ? <span className="text-[10px] font-black mt-1">{selectedStatus.likes_count}</span> : null}
-                 </button>
+              <div className="flex flex-col gap-4">
+                <button
+                  onClick={(e) => { e.stopPropagation(); void toggleLike(selectedStatus); }}
+                  disabled={!!likeLoadingByStatusId[selectedStatus.id]}
+                  className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex flex-col items-center justify-center transition-all shadow-2xl disabled:opacity-70 ${selectedStatus.liked_by_me ? 'bg-primary text-white scale-105' : 'bg-white/10 text-white backdrop-blur-xl border border-white/10 hover:bg-white/20'}`}
+                >
+                  <Heart size={28} fill={selectedStatus.liked_by_me ? 'white' : 'none'} />
+                  {!!selectedStatus.likes_count && <span className="text-[10px] font-black mt-1">{selectedStatus.likes_count}</span>}
+                </button>
 
-                 <button className="w-16 h-16 rounded-[1.5rem] bg-white/10 backdrop-blur-xl border border-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all shadow-2xl">
-                   <Share2 size={28} />
-                 </button>
-               </div>
+                <button
+                  onClick={() => void handleShare(selectedStatus)}
+                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all shadow-2xl"
+                  aria-label="Partager"
+                >
+                  <Share2 size={26} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
+
       <StatusLikersModal
         isOpen={isLikersOpen}
         onClose={() => setIsLikersOpen(false)}
         likers={likers}
         loading={likersLoading}
+        onOpenProfile={(liker) => setSelectedLiker(liker)}
         onLikeBack={handleLikeBack}
-        onDirectMessage={(liker) => navigate(`/chat/${liker.user_id}`)}
+        likingBackUserId={likingBackUserId}
+        formatDate={formatPublishedAt}
+      />
+
+      <LikerProfileModal
+        isOpen={!!selectedLiker}
+        onClose={() => setSelectedLiker(null)}
+        liker={selectedLiker}
+        onLikeBack={handleLikeBack}
+        onSuperLike={() => setPurchaseAction({ isOpen: true, type: 'SUPER_LIKE' })}
+        onDirectMessage={() => setPurchaseAction({ isOpen: true, type: 'DIRECT_MESSAGE' })}
+        likingBackUserId={likingBackUserId}
+      />
+
+      <InteractionPurchaseModal
+        isOpen={purchaseAction.isOpen}
+        onClose={() => setPurchaseAction((prev) => ({ ...prev, isOpen: false }))}
+        type={purchaseAction.type}
+        targetId={selectedLiker?.user_id}
+        userName={selectedLiker?.profile.name}
+        onSuccess={handleInteractionSuccess}
       />
 
       <StoryPurchaseModal
         isOpen={isPurchaseOpen}
         onClose={() => setIsPurchaseOpen(false)}
-        onPurchase={handlePurchase}
+        onPurchase={handleStoryPurchase}
         loading={purchaseLoading}
       />
     </div>
