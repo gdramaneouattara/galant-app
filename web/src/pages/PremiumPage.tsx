@@ -5,24 +5,20 @@ import {
   Zap, ShieldCheck, EyeOff, MessageSquare,
   ChevronRight, ArrowRight, Sparkles, CreditCard, Lock, Award
 } from 'lucide-react';
-import { apiRequest } from '@shared/lib/api';
 import { showAlert } from '@shared/lib/ui-bridge';
+import { useSubscription, PurchaseType } from '@shared/hooks/useSubscription';
 
 const PremiumPage: React.FC = () => {
   const { profile, t } = useAuth();
+  const { purchaseWithPaystack, purchaseLoading } = useSubscription();
   const [loading, setLoading] = useState<string | null>(null);
 
-  const handlePurchase = async (type: string, id: string, amount: number) => {
+  const handlePurchase = async (type: PurchaseType, id: string, amount: number) => {
     setLoading(id);
     try {
-      const res = await apiRequest<{ checkoutUrl: string }>('/api/payments/create-session', {
-        method: 'POST',
-        requireAuth: true,
-        body: JSON.stringify({ type, id, amount })
-      });
-
-      if (res.checkoutUrl) {
-        window.location.href = res.checkoutUrl;
+      const ok = await purchaseWithPaystack(type, amount, undefined, { planId: id });
+      if (ok) {
+        showAlert('Succès', 'Votre achat a été activé.');
       }
     } catch (error: any) {
       showAlert('Erreur', error.message);
@@ -129,8 +125,8 @@ const PremiumPage: React.FC = () => {
               </div>
 
               <button
-                onClick={() => handlePurchase('PLAN', 'MONTHLY', 5000)}
-                disabled={!!loading}
+                onClick={() => handlePurchase('PREMIUM', 'MONTHLY', 5000)}
+                disabled={!!loading || purchaseLoading}
                 className="mt-12 w-full py-5 rounded-2xl bg-slate-900 text-white font-black text-[11px] uppercase tracking-[0.2em] hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95 flex items-center justify-center gap-3"
               >
                 {loading === 'MONTHLY' ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'S\'ABONNER AU CERCLE'}
@@ -186,8 +182,8 @@ const PremiumPage: React.FC = () => {
               </div>
 
               <button
-                onClick={() => handlePurchase('PLAN', 'QUARTERLY', 10000)}
-                disabled={!!loading}
+                onClick={() => handlePurchase('PREMIUM', 'QUARTERLY', 10000)}
+                disabled={!!loading || purchaseLoading}
                 className="mt-12 w-full py-5 rounded-2xl bg-primary text-white font-black text-[11px] uppercase tracking-[0.2em] shadow-[0_20px_40px_-5px_rgba(239,68,68,0.4)] hover:scale-[1.03] transition-all active:scale-95 flex items-center justify-center gap-3"
               >
                 {loading === 'QUARTERLY' ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'CHOISIR LE PRIVILÈGE'}
@@ -222,15 +218,15 @@ const PremiumPage: React.FC = () => {
 
             <div className="space-y-4 relative z-10">
               {[
-                { id: 'rose_1', label: '1 Rose a consommer', sub: 'Solde disponible', price: 500, icon: '🌹' },
-                { id: 'rose_5', label: 'Pack Decouverte', sub: '5 Roses a consommer', price: 2500, icon: '✨' },
-                { id: 'rose_10', label: 'Pack Passion', sub: '10 Roses a consommer', price: 5000, icon: '🔥' },
-                { id: 'golden_rose', label: 'Rose d Or visibilite', sub: 'Boost prioritaire 3h', price: 2500, icon: '🏆' },
+                { id: 'ROSE_1', type: 'ROSE_PACK' as PurchaseType, label: '1 Rose a consommer', sub: 'Solde disponible', price: 500, icon: '🌹' },
+                { id: 'ROSE_5', type: 'ROSE_PACK' as PurchaseType, label: 'Pack Decouverte', sub: '5 Roses a consommer', price: 2500, icon: '✨' },
+                { id: 'ROSE_10', type: 'ROSE_PACK' as PurchaseType, label: 'Pack Passion', sub: '10 Roses a consommer', price: 5000, icon: '🔥' },
+                { id: 'GOLDEN_ROSE', type: 'GOLDEN_ROSE' as PurchaseType, label: 'Rose d Or visibilite', sub: 'Boost prioritaire 3h', price: 2500, icon: '🏆' },
               ].map((pack) => (
                 <button
                   key={pack.id}
-                  onClick={() => handlePurchase('ROSE_PACK', pack.id, pack.price)}
-                  disabled={!!loading}
+                  onClick={() => handlePurchase(pack.type, pack.id, pack.price)}
+                  disabled={!!loading || purchaseLoading}
                   className="w-full bg-white/60 backdrop-blur-md p-5 rounded-[1.8rem] flex items-center justify-between group hover:bg-white hover:shadow-2xl transition-all border border-amber-200/30 active:scale-[0.98]"
                 >
                   <div className="flex items-center gap-4">
@@ -269,17 +265,17 @@ const PremiumPage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { id: 'boost_1d', label: '1 Jour', price: 1000, color: 'bg-indigo-500', sub: 'Éclat Éphémère', icon: Zap },
-              { id: 'boost_3d', label: '3 Jours', price: 2500, color: 'bg-purple-600', sub: 'Maître du Weekend', icon: Rocket },
-              { id: 'boost_7d', label: '7 Jours', price: 5000, color: 'bg-slate-950', sub: 'Icône de la Semaine', icon: Crown },
+              { id: '1D', label: '1 Jour', price: 1000, color: 'bg-indigo-500', sub: 'Éclat Éphémère', icon: Zap },
+              { id: '3D', label: '3 Jours', price: 2500, color: 'bg-purple-600', sub: 'Maître du Weekend', icon: Rocket },
+              { id: '7D', label: '7 Jours', price: 5000, color: 'bg-slate-950', sub: 'Icône de la Semaine', icon: Crown },
             ].map((boost) => (
               <div key={boost.id} className="group bg-white p-10 rounded-[3.5rem] shadow-xl border border-slate-50 relative overflow-hidden hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
                 <div className={`absolute top-0 left-0 w-full h-2 ${boost.color}`}></div>
 
                 <div className="space-y-8">
                   <div className="flex justify-between items-center">
-                    <div className={`w-14 h-14 ${boost.id === 'boost_7d' ? 'bg-slate-100' : 'bg-purple-50'} rounded-2xl flex items-center justify-center text-purple-600 transition-transform group-hover:rotate-12`}>
-                      <boost.icon size={32} className={boost.id === 'boost_7d' ? 'text-slate-900' : 'text-purple-600'} />
+                    <div className={`w-14 h-14 ${boost.id === '7D' ? 'bg-slate-100' : 'bg-purple-50'} rounded-2xl flex items-center justify-center text-purple-600 transition-transform group-hover:rotate-12`}>
+                      <boost.icon size={32} className={boost.id === '7D' ? 'text-slate-900' : 'text-purple-600'} />
                     </div>
                     <div className="text-right">
                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Boost</p>
@@ -293,10 +289,10 @@ const PremiumPage: React.FC = () => {
                   </div>
 
                   <button
-                    onClick={() => handlePurchase('BOOST', boost.id, boost.price)}
-                    disabled={!!loading}
+                      onClick={() => handlePurchase('BOOST', boost.id, boost.price)}
+                      disabled={!!loading || purchaseLoading}
                     className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 ${
-                      boost.id === 'boost_7d'
+                      boost.id === '7D'
                       ? 'bg-slate-950 text-white shadow-xl shadow-slate-200'
                       : 'bg-slate-50 text-slate-900 hover:bg-slate-950 hover:text-white'
                     }`}

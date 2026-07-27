@@ -3,6 +3,19 @@ const { buildUserSegmentFilter, appendAdminAuditLog } = require('../services/acc
 const { sendPushNotification } = require('../services/notificationService');
 const { processUserAction } = require('../services/conciergeService');
 const { reconcileAllCounters, backfillProfileGeohashes } = require('../services/maintenanceService');
+const pricingDefaults = require('../config/constants');
+
+const mergeRosePacks = (overrides = {}) => {
+  const merged = {};
+  const keys = new Set([...Object.keys(pricingDefaults.ROSE_PACKS), ...Object.keys(overrides || {})]);
+  keys.forEach((key) => {
+    merged[key] = {
+      ...(pricingDefaults.ROSE_PACKS[key] || {}),
+      ...(overrides?.[key] || {})
+    };
+  });
+  return merged;
+};
 
 const getStats = async (req, res) => {
   try {
@@ -373,25 +386,33 @@ const getPricing = async (req, res) => {
   try {
     const doc = await db.collection('app_settings').doc('pricing').get();
     if (!doc.exists) {
-      const { PRICES, PLAN_AMOUNTS, PARTNER_PLAN_AMOUNTS } = require('../config/constants');
       return res.json({
-        PRICES,
-        PLAN_AMOUNTS,
-        PARTNER_PLAN_AMOUNTS,
+        PRICES: pricingDefaults.PRICES,
+        PLAN_AMOUNTS: pricingDefaults.PLAN_AMOUNTS,
+        PARTNER_PLAN_AMOUNTS: pricingDefaults.PARTNER_PLAN_AMOUNTS,
+        ROSE_PACKS: pricingDefaults.ROSE_PACKS,
         source: 'defaults'
       });
     }
-    res.json({ ...doc.data(), source: 'firestore' });
+    const data = doc.data() || {};
+    res.json({
+      PRICES: { ...pricingDefaults.PRICES, ...(data.PRICES || {}) },
+      PLAN_AMOUNTS: { ...pricingDefaults.PLAN_AMOUNTS, ...(data.PLAN_AMOUNTS || {}) },
+      PARTNER_PLAN_AMOUNTS: { ...pricingDefaults.PARTNER_PLAN_AMOUNTS, ...(data.PARTNER_PLAN_AMOUNTS || {}) },
+      ROSE_PACKS: mergeRosePacks(data.ROSE_PACKS),
+      source: 'firestore'
+    });
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
 
 const updatePricing = async (req, res) => {
-  const { PRICES, PLAN_AMOUNTS, PARTNER_PLAN_AMOUNTS } = req.body;
+  const { PRICES, PLAN_AMOUNTS, PARTNER_PLAN_AMOUNTS, ROSE_PACKS } = req.body;
   try {
     const data = {
       PRICES: PRICES || {},
       PLAN_AMOUNTS: PLAN_AMOUNTS || {},
       PARTNER_PLAN_AMOUNTS: PARTNER_PLAN_AMOUNTS || {},
+      ROSE_PACKS: ROSE_PACKS || {},
       updated_at: new Date().toISOString(),
       updated_by: req.user.id
     };

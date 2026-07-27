@@ -233,7 +233,7 @@ const HomeScreen: React.FC = () => {
   };
 
   const handleGoldenRosePurchasePaystack = async () => {
-    const ok = await purchaseWithPaystack('PREMIUM', 2500); // GOLDEN_ROSE is a premium type in backend
+    const ok = await purchaseWithPaystack('GOLDEN_ROSE', 2500);
     if (ok) {
       setShowGoldenRoseModal(false);
       void loadSuggestions();
@@ -241,7 +241,7 @@ const HomeScreen: React.FC = () => {
   };
 
   const handleGoldenRosePurchaseGoogle = async () => {
-    const ok = await purchaseWithStore(GOLDEN_ROSE_SKU, 'PREMIUM');
+    const ok = await purchaseWithStore(GOLDEN_ROSE_SKU, 'GOLDEN_ROSE');
     if (ok) {
       setShowGoldenRoseModal(false);
       void loadSuggestions();

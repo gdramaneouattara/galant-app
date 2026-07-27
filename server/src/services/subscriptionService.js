@@ -1,4 +1,5 @@
 const { db } = require('../config/firebase');
+const { FieldValue } = require('firebase-admin/firestore');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const { PLAN_DURATIONS, BOOST_SCORES } = require('../config/constants');
@@ -182,6 +183,28 @@ const applyPurchasedEntitlement = async ({
     });
     await db.collection('profiles').doc(userId).update({
       golden_rose_until: expiresAt
+    });
+  } else if (normalizedType === 'ROSE_PACK') {
+    const pricing = await getCurrentPricing();
+    const pack = pricing.ROSE_PACKS?.[normalizedPlanId];
+    const quantity = Number(pack?.quantity || 0);
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      throw new Error('invalid_rose_pack');
+    }
+
+    await db.collection('purchased_interactions').add({
+      user_id: userId,
+      interaction_type: 'ROSE_PACK',
+      plan_id: normalizedPlanId,
+      reference,
+      quantity,
+      price_amount: pack.amount,
+      provider: paymentMethod,
+      created_at: new Date().toISOString()
+    });
+    await db.collection('profiles').doc(userId).update({
+      rose_balance: FieldValue.increment(quantity),
+      updated_at: new Date().toISOString()
     });
   } else if (normalizedType === 'STORY_UPLOAD') {
     const pricing = await getCurrentPricing();

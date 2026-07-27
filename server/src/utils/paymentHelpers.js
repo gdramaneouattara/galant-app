@@ -18,6 +18,7 @@ const getExpectedAmountForPurchase = async ({ type, planId }) => {
   if (normalizedType === 'SUPER_LIKE') return PRICES.SUPER_LIKE;
   if (normalizedType === 'DIRECT_MESSAGE') return PRICES.DIRECT_MESSAGE;
   if (normalizedType === 'GOLDEN_ROSE') return PRICES.GOLDEN_ROSE;
+  if (normalizedType === 'ROSE_PACK') return pricing.ROSE_PACKS?.[normalizedPlanId]?.amount ?? null;
   if (normalizedType === 'ROSE_NOTE_UNLOCK') return PRICES.ROSE_NOTE_UNLOCK;
   if (normalizedType === 'STORY_UPLOAD') return PRICES.STORY_UPLOAD;
   if (normalizedType === 'LIKES_INBOX_2H') return PRICES.LIKES_INBOX_2H;

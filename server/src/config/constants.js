@@ -14,6 +14,21 @@ const PRICES = {
   LIKES_INBOX_2H: parseInt(process.env.LIKES_INBOX_2H_AMOUNT || '1000')
 };
 
+const ROSE_PACKS = {
+  ROSE_1: {
+    quantity: 1,
+    amount: parseInt(process.env.ROSE_PACK_1_AMOUNT || '500')
+  },
+  ROSE_5: {
+    quantity: 5,
+    amount: parseInt(process.env.ROSE_PACK_5_AMOUNT || '2500')
+  },
+  ROSE_10: {
+    quantity: 10,
+    amount: parseInt(process.env.ROSE_PACK_10_AMOUNT || '5000')
+  }
+};
+
 const PLAN_AMOUNTS = {
   MONTHLY: parseInt(process.env.PLAN_MONTHLY_AMOUNT || '5000'),
   QUARTERLY: parseInt(process.env.PLAN_QUARTERLY_AMOUNT || '10000')
@@ -66,6 +81,7 @@ module.exports = {
   PRICES,
   PLAN_AMOUNTS,
   PARTNER_PLAN_AMOUNTS,
+  ROSE_PACKS,
   QUOTAS,
   BOOST_SCORES,
   PLAN_DURATIONS,

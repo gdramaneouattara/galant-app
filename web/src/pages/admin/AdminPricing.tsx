@@ -51,6 +51,20 @@ const AdminPricing: React.FC = () => {
     }));
   };
 
+  const updateNestedField = (category: string, key: string, field: string, value: string) => {
+    const numValue = parseInt(value) || 0;
+    setPricing((prev: any) => ({
+      ...prev,
+      [category]: {
+        ...(prev[category] || {}),
+        [key]: {
+          ...(prev[category]?.[key] || {}),
+          [field]: numValue
+        }
+      }
+    }));
+  };
+
   if (loading) return <div className="p-10 text-center"><RefreshCcw className="animate-spin mx-auto" /></div>;
 
   return (
@@ -82,10 +96,10 @@ const AdminPricing: React.FC = () => {
 
           <div className="space-y-4">
             {[
-              { id: 'SUPER_LIKE', label: 'Rose d\'Or (Super Like)', icon: Heart },
+              { id: 'SUPER_LIKE', label: 'Rose envoyee (Super Like)', icon: Heart },
               { id: 'DIRECT_MESSAGE', label: 'Message Direct', icon: MessageSquare },
               { id: 'ROSE_NOTE_UNLOCK', label: 'Note Parfumée', icon: Sparkles },
-              { id: 'GOLDEN_ROSE', label: 'Bouquet Royal (3h)', icon: Gem },
+              { id: 'GOLDEN_ROSE', label: 'Rose d Or visibilite (3h)', icon: Gem },
               { id: 'STORY_UPLOAD', label: 'Publication Story', icon: Film },
               { id: 'LIKES_INBOX_2H', label: 'Déblocage Likes (2h)', icon: Heart }
             ].map(item => (
@@ -96,6 +110,37 @@ const AdminPricing: React.FC = () => {
                     type="number"
                     value={pricing.PRICES[item.id]}
                     onChange={(e) => updateField('PRICES', item.id, e.target.value)}
+                    className="w-full bg-slate-50 border-none rounded-xl py-3 pl-10 pr-4 font-bold text-slate-900"
+                  />
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 font-bold text-xs">F</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Packs de Roses */}
+        <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-xl border border-slate-100 space-y-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500">
+              <Gem size={20} />
+            </div>
+            <h3 className="font-black text-lg uppercase tracking-tight">Packs Solde Roses</h3>
+          </div>
+
+          <div className="space-y-4">
+            {[
+              { id: 'ROSE_1', label: '1 Rose a consommer' },
+              { id: 'ROSE_5', label: '5 Roses a consommer' },
+              { id: 'ROSE_10', label: '10 Roses a consommer' }
+            ].map(item => (
+              <div key={item.id} className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.label}</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={pricing.ROSE_PACKS?.[item.id]?.amount ?? 0}
+                    onChange={(e) => updateNestedField('ROSE_PACKS', item.id, 'amount', e.target.value)}
                     className="w-full bg-slate-50 border-none rounded-xl py-3 pl-10 pr-4 font-bold text-slate-900"
                   />
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 font-bold text-xs">F</span>

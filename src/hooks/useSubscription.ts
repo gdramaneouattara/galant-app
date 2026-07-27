@@ -6,7 +6,7 @@ import { openPaymentUrl } from '../lib/payment-bridge';
 // Détection Web/Mobile
 const isWeb = typeof window !== 'undefined' && !((window as any).expo);
 
-export type PurchaseType = 'SUPER_LIKE' | 'DIRECT_MESSAGE' | 'BOOST' | 'PREMIUM' | 'ROSE_NOTE_UNLOCK' | 'STORY_UPLOAD' | 'LIKES_INBOX_2H';
+export type PurchaseType = 'SUPER_LIKE' | 'DIRECT_MESSAGE' | 'BOOST' | 'PREMIUM' | 'ROSE_NOTE_UNLOCK' | 'STORY_UPLOAD' | 'LIKES_INBOX_2H' | 'GOLDEN_ROSE' | 'ROSE_PACK';
 
 export const useSubscription = () => {
   const [purchaseLoading, setPurchaseLoading] = useState(false);
@@ -45,6 +45,7 @@ export const useSubscription = () => {
             type,
             targetId,
             paymentMethod: 'MOBILE_MONEY',
+            ...(metadata || {}),
             metadata
           }),
         }
@@ -52,7 +53,11 @@ export const useSubscription = () => {
 
       const success = await openPaymentUrl(init.authorization_url);
 
-      if (success || isWeb) {
+      if (isWeb) {
+        return false;
+      }
+
+      if (success) {
         // Sur le web, on attend le retour de Paystack ou on vérifie au prochain chargement
         const verify = await apiRequest<{ status: string }>(
           `/api/payments/verify?reference=${init.reference}`,
