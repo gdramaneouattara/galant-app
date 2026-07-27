@@ -19,9 +19,12 @@ const searchProducts = async (req, res) => {
 
     let products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    // 2. If no results or very few, trigger an async scrape for future users
-    // In a real production app, we would wait for the scrape or use a specialized search engine
-    if (products.length < 5) {
+    // 2. If no results, WAIT for a quick scrape
+    if (products.length === 0) {
+      console.log(`[MARKET] No results for "${query}". Triggering direct scrape...`);
+      products = await scrapeProductIfNeeded(query);
+    } else if (products.length < 3) {
+      // If only a few results, scrape more in background
       void scrapeProductIfNeeded(query);
     }
 
