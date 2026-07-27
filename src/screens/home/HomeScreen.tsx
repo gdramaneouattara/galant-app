@@ -109,6 +109,8 @@ const HomeScreen: React.FC = () => {
   const [likesInboxCount, setLikesInboxCount] = useState(0);
   const [rosesInboxCount, setRosesInboxCount] = useState(0);
   const [storyBubbles, setStoryBubbles] = useState<StoryBubble[]>([]);
+  const [storiesLoading, setStoriesLoading] = useState(false);
+  const [storiesUnavailable, setStoriesUnavailable] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [visibilityInsight, setVisibilityInsight] = useState<any>(null);
 
@@ -199,13 +201,20 @@ const HomeScreen: React.FC = () => {
   }, [currentUser]);
 
   const fetchStoryBubbles = useCallback(async () => {
-    if (!currentUser) { setStoryBubbles([]); return; }
+    if (!currentUser) {
+      setStoryBubbles([]);
+      setStoriesUnavailable(false);
+      return;
+    }
     try {
+      setStoriesLoading(true);
+      setStoriesUnavailable(false);
       const data = await apiRequest<StoryBubble[]>('/api/statuses', { requireAuth: true });
       setStoryBubbles((data || []).slice(0, 20));
     } catch {
       setStoryBubbles([]);
-    }
+      setStoriesUnavailable(true);
+    } finally { setStoriesLoading(false); }
   }, [currentUser]);
 
   useFocusEffect(
@@ -374,11 +383,18 @@ const HomeScreen: React.FC = () => {
         </View>
       </View>
 
-      <View style={styles.storiesRailWrap}>
+      <View style={styles.storiesSection}>
+        <View style={styles.storiesSectionHeader}>
+          <Text style={[styles.storiesSectionTitle, { color: colors.textMuted }]}>Stories</Text>
+          <Pressable onPress={() => trialLocked ? navigation.navigate('Premium') : navigation.navigate('Status')}>
+            <Text style={styles.storiesSeeAll}>Voir tout</Text>
+          </Pressable>
+        </View>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.storiesRail}
+          style={styles.storiesRailWrap}
         >
           <Pressable
             style={styles.storyBubbleItem}
@@ -390,7 +406,14 @@ const HomeScreen: React.FC = () => {
             <Text style={[styles.storyBubbleLabel, { color: colors.text }]} numberOfLines={1}>Ma story</Text>
           </Pressable>
 
-          {storyBubbles.map((story) => {
+          {storiesLoading && [0, 1, 2].map((item) => (
+            <View key={item} style={styles.storyBubbleItem}>
+              <View style={[styles.storySkeleton, { backgroundColor: colors.input }]} />
+              <View style={[styles.storySkeletonLabel, { backgroundColor: colors.input }]} />
+            </View>
+          ))}
+
+          {!storiesLoading && storyBubbles.map((story) => {
             const avatar = story.profiles?.photos?.[0] || 'https://placehold.co/100x100';
             const name = story.profiles?.name || 'Story';
             return (
@@ -409,6 +432,20 @@ const HomeScreen: React.FC = () => {
               </Pressable>
             );
           })}
+
+          {!storiesLoading && storyBubbles.length === 0 && (
+            <Pressable
+              style={[styles.storyEmptyBubble, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => navigation.navigate(storiesUnavailable ? 'Premium' : 'Status')}
+            >
+              <View style={[styles.storyEmptyIcon, { backgroundColor: colors.input }]}>
+                <Sparkles size={18} color={COLORS.primary} />
+              </View>
+              <Text style={[styles.storyEmptyText, { color: colors.textMuted }]}>
+                {storiesUnavailable ? 'Stories Premium' : 'Aucune story active'}
+              </Text>
+            </Pressable>
+          )}
         </ScrollView>
       </View>
 
@@ -546,7 +583,11 @@ const styles = StyleSheet.create({
   brand: { fontSize: 32, fontFamily: 'PlayfairBlack', color: COLORS.primary, letterSpacing: -0.5 },
   subtitle: { fontSize: 13, fontFamily: 'InterSemiBold', marginTop: -4 },
   filterBtn: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  storiesRailWrap: { marginTop: -6, marginBottom: 10 },
+  storiesSection: { marginTop: -6, marginBottom: 10 },
+  storiesSectionHeader: { paddingHorizontal: 16, marginBottom: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  storiesSectionTitle: { fontSize: 11, fontFamily: 'InterBold', textTransform: 'uppercase', letterSpacing: 1.6 },
+  storiesSeeAll: { color: COLORS.primary, fontSize: 10, fontFamily: 'InterBold', textTransform: 'uppercase', letterSpacing: 1 },
+  storiesRailWrap: { maxHeight: 86 },
   storiesRail: { paddingHorizontal: 16, gap: 12, alignItems: 'center' },
   storyBubbleItem: { width: 68, alignItems: 'center', gap: 6 },
   myStoryBubble: { width: 58, height: 58, borderRadius: 29, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
@@ -556,6 +597,11 @@ const styles = StyleSheet.create({
   storyBubbleAvatar: { width: '100%', height: '100%', borderRadius: 28, backgroundColor: '#e2e8f0' },
   storyPlayDot: { position: 'absolute', right: -1, bottom: -1, width: 20, height: 20, borderRadius: 10, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff' },
   storyBubbleLabel: { width: 68, textAlign: 'center', fontSize: 10, fontFamily: 'InterBold' },
+  storySkeleton: { width: 60, height: 60, borderRadius: 30, opacity: 0.8 },
+  storySkeletonLabel: { width: 42, height: 8, borderRadius: 4, opacity: 0.8 },
+  storyEmptyBubble: { width: 150, minHeight: 58, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', paddingHorizontal: 10, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  storyEmptyIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  storyEmptyText: { flex: 1, fontSize: 10, fontFamily: 'InterBold', textTransform: 'uppercase', lineHeight: 15 },
   trialBanner: { marginHorizontal: 16, marginBottom: 8, borderRadius: 12, backgroundColor: '#e0f2fe', borderWidth: 1, borderColor: '#bae6fd', padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   trialBannerExpired: { backgroundColor: '#fee2e2', borderColor: '#fecaca' },
   trialBannerText: { flex: 1, fontSize: 12, fontWeight: '700', color: '#075985' },

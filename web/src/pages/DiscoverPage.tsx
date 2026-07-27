@@ -15,6 +15,8 @@ const DiscoverPage: React.FC = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [storyBubbles, setStoryBubbles] = useState<any[]>([]);
+  const [storiesLoading, setStoriesLoading] = useState(false);
+  const [storiesUnavailable, setStoriesUnavailable] = useState(false);
   const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean; type: 'SUPER_LIKE' | 'DIRECT_MESSAGE'; userName: string; targetId: string } | null>(null);
   const navigate = useNavigate();
 
@@ -83,12 +85,22 @@ const DiscoverPage: React.FC = () => {
   useEffect(() => {
     if (!user) {
       setStoryBubbles([]);
+      setStoriesUnavailable(false);
       return;
     }
 
+    setStoriesLoading(true);
+    setStoriesUnavailable(false);
     apiRequest<any[]>('/api/statuses', { requireAuth: true })
-      .then((items) => setStoryBubbles((items || []).slice(0, 20)))
-      .catch(() => setStoryBubbles([]));
+      .then((items) => {
+        setStoryBubbles((items || []).slice(0, 20));
+        setStoriesUnavailable(false);
+      })
+      .catch(() => {
+        setStoryBubbles([]);
+        setStoriesUnavailable(true);
+      })
+      .finally(() => setStoriesLoading(false));
   }, [user]);
 
   const onSwipe = async (direction: 'LEFT' | 'RIGHT') => {
@@ -262,41 +274,76 @@ const DiscoverPage: React.FC = () => {
         </button>
       </div>
 
-      <div className="mb-8 -mx-4 px-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none]">
-        <div className="flex items-start gap-4 min-w-max pb-1">
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Stories</p>
           <button
             type="button"
-            onClick={() => navigate('/stories', { state: { openComposer: true } })}
-            className="w-[72px] flex flex-col items-center gap-2 group"
+            onClick={() => navigate('/stories')}
+            className="text-[10px] font-black uppercase tracking-widest text-primary"
           >
-            <div className="w-16 h-16 rounded-full border-2 border-primary bg-white dark:bg-slate-900 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
-              <Plus size={28} className="text-primary" strokeWidth={3} />
-            </div>
-            <span className="w-full text-center text-[10px] font-black text-slate-700 dark:text-slate-300 truncate">Ma story</span>
+            Voir tout
           </button>
+        </div>
 
-          {storyBubbles.map((story) => (
+        <div className="-mx-4 px-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none]">
+          <div className="flex items-start gap-4 min-w-max pb-1">
             <button
               type="button"
-              key={story.id}
-              onClick={() => navigate('/stories', { state: { initialStatusId: story.id } })}
+              onClick={() => navigate('/stories', { state: { openComposer: true } })}
               className="w-[72px] flex flex-col items-center gap-2 group"
             >
-              <div className={`relative w-16 h-16 rounded-full p-0.5 border-2 ${story.profiles?.is_premium ? 'border-amber-400' : 'border-primary'} group-hover:scale-105 transition-transform`}>
-                <img
-                  src={story.profiles?.photos?.[0] || 'https://placehold.co/100x100'}
-                  alt=""
-                  className="w-full h-full rounded-full object-cover bg-slate-200"
-                />
-                <span className="absolute -right-0.5 -bottom-0.5 w-5 h-5 rounded-full bg-primary border-2 border-white dark:border-slate-950" />
+              <div className="w-16 h-16 rounded-full border-2 border-primary bg-white dark:bg-slate-900 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+                <Plus size={28} className="text-primary" strokeWidth={3} />
               </div>
-              <span className="w-full text-center text-[10px] font-black text-slate-700 dark:text-slate-300 truncate">
-                {story.profiles?.name || 'Story'}
-              </span>
+              <span className="w-full text-center text-[10px] font-black text-slate-700 dark:text-slate-300 truncate">Ma story</span>
             </button>
-          ))}
+
+            {storiesLoading && [0, 1, 2].map((item) => (
+              <div key={item} className="w-[72px] flex flex-col items-center gap-2">
+                <div className="w-16 h-16 rounded-full bg-slate-200 dark:bg-slate-800 animate-pulse" />
+                <div className="w-12 h-2 rounded-full bg-slate-200 dark:bg-slate-800 animate-pulse" />
+              </div>
+            ))}
+
+            {!storiesLoading && storyBubbles.map((story) => (
+              <button
+                type="button"
+                key={story.id}
+                onClick={() => navigate('/stories', { state: { initialStatusId: story.id } })}
+                className="w-[72px] flex flex-col items-center gap-2 group"
+              >
+                <div className={`relative w-16 h-16 rounded-full p-0.5 border-2 ${story.profiles?.is_premium ? 'border-amber-400' : 'border-primary'} group-hover:scale-105 transition-transform`}>
+                  <img
+                    src={story.profiles?.photos?.[0] || 'https://placehold.co/100x100'}
+                    alt=""
+                    className="w-full h-full rounded-full object-cover bg-slate-200"
+                  />
+                  <span className="absolute -right-0.5 -bottom-0.5 w-5 h-5 rounded-full bg-primary border-2 border-white dark:border-slate-950" />
+                </div>
+                <span className="w-full text-center text-[10px] font-black text-slate-700 dark:text-slate-300 truncate">
+                  {story.profiles?.name || 'Story'}
+                </span>
+              </button>
+            ))}
+
+            {!storiesLoading && storyBubbles.length === 0 && (
+              <button
+                type="button"
+                onClick={() => navigate(storiesUnavailable ? '/premium' : '/stories')}
+                className="w-[150px] flex items-center gap-3 rounded-2xl border border-dashed border-slate-300 dark:border-white/10 bg-white/70 dark:bg-white/5 px-3 py-2 text-left"
+              >
+                <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                  <Sparkles size={18} className="text-primary" />
+                </div>
+                <span className="text-[10px] font-black uppercase leading-4 text-slate-500 dark:text-slate-400">
+                  {storiesUnavailable ? 'Stories Premium' : 'Aucune story active'}
+                </span>
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      </section>
 
       {currentProfile ? (
         <div className="space-y-8">
