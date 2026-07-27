@@ -192,7 +192,20 @@ const MainNavigator: React.FC = () => {
             <RootStack.Screen name="ResetPassword" component={ResetPasswordScreen} />
           </>
         ) : isAdmin ? (
-          <RootStack.Screen name="AdminStack" component={AdminStackNavigator} />
+          <>
+            <RootStack.Screen name="MainTabs" component={UserTabNavigator} />
+            <RootStack.Screen name="AdminStack" component={AdminStackNavigator} />
+            <RootStack.Screen name="Chat" component={ChatScreen} />
+            <RootStack.Screen name="Premium" component={PremiumScreen} />
+            <RootStack.Screen name="LikesReceived" component={LikesReceivedScreen} />
+            <RootStack.Screen name="LikesInbox" component={LikesInboxScreen} />
+            <RootStack.Screen name="Verify" component={VerifyScreen} />
+            <RootStack.Screen name="Boost" component={BoostScreen} />
+            <RootStack.Screen name="DiscoverGrid" component={DiscoverGridScreen} />
+            <RootStack.Screen name="ProfileDetail" component={BoostedProfileDetailScreen} />
+            <RootStack.Screen name="VenueDetail" component={VenueDetailScreen} />
+            <RootStack.Screen name="Status" component={StatusScreen} />
+          </>
         ) : isPartner ? (
           <>
             <RootStack.Screen name="PartnerDashboard" component={PartnerDashboardScreen} />

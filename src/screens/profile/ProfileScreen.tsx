@@ -194,6 +194,7 @@ const ProfileScreen: React.FC = () => {
           exportingData={exportingData}
           deletingAccount={deletingAccount}
           onOpenDiscover={() => navigation.navigate('DiscoverGrid')}
+          onOpenAdmin={() => navigation.navigate('AdminStack')}
           onOpenBio={() => setShowBioModal(true)}
           onOpenGoal={() => setShowGoalModal(true)}
           onOpenSettings={() => setShowSettingsModal(true)}

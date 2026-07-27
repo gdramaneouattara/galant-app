@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import {
   Trophy, Sparkles, ChevronRight, Settings, EyeOff, ShieldCheck,
-  Crown, Rocket, LogOut
+  Crown, Rocket, LogOut, LayoutDashboard
 } from 'lucide-react-native';
 import { COLORS } from '../../../data/mock';
 
@@ -17,6 +17,7 @@ interface ProfileMenuProps {
   exportingData: boolean;
   deletingAccount: boolean;
   onOpenDiscover: () => void;
+  onOpenAdmin: () => void;
   onOpenBio: () => void;
   onOpenGoal: () => void;
   onOpenSettings: () => void;
@@ -45,6 +46,7 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
   exportingData,
   deletingAccount,
   onOpenDiscover,
+  onOpenAdmin,
   onOpenBio,
   onOpenGoal,
   onOpenSettings,
@@ -63,6 +65,22 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
 }) => {
   return (
     <View style={styles.section}>
+      {currentUser.is_admin ? (
+        <Pressable
+          style={[styles.row, styles.rowAdmin]}
+          onPress={onOpenAdmin}
+        >
+          <View style={[styles.rowIcon, { backgroundColor: 'rgba(255,255,255,0.14)' }]}>
+            <LayoutDashboard size={18} color="#fff" />
+          </View>
+          <View style={styles.rowContent}>
+            <Text style={[styles.rowLabel, { color: '#fff' }]}>Admin</Text>
+            <Text style={[styles.rowSubLabel, { color: 'rgba(255,255,255,0.72)' }]}>Ouvrir le dashboard administrateur</Text>
+          </View>
+          <ChevronRight size={18} color="rgba(255,255,255,0.62)" />
+        </Pressable>
+      ) : null}
+
       <Pressable
         style={[styles.row, styles.rowInvite, { backgroundColor: activeTheme === 'dark' ? '#020617' : '#0f172a', borderColor: activeTheme === 'dark' ? '#1e293b' : '#1e293b' }]}
         onPress={onShareInvite}
@@ -319,6 +337,15 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  rowAdmin: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
     shadowRadius: 10,
     elevation: 4,
   },

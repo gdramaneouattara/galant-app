@@ -267,6 +267,22 @@ const ProfilePage: React.FC = () => {
         </div>
       </div>
 
+      {profile.is_admin && (
+        <button
+          onClick={() => navigate('/admin')}
+          className="mb-6 flex w-full items-center gap-4 rounded-[2rem] bg-primary p-4 text-left text-white shadow-xl shadow-primary/20 transition-all active:scale-[0.98]"
+        >
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15">
+            <LayoutDashboard size={24} />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-black uppercase tracking-tight">Admin</p>
+            <p className="text-[10px] font-bold text-white/70">Ouvrir le dashboard administrateur</p>
+          </div>
+          <ChevronRight size={16} className="text-white/60" />
+        </button>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
         {/* Left Column: Info & Bio */}
         <div className="md:col-span-2 space-y-8">
@@ -336,22 +352,6 @@ const ProfilePage: React.FC = () => {
         {/* Right Column: Menu & Actions */}
         <div className="space-y-6">
           <div className="bg-white dark:bg-slate-900 p-4 rounded-[2.5rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-white/10 transition-colors flex flex-col gap-2">
-            {profile.is_admin && (
-              <button
-                onClick={() => navigate('/admin')}
-                className="flex items-center gap-4 p-4 rounded-2xl bg-primary text-white shadow-lg shadow-primary/20 transition-all text-left group active:scale-[0.98]"
-              >
-                <div className="w-12 h-12 bg-white/15 rounded-xl flex items-center justify-center">
-                  <LayoutDashboard size={24} />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-black uppercase tracking-tight">Admin</p>
-                  <p className="text-[10px] font-bold text-white/70">Ouvrir le dashboard</p>
-                </div>
-                <ChevronRight size={16} className="text-white/60" />
-              </button>
-            )}
-
             {/* Action Item: Goal */}
             <button
               onClick={() => setIsGoalOpen(true)}
