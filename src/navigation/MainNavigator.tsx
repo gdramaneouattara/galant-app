@@ -2,7 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { MessageCircle, Search, Shield, ShieldAlert, ShieldCheck, User as UserIcon, Calendar, MapPin } from 'lucide-react-native';
+import { MessageCircle, Search, Shield, ShieldAlert, ShieldCheck, User as UserIcon, Calendar, LayoutGrid } from 'lucide-react-native';
 import AuthFlowScreen from '../screens/auth/AuthFlowScreen';
 import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 import HomeScreen from '../screens/home/HomeScreen';
@@ -11,6 +11,7 @@ import MessagesScreen from '../screens/messages/MessagesScreen';
 import ChatScreen from '../screens/messages/ChatScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import GuideScreen from '../screens/guide/GuideScreen';
+import AppsScreen from '../screens/apps/AppsScreen';
 import VenueDetailScreen from '../screens/guide/VenueDetailScreen';
 import AgendaScreen from '../screens/agenda/AgendaScreen';
 import PremiumScreen from '../screens/premium/PremiumScreen';
@@ -53,7 +54,8 @@ export type RootStackParamList = {
   AdminVenues: undefined;
   PartnerDashboard: undefined;
   PartnerPremium: undefined;
-  Status: undefined;
+  Status: { initialStatusId?: string; openComposer?: boolean } | undefined;
+  Guide: undefined;
 };
 
 export type ProfileDetailParam = {
@@ -82,7 +84,7 @@ export type ProfileDetailParam = {
 type UserTabParamList = {
   DiscoverTab: undefined;
   AgendaTab: undefined;
-  GuideTab: undefined;
+  AppsTab: undefined;
   MessagesTab: undefined;
   ProfileTab: undefined;
 };
@@ -141,12 +143,12 @@ const UserTabNavigator = () => {
       <UserTab.Screen
         name="AgendaTab"
         component={AgendaScreen}
-        options={{ title: t('agenda'), tabBarIcon: ({ color, size }) => <Calendar color={color} size={size} /> }}
+        options={{ title: 'Sorties', tabBarIcon: ({ color, size }) => <Calendar color={color} size={size} /> }}
       />
       <UserTab.Screen
-        name="GuideTab"
-        component={GuideScreen}
-        options={{ title: t('guide'), tabBarIcon: ({ color, size }) => <MapPin color={color} size={size} /> }}
+        name="AppsTab"
+        component={AppsScreen}
+        options={{ title: 'Apps', tabBarIcon: ({ color, size }) => <LayoutGrid color={color} size={size} /> }}
       />
       <UserTab.Screen
         name="ProfileTab"
@@ -206,6 +208,7 @@ const MainNavigator: React.FC = () => {
             <RootStack.Screen name="ProfileDetail" component={BoostedProfileDetailScreen} />
             <RootStack.Screen name="VenueDetail" component={VenueDetailScreen} />
             <RootStack.Screen name="Status" component={StatusScreen} />
+            <RootStack.Screen name="Guide" component={GuideScreen} />
           </>
         ) : isPartner ? (
           <>
@@ -227,6 +230,7 @@ const MainNavigator: React.FC = () => {
             <RootStack.Screen name="ProfileDetail" component={BoostedProfileDetailScreen} />
             <RootStack.Screen name="VenueDetail" component={VenueDetailScreen} />
             <RootStack.Screen name="Status" component={StatusScreen} />
+            <RootStack.Screen name="Guide" component={GuideScreen} />
           </>
         )}
       </RootStack.Navigator>

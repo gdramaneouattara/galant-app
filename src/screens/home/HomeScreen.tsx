@@ -7,11 +7,13 @@ import {
   PanResponder,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
   Platform,
+  Image,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -64,6 +66,16 @@ type SwipeResponse = {
   matchId?: string | null;
 };
 
+type StoryBubble = {
+  id: string;
+  user_id: string;
+  profiles?: {
+    name?: string;
+    photos?: string[];
+    is_premium?: boolean;
+  };
+};
+
 import { useMatchmaking } from '../../hooks/useMatchmaking';
 import { useSubscription } from '../../hooks/useSubscription';
 
@@ -96,6 +108,7 @@ const HomeScreen: React.FC = () => {
   const [showPassportModal, setShowPassportModal] = useState(false);
   const [likesInboxCount, setLikesInboxCount] = useState(0);
   const [rosesInboxCount, setRosesInboxCount] = useState(0);
+  const [storyBubbles, setStoryBubbles] = useState<StoryBubble[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [visibilityInsight, setVisibilityInsight] = useState<any>(null);
 
@@ -185,13 +198,24 @@ const HomeScreen: React.FC = () => {
     } catch (e) { console.error('Error fetching visibility insight', e); }
   }, [currentUser]);
 
+  const fetchStoryBubbles = useCallback(async () => {
+    if (!currentUser) { setStoryBubbles([]); return; }
+    try {
+      const data = await apiRequest<StoryBubble[]>('/api/statuses', { requireAuth: true });
+      setStoryBubbles((data || []).slice(0, 20));
+    } catch {
+      setStoryBubbles([]);
+    }
+  }, [currentUser]);
+
   useFocusEffect(
     useCallback(() => {
       void loadSuggestions();
       void fetchLikesInboxCount();
       void fetchRosesInboxCount();
       void fetchVisibilityInsight();
-    }, [loadSuggestions, fetchLikesInboxCount, fetchRosesInboxCount, fetchVisibilityInsight, appResumeVersion])
+      void fetchStoryBubbles();
+    }, [loadSuggestions, fetchLikesInboxCount, fetchRosesInboxCount, fetchVisibilityInsight, fetchStoryBubbles, appResumeVersion])
   );
 
   // Auto-reload when empty
@@ -344,14 +368,48 @@ const HomeScreen: React.FC = () => {
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>{t('discover_subtitle')}</Text>
         </View>
         <View style={styles.headerActions}>
-          <Pressable style={styles.statusBtn} onPress={() => trialLocked ? navigation.navigate('Premium') : navigation.navigate('Status')}>
-            <PlayCircle color={COLORS.primary} size={28} />
-            <Text style={styles.statusBtnText}>{t('stories')}</Text>
-          </Pressable>
           <Pressable style={[styles.filterBtn, { backgroundColor: colors.input }]} onPress={() => setShowFilters(true)}>
             <SlidersHorizontal color={activeTheme === 'dark' ? colors.text : COLORS.ink} size={20} />
           </Pressable>
         </View>
+      </View>
+
+      <View style={styles.storiesRailWrap}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.storiesRail}
+        >
+          <Pressable
+            style={styles.storyBubbleItem}
+            onPress={() => trialLocked ? navigation.navigate('Premium') : navigation.navigate('Status', { openComposer: true })}
+          >
+            <View style={[styles.myStoryBubble, { backgroundColor: colors.card, borderColor: COLORS.primary }]}>
+              <Text style={styles.myStoryPlus}>+</Text>
+            </View>
+            <Text style={[styles.storyBubbleLabel, { color: colors.text }]} numberOfLines={1}>Ma story</Text>
+          </Pressable>
+
+          {storyBubbles.map((story) => {
+            const avatar = story.profiles?.photos?.[0] || 'https://placehold.co/100x100';
+            const name = story.profiles?.name || 'Story';
+            return (
+              <Pressable
+                key={story.id}
+                style={styles.storyBubbleItem}
+                onPress={() => trialLocked ? navigation.navigate('Premium') : navigation.navigate('Status', { initialStatusId: story.id })}
+              >
+                <View style={[styles.storyBubbleBorder, story.profiles?.is_premium && styles.storyBubblePremium]}>
+                  <Image source={{ uri: avatar }} style={styles.storyBubbleAvatar} />
+                  <View style={styles.storyPlayDot}>
+                    <PlayCircle size={11} color="#fff" fill="#fff" />
+                  </View>
+                </View>
+                <Text style={[styles.storyBubbleLabel, { color: colors.text }]} numberOfLines={1}>{name}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* Banners */}
@@ -487,9 +545,17 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   brand: { fontSize: 32, fontFamily: 'PlayfairBlack', color: COLORS.primary, letterSpacing: -0.5 },
   subtitle: { fontSize: 13, fontFamily: 'InterSemiBold', marginTop: -4 },
-  statusBtn: { alignItems: 'center' },
-  statusBtnText: { fontSize: 10, fontFamily: 'InterBold', color: COLORS.primary, marginTop: 2 },
   filterBtn: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  storiesRailWrap: { marginTop: -6, marginBottom: 10 },
+  storiesRail: { paddingHorizontal: 16, gap: 12, alignItems: 'center' },
+  storyBubbleItem: { width: 68, alignItems: 'center', gap: 6 },
+  myStoryBubble: { width: 58, height: 58, borderRadius: 29, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  myStoryPlus: { color: COLORS.primary, fontSize: 30, lineHeight: 32, fontWeight: '900' },
+  storyBubbleBorder: { width: 60, height: 60, borderRadius: 30, borderWidth: 2, borderColor: COLORS.primary, padding: 2 },
+  storyBubblePremium: { borderColor: '#f59e0b' },
+  storyBubbleAvatar: { width: '100%', height: '100%', borderRadius: 28, backgroundColor: '#e2e8f0' },
+  storyPlayDot: { position: 'absolute', right: -1, bottom: -1, width: 20, height: 20, borderRadius: 10, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff' },
+  storyBubbleLabel: { width: 68, textAlign: 'center', fontSize: 10, fontFamily: 'InterBold' },
   trialBanner: { marginHorizontal: 16, marginBottom: 8, borderRadius: 12, backgroundColor: '#e0f2fe', borderWidth: 1, borderColor: '#bae6fd', padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   trialBannerExpired: { backgroundColor: '#fee2e2', borderColor: '#fecaca' },
   trialBannerText: { flex: 1, fontSize: 12, fontWeight: '700', color: '#075985' },

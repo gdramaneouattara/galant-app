@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Alert,
   FlatList,
@@ -10,7 +10,8 @@ import {
   View,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
 import { ChevronLeft, Plus } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as VideoThumbnails from 'expo-video-thumbnails';
@@ -23,6 +24,7 @@ import { apiRequest } from '../../lib/api';
 import { fbStorage } from '../../lib/firebase';
 import { uploadArrayBufferToBucket } from '../../lib/storageUpload';
 import { IAP_EXPO_GO_MESSAGE, isExpoGo } from '../../lib/iapRuntime';
+import type { RootStackParamList } from '../../navigation/MainNavigator';
 
 // Components
 import StatusCard from './components/StatusCard';
@@ -75,6 +77,7 @@ const DIRECT_MESSAGE_SKU = String(process.env.EXPO_PUBLIC_DIRECT_MESSAGE_SKU || 
 
 const StatusScreen: React.FC = () => {
   const navigation = useNavigation();
+  const route = useRoute<RouteProp<RootStackParamList, 'Status'>>();
   const { currentUser, appResumeVersion } = useApp();
   const { handleSwipe } = useMatchmaking();
   const { purchaseLoading, purchaseWithPaystack, purchaseWithStore, initIAP, endIAP } = useSubscription();
@@ -96,6 +99,7 @@ const StatusScreen: React.FC = () => {
   const [showDirectMessagePurchaseModal, setShowDirectMessagePurchaseModal] = useState(false);
   const [showStoryPurchaseModal, setShowStoryPurchaseModal] = useState(false);
   const [storyUploadUnlocked, setStoryUploadUnlocked] = useState(false);
+  const initialActionHandledRef = useRef(false);
 
   const fetchStatuses = useCallback(async () => {
     try {
@@ -223,6 +227,21 @@ const StatusScreen: React.FC = () => {
       }
     }
   };
+
+  useEffect(() => {
+    if (initialActionHandledRef.current || loading) return;
+    const initialStatusId = route.params?.initialStatusId;
+    const openComposer = route.params?.openComposer;
+    if (initialStatusId && statuses.some((status) => status.id === initialStatusId)) {
+      initialActionHandledRef.current = true;
+      setSelectedStatusId(initialStatusId);
+      return;
+    }
+    if (openComposer) {
+      initialActionHandledRef.current = true;
+      setTimeout(() => { void pickStatusMedia(); }, 350);
+    }
+  }, [loading, route.params?.initialStatusId, route.params?.openComposer, statuses]);
 
   const handleToggleLike = async (status: Status) => {
     const statusId = status.id;
