@@ -12,6 +12,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 import { rtdb, db, COLLECTIONS } from '../../lib/firebase';
+import { PresenceInfo, subscribeToUserPresence } from '../../lib/presence';
 import { uploadArrayBufferToBucket, getPublicUrl } from '../../lib/storageUpload';
 
 // Components
@@ -45,6 +46,16 @@ const ChatScreen: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [targetPresence, setTargetPresence] = useState<PresenceInfo | null>(null);
+
+  useEffect(() => {
+    if (!userId || activeVenueChatId) {
+      setTargetPresence(null);
+      return;
+    }
+
+    return subscribeToUserPresence(userId, setTargetPresence);
+  }, [userId, activeVenueChatId]);
 
   useEffect(() => {
     // 1. Fetch Target User Profile
@@ -186,6 +197,8 @@ const ChatScreen: React.FC = () => {
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
       <ChatHeader
         title={targetUser?.name || 'Chat'}
+        subtitle={targetPresence ? (targetPresence.is_online ? t('online') : t('offline')) : undefined}
+        isOnline={!!targetPresence?.is_online}
         onBack={() => navigation.goBack()}
         onOpenSafety={() => {}}
         colors={colors}

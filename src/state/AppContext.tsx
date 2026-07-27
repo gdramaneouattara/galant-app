@@ -6,6 +6,7 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { fbAuth, db, rtdb, fbMessaging, COLLECTIONS } from '../lib/firebase';
+import { startRealtimePresence } from '../lib/presence';
 import { Gender, Message, Match, User, AppThemePreference, Language } from '../types';
 import { apiRequest } from '../lib/api';
 import { THEMES } from '../data/mock';
@@ -424,6 +425,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (notificationListener.current) Notifications.removeNotificationSubscription(notificationListener.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!fbUser?.uid) return;
+    return startRealtimePresence(fbUser.uid);
+  }, [fbUser?.uid]);
 
   useEffect(() => {
     if (!fbUser?.uid) return;
