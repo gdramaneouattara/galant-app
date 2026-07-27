@@ -4,7 +4,7 @@ const { calculateDistance, calculateMatchScore } = require('../services/matchmak
 const { normalizeCity } = require('../utils/geo');
 const { getGeohashPrefixesForRadius, getGeohashRangeForPrefix } = require('../utils/geohash');
 const { hasInvisiblePremiumAccessForPlan, isHiddenByInvisibleMode, hasQuarterlyLimitedInvisibleAccess, isTrialActive } = require('../services/accessService');
-const { getDailyUsage, incrementUsage } = require('../services/usageService');
+const { getDailyUsage, incrementUsage, hasDirectMessagePurchase } = require('../services/usageService');
 const { sendPushNotification } = require('../services/notificationService');
 const { QUOTAS } = require('../config/constants');
 
@@ -13,6 +13,17 @@ const normalizeText = (value) => String(value || '').trim().toLowerCase()
   .replace(/[\u0300-\u036f]/g, '');
 
 const normalizeGender = (value) => String(value || '').trim().toUpperCase();
+
+const SUPER_LIKE_STATUS_LABELS = {
+  PENDING: 'En attente',
+  ACCEPTED: 'Acceptee',
+  IGNORED: 'Ignoree'
+};
+
+const normalizeSuperLikeStatus = (value) => {
+  const status = String(value || 'PENDING').trim().toUpperCase();
+  return ['PENDING', 'ACCEPTED', 'IGNORED'].includes(status) ? status : 'PENDING';
+};
 
 const normalizeGenderList = (value) => {
   if (!Array.isArray(value)) return [];
@@ -621,17 +632,40 @@ const getSuperLikesReceived = async (req, res) => {
     const results = await Promise.all(rows.map(async row => {
       const senderDoc = await db.collection('profiles').doc(row.liker_id).get();
       const senderProfile = senderDoc.exists ? { id: senderDoc.id, ...senderDoc.data() } : null;
+      if (!senderProfile || senderProfile.suspended_at || senderProfile.onboarding_completed === false) return null;
+
+      const status = normalizeSuperLikeStatus(row.status);
+      const [userOneId, userTwoId] = [me.id, row.liker_id].sort();
+      const [likedBackDoc, matchDoc, directMessagePurchased] = await Promise.all([
+        db.collection('likes').doc(`${me.id}_${row.liker_id}`).get(),
+        db.collection('matches').doc(`${userOneId}_${userTwoId}`).get(),
+        hasDirectMessagePurchase(me.id, row.liker_id)
+      ]);
+
+      const isMatched = matchDoc.exists && matchDoc.data().status === 'ACTIVE';
 
       return {
         ...row,
-        status: row.status || 'PENDING',
+        status,
+        status_label: SUPER_LIKE_STATUS_LABELS[status],
         sender_id: row.liker_id,
-        is_locked: false, // Now free for everyone
-        user: senderProfile
+        is_locked: false,
+        is_countable: status === 'PENDING',
+        liked_back: likedBackDoc.exists,
+        is_matched: isMatched,
+        matchId: isMatched ? matchDoc.id : null,
+        can_message: isMatched || !!me.is_premium || String(me.gender || '').toUpperCase() === 'FEMALE' || !!directMessagePurchased,
+        user: senderProfile,
+        profiles: senderProfile
       };
     }));
 
-    res.json(results);
+    res.json(results.filter(Boolean).sort((left, right) => {
+      const priority = { PENDING: 0, ACCEPTED: 1, IGNORED: 2 };
+      const delta = priority[left.status] - priority[right.status];
+      if (delta !== 0) return delta;
+      return new Date(right.created_at || 0).getTime() - new Date(left.created_at || 0).getTime();
+    }));
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
 

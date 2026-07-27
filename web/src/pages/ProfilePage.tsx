@@ -34,6 +34,7 @@ const ProfilePage: React.FC = () => {
   const [isGoalOpen, setIsGoalOpen] = useState(false);
   const [isTogglingInvisible, setIsTogglingInvisible] = useState(false);
   const [hasAdminAccess, setHasAdminAccess] = useState(false);
+  const [rosesInboxCount, setRosesInboxCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,6 +61,29 @@ const ProfilePage: React.FC = () => {
       cancelled = true;
     };
   }, [user, profile?.id, profile?.is_admin]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!user) {
+      setRosesInboxCount(0);
+      return;
+    }
+
+    apiRequest<any[]>('/api/super-likes/received', { requireAuth: true })
+      .then((rows) => {
+        if (!cancelled) {
+          setRosesInboxCount((rows || []).filter((row) => row.status === 'PENDING' || row.is_countable).length);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setRosesInboxCount(0);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   // Éviter l'écran blanc si les données ne sont pas encore là
   if (loading && !profile) {
@@ -456,8 +480,15 @@ const ProfilePage: React.FC = () => {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-black text-amber-900 dark:text-amber-400 uppercase tracking-tight">Boîte de Roses</p>
-                <p className="text-[10px] font-bold text-amber-600">Vos Super Likes & Notes</p>
+                <p className="text-[10px] font-bold text-amber-600">
+                  {rosesInboxCount > 0 ? `${rosesInboxCount} rose${rosesInboxCount > 1 ? 's' : ''} a traiter` : 'Vos Super Likes & Notes'}
+                </p>
               </div>
+              {rosesInboxCount > 0 && (
+                <span className="min-w-6 h-6 px-2 rounded-full bg-primary text-white text-[10px] font-black flex items-center justify-center">
+                  {rosesInboxCount}
+                </span>
+              )}
               <ChevronRight size={16} className="text-amber-200" />
             </button>
 
