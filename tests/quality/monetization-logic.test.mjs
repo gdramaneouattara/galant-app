@@ -72,3 +72,15 @@ test('Monetization: Partner plans are present', async () => {
   assert.match(code, /PARTNER_VISIBILITY_AMOUNT/);
   assert.match(code, /PARTNER_PRESTIGE_AMOUNT/);
 });
+
+test('Payments: all payment handlers are exported and routed', async () => {
+  const controller = await read('server/src/controllers/paymentController.js');
+  const routes = await read('server/src/routes/paymentRoutes.js');
+
+  assert.match(controller, /module\.exports\s*=\s*\{[^}]*initializePayment[^}]*verifyPayment[^}]*googleVerify[^}]*appleVerify[^}]*handleWebhook[^}]*\}/s);
+  assert.match(routes, /router\.post\(['"]\/initialize['"],\s*requireAuth,\s*initializePayment\)/);
+  assert.match(routes, /router\.get\(['"]\/verify['"],\s*requireAuth,\s*verifyPayment\)/);
+  assert.match(routes, /router\.post\(['"]\/google-verify['"],\s*requireAuth,\s*googleVerify\)/);
+  assert.match(routes, /router\.post\(['"]\/apple-verify['"],\s*requireAuth,\s*appleVerify\)/);
+  assert.match(routes, /router\.post\(['"]\/webhook['"],\s*handleWebhook\)/);
+});
