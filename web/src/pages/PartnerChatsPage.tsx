@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
-import { db, COLLECTIONS } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, ChevronRight, Clock, User, ShieldCheck } from 'lucide-react';
+import { MessageCircle, ChevronRight, Clock, ShieldCheck } from 'lucide-react';
+import { apiRequest } from '@shared/lib/api';
 
 const PartnerChatsPage: React.FC = () => {
-  const { profile, users } = useAuth();
+  const { profile } = useAuth();
   const navigate = useNavigate();
   const [chats, setChats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -14,25 +13,24 @@ const PartnerChatsPage: React.FC = () => {
   useEffect(() => {
     if (!profile?.id) return;
 
-    // Récupérer les discussions liées à l'établissement de ce partenaire
-    const q = query(
-      collection(db, 'venue_chats'),
-      where('partner_id', '==', profile.id),
-      orderBy('last_message_at', 'desc')
-    );
+    let cancelled = false;
+    const fetchChats = async () => {
+      try {
+        setLoading(true);
+        const res = await apiRequest<{ chats: any[] }>('/api/venues/partner/chats', { requireAuth: true });
+        if (!cancelled) {
+          setChats((res.chats || []).map((chat) => ({ ...chat, client: chat.profiles })));
+        }
+      } catch {
+        if (!cancelled) setChats([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const chatList = snapshot.docs.map(doc => {
-        const data = doc.data();
-        const client = users.find(u => u.id === data.user_id);
-        return { id: doc.id, ...data, client };
-      });
-      setChats(chatList);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [profile, users]);
+    void fetchChats();
+    return () => { cancelled = true; };
+  }, [profile?.id]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -61,7 +59,14 @@ const PartnerChatsPage: React.FC = () => {
             {chats.map((chat) => (
               <button
                 key={chat.id}
-                onClick={() => navigate(`/chat/${chat.id}?type=venue`)}
+                onClick={() => navigate(`/chat/${chat.id}`, {
+                  state: {
+                    venueChatId: chat.id,
+                    venueName: chat.client?.name || 'Client Galant',
+                    venuePhoto: chat.client?.photos?.[0] || 'https://placehold.co/100',
+                    presenceLabel: 'Client Galant'
+                  }
+                })}
                 className="w-full p-8 flex items-center justify-between hover:bg-slate-50 transition-all text-left group"
               >
                 <div className="flex items-center gap-6">

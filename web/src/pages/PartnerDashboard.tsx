@@ -36,7 +36,10 @@ const PartnerDashboard: React.FC = () => {
       <div className="max-w-2xl mx-auto text-center py-20 bg-white rounded-[3rem] shadow-xl border border-slate-100 p-10">
         <h2 className="text-3xl font-black mb-4">Devenir Partenaire Galant</h2>
         <p className="text-slate-500 mb-8">Boostez la visibilité de votre établissement auprès d'une clientèle d'exception.</p>
-        <button className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-bold hover:bg-black transition-all">
+        <button
+          onClick={() => navigate('/partner-signup')}
+          className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-bold hover:bg-black transition-all"
+        >
           Soumettre mon établissement
         </button>
       </div>

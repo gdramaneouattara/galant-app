@@ -35,7 +35,13 @@ const ChatPage: React.FC = () => {
     const fetchMatchInfo = async () => {
       if (venueChatId) {
         const venueName = (location.state as any)?.venueName || 'Etablissement partenaire';
-        setTargetUser({ id: venueChatId, name: venueName, photos: [(location.state as any)?.venuePhoto || 'https://placehold.co/100x100'], isVenue: true });
+        setTargetUser({
+          id: venueChatId,
+          name: venueName,
+          photos: [(location.state as any)?.venuePhoto || 'https://placehold.co/100x100'],
+          isVenue: true,
+          presenceLabel: (location.state as any)?.presenceLabel || 'Partenaire Galant'
+        });
         return;
       }
 
@@ -248,7 +254,7 @@ const ChatPage: React.FC = () => {
             {(targetUser.galanterie_score || 0) >= 4.5 && <Gem size={14} className="text-rose-600" />}
           </div>
           <span className={`text-[10px] font-bold uppercase tracking-widest ${targetPresence?.state === 'online' ? 'text-green-500' : 'text-slate-400'}`}>
-            {targetUser.isVenue ? 'Partenaire Galant' : targetPresence?.state === 'online' ? 'En ligne' : 'Hors ligne'}
+            {targetUser.isVenue ? targetUser.presenceLabel : targetPresence?.state === 'online' ? 'En ligne' : 'Hors ligne'}
           </span>
         </div>
       </div>

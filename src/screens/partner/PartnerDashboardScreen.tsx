@@ -57,17 +57,17 @@ const PartnerDashboardScreen: React.FC = () => {
   const fetchData = async () => {
     if (!currentUser) return;
     try {
-      const res = await apiRequest<{ venues: VenueData[] }>('/api/partner/my-venue', { requireAuth: true });
+      const res = await apiRequest<{ venues: VenueData[] }>('/api/venues/partner/my-venue', { requireAuth: true });
       if (res.venues.length > 0) {
         const v = res.venues[0];
         setVenue(v);
         setVenueForm({ name: v.name, description: v.description || '', benefit: v.benefit_description || '', address: v.address || '', city: v.city || '' });
 
         const [stats, notifs, chatList, agenda] = await Promise.all([
-          apiRequest<any>(`/api/partner/venue-stats/${v.id}`, { requireAuth: true }),
+          apiRequest<any>(`/api/venues/partner/venue-stats/${v.id}`, { requireAuth: true }),
           apiRequest<any>('/api/notifications/admin?limit=5', { requireAuth: true }),
-          apiRequest<any>('/api/partner/chats', { requireAuth: true }),
-          apiRequest<any>('/api/agenda/events', { requireAuth: true }),
+          apiRequest<any>('/api/venues/partner/chats', { requireAuth: true }),
+          apiRequest<any>('/api/venues/agenda', { requireAuth: true }),
         ]);
 
         setTotalViews(stats.totalViews);
@@ -99,7 +99,7 @@ const PartnerDashboardScreen: React.FC = () => {
     if (!venue) return;
     try {
       setUpdatingVenue(true);
-      await apiRequest('/api/partner/venue/update', { method: 'POST', requireAuth: true, body: JSON.stringify({ venueId: venue.id, ...venueForm }) });
+      await apiRequest('/api/venues/partner/venue/update', { method: 'POST', requireAuth: true, body: JSON.stringify({ venueId: venue.id, ...venueForm }) });
       setShowEditModal(false);
       void fetchData();
     } catch (e: any) { Alert.alert('Erreur', e.message); }
@@ -124,7 +124,7 @@ const PartnerDashboardScreen: React.FC = () => {
       const publicUrl = await getPublicUrl('photos', path);
 
       const nextPhotos = [...(venue.photos || []), publicUrl];
-      await apiRequest('/api/partner/venue/photos', { method: 'POST', requireAuth: true, body: JSON.stringify({ venueId: venue.id, photos: nextPhotos }) });
+      await apiRequest('/api/venues/partner/venue/photos', { method: 'POST', requireAuth: true, body: JSON.stringify({ venueId: venue.id, photos: nextPhotos }) });
       void fetchData();
     } catch (e: any) { Alert.alert('Erreur', e.message); }
     finally { setUploadingPhoto(false); }
@@ -134,7 +134,7 @@ const PartnerDashboardScreen: React.FC = () => {
     if (!venue) return;
     try {
       const nextPhotos = (venue.photos || []).filter(p => p !== url);
-      await apiRequest('/api/partner/venue/photos', { method: 'POST', requireAuth: true, body: JSON.stringify({ venueId: venue.id, photos: nextPhotos }) });
+      await apiRequest('/api/venues/partner/venue/photos', { method: 'POST', requireAuth: true, body: JSON.stringify({ venueId: venue.id, photos: nextPhotos }) });
       void fetchData();
     } catch (e: any) { Alert.alert('Erreur', e.message); }
   };
@@ -145,14 +145,14 @@ const PartnerDashboardScreen: React.FC = () => {
         return Alert.alert("Limite de l'essai", "La version d'essai est limitée à 1 événement actif.");
       }
       const expiresAt = new Date(Date.now() + parseInt(form.hours) * 3600 * 1000).toISOString();
-      await apiRequest('/api/partner/events', { method: 'POST', requireAuth: true, body: JSON.stringify({ ...form, startsAt: new Date().toISOString(), expiresAt }) });
+      await apiRequest('/api/venues/partner/events', { method: 'POST', requireAuth: true, body: JSON.stringify({ ...form, startsAt: new Date().toISOString(), expiresAt }) });
       void fetchData();
     } catch (e: any) { Alert.alert('Erreur', e.message); }
   };
 
   const handleDeleteEvent = async (id: string) => {
     try {
-      await apiRequest(`/api/partner/events/${id}`, { method: 'DELETE', requireAuth: true });
+      await apiRequest(`/api/venues/partner/events/${id}`, { method: 'DELETE', requireAuth: true });
       void fetchData();
     } catch (e: any) { Alert.alert('Erreur', e.message); }
   };
