@@ -85,22 +85,32 @@ const GuidePage: React.FC = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const handleContactVenue = async (venueId: string, venueName: string) => {
+  const handleContactVenue = async (venue: Venue) => {
+    if (venue.is_editorial) {
+      showAlert('Guide Galant', 'Ce lieu est une recommandation editoriale. Vous pouvez le proposer a un match ou lancer un trajet.');
+      return;
+    }
+
     if (!profile?.is_premium && !profile?.is_vip && (profile?.rose_balance || 0) < 1) {
-      showAlert('Accès Conciergerie', 'Le chat direct avec les établissements est un privilège Premium.');
+      showAlert('Acces Conciergerie', 'Le chat direct avec les etablissements est un privilege Premium.');
       navigate('/premium');
       return;
     }
 
     try {
-      const res = await apiRequest<{ venueChatId: string }>('/api/messages/venue-thread', {
+      const res = await apiRequest<{ venueChatId: string }>(`/api/venues/${venue.id}/chat-thread`, {
         method: 'POST',
-        requireAuth: true,
-        body: JSON.stringify({ venueId })
+        requireAuth: true
       });
-      navigate(`/chat/${res.venueChatId}?type=venue`);
+      navigate(`/chat/${res.venueChatId}`, {
+        state: {
+          venueChatId: res.venueChatId,
+          venueName: venue.name,
+          venuePhoto: venue.photo_url
+        }
+      });
     } catch (error: any) {
-      showAlert('Erreur', error.message || 'Impossible d\'ouvrir la discussion.');
+      showAlert('Erreur', error.message || 'Impossible d ouvrir la discussion.');
     }
   };
 
@@ -265,7 +275,7 @@ const GuidePage: React.FC = () => {
                 </div>
 
                 <button
-                  onClick={() => handleContactVenue(venue.id, venue.name)}
+                  onClick={() => handleContactVenue(venue)}
                   className="w-full py-5 rounded-2xl bg-rose-50 border border-rose-100 text-primary font-black text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-primary hover:text-white transition-all group/chat active:scale-95 shadow-lg shadow-rose-500/5"
                 >
                   <MessageCircle size={18} fill="currentColor" className="opacity-20 group-hover/chat:opacity-100 transition-opacity" />
@@ -285,7 +295,10 @@ const GuidePage: React.FC = () => {
         <div className="relative z-10 max-w-2xl mx-auto space-y-6">
           <h3 className="text-3xl md:text-5xl font-black text-white italic tracking-tighter">Votre lieu mérite l'excellence</h3>
           <p className="text-white/80 text-lg font-medium">Rejoignez le cercle restreint des établissements certifiés Galant.</p>
-          <button className="bg-white text-amber-600 px-10 py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all mt-4">
+          <button
+            onClick={() => navigate('/partner-signup')}
+            className="bg-white text-amber-600 px-10 py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all mt-4"
+          >
             Inscrire mon établissement
           </button>
         </div>

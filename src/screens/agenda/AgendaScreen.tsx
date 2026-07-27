@@ -47,7 +47,7 @@ interface VenueEvent {
   title: string;
   description: string;
   photo_url: string;
-  event_type: 'EVENT' | 'FLASH_OFFER';
+  event_type: string;
   starts_at: string;
   expires_at: string;
   venues: {
@@ -76,7 +76,10 @@ const AgendaScreen: React.FC = () => {
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const res = await apiRequest<{ events: VenueEvent[] }>(`/api/agenda/events?city=${userCity}`, { requireAuth: true });
+      const params = new URLSearchParams();
+      if (currentUser?.city) params.set('city', currentUser.city);
+      const suffix = params.toString() ? `?${params.toString()}` : '';
+      const res = await apiRequest<{ events: VenueEvent[] }>(`/api/venues/agenda${suffix}`, { requireAuth: true });
       setEvents(res.events || []);
     } catch (e) {
       console.error('Error fetching agenda', e);
@@ -103,7 +106,7 @@ const AgendaScreen: React.FC = () => {
   [filteredEvents]);
 
   const mainEvents = useMemo(() =>
-    filteredEvents.filter(e => e.event_type === 'EVENT'),
+    filteredEvents.filter(e => e.event_type !== 'FLASH_OFFER'),
   [filteredEvents]);
 
   const groupedEvents = useMemo(() => {
@@ -168,10 +171,10 @@ const AgendaScreen: React.FC = () => {
     <View key={item.id} style={[styles.eventItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <Image source={{ uri: item.photo_url || item.venues.photo_url }} style={styles.eventImage} />
       <View style={styles.eventBody}>
-        <div style={styles.eventVenueRow}>
+        <View style={styles.eventVenueRow}>
           <Text style={[styles.eventVenueName, { color: colors.textMuted }]}>{item.venues.name}</Text>
           <View style={[styles.certBadge, { backgroundColor: activeTheme === 'dark' ? '#451a03' : '#fef3c7' }]}><Sparkles size={10} color="#b45309" /></View>
-        </div>
+        </View>
         <Text style={[styles.eventTitle, { color: colors.text }]}>{item.title}</Text>
         <View style={styles.eventMeta}>
           <Clock size={12} color={colors.textMuted} />

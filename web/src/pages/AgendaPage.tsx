@@ -26,7 +26,7 @@ const AgendaPage: React.FC = () => {
   const { t } = useAuth();
   const [events, setEvents] = useState<AgendaEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'ALL' | 'PARTY' | 'FLASH_OFFER' | 'NETWORKING' | 'LIVE_MUSIC'>('ALL');
+  const [filter, setFilter] = useState<'ALL' | 'EVENT' | 'PARTY' | 'FLASH_OFFER' | 'NETWORKING' | 'LIVE_MUSIC'>('ALL');
 
   const fetchEvents = async () => {
     try {
@@ -69,6 +69,19 @@ const AgendaPage: React.FC = () => {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const handleShareEvent = async (event: AgendaEvent) => {
+    const url = `${window.location.origin}/agenda`;
+    const text = `${event.title} - ${event.venues?.name || 'Galant'}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: event.title, text, url });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(`${text} ${url}`);
+        showAlert('Lien copie', 'La sortie a ete copiee.');
+      }
+    } catch {}
   };
 
   const filteredEvents = events.filter(e => {
@@ -128,6 +141,7 @@ const AgendaPage: React.FC = () => {
         <div className="flex gap-2 p-1.5 bg-white/80 backdrop-blur-xl rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/40 w-full lg:w-auto overflow-x-auto no-scrollbar">
           {[
             { id: 'ALL', label: 'Tout' },
+            { id: 'EVENT', label: 'Evenements' },
             { id: 'PARTY', label: 'Soirées' },
             { id: 'FLASH_OFFER', label: 'Offres Flash' },
             { id: 'NETWORKING', label: 'Networking' },
@@ -262,7 +276,7 @@ const AgendaPage: React.FC = () => {
                     {event.is_attending ? 'J\'Y SERAI' : 'RÉSERVER MA PLACE'}
                   </button>
 
-                  <button className="w-16 py-5 rounded-2xl bg-white border border-slate-100 text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all flex items-center justify-center">
+                  <button onClick={() => void handleShareEvent(event)} className="w-16 py-5 rounded-2xl bg-white border border-slate-100 text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all flex items-center justify-center">
                     <Share2 size={20} />
                   </button>
                 </div>

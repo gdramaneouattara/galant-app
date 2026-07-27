@@ -46,13 +46,15 @@ const getAgendaEvents = async (req, res) => {
     let query = db.collection('venue_events').where('expires_at', '>', now);
     if (type) query = query.where('event_type', '==', type);
 
-    const snapshot = await query.orderBy('expires_at').orderBy('starts_at').get();
-    let events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const snapshot = await query.get();
+    let events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => String(a.starts_at || a.expires_at || '').localeCompare(String(b.starts_at || b.expires_at || '')));
 
     const results = await Promise.all(events.map(async ev => {
       const venueDoc = await db.collection('venues').doc(ev.venue_id).get();
       const venueData = venueDoc.exists ? venueDoc.data() : null;
-      if (city && venueData && !venueData.city.toLowerCase().includes(city.toLowerCase())) return null;
+      if (!venueData) return null;
+      if (city && !String(venueData.city || '').toLowerCase().includes(String(city).toLowerCase())) return null;
 
       const attendanceSnap = await db.collection('event_attendance').where('event_id', '==', ev.id).get();
       const attendeesCount = attendanceSnap.size;
