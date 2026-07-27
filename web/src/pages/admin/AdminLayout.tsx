@@ -9,7 +9,6 @@ import {
   AlertCircle,
   Settings,
   ChevronRight,
-  Gem,
   CreditCard
 } from 'lucide-react';
 
@@ -35,12 +34,11 @@ const AdminLayout: React.FC = () => {
   ];
 
   return (
-    <div className="flex min-h-screen bg-slate-100 font-sans">
-      {/* Sidebar Admin */}
-      <aside className="w-64 bg-slate-900 text-white fixed h-full z-50 flex flex-col">
+    <div className="min-h-screen bg-slate-100 font-sans text-slate-900">
+      <aside className="fixed left-0 top-0 z-50 hidden h-full w-64 flex-col bg-slate-900 text-white lg:flex">
         <div className="p-8">
-          <h1 className="text-2xl font-black text-primary tracking-tighter flex items-center gap-2 italic">
-            GALANT <span className="bg-primary/20 text-[10px] text-primary px-2 py-0.5 rounded border border-primary/30 not-italic tracking-normal">ADMIN</span>
+          <h1 className="flex items-center gap-2 text-2xl font-black italic tracking-tighter text-primary">
+            GALANT <span className="rounded border border-primary/30 bg-primary/20 px-2 py-0.5 text-[10px] not-italic tracking-normal text-primary">ADMIN</span>
           </h1>
         </div>
 
@@ -77,8 +75,39 @@ const AdminLayout: React.FC = () => {
         </div>
       </aside>
 
-      {/* Contenu Principal */}
-      <main className="flex-1 ml-64 p-10">
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-slate-950 text-white lg:hidden">
+        <div className="flex items-center justify-between gap-4 px-4 py-4">
+          <div className="min-w-0">
+            <h1 className="text-lg font-black italic tracking-tighter text-primary">GALANT ADMIN</h1>
+            <p className="truncate text-[10px] font-bold uppercase tracking-widest text-slate-500">{profile.name}</p>
+          </div>
+          <Link to="/" className="rounded-xl bg-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white">
+            App
+          </Link>
+        </div>
+
+        <nav className="flex gap-2 overflow-x-auto px-4 pb-4">
+          {menuItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all ${
+                  isActive
+                    ? 'bg-primary text-white shadow-lg shadow-red-500/20'
+                    : 'bg-white/5 text-slate-400'
+                }`}
+              >
+                <item.icon size={16} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </header>
+
+      <main className="min-w-0 p-4 pb-10 lg:ml-64 lg:p-10">
         <Outlet />
       </main>
     </div>

@@ -29,7 +29,8 @@ const UserListScreen: React.FC = () => {
   const fetchUsers = async (showLoader = true) => {
     if (showLoader) setLoading(true);
     try {
-      const userList = await apiRequest<AdminUser[]>('/api/admin/users', { requireAuth: true });
+      const response = await apiRequest<{ users: AdminUser[] } | AdminUser[]>('/api/admin/users', { requireAuth: true });
+      const userList = Array.isArray(response) ? response : response.users;
       setUsers(userList || []);
     } catch (error: any) {
       Alert.alert('Erreur', error?.message || 'Impossible de charger les utilisateurs.');
@@ -69,7 +70,14 @@ const UserListScreen: React.FC = () => {
       { text: 'Annuler', style: 'cancel' },
       { text: 'Confirmer', style: 'destructive', onPress: async () => {
         try {
-          await apiRequest(`/api/admin/users/${u.id}/suspend`, { method: 'PUT', body: JSON.stringify({ suspend: willSuspend }), requireAuth: true });
+          await apiRequest(`/api/admin/users/${u.id}/toggle-status`, {
+            method: 'POST',
+            body: JSON.stringify({
+              field: 'suspended_at',
+              value: willSuspend ? new Date().toISOString() : null
+            }),
+            requireAuth: true
+          });
           void fetchUsers(false);
         } catch (e: any) { Alert.alert('Erreur', e.message); }
       }}
@@ -82,8 +90,7 @@ const UserListScreen: React.FC = () => {
       { text: 'Supprimer', style: 'destructive', onPress: async () => {
         try {
           setDeletingUserId(u.id);
-          await apiRequest(`/api/admin/users/${u.id}`, { method: 'DELETE', requireAuth: true });
-          void fetchUsers(false);
+          Alert.alert('Suppression non disponible', 'Cette action n est pas exposee par l API admin actuelle. Utilisez la suspension pour bloquer le compte.');
         } catch (e: any) { Alert.alert('Erreur', e.message); }
         finally { setDeletingUserId(null); }
       }}

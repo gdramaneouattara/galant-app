@@ -25,6 +25,7 @@ type AdminKycRequest = {
   reviewed_at: string | null;
   rejection_reason: string | null;
   document_front_url: string | null;
+  document_url?: string | null;
   document_back_url: string | null;
   selfie_url: string | null;
   user: {
@@ -79,7 +80,16 @@ const AdminKycScreen: React.FC = () => {
         `/api/admin/kyc/requests${query}`,
         { requireAuth: true }
       );
-      setRequests(response.requests || []);
+      setRequests((response.requests || []).map((request: any) => ({
+        ...request,
+        submitted_at: request.submitted_at || request.created_at,
+        document_front_url: request.document_front_url || request.document_url || null,
+        document_back_url: request.document_back_url || request.document_back_url || null,
+        user: {
+          ...request.user,
+          photo: request.user?.photo || request.user?.photos?.[0] || null,
+        },
+      })));
     } catch (error: any) {
       Alert.alert('Erreur', error?.message || 'Impossible de charger les demandes KYC.');
     } finally {
@@ -98,8 +108,8 @@ const AdminKycScreen: React.FC = () => {
         method: 'POST',
         requireAuth: true,
         body: JSON.stringify({
-          decision,
-          reason: reason || null,
+          status: decision,
+          note: reason || null,
         }),
       });
       await fetchRequests(statusFilter);

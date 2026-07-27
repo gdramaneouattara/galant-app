@@ -8,11 +8,13 @@ interface PhotoReviewCardProps {
 }
 
 const PhotoReviewCard: React.FC<PhotoReviewCardProps> = ({ review, onReview }) => {
+  const photoUrl = review.photo_url || review.image_url || review.url || review.photos?.[0] || review.user?.photos?.[0] || 'https://placehold.co/400x500';
+
   return (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>Photo à vérifier</Text>
       {review.user && <Text style={styles.cardMeta}>User: {review.user.email || review.user.name}</Text>}
-      <Image source={{ uri: review.photo_url }} style={styles.photoPreview} />
+      <Image source={{ uri: photoUrl }} style={styles.photoPreview} />
       {review.auto_flags?.length ? <Text style={styles.cardMeta}>Flags: {review.auto_flags.join(', ')}</Text> : null}
       <Text style={styles.cardMeta}>Date: {new Date(review.created_at).toLocaleString('fr-FR')}</Text>
       <View style={styles.actionsRow}>

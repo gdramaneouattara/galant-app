@@ -1,13 +1,111 @@
-import React, { useState } from 'react';
-import { Users, Gem, Calendar, CreditCard, TrendingUp, TrendingDown, Info, PieChart, RefreshCw, ShieldCheck } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  AlertCircle,
+  Gem,
+  PieChart,
+  RefreshCw,
+  ShieldCheck,
+  Users,
+  UserCheck
+} from 'lucide-react';
 import { apiRequest } from '@shared/lib/api';
 import { showAlert } from '@shared/lib/ui-bridge';
 
+interface AdminStats {
+  generatedAt: string;
+  users: {
+    total: number;
+    active: number;
+    suspended: number;
+    admins: number;
+    verified: number;
+    premium: number;
+    male: number;
+    female: number;
+  };
+  premiumByPlan: Record<string, number>;
+  kyc: {
+    totalRequests: number;
+    pending: number;
+  };
+  moderation: {
+    reportsTotal: number;
+    reportsOpen: number;
+  };
+}
+
+const formatNumber = (value?: number) => new Intl.NumberFormat('fr-FR').format(value || 0);
+
+const percent = (value: number, total: number) => {
+  if (!total) return 0;
+  return Math.round((value / total) * 100);
+};
+
 const AdminDashboard: React.FC = () => {
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [loading, setLoading] = useState(true);
   const [reconciling, setReconciling] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const data = await apiRequest<AdminStats>('/api/admin/stats', { requireAuth: true });
+      setStats(data);
+    } catch (e: any) {
+      showAlert('Erreur', e.message || 'Impossible de charger les statistiques.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const cards = useMemo(() => {
+    const users = stats?.users;
+    const kyc = stats?.kyc;
+    const moderation = stats?.moderation;
+
+    return [
+      {
+        label: 'Utilisateurs',
+        value: formatNumber(users?.total),
+        detail: `${formatNumber(users?.active)} actifs`,
+        icon: Users,
+        color: 'text-blue-500',
+        bg: 'bg-blue-50'
+      },
+      {
+        label: 'Premium',
+        value: formatNumber(users?.premium),
+        detail: `${percent(users?.premium || 0, users?.total || 0)}% des membres`,
+        icon: Gem,
+        color: 'text-amber-500',
+        bg: 'bg-amber-50'
+      },
+      {
+        label: 'KYC en attente',
+        value: formatNumber(kyc?.pending),
+        detail: `${formatNumber(kyc?.totalRequests)} dossiers`,
+        icon: ShieldCheck,
+        color: 'text-emerald-500',
+        bg: 'bg-emerald-50'
+      },
+      {
+        label: 'Alertes ouvertes',
+        value: formatNumber(moderation?.reportsOpen),
+        detail: `${formatNumber(moderation?.reportsTotal)} signalements`,
+        icon: AlertCircle,
+        color: 'text-red-500',
+        bg: 'bg-red-50'
+      }
+    ];
+  }, [stats]);
 
   const handleReconcileCounters = async () => {
-    if (!window.confirm("Cette action va recompter tous les likes et toutes les roses de la base de données pour synchroniser les compteurs. Continuer ?")) return;
+    if (!window.confirm('Cette action va recompter tous les likes et toutes les roses. Continuer ?')) return;
 
     setReconciling(true);
     try {
@@ -15,7 +113,8 @@ const AdminDashboard: React.FC = () => {
         method: 'POST',
         requireAuth: true
       });
-      showAlert('Succès', `Réconciliation terminée. ${res.updated} profils ont été mis à jour.`);
+      showAlert('Succes', `Reconciliation terminee. ${res.updated} profils mis a jour.`);
+      fetchStats();
     } catch (e: any) {
       showAlert('Erreur', e.message);
     } finally {
@@ -23,123 +122,137 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const stats = [
-    { label: 'Utilisateurs Totaux', value: '2,840', icon: Users, color: 'text-blue-500', bg: 'bg-blue-50', trend: '+12%', trendUp: true },
-    { label: 'Membres Premium', value: '412', icon: Gem, color: 'text-amber-500', bg: 'bg-amber-50', trend: '+5%', trendUp: true },
-    { label: 'Événements Actifs', value: '28', icon: Calendar, color: 'text-rose-500', bg: 'bg-rose-50', trend: '-2%', trendUp: false },
-    { label: 'Chiffre d\'Affaires', value: '1.2M F', icon: CreditCard, color: 'text-green-500', bg: 'bg-green-50', trend: '+18%', trendUp: true },
-  ];
+  const handleBackfillGeohashes = async () => {
+    if (!window.confirm('Cette action va remplir le geohash des profils existants avec coordonnees. Continuer ?')) return;
+
+    setBackfilling(true);
+    try {
+      const res = await apiRequest<any>('/api/admin/users/backfill-geohashes', {
+        method: 'POST',
+        requireAuth: true
+      });
+      showAlert('Succes', `Backfill termine. ${res.updated} profils mis a jour sur ${res.processed} traites.`);
+    } catch (e: any) {
+      showAlert('Erreur', e.message);
+    } finally {
+      setBackfilling(false);
+    }
+  };
+
+  const malePct = percent(stats?.users.male || 0, stats?.users.total || 0);
+  const femalePct = percent(stats?.users.female || 0, stats?.users.total || 0);
+  const malePremiumPct = percent(stats?.users.premium || 0, stats?.users.male || 0);
+  const verifiedPct = percent(stats?.users.verified || 0, stats?.users.total || 0);
+
+  if (loading && !stats) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <RefreshCw className="animate-spin text-slate-300" size={36} />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-10">
-      <div className="flex justify-between items-end">
+    <div className="space-y-6 lg:space-y-10">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-4xl font-black text-slate-900 tracking-tight">Vue d'ensemble</h2>
-          <p className="text-slate-500 font-medium mt-1 text-lg">Pilotage de la communauté Galant.</p>
+          <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Vue d'ensemble</h2>
+          <p className="mt-1 text-sm font-medium text-slate-500 sm:text-lg">Pilotage reel de la communaute Galant.</p>
         </div>
-        <div className="text-sm font-bold text-slate-400 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-100 uppercase tracking-widest">
-          Temps Réel
-        </div>
+        <button
+          onClick={fetchStats}
+          disabled={loading}
+          className="flex w-fit items-center gap-2 rounded-xl border border-slate-100 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 shadow-sm disabled:opacity-50"
+        >
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          Actualiser
+        </button>
       </div>
 
-      {/* Cartes Principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, i) => (
-          <div key={i} className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-50 space-y-4">
-            <div className="flex justify-between items-start">
-              <div className={`w-14 h-14 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center shadow-inner`}>
-                <stat.icon size={28} />
-              </div>
-              <div className={`flex items-center gap-1 text-xs font-black px-3 py-1 rounded-lg ${stat.trendUp ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                {stat.trendUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                {stat.trend}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {cards.map((stat) => (
+          <div key={stat.label} className="rounded-[2rem] border border-slate-50 bg-white p-6 shadow-xl shadow-slate-200/50">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${stat.bg} ${stat.color}`}>
+                <stat.icon size={24} />
               </div>
             </div>
-            <div>
-              <span className="block text-4xl font-black text-slate-900 tracking-tighter">{stat.value}</span>
-              <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{stat.label}</span>
-            </div>
+            <span className="block text-3xl font-black tracking-tighter text-slate-900">{stat.value}</span>
+            <span className="mt-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">{stat.label}</span>
+            <span className="mt-3 block text-xs font-bold text-slate-500">{stat.detail}</span>
           </div>
         ))}
       </div>
 
-      {/* SECTION DÉSAGRÉGATION PAR SEXE */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-slate-900 text-white rounded-[3rem] p-10 shadow-2xl space-y-8">
-          <div className="flex justify-between items-center">
-            <h3 className="text-xl font-black italic flex items-center gap-3">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div className="rounded-[2rem] bg-slate-900 p-6 text-white shadow-2xl lg:p-10">
+          <div className="mb-8 flex items-center justify-between gap-4">
+            <h3 className="flex items-center gap-3 text-lg font-black italic sm:text-xl">
               <PieChart className="text-primary" />
-              Répartition par Sexe
+              Repartition par sexe
             </h3>
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full">Détails Démographiques</span>
+            <span className="rounded-full bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-slate-500">Firestore</span>
           </div>
 
           <div className="space-y-6">
-            {/* Hommes */}
             <div className="space-y-2">
               <div className="flex justify-between text-sm font-bold">
-                <span className="flex items-center gap-2"><div className="w-3 h-3 bg-blue-500 rounded-full"></div> HOMMES</span>
-                <span>1,647 (58%)</span>
+                <span>Hommes</span>
+                <span>{formatNumber(stats?.users.male)} ({malePct}%)</span>
               </div>
-              <div className="h-4 w-full bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-500 rounded-full" style={{ width: '58%' }}></div>
+              <div className="h-4 overflow-hidden rounded-full bg-white/5">
+                <div className="h-full rounded-full bg-blue-500" style={{ width: `${malePct}%` }} />
               </div>
             </div>
 
-            {/* Femmes */}
             <div className="space-y-2">
               <div className="flex justify-between text-sm font-bold">
-                <span className="flex items-center gap-2"><div className="w-3 h-3 bg-rose-500 rounded-full"></div> FEMMES</span>
-                <span>1,193 (42%)</span>
+                <span>Femmes</span>
+                <span>{formatNumber(stats?.users.female)} ({femalePct}%)</span>
               </div>
-              <div className="h-4 w-full bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-rose-500 rounded-full" style={{ width: '42%' }}></div>
+              <div className="h-4 overflow-hidden rounded-full bg-white/5">
+                <div className="h-full rounded-full bg-rose-500" style={{ width: `${femalePct}%` }} />
               </div>
             </div>
           </div>
 
-          <div className="pt-6 grid grid-cols-2 gap-4">
-            <div className="bg-white/5 p-5 rounded-2xl border border-white/5">
-              <p className="text-[10px] font-black text-slate-500 uppercase">Conversion Hommes</p>
-              <p className="text-xl font-black text-blue-400">12.5% Premium</p>
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-white/5 bg-white/5 p-5">
+              <p className="text-[10px] font-black uppercase text-slate-500">Profils certifies</p>
+              <p className="text-xl font-black text-blue-400">{verifiedPct}%</p>
             </div>
-            <div className="bg-white/5 p-5 rounded-2xl border border-white/5">
-              <p className="text-[10px] font-black text-slate-500 uppercase">Conversion Femmes</p>
-              <p className="text-xl font-black text-rose-400">8.2% Premium</p>
+            <div className="rounded-2xl border border-white/5 bg-white/5 p-5">
+              <p className="text-[10px] font-black uppercase text-slate-500">Ratio premium</p>
+              <p className="text-xl font-black text-amber-400">{malePremiumPct}%</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-50">
-          <h3 className="text-xl font-black mb-6 italic">Activité des Partenaires</h3>
-          <div className="space-y-6">
-            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
-               <div className="flex items-center gap-3">
-                 <div className="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center font-black italic">G</div>
-                 <div>
-                    <p className="font-bold text-slate-900 text-sm">Nouveau Partenaire : Sky Lounge</p>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">Douala • Il y a 2h</p>
-                 </div>
-               </div>
-               <button className="text-[10px] font-black text-primary border border-primary/20 px-3 py-1 rounded-lg">VOIR</button>
-            </div>
-            {/* Autres news... */}
-          </div>
-        </div>
-      </div>
+        <div className="rounded-[2rem] border border-slate-50 bg-white p-6 shadow-xl lg:p-10">
+          <h3 className="mb-6 text-xl font-black italic">Maintenance & outils</h3>
+          <div className="grid grid-cols-1 gap-4">
+            <button
+              onClick={handleReconcileCounters}
+              disabled={reconciling}
+              className="flex items-center justify-center gap-3 rounded-2xl bg-slate-900 px-6 py-4 text-xs font-black uppercase tracking-widest text-white transition-all disabled:opacity-50"
+            >
+              {reconciling ? <RefreshCw className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
+              Reconciler likes/roses
+            </button>
 
-      {/* Maintenance & Tools */}
-      <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-50">
-        <h3 className="text-xl font-black mb-6 italic">Maintenance & Outils</h3>
-        <div className="flex flex-wrap gap-4">
-          <button
-            onClick={handleReconcileCounters}
-            disabled={reconciling}
-            className="flex items-center gap-3 bg-slate-900 text-white px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all disabled:opacity-50"
-          >
-            {reconciling ? <RefreshCw className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
-            Réconcilier les compteurs (Likes/Roses)
-          </button>
+            <button
+              onClick={handleBackfillGeohashes}
+              disabled={backfilling}
+              className="flex items-center justify-center gap-3 rounded-2xl bg-primary px-6 py-4 text-xs font-black uppercase tracking-widest text-white transition-all disabled:opacity-50"
+            >
+              {backfilling ? <RefreshCw className="animate-spin" size={16} /> : <UserCheck size={16} />}
+              Backfill geohash
+            </button>
+          </div>
+
+          <div className="mt-6 rounded-2xl bg-slate-50 p-5 text-xs font-medium leading-relaxed text-slate-500">
+            Les donnees de chiffre d'affaires ne sont pas encore exposees par l'API admin. Le dashboard n'affiche donc plus de faux CA.
+          </div>
         </div>
       </div>
     </div>

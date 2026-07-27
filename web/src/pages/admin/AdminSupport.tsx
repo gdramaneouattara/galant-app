@@ -13,9 +13,9 @@ const AdminSupport: React.FC = () => {
   ];
 
   return (
-    <div className="h-[calc(100vh-100px)] flex gap-6">
+    <div className="min-h-[calc(100vh-100px)] flex flex-col xl:flex-row gap-6">
       {/* 1. Liste des Conversations Support */}
-      <div className="w-80 bg-white rounded-[2.5rem] shadow-xl border border-slate-50 flex flex-col overflow-hidden">
+      <div className="w-full xl:w-80 bg-white rounded-[2rem] xl:rounded-[2.5rem] shadow-xl border border-slate-50 flex flex-col overflow-hidden">
         <div className="p-6 border-b border-slate-50 space-y-4">
           <h3 className="text-xl font-black italic">Support Inbox</h3>
           <div className="relative">
@@ -54,7 +54,7 @@ const AdminSupport: React.FC = () => {
       </div>
 
       {/* 2. Zone de Chat */}
-      <div className="flex-1 bg-white rounded-[3rem] shadow-2xl border border-slate-50 flex flex-col overflow-hidden">
+      <div className="min-h-[520px] flex-1 bg-white rounded-[2rem] xl:rounded-[3rem] shadow-2xl border border-slate-50 flex flex-col overflow-hidden">
         {selectedChat ? (
           <>
             <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-white/50 backdrop-blur-sm">
@@ -113,7 +113,7 @@ const AdminSupport: React.FC = () => {
 
       {/* 3. Fiche Utilisateur Contextuelle */}
       {selectedChat && (
-        <div className="w-80 space-y-6 overflow-y-auto no-scrollbar">
+        <div className="w-full xl:w-80 space-y-6 overflow-y-auto no-scrollbar">
           <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-slate-50 space-y-6">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Fiche Client</h3>
             <div className="space-y-4">

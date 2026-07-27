@@ -54,16 +54,16 @@ const AdminPricing: React.FC = () => {
   if (loading) return <div className="p-10 text-center"><RefreshCcw className="animate-spin mx-auto" /></div>;
 
   return (
-    <div className="p-8 space-y-10 max-w-4xl mx-auto">
-      <div className="flex justify-between items-end">
+    <div className="space-y-6 lg:space-y-10 max-w-4xl mx-auto">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-4xl font-black italic tracking-tighter">Gestion des Tarifs</h2>
+          <h2 className="text-3xl sm:text-4xl font-black italic tracking-tighter">Gestion des Tarifs</h2>
           <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-2">Configurez les coûts de l'écosystème Galant</p>
         </div>
         <button
           onClick={handleUpdate}
           disabled={saving}
-          className="bg-primary text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-red-500/20 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+          className="w-full sm:w-auto bg-primary text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-red-500/20 flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
         >
           {saving ? <RefreshCcw className="animate-spin" size={16} /> : <Save size={16} />}
           Enregistrer
@@ -72,7 +72,7 @@ const AdminPricing: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Interactions Individuelles */}
-        <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-slate-100 space-y-6">
+        <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-xl border border-slate-100 space-y-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-primary">
               <Heart size={20} />
@@ -106,7 +106,7 @@ const AdminPricing: React.FC = () => {
         </div>
 
         {/* Abonnements */}
-        <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-slate-100 space-y-6">
+        <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-xl border border-slate-100 space-y-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500">
               <Gem size={20} />

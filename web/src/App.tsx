@@ -51,6 +51,7 @@ import AdminSupport from './pages/admin/AdminSupport';
 import AdminKyc from './pages/admin/AdminKyc';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminFinances from './pages/admin/AdminFinances';
+import AdminReports from './pages/admin/AdminReports';
 
 const AuthButton: React.FC = () => {
   const { user, profile } = useAuth();
@@ -189,6 +190,7 @@ const AppContent: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const isAuthPage = location.pathname === '/auth';
+  const isAdminRoute = location.pathname.startsWith('/admin');
   const isOnboardingPage = location.pathname === '/onboarding';
   const isWelcomePage = location.pathname === '/' && !user;
 
@@ -228,9 +230,9 @@ const AppContent: React.FC = () => {
         />
       )}
 
-      {(!isAuthPage && !isWelcomePage) && <Header />}
+      {(!isAuthPage && !isWelcomePage && !isAdminRoute) && <Header />}
 
-      <main className={`relative z-10 flex-1 w-full ${(isAuthPage || isWelcomePage) ? '' : 'max-w-6xl mx-auto p-4 md:p-8 mb-20 md:mb-0'}`}>
+      <main className={`relative z-10 flex-1 w-full ${(isAuthPage || isWelcomePage || isAdminRoute) ? '' : 'max-w-6xl mx-auto p-4 md:p-8 mb-20 md:mb-0'}`}>
         <Routes>
           <Route path="/" element={<DiscoverPage />} />
           <Route path="/auth" element={<AuthPage />} />
@@ -262,12 +264,13 @@ const AppContent: React.FC = () => {
             <Route path="users" element={<AdminUsers />} />
             <Route path="pricing" element={<AdminPricing />} />
             <Route path="finances" element={<AdminFinances />} />
+            <Route path="reports" element={<AdminReports />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-      {!isAuthPage && <MobileNav />}
+      {(!isAuthPage && !isAdminRoute) && <MobileNav />}
       <PWAInstallPrompt />
     </div>
   );

@@ -5,7 +5,7 @@ const {
   getStats, getPendingVenues, approveVenue, rejectVenue, reconcileProfiles,
   getPrivacyRequests, resolvePrivacyRequest, getPhotoReviews, reviewPhoto,
   getKycRequests, reviewKyc, getBroadcastAudience, broadcastMessage, getCampaignHistory,
-  getUsers, toggleUserStatus, getPricing, updatePricing, reconcileCounters, backfillGeohashes
+  getReports, resolveReport, getUsers, toggleUserStatus, getPricing, updatePricing, reconcileCounters, backfillGeohashes
 } = require('../controllers/adminController');
 
 router.use(requireAuth);
@@ -22,6 +22,8 @@ router.get('/privacy-requests', getPrivacyRequests);
 router.post('/privacy-requests/:id/resolve', resolvePrivacyRequest);
 router.get('/photo-reviews', getPhotoReviews);
 router.post('/photo-reviews/:id/review', reviewPhoto);
+router.get('/reports', getReports);
+router.post('/reports/:id/resolve', resolveReport);
 router.get('/kyc/requests', getKycRequests);
 router.post('/kyc/requests/:id/review', reviewKyc);
 router.get('/users', getUsers);

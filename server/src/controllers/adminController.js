@@ -180,11 +180,16 @@ const broadcastMessage = async (req, res) => {
 
 const getKycRequests = async (req, res) => {
   try {
-    const snapshot = await db.collection('kyc_verifications').orderBy('created_at', 'desc').get();
+    const { status } = req.query;
+    let query = db.collection('kyc_verifications').orderBy('created_at', 'desc');
+    if (status && status !== 'ALL') {
+      query = db.collection('kyc_verifications').where('status', '==', status).orderBy('created_at', 'desc');
+    }
+    const snapshot = await query.get();
     const requests = await Promise.all(snapshot.docs.map(async doc => {
       const data = doc.data();
       const userDoc = await db.collection('profiles').doc(data.user_id).get();
-      return { id: doc.id, ...data, user: userDoc.exists() ? { id: userDoc.id, ...userDoc.data() } : null };
+      return { id: doc.id, ...data, user: userDoc.exists ? { id: userDoc.id, ...userDoc.data() } : null };
     }));
     res.json({ requests: requests.filter(r => !!r.user) });
   } catch (error) { res.status(500).json({ error: error.message }); }
@@ -223,7 +228,76 @@ const reviewKyc = async (req, res) => {
 const getPhotoReviews = async (req, res) => {
   try {
     const snapshot = await db.collection('photo_review_queue').where('status', '==', 'PENDING').get();
-    res.json({ reviews: snapshot.docs.map(d => ({ id: d.id, ...d.data() })) });
+    const reviews = await Promise.all(snapshot.docs.map(async d => {
+      const data = d.data();
+      const userDoc = data.user_id ? await db.collection('profiles').doc(data.user_id).get() : null;
+      return {
+        id: d.id,
+        ...data,
+        user: userDoc?.exists ? { id: userDoc.id, ...userDoc.data() } : null
+      };
+    }));
+    res.json({ reviews });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+};
+
+const getReports = async (req, res) => {
+  try {
+    const { status } = req.query;
+    let query = db.collection('reports').orderBy('created_at', 'desc').limit(100);
+    if (status && status !== 'ALL') {
+      query = db.collection('reports').where('status', '==', status).orderBy('created_at', 'desc').limit(100);
+    }
+    const snapshot = await query.get();
+    const reports = await Promise.all(snapshot.docs.map(async doc => {
+      const data = doc.data();
+      const [reporterDoc, reportedDoc] = await Promise.all([
+        data.reporter_id ? db.collection('profiles').doc(data.reporter_id).get() : null,
+        data.reported_user_id ? db.collection('profiles').doc(data.reported_user_id).get() : null
+      ]);
+
+      return {
+        id: doc.id,
+        ...data,
+        reporter: reporterDoc?.exists ? { id: reporterDoc.id, ...reporterDoc.data() } : null,
+        reported_user: reportedDoc?.exists ? { id: reportedDoc.id, ...reportedDoc.data() } : null
+      };
+    }));
+
+    res.json({ reports });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+};
+
+const resolveReport = async (req, res) => {
+  const { id } = req.params;
+  const { status, note, suspendUser } = req.body;
+  try {
+    const reportRef = db.collection('reports').doc(id);
+    const reportDoc = await reportRef.get();
+    if (!reportDoc.exists) return res.status(404).json({ error: 'report_not_found' });
+
+    const report = reportDoc.data();
+    await reportRef.update({
+      status: status || 'RESOLVED',
+      admin_note: note || null,
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: req.user.id
+    });
+
+    if (suspendUser && report.reported_user_id) {
+      await db.collection('profiles').doc(report.reported_user_id).update({
+        suspended_at: new Date().toISOString(),
+        suspended_reason: note || report.reason || 'admin_report'
+      });
+    }
+
+    await appendAdminAuditLog({
+      adminId: req.user.id,
+      action: 'RESOLVE_REPORT',
+      metadata: { reportId: id, status: status || 'RESOLVED', suspendUser: !!suspendUser }
+    });
+
+    res.json({ success: true });
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
 
@@ -369,5 +443,6 @@ module.exports = {
   getStats, getPendingVenues, approveVenue, rejectVenue, reconcileProfiles,
   getPrivacyRequests, resolvePrivacyRequest, getPhotoReviews, reviewPhoto,
   getKycRequests, reviewKyc, getBroadcastAudience, broadcastMessage, getCampaignHistory,
+  getReports, resolveReport,
   getUsers, toggleUserStatus, getPricing, updatePricing, reconcileCounters, backfillGeohashes
 };

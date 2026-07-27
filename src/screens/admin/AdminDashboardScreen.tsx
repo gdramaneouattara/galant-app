@@ -100,6 +100,7 @@ const AdminDashboardScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [maintenanceLoading, setMaintenanceLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchStats = async () => {
@@ -129,6 +130,21 @@ const AdminDashboardScreen: React.FC = () => {
         },
       },
     ]);
+  };
+
+  const runMaintenance = async (type: 'counters' | 'geohash') => {
+    const path = type === 'counters' ? '/api/admin/users/reconcile-counters' : '/api/admin/users/backfill-geohashes';
+    const title = type === 'counters' ? 'Reconciliation likes/roses' : 'Backfill Geohash';
+    try {
+      setMaintenanceLoading(type);
+      const res = await apiRequest<any>(path, { method: 'POST', requireAuth: true });
+      Alert.alert(title, `${res.updated || 0} profils mis a jour sur ${res.processed || 0} traites.`);
+      void fetchStats();
+    } catch (err: any) {
+      Alert.alert('Erreur', err?.message || 'Action impossible.');
+    } finally {
+      setMaintenanceLoading(null);
+    }
   };
 
   return (
@@ -197,6 +213,24 @@ const AdminDashboardScreen: React.FC = () => {
             <Text style={[styles.planItem, { color: colors.text }]}>Non classé: {stats.premiumByPlan.UNKNOWN}</Text>
           </View>
         ) : null}
+
+        <View style={[styles.planCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.planTitle, { color: colors.text }]}>Maintenance</Text>
+          <Pressable
+            style={styles.maintenanceButton}
+            disabled={!!maintenanceLoading}
+            onPress={() => void runMaintenance('counters')}
+          >
+            <Text style={styles.maintenanceButtonText}>{maintenanceLoading === 'counters' ? '...' : 'Reconcilier likes/roses'}</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.maintenanceButton, styles.maintenancePrimary]}
+            disabled={!!maintenanceLoading}
+            onPress={() => void runMaintenance('geohash')}
+          >
+            <Text style={styles.maintenancePrimaryText}>{maintenanceLoading === 'geohash' ? '...' : 'Backfill Geohash'}</Text>
+          </Pressable>
+        </View>
 
         <View style={styles.shortcutsSection}>
           <Text style={[styles.shortcutsTitle, { color: colors.text }]}>Modules back-office</Text>
@@ -330,6 +364,27 @@ const styles = StyleSheet.create({
   },
   logoutButtonText: {
     color: '#be123c',
+    fontWeight: '800',
+  },
+  maintenanceButton: {
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  maintenanceButtonText: {
+    color: COLORS.ink,
+    fontWeight: '800',
+  },
+  maintenancePrimary: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  maintenancePrimaryText: {
+    color: '#fff',
     fontWeight: '800',
   },
 });

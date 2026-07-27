@@ -7,7 +7,7 @@ import {
   Camera, ShieldCheck, MapPin, Edit3, Save, LogOut,
   Sparkles, Plane, Globe, ChevronRight, Share2,
   EyeOff, Eye, Crown, Gem, Settings, User, Bell,
-  CreditCard, HelpCircle, FileText, Heart, Rocket, Star
+  CreditCard, HelpCircle, FileText, Heart, Rocket, Star, LayoutDashboard
 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { apiRequest } from '@shared/lib/api';
@@ -336,6 +336,21 @@ const ProfilePage: React.FC = () => {
         {/* Right Column: Menu & Actions */}
         <div className="space-y-6">
           <div className="bg-white dark:bg-slate-900 p-4 rounded-[2.5rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-white/10 transition-colors flex flex-col gap-2">
+            {profile.is_admin && (
+              <button
+                onClick={() => navigate('/admin')}
+                className="flex items-center gap-4 p-4 rounded-2xl bg-primary text-white shadow-lg shadow-primary/20 transition-all text-left group active:scale-[0.98]"
+              >
+                <div className="w-12 h-12 bg-white/15 rounded-xl flex items-center justify-center">
+                  <LayoutDashboard size={24} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-black uppercase tracking-tight">Admin</p>
+                  <p className="text-[10px] font-bold text-white/70">Ouvrir le dashboard</p>
+                </div>
+                <ChevronRight size={16} className="text-white/60" />
+              </button>
+            )}
 
             {/* Action Item: Goal */}
             <button

@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { apiRequest } from '@shared/lib/api';
 import {
-  Search, ShieldCheck, Gem, User as UserIcon,
-  MoreVertical, MapPin, Star, Ban, CheckCircle,
-  RotateCcw, Filter, Crown
+  Search, ShieldCheck, Gem, Star, Ban,
+  RotateCcw, Crown
 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 
@@ -79,8 +78,8 @@ const AdminUsers: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-end">
+    <div className="space-y-6 lg:space-y-8">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-4xl font-black text-slate-900 tracking-tight">Membres</h2>
           <p className="text-slate-500 font-medium mt-1 text-lg">Gérez la base de données des utilisateurs.</p>
@@ -88,8 +87,8 @@ const AdminUsers: React.FC = () => {
       </div>
 
       {/* Barre de Recherche et Filtres */}
-      <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-50 flex flex-wrap gap-4 items-center">
-        <div className="relative flex-1 min-w-[300px]">
+      <div className="bg-white p-4 sm:p-6 rounded-[2rem] shadow-xl border border-slate-50 flex flex-wrap gap-3 sm:gap-4 items-center">
+        <div className="relative w-full flex-1 sm:min-w-[300px]">
           <input
             type="text"
             value={search}
@@ -103,14 +102,14 @@ const AdminUsers: React.FC = () => {
         <select
           value={filter.gender}
           onChange={(e) => setFilter({...filter, gender: e.target.value})}
-          className="bg-slate-50 border-none px-6 py-4 rounded-2xl outline-none font-bold text-xs uppercase text-slate-500"
+          className="w-full sm:w-auto bg-slate-50 border-none px-6 py-4 rounded-2xl outline-none font-bold text-xs uppercase text-slate-500"
         >
           <option value="ALL">Tous les genres</option>
           <option value="MALE">Hommes</option>
           <option value="FEMALE">Femmes</option>
         </select>
 
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center gap-2 overflow-x-auto sm:w-auto">
            <button
              onClick={() => setFilter({...filter, is_premium: !filter.is_premium})}
              className={`px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${filter.is_premium ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-200' : 'bg-white border-slate-100 text-slate-400'}`}
@@ -133,8 +132,8 @@ const AdminUsers: React.FC = () => {
       </div>
 
       {/* Liste des Utilisateurs */}
-      <div className="bg-white rounded-[3rem] shadow-2xl border border-slate-50 overflow-hidden">
-        <table className="w-full text-left border-collapse text-sm">
+      <div className="bg-white rounded-[2rem] sm:rounded-[3rem] shadow-2xl border border-slate-50 overflow-x-auto">
+        <table className="min-w-[720px] w-full text-left border-collapse text-sm">
           <thead>
             <tr className="bg-slate-50 text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] border-b border-slate-100">
               <th className="px-8 py-6">Membre</th>

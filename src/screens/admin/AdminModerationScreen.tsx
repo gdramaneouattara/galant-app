@@ -8,18 +8,18 @@ import ReportCard from './components/ReportCard';
 import PrivacyCard from './components/PrivacyCard';
 import PhotoReviewCard from './components/PhotoReviewCard';
 
-type ReportStatus = 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'DISMISSED';
+type ReportStatus = 'PENDING' | 'IN_REVIEW' | 'RESOLVED' | 'DISMISSED';
 
 const REPORT_STATUS_FILTERS: Array<{ value: 'ALL' | ReportStatus; label: string }> = [
   { value: 'ALL', label: 'Tous' },
-  { value: 'OPEN', label: 'Ouverts' },
+  { value: 'PENDING', label: 'Ouverts' },
   { value: 'IN_REVIEW', label: 'En revue' },
   { value: 'RESOLVED', label: 'Résolus' },
   { value: 'DISMISSED', label: 'Rejetés' },
 ];
 
 const AdminModerationScreen: React.FC = () => {
-  const [reportFilter, setReportFilter] = useState<'ALL' | ReportStatus>('OPEN');
+  const [reportFilter, setReportFilter] = useState<'ALL' | ReportStatus>('PENDING');
   const [reports, setReports] = useState<any[]>([]);
   const [privacyRequests, setPrivacyRequests] = useState<any[]>([]);
   const [photoReviews, setPhotoReviews] = useState<any[]>([]);
@@ -58,7 +58,16 @@ const AdminModerationScreen: React.FC = () => {
 
   const handleReviewReport = async (id: string, status: ReportStatus, opts?: any) => {
     try {
-      await apiRequest(`/api/admin/reports/${id}/review`, { method: 'POST', requireAuth: true, body: JSON.stringify({ status, adminNote: `Traité (${status})`, suspendReportedUser: opts?.suspend, removeMessageContent: opts?.removeMessage }) });
+      await apiRequest(`/api/admin/reports/${id}/resolve`, {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({
+          status,
+          note: `Traite (${status})`,
+          suspendUser: opts?.suspend,
+          removeMessageContent: opts?.removeMessage
+        })
+      });
       void fetchData();
     } catch (e: any) { Alert.alert('Erreur', e.message); }
   };
