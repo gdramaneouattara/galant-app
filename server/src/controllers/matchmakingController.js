@@ -358,7 +358,7 @@ const getVisibilityInsight = async (req, res) => {
     const goldenRoseUserIds = new Set(grSnapshot.docs.map(doc => doc.data().user_id));
 
     const scoredCompetitors = competitors.map(c => {
-      const score = calculateMatchScore({
+      const { score } = calculateMatchScore({
         candidate: c,
         me,
         isGoldenRose: goldenRoseUserIds.has(c.id)

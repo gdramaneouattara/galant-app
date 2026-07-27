@@ -50,6 +50,44 @@ const getStableDailyJitter = (meId, candidateId) => {
   return Math.abs(hash % 10);
 };
 
+const MS_PER_DAY = 24 * 3600 * 1000;
+
+const getActivityDecay = (lastActiveAt, now = new Date()) => {
+  if (!lastActiveAt) {
+    return {
+      inactiveDays: 0,
+      activityPenaltyPercent: 0,
+      activityMultiplier: 1,
+    };
+  }
+
+  const lastActiveDate = new Date(lastActiveAt);
+  if (Number.isNaN(lastActiveDate.getTime())) {
+    return {
+      inactiveDays: 0,
+      activityPenaltyPercent: 0,
+      activityMultiplier: 1,
+    };
+  }
+
+  const inactiveDays = Math.max(0, Math.floor((now.getTime() - lastActiveDate.getTime()) / MS_PER_DAY));
+  let activityPenaltyPercent = 0;
+
+  if (inactiveDays > 14) {
+    activityPenaltyPercent = 35 + ((inactiveDays - 14) * 10);
+  } else if (inactiveDays > 7) {
+    activityPenaltyPercent = (inactiveDays - 7) * 5;
+  }
+
+  activityPenaltyPercent = Math.min(70, activityPenaltyPercent);
+
+  return {
+    inactiveDays,
+    activityPenaltyPercent,
+    activityMultiplier: (100 - activityPenaltyPercent) / 100,
+  };
+};
+
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   if (![lat1, lon1, lat2, lon2].every(value => Number.isFinite(Number(value)))) return null;
   const R = 6371; // Earth radius in km
@@ -134,6 +172,14 @@ const calculateMatchScore = ({
   const isNewUser = new Date(candidate.created_at) > new Date(Date.now() - 48 * 3600 * 1000);
   if (isNewUser) compatibilityScore += 90;
 
+  const rawCompatibilityScore = compatibilityScore;
+  const {
+    inactiveDays,
+    activityPenaltyPercent,
+    activityMultiplier,
+  } = getActivityDecay(candidate.last_active_at);
+  compatibilityScore = Math.round(compatibilityScore * activityMultiplier);
+
   let commercialScore = 0;
   if (candidate.is_vip) commercialScore += 200;
   else if (candidate.is_premium) commercialScore += 50;
@@ -151,11 +197,15 @@ const calculateMatchScore = ({
   return {
     score,
     compatibilityScore,
+    rawCompatibilityScore,
     commercialScore,
+    inactiveDays,
+    activityPenaltyPercent,
+    activityMultiplier,
     commonInterestsCount: commonCount,
     meAcceptsCandidate,
     candidateAcceptsMe,
   };
 };
 
-module.exports = { calculateDistance, calculateMatchScore };
+module.exports = { calculateDistance, calculateMatchScore, getActivityDecay };
