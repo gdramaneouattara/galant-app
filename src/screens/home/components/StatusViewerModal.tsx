@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Modal, Pressable, Image, StyleSheet } from 'react-native';
-import { X, Heart } from 'lucide-react-native';
+import { X, Heart, Trash2 } from 'lucide-react-native';
 import VideoPlayer from '../../../components/VideoPlayer';
 
 interface Status {
@@ -25,6 +25,7 @@ interface StatusViewerModalProps {
   onClose: () => void;
   onToggleLike: (status: Status) => void;
   onOpenLikers: (status: Status) => void;
+  onDelete?: (status: Status) => void;
   likeLoading: boolean;
   isCurrentUser: boolean;
   resolvedUrl: string;
@@ -37,6 +38,7 @@ const StatusViewerModal: React.FC<StatusViewerModalProps> = ({
   onClose,
   onToggleLike,
   onOpenLikers,
+  onDelete,
   likeLoading,
   isCurrentUser,
   resolvedUrl,
@@ -74,6 +76,11 @@ const StatusViewerModal: React.FC<StatusViewerModalProps> = ({
             {isCurrentUser && (
               <Pressable style={styles.modalLikersButton} onPress={() => onOpenLikers(status)}>
                 <Text style={styles.modalLikersButtonText}>Voir les likes</Text>
+              </Pressable>
+            )}
+            {isCurrentUser && !!onDelete && (
+              <Pressable style={styles.modalDeleteButton} onPress={() => onDelete(status)}>
+                <Trash2 size={16} color="#fff" />
               </Pressable>
             )}
           </View>
@@ -123,6 +130,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: '700',
+  },
+  modalDeleteButton: {
+    borderRadius: 999,
+    backgroundColor: 'rgba(239,68,68,0.9)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
 });
 

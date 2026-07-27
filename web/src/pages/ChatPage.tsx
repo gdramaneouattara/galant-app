@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { db, rtdb, COLLECTIONS, fbStorage } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -14,12 +14,15 @@ const ChatPage: React.FC = () => {
   const { matchId } = useParams();
   const { user, profile, t, language } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const venueChatId = (location.state as any)?.venueChatId || null;
   const [targetUser, setTargetUser] = useState<any>(null);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState('');
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [targetPresence, setTargetPresence] = useState<{ state?: string; last_changed?: number | string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const [translations, setTranslations] = useState<Record<string, string>>({});
@@ -30,6 +33,12 @@ const ChatPage: React.FC = () => {
     if (!matchId || !user) return;
 
     const fetchMatchInfo = async () => {
+      if (venueChatId) {
+        const venueName = (location.state as any)?.venueName || 'Etablissement partenaire';
+        setTargetUser({ id: venueChatId, name: venueName, photos: [(location.state as any)?.venuePhoto || 'https://placehold.co/100x100'], isVenue: true });
+        return;
+      }
+
       const matchDoc = await getDoc(doc(db, COLLECTIONS.MATCHES, matchId));
       if (matchDoc.exists()) {
         const data = matchDoc.data();
@@ -42,7 +51,7 @@ const ChatPage: React.FC = () => {
     };
     fetchMatchInfo();
 
-    const msgRef = ref(rtdb, `messages/${matchId}`);
+    const msgRef = ref(rtdb, venueChatId ? `venue_messages/${venueChatId}` : `messages/${matchId}`);
     const unsub = onValue(msgRef, (snapshot) => {
       if (snapshot.exists()) {
         const msgs = Object.entries(snapshot.val()).map(([id, data]: any) => ({
@@ -50,11 +59,35 @@ const ChatPage: React.FC = () => {
           ...data
         }));
         setChatMessages(msgs.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
+      } else {
+        setChatMessages([]);
       }
     });
 
     return () => unsub();
-  }, [matchId, user]);
+  }, [matchId, user, venueChatId, location.state]);
+
+  useEffect(() => {
+    if (!matchId || !user || venueChatId) return;
+    apiRequest('/api/messages/mark-read', {
+      method: 'POST',
+      requireAuth: true,
+      body: JSON.stringify({ matchId }),
+    }).catch(() => {});
+  }, [matchId, user, chatMessages.length, venueChatId]);
+
+  useEffect(() => {
+    if (!targetUser?.id || targetUser?.isVenue) {
+      setTargetPresence(null);
+      return;
+    }
+
+    const presenceRef = ref(rtdb, `presence/users/${targetUser.id}`);
+    const unsub = onValue(presenceRef, (snapshot) => {
+      setTargetPresence(snapshot.exists() ? snapshot.val() : null);
+    });
+    return () => unsub();
+  }, [targetUser?.id]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -141,10 +174,11 @@ const ChatPage: React.FC = () => {
         method: 'POST',
         requireAuth: true,
         body: JSON.stringify({
-          matchId,
+          matchId: venueChatId ? undefined : matchId,
+          venueChatId: venueChatId || undefined,
           content: inputText.trim(),
           messageType: 'TEXT',
-          recipientId: targetUser.id
+          recipientId: targetUser.isVenue ? undefined : targetUser.id
         })
       });
       setInputText('');
@@ -172,7 +206,7 @@ const ChatPage: React.FC = () => {
         finalFile = await compressImageWeb(file);
       }
 
-      const sRef = storageRef(fbStorage, `chats/${matchId}/${Date.now()}_${file.name}`);
+      const sRef = storageRef(fbStorage, `chats/${venueChatId || matchId}/${Date.now()}_${file.name}`);
       await uploadBytes(sRef, finalFile, { contentType: file.type });
       const mediaUrl = await getStorageUrl(sRef);
 
@@ -180,10 +214,11 @@ const ChatPage: React.FC = () => {
         method: 'POST',
         requireAuth: true,
         body: JSON.stringify({
-          matchId,
+          matchId: venueChatId ? undefined : matchId,
+          venueChatId: venueChatId || undefined,
           messageType: type,
           mediaPath: mediaUrl,
-          recipientId: targetUser.id
+          recipientId: targetUser.isVenue ? undefined : targetUser.id
         })
       });
     } catch (error: any) {
@@ -203,16 +238,18 @@ const ChatPage: React.FC = () => {
         <button onClick={() => navigate('/matches')} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
           <ChevronLeft size={24} />
         </button>
-        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-slate-100 cursor-pointer" onClick={() => navigate(`/profile/${targetUser.id}`)}>
+        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-slate-100 cursor-pointer" onClick={() => !targetUser.isVenue && navigate(`/profile/${targetUser.id}`)}>
           <img src={targetUser.photos?.[0]} className="w-full h-full object-cover" alt="" />
         </div>
-        <div className="flex-1 cursor-pointer" onClick={() => navigate(`/profile/${targetUser.id}`)}>
+        <div className="flex-1 cursor-pointer" onClick={() => !targetUser.isVenue && navigate(`/profile/${targetUser.id}`)}>
           <div className="flex items-center gap-1">
             <span className="font-black text-slate-900">{targetUser.name}</span>
             {targetUser.is_verified && <ShieldCheck size={14} className="text-blue-500" />}
             {(targetUser.galanterie_score || 0) >= 4.5 && <Gem size={14} className="text-rose-600" />}
           </div>
-          <span className="text-[10px] font-bold text-green-500 uppercase tracking-widest">En ligne</span>
+          <span className={`text-[10px] font-bold uppercase tracking-widest ${targetPresence?.state === 'online' ? 'text-green-500' : 'text-slate-400'}`}>
+            {targetUser.isVenue ? 'Partenaire Galant' : targetPresence?.state === 'online' ? 'En ligne' : 'Hors ligne'}
+          </span>
         </div>
       </div>
 

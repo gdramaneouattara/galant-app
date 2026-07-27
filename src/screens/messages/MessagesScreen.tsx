@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/MainNavigator';
@@ -35,6 +35,7 @@ const MessagesScreen: React.FC = () => {
   const [venueChats, setVenueChats] = useState<any[]>([]);
   const [loadingAdminNotifications, setLoadingAdminNotifications] = useState(false);
   const [markingAllAsRead, setMarkingAllAsRead] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchAdminNotifications = useCallback(async () => {
     if (!currentUser) return;
@@ -105,7 +106,8 @@ const MessagesScreen: React.FC = () => {
 
   const conversations = useMemo(() => {
     if (!currentUser) return [];
-    return recentMatches
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const base = recentMatches
       .map(({ match, user }) => {
         const thread = messages.filter((m) => m.match_id === match.id);
         const lastMessage = thread[thread.length - 1];
@@ -115,7 +117,28 @@ const MessagesScreen: React.FC = () => {
         return { match, user, lastMessage, unreadCount: unreadCountForMatch, lastActivityAt };
       })
       .sort((a, b) => new Date(b.lastActivityAt || 0).getTime() - new Date(a.lastActivityAt || 0).getTime());
-  }, [currentUser, messages, recentMatches]);
+
+    if (!normalizedQuery) return base;
+    return base.filter(({ user, lastMessage }) => {
+      const haystack = `${user.name || ''} ${lastMessage?.content || ''}`.toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [currentUser, messages, recentMatches, searchQuery]);
+
+  const filteredRecentMatches = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    if (!normalizedQuery) return recentMatches;
+    return recentMatches.filter(({ user }) => String(user.name || '').toLowerCase().includes(normalizedQuery));
+  }, [recentMatches, searchQuery]);
+
+  const filteredVenueChats = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    if (!normalizedQuery) return venueChats;
+    return venueChats.filter((chat) => {
+      const haystack = `${chat.venues?.name || ''} ${chat.venues?.benefit_description || ''}`.toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [venueChats, searchQuery]);
 
   const markNotificationAsRead = async (id: string) => {
     try {
@@ -152,7 +175,13 @@ const MessagesScreen: React.FC = () => {
 
         <View style={[styles.searchBar, { backgroundColor: colors.input, borderColor: colors.border }]}>
           <Search size={18} color={colors.textMuted} />
-          <Text style={[styles.searchText, { color: colors.textMuted }]}>{t('search_conversations') || 'Rechercher...'}</Text>
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder={t('search_conversations') || 'Rechercher...'}
+            placeholderTextColor={colors.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
         </View>
 
         {showAdminBox && (
@@ -178,9 +207,9 @@ const MessagesScreen: React.FC = () => {
 
         <Text style={[styles.title, { color: colors.text }]}>{t('matches')}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.matchesRow}>
-          {recentMatches.length === 0 && (
+          {filteredRecentMatches.length === 0 && (
             <Pressable
-              onPress={() => navigation.navigate('Discover' as any)}
+              onPress={() => navigation.navigate('DiscoverTab' as any)}
               style={styles.emptyMatchesContainer}
             >
               <LinearGradient
@@ -199,7 +228,7 @@ const MessagesScreen: React.FC = () => {
               </LinearGradient>
             </Pressable>
           )}
-          {recentMatches.map(({ match, user }) => (
+          {filteredRecentMatches.map(({ match, user }) => (
             <Pressable key={match.id} onPress={() => navigation.navigate('Chat', { userId: user.id, matchId: match.id })} style={[styles.matchItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Image source={{ uri: user.photos[0] }} style={styles.matchAvatar} />
               <View style={styles.matchNameRow}>
@@ -212,7 +241,7 @@ const MessagesScreen: React.FC = () => {
 
         <Text style={[styles.subtitle, { color: colors.text }]}>Conversations</Text>
         <View style={styles.list}>
-          {venueChats.map(vChat => (
+          {filteredVenueChats.map(vChat => (
             <Pressable key={vChat.id} onPress={() => navigation.navigate('Chat', { userId: vChat.venues.owner_id, venueChatId: vChat.id, venueName: vChat.venues.name, venuePhoto: vChat.venues.photo_url })} style={[styles.row, styles.venueRow, activeTheme === 'dark' && { backgroundColor: '#450a0a', borderColor: '#7f1d1d' }]}>
               <Image source={{ uri: vChat.venues.photo_url || 'https://placehold.co/100x100' }} style={styles.rowAvatar} />
               <View style={styles.rowText}>
@@ -242,7 +271,7 @@ const MessagesScreen: React.FC = () => {
               </View>
             </Pressable>
           ))}
-          {conversations.length === 0 && (
+          {conversations.length === 0 && filteredVenueChats.length === 0 && (
             <View style={styles.emptyConversations}>
               <View style={styles.emptyConvIconContainer}>
                 <MessageSquare size={48} color={colors.border} strokeWidth={1.5} />
@@ -274,7 +303,7 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 6,
   },
-  searchText: { fontSize: 15, fontWeight: '500' },
+  searchInput: { flex: 1, fontSize: 15, fontWeight: '500', paddingVertical: 0 },
   adminBox: { borderRadius: 18, padding: 14, gap: 10, borderWidth: 1 },
   adminBoxHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   adminBoxTitle: { fontSize: 15, fontWeight: '800' },

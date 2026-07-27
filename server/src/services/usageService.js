@@ -104,4 +104,21 @@ const consumeStoryPurchase = async (userId) => {
   }
 };
 
-module.exports = { hasDirectMessagePurchase, getDailyUsage, incrementUsage, consumeStoryPurchase };
+const hasUnusedStoryPurchase = async (userId) => {
+  if (!userId) return false;
+  try {
+    const snapshot = await db.collection('purchased_interactions')
+      .where('user_id', '==', userId)
+      .where('interaction_type', '==', 'STORY_UPLOAD')
+      .where('status', '==', 'UNUSED')
+      .limit(1)
+      .get();
+
+    return !snapshot.empty;
+  } catch (error) {
+    console.error('Error checking story purchase:', error);
+    return false;
+  }
+};
+
+module.exports = { hasDirectMessagePurchase, getDailyUsage, incrementUsage, consumeStoryPurchase, hasUnusedStoryPurchase };

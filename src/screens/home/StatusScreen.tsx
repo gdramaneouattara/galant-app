@@ -95,6 +95,7 @@ const StatusScreen: React.FC = () => {
   const [showSuperLikePurchaseModal, setShowSuperLikePurchaseModal] = useState(false);
   const [showDirectMessagePurchaseModal, setShowDirectMessagePurchaseModal] = useState(false);
   const [showStoryPurchaseModal, setShowStoryPurchaseModal] = useState(false);
+  const [storyUploadUnlocked, setStoryUploadUnlocked] = useState(false);
 
   const fetchStatuses = useCallback(async () => {
     try {
@@ -143,9 +144,22 @@ const StatusScreen: React.FC = () => {
   useEffect(() => { void fetchStatuses(); }, []);
   useEffect(() => { if (appResumeVersion > 0) void fetchStatuses(); }, [appResumeVersion]);
 
+  const refreshStoryUploadAccess = async () => {
+    if (!currentUser) return false;
+    if (currentUser.is_premium || currentUser.is_vip) return true;
+    try {
+      const access = await apiRequest<{ canPublish?: boolean; hasPurchasedUpload?: boolean }>('/api/statuses/upload-access', { requireAuth: true });
+      setStoryUploadUnlocked(!!access.hasPurchasedUpload);
+      return !!access.canPublish;
+    } catch {
+      return false;
+    }
+  };
+
   const pickStatusMedia = async () => {
     if (uploading) return;
-    if (locked || (!currentUser?.is_premium && !currentUser?.is_vip)) {
+    const canPublish = !locked && (currentUser?.is_premium || currentUser?.is_vip || storyUploadUnlocked || await refreshStoryUploadAccess());
+    if (!canPublish) {
       setShowStoryPurchaseModal(true);
       return;
     }
@@ -200,6 +214,7 @@ const StatusScreen: React.FC = () => {
           requireAuth: true,
           body: JSON.stringify({ mediaUrl: path, type, content: '' })
         });
+        setStoryUploadUnlocked(false);
         void fetchStatuses();
       } catch (e) {
         Alert.alert('Erreur', "Impossible de publier le statut.");
@@ -249,22 +264,30 @@ const StatusScreen: React.FC = () => {
   const handlePurchaseAction = async (method: 'PAYSTACK' | 'GOOGLE', type: 'SUPER_LIKE' | 'DIRECT_MESSAGE') => {
     if (!selectedLiker || purchaseLoading) return;
     const sku = type === 'SUPER_LIKE' ? SUPER_LIKE_SKU : DIRECT_MESSAGE_SKU;
-    const amount = type === 'SUPER_LIKE' ? 500 : 500; // Adjust if needed
+    const amount = 500;
 
     const ok = method === 'PAYSTACK'
       ? await purchaseWithPaystack(type, amount, selectedLiker.user_id)
       : await purchaseWithStore(sku, type, selectedLiker.user_id);
 
-    if (ok) {
-      if (type === 'SUPER_LIKE') {
-        Alert.alert('Succès', 'Super Like envoyé !');
-        setShowSuperLikePurchaseModal(false);
-      } else {
-        Alert.alert('Succès', 'Message direct débloqué !');
-        setShowDirectMessagePurchaseModal(false);
-        (navigation as any).navigate('Chat', { userId: selectedLiker.user_id });
-      }
+    if (!ok) return;
+
+    if (type === 'SUPER_LIKE') {
+      const res = await handleSwipe(selectedLiker.user_id, 'RIGHT', true);
+      setLikers(prev => prev.map(l => l.user_id === selectedLiker.user_id ? { ...l, liked_back: true, is_matched: !!res?.matched } : l));
+      Alert.alert('Succes', res?.matched ? 'Super Like envoye et match cree.' : 'Super Like envoye !');
+      setShowSuperLikePurchaseModal(false);
+      return;
     }
+
+    const thread = await apiRequest<{ matchId: string }>('/api/messages/direct-thread', {
+      method: 'POST',
+      requireAuth: true,
+      body: JSON.stringify({ targetUserId: selectedLiker.user_id }),
+    });
+    Alert.alert('Succes', 'Message direct debloque !');
+    setShowDirectMessagePurchaseModal(false);
+    (navigation as any).navigate('Chat', { userId: selectedLiker.user_id, matchId: thread.matchId });
   };
 
   const handleStoryPurchasePaystack = async () => {
@@ -272,6 +295,7 @@ const StatusScreen: React.FC = () => {
     if (ok) {
       setShowStoryPurchaseModal(false);
       // Wait a bit for server sync and then allow picker
+      setStoryUploadUnlocked(true);
       setTimeout(() => {
         pickStatusMedia();
       }, 1000);
@@ -283,10 +307,27 @@ const StatusScreen: React.FC = () => {
     const ok = await purchaseWithStore('story_upload', 'STORY_UPLOAD');
     if (ok) {
       setShowStoryPurchaseModal(false);
+      setStoryUploadUnlocked(true);
       setTimeout(() => {
         pickStatusMedia();
       }, 1000);
     }
+  };
+
+  const deleteStatus = async (status: Status) => {
+    if (!status || String(status.user_id) !== String(currentUser?.id)) return;
+    Alert.alert('Supprimer la story', 'Voulez-vous retirer cette story ?', [
+      { text: 'Annuler', style: 'cancel' },
+      { text: 'Supprimer', style: 'destructive', onPress: async () => {
+        try {
+          await apiRequest(`/api/statuses/${status.id}`, { method: 'DELETE', requireAuth: true });
+          setSelectedStatusId(null);
+          setStatuses(prev => prev.filter(item => item.id !== status.id));
+        } catch (e: any) {
+          Alert.alert('Erreur', e.message || 'Impossible de supprimer la story.');
+        }
+      }},
+    ]);
   };
 
   const formatPublishedAt = (value?: string) => {
@@ -343,6 +384,7 @@ const StatusScreen: React.FC = () => {
         onClose={() => setSelectedStatusId(null)}
         onToggleLike={handleToggleLike}
         onOpenLikers={openLikersModal}
+        onDelete={deleteStatus}
         likeLoading={!!(selectedStatus && likeLoadingByStatusId[selectedStatus.id])}
         isCurrentUser={String(selectedStatus?.user_id) === String(currentUser?.id)}
         resolvedUrl={selectedStatus ? resolvedUrls[selectedStatus.media_url] : ''}

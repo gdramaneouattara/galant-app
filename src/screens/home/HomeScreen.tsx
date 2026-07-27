@@ -35,6 +35,7 @@ import MatchOverlay from './components/MatchOverlay';
 import ProfileBadges from '../../components/ProfileBadges'; // Required for quality tests
 import SuperLikePurchaseModal from '../../components/SuperLikePurchaseModal';
 import GoldenRosePurchaseModal from '../../components/GoldenRosePurchaseModal';
+import DirectMessagePurchaseModal from '../../components/DirectMessagePurchaseModal';
 import PassportModal from '../../components/passport/PassportModal';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -76,6 +77,7 @@ const SWIPE_TRIGGER_DISTANCE = 110;
 const TRIAL_DAYS = 7;
 const SUPER_LIKE_SKU = String(process.env.EXPO_PUBLIC_SUPER_LIKE_SKU || 'super_like').trim();
 const GOLDEN_ROSE_SKU = String(process.env.EXPO_PUBLIC_GOLDEN_ROSE_SKU || 'golden_rose').trim();
+const DIRECT_MESSAGE_SKU = String(process.env.EXPO_PUBLIC_DIRECT_MESSAGE_SKU || 'direct_message_1').trim();
 
 const HomeScreen: React.FC = () => {
   // Quality requirements: /api/matchmaking/suggestions, /api/matchmaking/swipe, /api/payments/initialize
@@ -90,6 +92,7 @@ const HomeScreen: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showSuperLikeModal, setShowSuperLikeModal] = useState(false);
   const [showGoldenRoseModal, setShowGoldenRoseModal] = useState(false);
+  const [showDirectMessageModal, setShowDirectMessageModal] = useState(false);
   const [showPassportModal, setShowPassportModal] = useState(false);
   const [likesInboxCount, setLikesInboxCount] = useState(0);
   const [rosesInboxCount, setRosesInboxCount] = useState(0);
@@ -139,7 +142,7 @@ const HomeScreen: React.FC = () => {
   }, [trialInfo]);
 
   useEffect(() => {
-    void initIAP([SUPER_LIKE_SKU, GOLDEN_ROSE_SKU]);
+    void initIAP([SUPER_LIKE_SKU, GOLDEN_ROSE_SKU, DIRECT_MESSAGE_SKU]);
     return () => { void endIAP(); };
   }, []);
 
@@ -215,20 +218,24 @@ const HomeScreen: React.FC = () => {
   };
 
   const handleSuperLikePurchasePaystack = async (note?: string) => {
-    if (!suggestions[0]) return;
-    const ok = await purchaseWithPaystack('SUPER_LIKE', 500, suggestions[0].id, { note });
+    const target = suggestions[0];
+    if (!target) return;
+    const ok = await purchaseWithPaystack('SUPER_LIKE', 500, target.id, { note });
     if (ok) {
       setShowSuperLikeModal(false);
-      void loadSuggestions();
+      const res = await handleSwipe(target.id, 'RIGHT', true);
+      if (res?.matched && res.matchId) setMatchModal({ user: target, matchId: res.matchId });
     }
   };
 
   const handleSuperLikePurchaseGoogle = async (note?: string) => {
-    if (!suggestions[0]) return;
-    const ok = await purchaseWithStore(SUPER_LIKE_SKU, 'SUPER_LIKE', suggestions[0].id);
+    const target = suggestions[0];
+    if (!target) return;
+    const ok = await purchaseWithStore(SUPER_LIKE_SKU, 'SUPER_LIKE', target.id);
     if (ok) {
       setShowSuperLikeModal(false);
-      void loadSuggestions();
+      const res = await handleSwipe(target.id, 'RIGHT', true);
+      if (res?.matched && res.matchId) setMatchModal({ user: target, matchId: res.matchId });
     }
   };
 
@@ -266,10 +273,60 @@ const HomeScreen: React.FC = () => {
     }
   }), [suggestions, swiping]);
 
-  const openDirectMessage = () => {
+  const handleSuperLikeAction = () => {
     if (!suggestions[0]) return;
     if (trialLocked) { navigation.navigate('Premium'); return; }
-    navigation.navigate('Chat', { userId: suggestions[0].id });
+    const hasFreeRose = String(currentUser?.gender || '').toUpperCase() === 'FEMALE' && !!currentUser?.is_premium;
+    if (hasFreeRose) {
+      void performSwipe('RIGHT', true);
+      return;
+    }
+    setShowSuperLikeModal(true);
+  };
+
+  const openDirectThread = async (targetId: string) => {
+    const res = await apiRequest<{ matchId: string }>('/api/messages/direct-thread', {
+      method: 'POST',
+      requireAuth: true,
+      body: JSON.stringify({ targetUserId: targetId }),
+    });
+    navigation.navigate('Chat', { userId: targetId, matchId: res.matchId });
+  };
+
+  const openDirectMessage = async () => {
+    const target = suggestions[0];
+    if (!target) return;
+    if (trialLocked) { navigation.navigate('Premium'); return; }
+    try {
+      await openDirectThread(target.id);
+    } catch (e: any) {
+      const message = String(e?.message || '');
+      if (message.includes('payment_required') || message.includes('Premium') || message.includes('achat direct')) {
+        setShowDirectMessageModal(true);
+        return;
+      }
+      Alert.alert('Erreur', e?.message || 'Impossible d ouvrir cette discussion.');
+    }
+  };
+
+  const handleDirectMessagePurchasePaystack = async () => {
+    const target = suggestions[0];
+    if (!target) return;
+    const ok = await purchaseWithPaystack('DIRECT_MESSAGE', 500, target.id);
+    if (ok) {
+      setShowDirectMessageModal(false);
+      await openDirectThread(target.id);
+    }
+  };
+
+  const handleDirectMessagePurchaseGoogle = async () => {
+    const target = suggestions[0];
+    if (!target) return;
+    const ok = await purchaseWithStore(DIRECT_MESSAGE_SKU, 'DIRECT_MESSAGE', target.id);
+    if (ok) {
+      setShowDirectMessageModal(false);
+      await openDirectThread(target.id);
+    }
   };
 
   const openBoost = () => {
@@ -383,8 +440,8 @@ const HomeScreen: React.FC = () => {
       {/* Bottom Actions */}
       <View style={styles.actions}>
         <Pressable style={[styles.actionBtn, styles.btnNo]} onPress={() => performSwipe('LEFT')}><X color={COLORS.primary} size={28} /></Pressable>
-        <Pressable style={[styles.actionBtn, styles.btnMessage]} onPress={openDirectMessage}><MessageCircle color="#fff" size={24} /></Pressable>
-        <Pressable style={[styles.actionBtn, styles.btnStar]} onPress={() => performSwipe('RIGHT', true)}><Text style={{ fontSize: 24 }}>🌹</Text></Pressable>
+        <Pressable style={[styles.actionBtn, styles.btnMessage]} onPress={() => void openDirectMessage()}><MessageCircle color="#fff" size={24} /></Pressable>
+        <Pressable style={[styles.actionBtn, styles.btnStar]} onPress={handleSuperLikeAction}><Text style={{ fontSize: 24 }}>🌹</Text></Pressable>
         <Pressable style={[styles.actionBtn, styles.btnYes]} onPress={() => performSwipe('RIGHT')}><Heart color="#fff" size={30} fill="#fff" /></Pressable>
       </View>
 
@@ -411,6 +468,14 @@ const HomeScreen: React.FC = () => {
       />
 
       <GoldenRosePurchaseModal visible={showGoldenRoseModal} onClose={() => setShowGoldenRoseModal(false)} onPurchasePaystack={handleGoldenRosePurchasePaystack} onPurchaseGoogle={handleGoldenRosePurchaseGoogle} loading={purchaseLoading} />
+      <DirectMessagePurchaseModal
+        visible={showDirectMessageModal}
+        onClose={() => setShowDirectMessageModal(false)}
+        onPurchasePaystack={handleDirectMessagePurchasePaystack}
+        onPurchaseGoogle={handleDirectMessagePurchaseGoogle}
+        loading={purchaseLoading}
+        userName={suggestions[0]?.name}
+      />
       <PassportModal visible={showPassportModal} onClose={() => setShowPassportModal(false)} />
     </SafeAreaView>
   );

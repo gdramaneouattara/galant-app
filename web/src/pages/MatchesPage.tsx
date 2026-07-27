@@ -3,12 +3,15 @@ import { useAuth } from '../context/AuthContext';
 import { ShieldCheck, Gem, ChevronRight, MessageSquare, Search, Sparkles, Heart, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '@shared/lib/api';
+import { db } from '../firebase';
+import { collection, doc, getDoc, getDocs, orderBy, query, where } from 'firebase/firestore';
 
 const MatchesPage: React.FC = () => {
   const { user, profile, matches, users, messages, loading, t } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [rosesInboxCount, setRosesInboxCount] = useState(0);
+  const [venueChats, setVenueChats] = useState<any[]>([]);
 
   const likesCount = profile?.likes_count || 0;
 
@@ -29,6 +32,34 @@ const MatchesPage: React.FC = () => {
   useEffect(() => {
     void fetchRosesInboxCount();
   }, [fetchRosesInboxCount]);
+
+  const fetchVenueChats = useCallback(async () => {
+    if (!user) {
+      setVenueChats([]);
+      return;
+    }
+
+    try {
+      const snapshot = await getDocs(query(
+        collection(db, 'venue_chats'),
+        where('user_id', '==', user.uid),
+        orderBy('created_at', 'desc')
+      ));
+
+      const rows = await Promise.all(snapshot.docs.map(async (chatDoc) => {
+        const data = chatDoc.data();
+        const venueDoc = await getDoc(doc(db, 'venues', data.venue_id));
+        return { id: chatDoc.id, ...data, venues: venueDoc.exists() ? { id: venueDoc.id, ...venueDoc.data() } : null };
+      }));
+      setVenueChats(rows.filter((row) => !!row.venues));
+    } catch {
+      setVenueChats([]);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    void fetchVenueChats();
+  }, [fetchVenueChats]);
 
   const recentMatches = useMemo(() => {
     if (!user) return [];
@@ -58,6 +89,15 @@ const MatchesPage: React.FC = () => {
     if (!searchQuery) return base;
     return base.filter(c => c.user.name.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [user, messages, recentMatches, searchQuery]);
+
+  const filteredVenueChats = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    if (!normalizedQuery) return venueChats;
+    return venueChats.filter((chat) => {
+      const haystack = `${chat.venues?.name || ''} ${chat.venues?.benefit_description || ''}`.toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [venueChats, searchQuery]);
 
   if (loading) return (
     <div className="flex justify-center py-20">
@@ -174,7 +214,7 @@ const MatchesPage: React.FC = () => {
         </div>
 
         <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/40 border border-slate-100 overflow-hidden">
-          {conversations.length === 0 ? (
+          {conversations.length === 0 && filteredVenueChats.length === 0 ? (
             <div className="p-16 text-center space-y-4">
               <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
                 <MessageSquare size={40} className="text-slate-200" />
@@ -185,6 +225,37 @@ const MatchesPage: React.FC = () => {
             </div>
           ) : (
             <div className="divide-y divide-slate-50">
+              {filteredVenueChats.map((chat) => (
+                <button
+                  key={chat.id}
+                  onClick={() => navigate(`/chat/${chat.id}`, { state: { venueChatId: chat.id, venueName: chat.venues?.name } })}
+                  className="w-full flex items-center gap-5 p-6 hover:bg-amber-50/50 transition-all text-left group"
+                >
+                  <div className="relative flex-shrink-0">
+                    <img
+                      src={chat.venues?.photo_url || 'https://placehold.co/100x100'}
+                      className="w-16 h-16 rounded-2xl object-cover shadow-md group-hover:scale-105 transition-transform"
+                      alt=""
+                    />
+                    <div className="absolute -bottom-1 -right-1 bg-amber-500 text-white px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase border border-white">
+                      Guide
+                    </div>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <span className="font-black text-slate-900 text-lg tracking-tight group-hover:text-primary transition-colors">
+                      {chat.venues?.name}
+                    </span>
+                    <p className="text-sm truncate font-medium text-slate-500">
+                      {chat.venues?.benefit_description || 'Conversation avec un etablissement partenaire'}
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-100 p-1.5 rounded-lg group-hover:bg-primary/10 group-hover:text-primary transition-colors text-slate-300">
+                    <ChevronRight size={18} />
+                  </div>
+                </button>
+              ))}
               {conversations.map(({ match, user: otherUser, lastMessage, unreadCount, lastActivityAt }) => (
                 <button
                   key={match.id}
