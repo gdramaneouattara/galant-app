@@ -52,13 +52,14 @@ import AdminKyc from './pages/admin/AdminKyc';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminFinances from './pages/admin/AdminFinances';
 import AdminReports from './pages/admin/AdminReports';
+import { hasAdminProfileAccess } from './lib/adminAccess';
 
 const AuthButton: React.FC = () => {
   const { user, profile } = useAuth();
   if (user) {
     return (
       <div className="flex items-center gap-4">
-        {profile?.is_admin && (
+        {hasAdminProfileAccess(profile, user.uid) && (
           <Link to="/admin" className="hidden md:flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-wider border border-primary/20 shadow-sm hover:bg-primary hover:text-white transition-all">
             <LayoutDashboard size={14} />
             ADMIN

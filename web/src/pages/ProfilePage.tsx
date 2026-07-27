@@ -16,6 +16,7 @@ import PassportModal from '../components/PassportModal';
 import SettingsModal from '../components/SettingsModal';
 import GoalModal, { RELATIONSHIP_GOALS } from '../components/GoalModal';
 import { compressImageWeb } from '../lib/imageCompression';
+import { hasAdminProfileAccess } from '../lib/adminAccess';
 
 const ProfilePage: React.FC = () => {
   const { user, profile, logout, t } = useAuth();
@@ -42,7 +43,7 @@ const ProfilePage: React.FC = () => {
       return;
     }
 
-    if (profile?.is_admin === true) {
+    if (hasAdminProfileAccess(profile, user.uid)) {
       setHasAdminAccess(true);
       return;
     }
@@ -58,7 +59,7 @@ const ProfilePage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [user, profile?.is_admin]);
+  }, [user, profile?.id, profile?.is_admin]);
 
   // Éviter l'écran blanc si les données ne sont pas encore là
   if (loading && !profile) {

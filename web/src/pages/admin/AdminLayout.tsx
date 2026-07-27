@@ -11,15 +11,16 @@ import {
   ChevronRight,
   CreditCard
 } from 'lucide-react';
+import { hasAdminProfileAccess } from '../../lib/adminAccess';
 
 const AdminLayout: React.FC = () => {
-  const { profile, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const location = useLocation();
 
   if (loading) return null;
 
   // Sécurité : Si pas admin, retour à l'accueil
-  if (!profile?.is_admin) {
+  if (!hasAdminProfileAccess(profile, user?.uid)) {
     return <Navigate to="/" replace />;
   }
 

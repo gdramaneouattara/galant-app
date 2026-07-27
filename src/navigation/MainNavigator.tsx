@@ -30,6 +30,7 @@ import PartnerDashboardScreen from '../screens/partner/PartnerDashboardScreen';
 import PartnerPremiumScreen from '../screens/partner/PartnerPremiumScreen';
 import { COLORS } from '../data/mock';
 import { useApp } from '../state/AppContext';
+import { hasAdminProfileAccess } from '../lib/adminAccess';
 
 export type RootStackParamList = {
   AuthFlow: undefined;
@@ -180,7 +181,7 @@ const AdminStackNavigator = () => {
 
 const MainNavigator: React.FC = () => {
   const { currentUser, isAuthenticated } = useApp();
-  const isAdmin = !!currentUser?.is_admin;
+  const isAdmin = hasAdminProfileAccess(currentUser, currentUser?.id);
   const isPartner = !!currentUser?.is_partner;
 
   return (

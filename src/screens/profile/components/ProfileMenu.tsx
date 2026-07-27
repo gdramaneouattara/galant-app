@@ -5,6 +5,7 @@ import {
   Crown, Rocket, LogOut, LayoutDashboard
 } from 'lucide-react-native';
 import { COLORS } from '../../../data/mock';
+import { hasAdminProfileAccess } from '../../../lib/adminAccess';
 
 interface ProfileMenuProps {
   currentUser: any;
@@ -65,7 +66,7 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
 }) => {
   return (
     <View style={styles.section}>
-      {currentUser.is_admin ? (
+      {hasAdminProfileAccess(currentUser, currentUser.id) ? (
         <Pressable
           style={[styles.row, styles.rowAdmin]}
           onPress={onOpenAdmin}
