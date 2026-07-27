@@ -83,7 +83,8 @@ const requireAdmin = (req, res, next) => (
       userId: req.authUser?.uid || req.user?.id || null,
       profileId: req.user?.id || null,
       isAdminFieldType: typeof req.user?.is_admin,
-      isAdminFieldValue: req.user?.is_admin ?? null
+      isAdminFieldValue: req.user?.is_admin ?? null,
+      profileKeys: Object.keys(req.user || {})
     })
 );
 
