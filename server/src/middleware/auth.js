@@ -1,5 +1,6 @@
 const { auth, db } = require('../config/firebase');
 const { getLatestActiveSubscriptionForUser, refreshSubscriptionAutoRenewalForUser } = require('../services/subscriptionService');
+const { hasAdminAccess } = require('../utils/adminAccess');
 
 /**
  * FIREBASE AUTH MIDDLEWARE
@@ -26,6 +27,9 @@ const requireAuth = async (req, res, next) => {
     }
 
     let profile = { id: profileDoc.id, ...profileDoc.data() };
+    if (hasAdminAccess(profile)) {
+      profile.is_admin = true;
+    }
 
     // 3. Check Subscriptions (Migration needed for subscriptionService)
     let sub = await getLatestActiveSubscriptionForUser(userId);
@@ -71,7 +75,17 @@ const requireAuth = async (req, res, next) => {
   }
 };
 
-const requireAdmin = (req, res, next) => req.user?.is_admin ? next() : res.status(403).json({ error: 'admin_required' });
+const requireAdmin = (req, res, next) => (
+  hasAdminAccess(req.user)
+    ? next()
+    : res.status(403).json({
+      error: 'admin_required',
+      userId: req.authUser?.uid || req.user?.id || null,
+      profileId: req.user?.id || null,
+      isAdminFieldType: typeof req.user?.is_admin,
+      isAdminFieldValue: req.user?.is_admin ?? null
+    })
+);
 
 /**
  * BASE FIREBASE AUTH MIDDLEWARE
