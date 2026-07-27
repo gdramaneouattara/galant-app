@@ -61,14 +61,14 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                 <View style={[styles.superLikeReceivedPill, { backgroundColor: '#fbbf24' }]}>
                   <Text style={{ fontSize: 12 }}>✨</Text>
                   <Text style={[styles.superLikeReceivedPillText, { color: '#b45309' }]}>
-                    Golden Rose
+                    Boost Or
                   </Text>
                 </View>
               )}
               {profile.super_liked_me ? (
                 <View style={styles.superLikeReceivedPill}>
                   <Text style={{ fontSize: 12 }}>🌹</Text>
-                  <Text style={styles.superLikeReceivedPillText}>{t('roses')}</Text>
+                  <Text style={styles.superLikeReceivedPillText}>Rose recue</Text>
                 </View>
               ) : null}
               <ProfileBadges user={profile} />

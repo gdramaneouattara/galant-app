@@ -170,7 +170,7 @@ const HomeScreen: React.FC = () => {
     if (!currentUser) return;
     try {
       const payload = await apiRequest<any[]>('/api/super-likes/received', { requireAuth: true });
-      setRosesInboxCount((payload || []).filter((row) => row.status === 'PENDING').length);
+      setRosesInboxCount((payload || []).filter((row) => row.status === 'PENDING' || row.is_countable).length);
     } catch { setRosesInboxCount(0); }
   }, [currentUser]);
 

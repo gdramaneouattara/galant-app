@@ -313,7 +313,7 @@ const ProfilePage: React.FC = () => {
             </div>
             <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl shadow-xl flex flex-col items-center min-w-[75px] border border-white/50 dark:border-white/10 transition-all">
               <span className="text-lg font-black text-amber-600 leading-none">{profile.roses_count || 0}</span>
-              <span className="text-[7px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mt-1">Roses</span>
+              <span className="text-[7px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mt-1">Recues</span>
             </div>
           </div>
         </div>
@@ -384,7 +384,7 @@ const ProfilePage: React.FC = () => {
                onClick={() => {
                  const url = `https://galant.app/invite/${user.uid}`;
                  navigator.clipboard.writeText(url);
-                 showAlert('Lien copié !', 'Partagez ce lien avec vos amis. Une Rose d\'Or vous sera offerte pour chaque inscription certifiée.');
+                 showAlert('Lien copié !', 'Partagez ce lien avec vos amis. Une rose a consommer vous sera offerte pour chaque inscription certifiee.');
                }}>
             <div className="flex items-center gap-6">
               <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center text-primary group-hover:rotate-12 transition-transform">
@@ -392,7 +392,7 @@ const ProfilePage: React.FC = () => {
               </div>
               <div className="text-left">
                 <p className="text-lg font-black italic uppercase tracking-tighter leading-none mb-1">Inviter un Ami 🌹</p>
-                <p className="text-sm font-bold text-slate-400">Gagnez des Roses d'Or gratuitement</p>
+                <p className="text-sm font-bold text-slate-400">Gagnez des Roses a consommer gratuitement</p>
               </div>
             </div>
             <div className="bg-white/10 p-3 rounded-full group-hover:bg-primary transition-colors">
@@ -470,7 +470,7 @@ const ProfilePage: React.FC = () => {
               <ChevronRight size={16} className="text-slate-200 dark:text-slate-700" />
             </button>
 
-            {/* Action Item: Rose Box (Super Likes) */}
+            {/* Action Item: Received Roses (Super Likes) */}
             <button
               onClick={() => navigate('/roses')}
               className="flex items-center gap-4 p-4 rounded-2xl bg-amber-50/30 dark:bg-amber-900/10 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all text-left group"
@@ -479,9 +479,9 @@ const ProfilePage: React.FC = () => {
                 🌹
               </div>
               <div className="flex-1">
-                <p className="text-sm font-black text-amber-900 dark:text-amber-400 uppercase tracking-tight">Boîte de Roses</p>
+                <p className="text-sm font-black text-amber-900 dark:text-amber-400 uppercase tracking-tight">Roses recues</p>
                 <p className="text-[10px] font-bold text-amber-600">
-                  {rosesInboxCount > 0 ? `${rosesInboxCount} rose${rosesInboxCount > 1 ? 's' : ''} a traiter` : 'Vos Super Likes & Notes'}
+                  {rosesInboxCount > 0 ? `${rosesInboxCount} rose${rosesInboxCount > 1 ? 's' : ''} a traiter` : 'Super Likes recus'}
                 </p>
               </div>
               {rosesInboxCount > 0 && (

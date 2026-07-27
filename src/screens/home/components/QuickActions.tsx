@@ -82,7 +82,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({
           <View style={[styles.quickActionIconWrap, { backgroundColor: '#fbbf24' }]}>
             <Text style={{ fontSize: 10 }}>✨</Text>
           </View>
-          <Text style={[styles.quickActionTitle, { color: '#b45309' }]}>{t('rose_box')}</Text>
+          <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.quickActionTitle, { color: '#b45309' }]}>{t('golden_rose_title')}</Text>
         </View>
       </Pressable>
 
@@ -94,7 +94,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({
           <View style={[styles.quickActionIconWrap, { backgroundColor: colors.input }]}>
             <Text style={{ fontSize: 11 }}>🌹</Text>
           </View>
-          <Text style={[styles.quickActionTitle, { color: colors.text }]}>{t('roses')}</Text>
+          <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.quickActionTitle, { color: colors.text }]}>{t('rose_box')}</Text>
           {rosesInboxCount > 0 ? (
             <View style={styles.quickActionCountPill}>
               <Text style={styles.quickActionCountText}>{rosesInboxCount}</Text>
@@ -133,7 +133,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({
           <View style={[styles.quickActionIconWrap, { backgroundColor: colors.input }]}>
             <Heart color="#dc2626" size={14} />
           </View>
-          <Text style={[styles.quickActionTitle, { color: colors.text }]}>
+          <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.quickActionTitle, { color: colors.text }]}>
             {t('likes_received')}
           </Text>
           {likesInboxCount > 0 ? (
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  quickActionTitle: { fontSize: 11, fontWeight: '900' },
+  quickActionTitle: { flexShrink: 1, fontSize: 11, fontWeight: '900' },
   quickActionCountPill: {
     marginLeft: 'auto',
     minWidth: 18,

@@ -10,7 +10,7 @@ const LikesHeader: React.FC<LikesHeaderProps> = ({ onBack }) => {
   return (
     <View style={styles.header}>
       <View style={styles.headerCopy}>
-        <Text style={styles.title}>Boîte de Roses</Text>
+        <Text style={styles.title}>Roses recues</Text>
         <Text style={styles.subtitle}>Les roses reçues restent séparées des matchs et des messages.</Text>
       </View>
       <Pressable onPress={onBack} style={styles.backButton}>

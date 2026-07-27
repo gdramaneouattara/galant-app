@@ -174,7 +174,7 @@ const PremiumPage: React.FC = () => {
                   {[
                     'Tous les avantages de Standard',
                     'Mode Invisible (Inconito total) 🎭',
-                    '3 Roses d\'Or offertes chaque mois',
+                    '3 Roses a consommer offertes chaque mois',
                     'Priorité absolue sur le support'
                   ].map((f, i) => (
                     <li key={i} className="flex items-start gap-3 text-sm font-bold text-slate-300 leading-tight">
@@ -197,13 +197,13 @@ const PremiumPage: React.FC = () => {
           </div>
         </div>
 
-        {/* SECTION 2: BOUTIQUE DE ROSES - Boutique de luxe style */}
+        {/* SECTION 2: SOLDE ROSES - Boutique de luxe style */}
         <div className="lg:col-span-4 space-y-10">
           <h3 className="text-3xl font-black italic tracking-tighter text-slate-900 flex items-center gap-4">
             <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600">
                <Award size={24} />
             </div>
-            Boutique Roses
+            Solde Roses
           </h3>
 
           <div className="bg-gradient-to-b from-amber-50 to-white rounded-[3.5rem] p-10 border border-amber-100/50 shadow-xl space-y-8 relative overflow-hidden">
@@ -213,7 +213,7 @@ const PremiumPage: React.FC = () => {
             </div>
 
             <div className="text-center space-y-3 relative z-10">
-               <p className="text-[10px] font-black text-amber-600 uppercase tracking-[0.3em] leading-none">Votre Solde Privé</p>
+               <p className="text-[10px] font-black text-amber-600 uppercase tracking-[0.3em] leading-none">Solde Roses</p>
                <div className="flex items-center justify-center gap-3">
                   <span className="text-5xl font-black text-slate-950 tracking-tighter">{profile?.rose_balance || 0}</span>
                   <span className="text-2xl">🌹</span>
@@ -222,10 +222,10 @@ const PremiumPage: React.FC = () => {
 
             <div className="space-y-4 relative z-10">
               {[
-                { id: 'rose_1', label: '1 Rose d\'Or', sub: 'Unique Attention', price: 500, icon: '🌹' },
-                { id: 'rose_5', label: 'Pack Découverte', sub: '5 Roses d\'Or', price: 2500, icon: '✨' },
-                { id: 'rose_10', label: 'Pack Passion', sub: '10 Roses d\'Or', price: 5000, icon: '🔥' },
-                { id: 'golden_rose', label: 'Golden Rose', sub: 'Prestige Absolu', price: 2500, icon: '🏆' },
+                { id: 'rose_1', label: '1 Rose a consommer', sub: 'Solde disponible', price: 500, icon: '🌹' },
+                { id: 'rose_5', label: 'Pack Decouverte', sub: '5 Roses a consommer', price: 2500, icon: '✨' },
+                { id: 'rose_10', label: 'Pack Passion', sub: '10 Roses a consommer', price: 5000, icon: '🔥' },
+                { id: 'golden_rose', label: 'Rose d Or visibilite', sub: 'Boost prioritaire 3h', price: 2500, icon: '🏆' },
               ].map((pack) => (
                 <button
                   key={pack.id}
@@ -250,7 +250,7 @@ const PremiumPage: React.FC = () => {
             </div>
 
             <p className="text-[9px] text-center text-slate-400 font-medium px-4 leading-relaxed italic">
-              Les Roses d'Or vous permettent d'envoyer des notes parfumées et de briller instantanément auprès de vos coups de cœur.
+              Le Solde Roses sert aux attentions consommables. La Rose d'Or est un boost de visibilite separe.
             </p>
           </div>
         </div>

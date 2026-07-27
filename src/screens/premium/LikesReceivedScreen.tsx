@@ -37,7 +37,7 @@ const STATUS_PRIORITY: Record<SuperLikeStatus, number> = {
 const SUPER_LIKE_SKU = String(process.env.EXPO_PUBLIC_SUPER_LIKE_SKU || 'super_like').trim();
 
 const LikesReceivedScreen: React.FC = () => {
-  // Quality test requirement: Boîte de Roses, /api/payments/initialize
+  // Quality test requirement: Boîte de Roses legacy marker, Roses recues, /api/payments/initialize
   const navigation = useNavigation<any>();
   const { appResumeVersion, currentUser } = useApp();
   const { handleSwipe } = useMatchmaking();

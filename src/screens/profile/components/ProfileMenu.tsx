@@ -91,7 +91,7 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
         </View>
         <View style={styles.rowContent}>
           <Text style={[styles.rowLabel, { color: '#fff' }]}>Inviter un Ami 🌹</Text>
-          <Text style={[styles.rowSubLabel, { color: '#94a3b8' }]}>Gagnez des Roses d'Or</Text>
+          <Text style={[styles.rowSubLabel, { color: '#94a3b8' }]}>Gagnez des Roses a consommer</Text>
         </View>
         <ChevronRight size={18} color="#475569" />
       </Pressable>
@@ -196,7 +196,10 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
         <View style={[styles.rowIcon, { backgroundColor: colors.card }]}>
           <Text style={{ fontSize: 18 }}>🌹</Text>
         </View>
-        <Text style={[styles.rowLabel, { color: colors.text }]}>{t('rose_box')}</Text>
+        <View style={styles.rowContent}>
+          <Text style={[styles.rowLabel, { color: colors.text }]}>{t('rose_box')}</Text>
+          <Text style={[styles.rowSubLabel, { color: colors.textMuted }]}>Super Likes recus</Text>
+        </View>
         <ChevronRight size={18} color="#fda4af" />
       </Pressable>
 

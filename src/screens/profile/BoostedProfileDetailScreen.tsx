@@ -313,7 +313,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
               </Text>
             </View>
             <View style={styles.gardenBadgeInline}>
-              <Text style={styles.gardenTextInline}>🌹 Jardin de {profile.roses_count || 0} Roses</Text>
+              <Text style={styles.gardenTextInline}>🌹 {profile.roses_count || 0} roses recues</Text>
             </View>
           </View>
           {isBoosted ? (

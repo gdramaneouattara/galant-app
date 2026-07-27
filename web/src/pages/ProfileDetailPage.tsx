@@ -182,7 +182,7 @@ const ProfileDetailPage: React.FC = () => {
                 {profile.distance_km && <span> • {profile.distance_km.toFixed(1)} km</span>}
               </div>
               <div className="inline-block bg-rose-50 text-primary px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter">
-                🌹 Jardin de {profile.roses_count || 0} Roses
+                🌹 {profile.roses_count || 0} roses recues
               </div>
             </div>
 

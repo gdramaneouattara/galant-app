@@ -72,7 +72,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           </View>
         )}
         <View style={[styles.badge, styles.badgeGarden]}>
-          <Text style={styles.badgeTextGarden}>🌹 {t('roses')}: {currentUser.roses_count || 0}</Text>
+          <Text style={styles.badgeTextGarden}>🌹 {t('rose_box')}: {currentUser.roses_count || 0}</Text>
         </View>
         <View style={[styles.badge, styles.badgeGalanterie]}>
           <Text style={styles.badgeTextGalanterie}>💎 {currentUser.galanterie_score?.toFixed(1) || '5.0'} / 5</Text>
