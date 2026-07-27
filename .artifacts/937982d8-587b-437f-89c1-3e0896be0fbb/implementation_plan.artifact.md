@@ -1,22 +1,49 @@
-# Optimisation visuelle finale du profil (Web)
+# Implémentation du Comparateur de Prix "Le Marché Galant"
 
-Ce plan vise à corriger les derniers conflits visuels sur la page profil identifiés dans la capture d'écran de l'utilisateur, afin d'assurer un standing "Prestige".
+Ce plan détaille l'ajout d'un module de comparaison de prix autonome au sein de l'onglet **Apps**. Ce module permettra aux utilisateurs de rechercher des produits et de comparer les prix issus de différentes sources web, renforçant l'aspect utilitaire et quotidien de l'application.
 
 ## Proposed Changes
 
-### [Web] Pages
+### [Server] Module Marché (Backend)
 
-#### [MODIFY] [ProfilePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ProfilePage.tsx)
-- **Bouton Photo** : Déplacer l'icône caméra en **haut à droite** (`top-6 right-6`).
-- **Position du Nom** : Abaisser le bloc Nom/Âge pour qu'il soit juste au-dessus des statistiques et ne masque plus le visage.
-- **Style des Statistiques** :
-    - Réduire la largeur minimale (`min-w-[75px]`).
-    - Utiliser un fond blanc avec opacité (`bg-white/90`) pour une meilleure intégration visuelle sur la photo.
-    - S'assurer que les titres (Galanterie, Likes, Roses) sont parfaitement lisibles sur mobile.
+#### [NEW] [marketRoutes.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/routes/marketRoutes.js)
+- Définir les points d'accès API :
+    - `GET /api/market/search?q=...` : Rechercher des produits.
+    - `GET /api/market/trends` : Voir les produits populaires.
+
+#### [NEW] [marketController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/marketController.js)
+- Gérer la logique de recherche en consultant la collection Firestore `market_products`.
+- Si un produit n'est pas en base ou est obsolète, déclencher une demande de mise à jour au service de scrapper.
+
+#### [NEW] [scrapperService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/scrapperService.js)
+- Moteur d'extraction de données.
+- Pour la Phase 1, implémentation d'une logique basée sur `axios` pour extraire les prix de sites e-commerce majeurs (ex: Jumia, Amazon, ou sites locaux).
+
+#### [MODIFY] [index.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/index.js)
+- Monter les routes `/api/market`.
+
+### [Web] Interface "Le Marché" (Frontend)
+
+#### [NEW] [MarketPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/MarketPage.tsx)
+- Création d'une interface de recherche épurée.
+- Affichage des résultats sous forme de cartes élégantes avec historique de prix.
+- Bouton "Suivre le prix" pour recevoir des notifications (via Firestore `price_alerts`).
+
+#### [MODIFY] [AppsPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/AppsPage.tsx)
+- Ajouter l'application "Le Marché" avec l'icône `ShoppingCart`.
+
+#### [MODIFY] [App.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/App.tsx)
+- Déclarer la route `/market`.
+
+## Firestore Schema
+- `market_products` : `{ id, name, category, image_url, current_price, currency, source_url, last_scraped_at }`
+- `market_prices_history` : `{ product_id, price, date }`
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Ouvrir le profil sur navigateur mobile.
-2.  Vérifier que l'icône caméra est en haut et ne gêne plus la lecture des chiffres.
-3.  Confirmer que le nom est bien placé et que les statistiques sont élégamment alignées.
+1.  Ouvrir l'onglet **Apps**.
+2.  Cliquer sur **Le Marché**.
+3.  Effectuer une recherche (ex: "iPhone 15").
+4.  Vérifier que les résultats s'affichent avec les prix comparés.
+5.  Vérifier qu'aucune autre partie de l'application (Matchmaking, Chat) n'est impactée.

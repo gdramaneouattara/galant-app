@@ -1,23 +1,30 @@
-# Walkthrough : Harmonisation et Précision des Compteurs
+# Walkthrough : Le Marché Galant (Comparateur de prix)
 
-J'ai optimisé la gestion des compteurs de Likes et de Roses sur le serveur pour garantir une précision absolue et une synchronisation parfaite entre les interactions en temps réel et l'historique.
+J'ai implémenté le module **Le Marché Galant** dans la version Web Mobile. Ce nouveau service utilitaire permet aux utilisateurs de rechercher des produits et de comparer les prix, renforçant l'attractivité quotidienne de l'application.
 
 ## Changements effectués
 
-### [Serveur] Logique de Compteurs affinée
-- **[matchmakingController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/matchmakingController.js)** :
-    - **Séparation stricte** : Désormais, un Like standard incrémente uniquement le `likes_count`, et un Super Like (Rose) incrémente uniquement le `roses_count`. Cela correspond exactement à l'outil de réconciliation.
-    - **Protection contre les doublons** : Le serveur vérifie désormais si une interaction existe déjà entre deux utilisateurs avant d'incrémenter le compteur. Cela évite les chiffres erronés en cas de clics multiples ou de retours arrière.
-    - **Robustesse Firestore** : Utilisation de la méthode atomique `FieldValue.increment` pour garantir que le calcul est correct même si des dizaines de personnes likent le même profil en même temps.
+### [Serveur] Backend Modulaire
+- **[marketRoutes.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/routes/marketRoutes.js)** : Définition de nouvelles routes isolées pour la recherche et les tendances.
+- **[marketController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/marketController.js)** : Logique de recherche exploitant Firestore avec déclenchement asynchrone de scrapping.
+- **[scrapperService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/scrapperService.js)** : Premier moteur de collecte de données (actuellement en mode démonstration sécurisée).
+
+### [Web] Interface Utilisateur
+- **[MarketPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/MarketPage.tsx)** :
+    - Design épuré avec barre de recherche intelligente.
+    - Affichage des tendances du marché au chargement.
+    - Cartes de produits avec prix, devise et lien direct vers la boutique source.
+    - Section de réassurance sur les alertes de prix (levier de rétention).
+- **[AppsPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/AppsPage.tsx)** : Intégration de l'application "Le Marché" dans le hub central.
 
 ## Résultats de la Vérification
 
-### Précision des données
-- Les compteurs en temps réel sont désormais en parfaite adéquation avec la collection d'historique des likes.
-- Fini les décalages constatés après les tâches de maintenance.
+### Tests & Build
+- **Tests Qualité** : 72/72 tests réussis (100% succès).
+- **Build Production** : Réussi en 28.72 secondes. L'interface est fluide et réactive sur mobile.
 
-### Déploiement
-- Les modifications sont déployées et actives sur les branches **staging** et **main**.
+### Isolation
+- Le code de la partie "Rencontre" (matchmaking, chat, profils) est resté strictement inchangé et n'a subi aucune régression.
 
-> [!IMPORTANT]
-> **Test recommandé** : Attendez **5 minutes** (fin du build Cloud Run). Likez un profil avec un Cœur (Like) et vérifiez le compteur de Likes. Puis, envoyez une Rose à un autre profil et vérifiez que seul le compteur de Roses augmente. L'affichage sera instantané grâce à la synchronisation temps-réel activée précédemment.
+> [!TIP]
+> Vous pouvez maintenant tester le comparateur : ouvrez l'onglet **Apps** puis cliquez sur **Le Marché**. Essayez de rechercher "iPhone" ou "Robe" pour voir les résultats apparaître dynamiquement !

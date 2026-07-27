@@ -1,7 +1,14 @@
-# Task: Final Fix for Like/Rose Counters & Stability
+# Implémentation du Marché Galant (Web Mobile)
 
-- `[ ]` [Server] Harden counter increment logic in `matchmakingController.js`
-- `[ ]` [Server] Ensure default counter values in `maintenanceService.js`
-- `[ ]` [Web] Double-check icon imports in `InteractionPurchaseModal.tsx`
-- `[ ]` Run quality tests
-- `[ ]` Deploy and sync branches
+- `[x]` Mise à jour du Backend
+    - `[x]` Créer `server/src/routes/marketRoutes.js`
+    - `[x]` Créer `server/src/controllers/marketController.js`
+    - `[x]` Créer `server/src/services/scrapperService.js` (Base)
+    - `[x]` Monter les routes dans `server/src/index.js`
+- `[x]` Mise à jour du Frontend Web
+    - `[x]` Créer `web/src/pages/MarketPage.tsx`
+    - `[x]` Ajouter l'accès dans `web/src/pages/AppsPage.tsx`
+    - `[x]` Ajouter la route dans `web/src/App.tsx`
+- `[x]` Vérification & Build
+    - `[x]` Exécuter les tests de qualité
+    - `[x]` Lancer le build de production
