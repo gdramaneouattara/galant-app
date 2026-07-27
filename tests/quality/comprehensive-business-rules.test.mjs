@@ -35,6 +35,21 @@ test('Rules: StatusScreen exists and is accessible', async () => {
   assert.match(code, /StatusScreen/);
 });
 
+test('Rules: Stories move into discovery and Apps replaces the stories tab', async () => {
+  const homeScreen = await read('src/screens/home/HomeScreen.tsx');
+  const navigator = await read('src/navigation/MainNavigator.tsx');
+  const webApp = await read('web/src/App.tsx');
+  const webDiscover = await read('web/src/pages/DiscoverPage.tsx');
+
+  assert.match(homeScreen, /\/api\/statuses/);
+  assert.match(homeScreen, /storyBubbles/);
+  assert.match(navigator, /AppsTab/);
+  assert.match(navigator, /AppsScreen/);
+  assert.match(webApp, /\/apps/);
+  assert.match(webDiscover, /\/api\/statuses/);
+  assert.match(webDiscover, /initialStatusId/);
+});
+
 test('Rules: ProfileScreen manages internationalization', async () => {
   const code = await read('src/screens/profile/ProfileScreen.tsx');
   assert.match(code, /language/);

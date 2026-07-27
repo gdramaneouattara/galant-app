@@ -23,6 +23,7 @@ import AgendaPage from './pages/AgendaPage';
 import GuidePage from './pages/GuidePage';
 import ExperiencesPage from './pages/ExperiencesPage';
 import StoriesPage from './pages/StoriesPage';
+import AppsPage from './pages/AppsPage';
 import LikesInboxPage from './pages/LikesInboxPage';
 import RosesInboxPage from './pages/RosesInboxPage';
 import BoostPage from './pages/BoostPage';
@@ -31,9 +32,9 @@ import {
   Briefcase,
   Calendar,
   Languages,
-  Film,
   Heart as HeartIcon,
   LayoutDashboard,
+  LayoutGrid,
   MapPin,
   Compass,
   MessageSquare,
@@ -132,11 +133,11 @@ const MobileNav: React.FC = () => {
         <span className="text-[9px] font-black uppercase tracking-tighter">Sorties</span>
       </Link>
 
-      <Link to="/stories" className="flex flex-col items-center gap-1 text-slate-400 group">
+      <Link to="/apps" className="flex flex-col items-center gap-1 text-slate-400 group">
         <div className="p-1 group-hover:text-primary transition-colors">
-          <Film size={22} />
+          <LayoutGrid size={22} />
         </div>
-        <span className="text-[9px] font-black uppercase tracking-tighter">{t('stories')}</span>
+        <span className="text-[9px] font-black uppercase tracking-tighter">Apps</span>
       </Link>
 
       <Link to="/profile" className="flex flex-col items-center gap-1 text-slate-400 group">
@@ -168,7 +169,7 @@ const Header = () => {
             <Link to="/" className="hover:text-primary transition-colors">{t('discover')}</Link>
             <Link to="/matches" className="hover:text-primary transition-colors">{t('messages')}</Link>
             <Link to="/experiences" className="hover:text-primary transition-colors">Sorties</Link>
-            <Link to="/stories" className="hover:text-primary transition-colors">{t('stories')}</Link>
+            <Link to="/apps" className="hover:text-primary transition-colors">Apps</Link>
             <Link to="/agenda" className="hover:text-primary transition-colors">{t('agenda')}</Link>
             <Link to="/guide" className="hover:text-primary transition-colors">Guide</Link>
             <Link to="/premium" className="text-amber-500 hover:text-amber-600 transition-colors flex items-center gap-1">
@@ -242,6 +243,7 @@ const AppContent: React.FC = () => {
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/partner-signup" element={<PartnerSignupPage />} />
           <Route path="/stories" element={<StoriesPage />} />
+          <Route path="/apps" element={<AppsPage />} />
           <Route path="/matches" element={<MatchesPage />} />
           <Route path="/likes" element={<LikesInboxPage />} />
           <Route path="/roses" element={<RosesInboxPage />} />

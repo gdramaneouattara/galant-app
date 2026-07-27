@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ref, getDownloadURL, uploadBytes } from 'firebase/storage';
 import { Plus, Heart, X, Play, Film, Lock, Share2, Users, Crown, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -34,6 +34,8 @@ interface Status {
 const StoriesPage: React.FC = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const routeState = location.state as { initialStatusId?: string; openComposer?: boolean } | null;
   const { handleSwipe } = useMatchmaking();
   const { purchaseWithPaystack, purchaseLoading } = useSubscription();
 
@@ -58,6 +60,7 @@ const StoriesPage: React.FC = () => {
   const [isPurchaseOpen, setIsPurchaseOpen] = useState(false);
   const [storyUploadUnlocked, setStoryUploadUnlocked] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const initialActionHandledRef = useRef(false);
 
   const canPublishForFree = !!profile?.is_premium || !!profile?.is_vip;
   const canPublishNow = canPublishForFree || storyUploadUnlocked;
@@ -122,6 +125,19 @@ const StoriesPage: React.FC = () => {
     }
     fileInputRef.current?.click();
   };
+
+  useEffect(() => {
+    if (initialActionHandledRef.current || loading) return;
+    if (routeState?.initialStatusId && statuses.some((status) => status.id === routeState.initialStatusId)) {
+      initialActionHandledRef.current = true;
+      setSelectedStatusId(routeState.initialStatusId);
+      return;
+    }
+    if (routeState?.openComposer) {
+      initialActionHandledRef.current = true;
+      window.setTimeout(() => { void openStoryPicker(); }, 350);
+    }
+  }, [loading, routeState?.initialStatusId, routeState?.openComposer, statuses]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

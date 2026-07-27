@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useMatchmaking } from '@shared/hooks/useMatchmaking';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIcon, SlidersHorizontal, Sparkles, RefreshCw, ChevronRight, Crown, Gem, MessageCircle } from 'lucide-react';
+import { ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIcon, SlidersHorizontal, Sparkles, RefreshCw, ChevronRight, Crown, Gem, MessageCircle, Plus } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
 import FilterModal from '../components/FilterModal';
@@ -14,6 +14,7 @@ const DiscoverPage: React.FC = () => {
   const { suggestions, loading, fetchSuggestions, handleSwipe } = useMatchmaking();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [storyBubbles, setStoryBubbles] = useState<any[]>([]);
   const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean; type: 'SUPER_LIKE' | 'DIRECT_MESSAGE'; userName: string; targetId: string } | null>(null);
   const navigate = useNavigate();
 
@@ -78,6 +79,17 @@ const DiscoverPage: React.FC = () => {
       }).catch(() => {});
     }
   }, [user, loading, suggestions.length]);
+
+  useEffect(() => {
+    if (!user) {
+      setStoryBubbles([]);
+      return;
+    }
+
+    apiRequest<any[]>('/api/statuses', { requireAuth: true })
+      .then((items) => setStoryBubbles((items || []).slice(0, 20)))
+      .catch(() => setStoryBubbles([]));
+  }, [user]);
 
   const onSwipe = async (direction: 'LEFT' | 'RIGHT') => {
     const target = suggestions[0];
@@ -248,6 +260,42 @@ const DiscoverPage: React.FC = () => {
             <div className="absolute top-3 right-3 w-3 h-3 bg-primary rounded-full border-2 border-white"></div>
           )}
         </button>
+      </div>
+
+      <div className="mb-8 -mx-4 px-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none]">
+        <div className="flex items-start gap-4 min-w-max pb-1">
+          <button
+            type="button"
+            onClick={() => navigate('/stories', { state: { openComposer: true } })}
+            className="w-[72px] flex flex-col items-center gap-2 group"
+          >
+            <div className="w-16 h-16 rounded-full border-2 border-primary bg-white dark:bg-slate-900 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+              <Plus size={28} className="text-primary" strokeWidth={3} />
+            </div>
+            <span className="w-full text-center text-[10px] font-black text-slate-700 dark:text-slate-300 truncate">Ma story</span>
+          </button>
+
+          {storyBubbles.map((story) => (
+            <button
+              type="button"
+              key={story.id}
+              onClick={() => navigate('/stories', { state: { initialStatusId: story.id } })}
+              className="w-[72px] flex flex-col items-center gap-2 group"
+            >
+              <div className={`relative w-16 h-16 rounded-full p-0.5 border-2 ${story.profiles?.is_premium ? 'border-amber-400' : 'border-primary'} group-hover:scale-105 transition-transform`}>
+                <img
+                  src={story.profiles?.photos?.[0] || 'https://placehold.co/100x100'}
+                  alt=""
+                  className="w-full h-full rounded-full object-cover bg-slate-200"
+                />
+                <span className="absolute -right-0.5 -bottom-0.5 w-5 h-5 rounded-full bg-primary border-2 border-white dark:border-slate-950" />
+              </div>
+              <span className="w-full text-center text-[10px] font-black text-slate-700 dark:text-slate-300 truncate">
+                {story.profiles?.name || 'Story'}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {currentProfile ? (
