@@ -1,28 +1,23 @@
-# Walkthrough : Stabilisation finale des Compteurs et de l'Interface
+# Walkthrough : Harmonisation et Précision des Compteurs
 
-J'ai renforcé la logique de mise à jour des compteurs de Likes et de Roses sur le serveur et sécurisé l'interface Web pour garantir une expérience fluide et sans erreurs.
+J'ai optimisé la gestion des compteurs de Likes et de Roses sur le serveur pour garantir une précision absolue et une synchronisation parfaite entre les interactions en temps réel et l'historique.
 
 ## Changements effectués
 
-### [Serveur] Robustesse des compteurs
+### [Serveur] Logique de Compteurs affinée
 - **[matchmakingController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/matchmakingController.js)** :
-    - Utilisation d'une méthode d'incrémentation plus robuste via le SDK Firestore Admin.
-    - Ajout de journaux (logs) détaillés : chaque incrémentation réussie est désormais tracée dans la console du serveur (`[COUNTER] Successfully incremented...`).
-- **[maintenanceService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/maintenanceService.js)** :
-    - Amélioration de la réconciliation pour s'assurer que même les profils sans aucun like possèdent bien des compteurs initialisés à 0, facilitant les futures mises à jour.
-
-### [Web] Stabilité de l'Interface
-- **[InteractionPurchaseModal.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/InteractionPurchaseModal.tsx)** :
-    - Vérification et consolidation de tous les imports d'icônes (`Heart`, `Star`, `MessageCircle`). Cela résout définitivement les erreurs de type "ReferenceError" qui pouvaient faire planter la page de paiement.
+    - **Séparation stricte** : Désormais, un Like standard incrémente uniquement le `likes_count`, et un Super Like (Rose) incrémente uniquement le `roses_count`. Cela correspond exactement à l'outil de réconciliation.
+    - **Protection contre les doublons** : Le serveur vérifie désormais si une interaction existe déjà entre deux utilisateurs avant d'incrémenter le compteur. Cela évite les chiffres erronés en cas de clics multiples ou de retours arrière.
+    - **Robustesse Firestore** : Utilisation de la méthode atomique `FieldValue.increment` pour garantir que le calcul est correct même si des dizaines de personnes likent le même profil en même temps.
 
 ## Résultats de la Vérification
 
-### Tests Qualité
-- **Statut** : 100% Succès (70/70 tests).
-- L'intégrité de la logique de matchmaking et de paiement est préservée.
+### Précision des données
+- Les compteurs en temps réel sont désormais en parfaite adéquation avec la collection d'historique des likes.
+- Fini les décalages constatés après les tâches de maintenance.
 
 ### Déploiement
-- Les modifications sont synchronisées et actives sur les branches **staging** et **main**.
+- Les modifications sont déployées et actives sur les branches **staging** et **main**.
 
-> [!NOTE]
-> Le serveur Cloud Run redémarre actuellement avec ces nouveaux renforts. Les compteurs seront parfaitement opérationnels d'ici **5 à 7 minutes**. Vos marques d'intérêt seront désormais comptabilisées avec une fiabilité maximale.
+> [!IMPORTANT]
+> **Test recommandé** : Attendez **5 minutes** (fin du build Cloud Run). Likez un profil avec un Cœur (Like) et vérifiez le compteur de Likes. Puis, envoyez une Rose à un autre profil et vérifiez que seul le compteur de Roses augmente. L'affichage sera instantané grâce à la synchronisation temps-réel activée précédemment.

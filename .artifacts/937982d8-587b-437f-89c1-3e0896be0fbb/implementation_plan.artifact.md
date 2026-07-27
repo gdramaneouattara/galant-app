@@ -1,36 +1,37 @@
-# Correction finale du compteur de Likes et Roses
+# Correction des compteurs et Gestion Administrateur
 
-Ce plan vise à sécuriser l'incrémentation des compteurs et à garantir leur affichage en temps réel, en corrigeant les instabilités potentielles du serveur et du client.
+Ce plan vise à résoudre les problèmes d'incrémentation des compteurs de Likes/Roses, à expliquer la logique d'attribution automatique de Roses, et à fournir les outils pour créer un compte administrateur.
 
-## Problèmes identifiés
-1.  **Fiabilité de l'incrément** : L'utilisation de `admin.firestore.FieldValue.increment` peut être instable selon la version exacte du SDK. Nous allons utiliser l'import direct du module `firestore`.
-2.  **État initial** : Certains profils anciens n'ont pas les champs `likes_count` ou `roses_count`, ce qui peut ralentir la première mise à jour.
-3.  **Crashes Frontend** : Les erreurs de type `Heart is not defined` empêchaient l'application de fonctionner correctement, bloquant potentiellement l'envoi des swipes.
+## 1. Création d'un compte Administrateur
 
-## Proposed Changes
+J'ai créé un script dédié pour promouvoir n'importe quel compte au rang d'administrateur.
 
-### [Server] Logique de Compteurs
+### Procédure :
+1.  Récupérez l'**UID** de votre compte (disponible dans la console Firebase > Authentication).
+2.  Exécutez la commande suivante dans votre terminal à la racine du projet :
+    ```bash
+    node scripts/make-admin.js VOTRE_UID_ICI
+    ```
+3.  Une fois fait, votre onglet "Moi" affichera un bouton "Admin" sur le Web et débloquera les fonctionnalités de gestion.
 
-#### [MODIFY] [matchmakingController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/matchmakingController.js)
-- Importer `FieldValue` directement depuis `firebase-admin/firestore`.
-- Utiliser `FieldValue.increment(1)` pour plus de robustesse.
-- Ajouter des logs plus verbeux pour confirmer chaque incrémentation réussie en base.
+## 2. Problème des compteurs (Likes / Roses)
 
-#### [MODIFY] [maintenanceService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/maintenanceService.js)
-- S'assurer que tous les profils ont au moins `0` dans ces champs lors de la réconciliation.
+Les compteurs ne s'incrémentaient pas à cause d'une instabilité dans l'utilisation des transactions atomiques sur certains environnements.
 
-### [Web] Interface
+### Proposed Changes
+- **Simplification de `handleSwipe`** : Remplacer la transaction complexe par une mise à jour directe et sécurisée du document de profil pour garantir l'incrémentation systématique.
+- **Vérification de l'import** : M'assurer que `FieldValue` est utilisé via `admin.firestore.FieldValue` pour une compatibilité maximale avec le serveur Cloud Run.
 
-#### [MODIFY] [InteractionPurchaseModal.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/InteractionPurchaseModal.tsx)
-- S'assurer que toutes les icônes (`Heart`, `Star`, `MessageCircle`) sont correctement importées pour éviter tout crash.
+## 3. Attribution automatique d'une Rose
+
+Le fait qu'un utilisateur reçoive une rose à la création n'est pas un bug, mais une **fonctionnalité de bienvenue** :
+- **Règle actuelle** : Si un profil est complété à 100% (Rayonnement Galant), le système offre automatiquement **1 Rose d'Or** pour récompenser l'élégance et encourager la première rencontre.
+- **Action** : Je vais ajouter un journal de bord (Log) clair dans le code pour que cette récompense soit traçable.
 
 ## Verification Plan
 
-### Automated Tests
-- Relancer `npm run test:quality` pour valider l'absence de régressions.
-
 ### Manual Verification
-1.  Lancer la réconciliation automatique (en redémarrant le serveur).
-2.  Effectuer un Like depuis un compte de test.
-3.  Vérifier les logs serveur pour la mention `[COUNTER] Increment success`.
-4.  Vérifier sur le profil destinataire que le chiffre a bien augmenté sans rafraîchir (grâce à l'écouteur temps réel déjà en place).
+1.  Promouvoir un compte en Admin via le script.
+2.  Vérifier l'accès au Dashboard Admin.
+3.  Liker un profil et vérifier l'incrémentation immédiate sur le destinataire.
+4.  Compléter un profil à 100% et vérifier la notification de Rose offerte.
