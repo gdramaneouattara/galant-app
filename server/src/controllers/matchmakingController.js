@@ -624,7 +624,6 @@ const getSuperLikesReceived = async (req, res) => {
     const snapshot = await db.collection('likes')
       .where('liked_id', '==', me.id)
       .where('is_super_like', '==', true)
-      .orderBy('created_at', 'desc')
       .get();
 
     const rows = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
