@@ -182,6 +182,8 @@ const ChatScreen: React.FC = () => {
     return (
       <ChatMessageItem
         item={item}
+        matchId={activeMatchId}
+        venueChatId={activeVenueChatId}
         isMine={isMine}
         avatarUri={targetUser?.photos?.[0] || 'https://placehold.co/80x80'}
         mediaUrl={item.media_url || null}

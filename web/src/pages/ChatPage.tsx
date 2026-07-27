@@ -84,36 +84,48 @@ const ChatPage: React.FC = () => {
     }
   };
 
-  const handleTranslate = async (msgId: string, content: string) => {
+  const handleTranslate = async (msg: any) => {
     if (!profile?.is_premium) {
       showAlert(t('premium_join'), t('translation_premium_only'));
       return;
     }
 
-    if (translations[msgId]) {
+    if (translations[msg.id]) {
       // Toggle
       setTranslations(prev => {
         const next = { ...prev };
-        delete next[msgId];
+        delete next[msg.id];
         return next;
       });
       return;
     }
 
-    setTranslatingIds(prev => new Set(prev).add(msgId));
+    const targetLang = String(language || 'fr').toLowerCase().split('-')[0];
+    const cachedTranslation = msg.metadata?.translations?.[targetLang];
+    if (typeof cachedTranslation === 'string' && cachedTranslation.trim()) {
+      setTranslations(prev => ({ ...prev, [msg.id]: cachedTranslation }));
+      return;
+    }
+
+    setTranslatingIds(prev => new Set(prev).add(msg.id));
     try {
       const res = await apiRequest<{ translatedText: string }>('/api/ai/translate', {
         method: 'POST',
         requireAuth: true,
-        body: JSON.stringify({ text: content, targetLang: language })
+        body: JSON.stringify({
+          text: msg.content,
+          targetLang,
+          matchId,
+          messageId: msg.id
+        })
       });
-      setTranslations(prev => ({ ...prev, [msgId]: res.translatedText }));
+      setTranslations(prev => ({ ...prev, [msg.id]: res.translatedText }));
     } catch (e) {
       showAlert('Erreur', 'Échec de la traduction.');
     } finally {
       setTranslatingIds(prev => {
         const next = new Set(prev);
-        next.delete(msgId);
+        next.delete(msg.id);
         return next;
       });
     }
@@ -273,7 +285,7 @@ const ChatPage: React.FC = () => {
                   {/* Bouton Traduction */}
                   {!isMine && msg.content && !isVenue && !isEvent && (
                     <button
-                      onClick={() => handleTranslate(msg.id, msg.content)}
+                      onClick={() => handleTranslate(msg)}
                       className="mt-2 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 border-t border-slate-100 pt-2 w-full text-left hover:text-primary transition-colors"
                     >
                       {translatingIds.has(msg.id) ? (

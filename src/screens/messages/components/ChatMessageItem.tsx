@@ -19,6 +19,8 @@ interface ChatMessage {
 
 interface ChatMessageItemProps {
   item: ChatMessage;
+  matchId?: string;
+  venueChatId?: string;
   isMine: boolean;
   avatarUri: string;
   mediaUrl: string | null;
@@ -29,7 +31,7 @@ interface ChatMessageItemProps {
 }
 
 const ChatMessageItem = memo<ChatMessageItemProps>(({
-  item, isMine, avatarUri, mediaUrl, displayTime, t, is_premium, language
+  item, matchId, venueChatId, isMine, avatarUri, mediaUrl, displayTime, t, is_premium, language
 }) => {
   const hasText = !!item.content;
   const hasImage = item.message_type === 'IMAGE' && !!mediaUrl;
@@ -39,6 +41,8 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
   const isEvent = (item.message_type as any) === 'EVENT_SUGGESTION';
   const isSerenade = !!item.metadata?.is_serenade;
   const isExpired = isSerenade && !!item.metadata?.played_at && !isMine;
+  const targetLang = String(language || 'fr').toLowerCase().split('-')[0];
+  const cachedTranslation = item.metadata?.translations?.[targetLang];
 
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -55,13 +59,24 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
       setShowOriginal(!showOriginal);
       return;
     }
+    if (typeof cachedTranslation === 'string' && cachedTranslation.trim()) {
+      setTranslatedText(cachedTranslation);
+      setShowOriginal(false);
+      return;
+    }
 
     try {
       setIsTranslating(true);
       const res = await apiRequest<{ translatedText: string }>('/api/ai/translate', {
         method: 'POST',
         requireAuth: true,
-        body: JSON.stringify({ text: item.content, targetLang: language })
+        body: JSON.stringify({
+          text: item.content,
+          targetLang,
+          matchId,
+          venueChatId,
+          messageId: item.id
+        })
       });
       setTranslatedText(res.translatedText);
       setShowOriginal(false);
