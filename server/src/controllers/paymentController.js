@@ -192,4 +192,4 @@ const appleVerify = async (req, res) => {
   }
 };
 
-module.exports = { initializePayment, verifyPayment, googleVerify, appleVerify };
+module.exports = { initializePayment, verifyPayment, googleVerify, appleVerify, handleWebhook };
