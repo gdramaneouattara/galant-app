@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Crown, Gem, MapPin, Rocket, ShieldCheck, Sparkles } from 'lucide-react';
+import { Calendar, Crown, Gem, MapPin, Rocket, ShieldCheck, Sparkles, ShoppingCart } from 'lucide-react';
 
 const APPS = [
   {
@@ -50,6 +50,14 @@ const APPS = [
     icon: Gem,
     color: 'text-pink-600',
     bg: 'bg-pink-50 dark:bg-pink-500/10',
+  },
+  {
+    title: 'Le Marché',
+    subtitle: 'Comparez les prix et optimisez vos achats.',
+    href: '/market',
+    icon: ShoppingCart,
+    color: 'text-indigo-500',
+    bg: 'bg-indigo-50 dark:bg-indigo-500/10',
   },
 ];
 
