@@ -97,23 +97,26 @@ const scrapeProductIfNeeded = async (query) => {
   console.log(`[SCRAPER] Investigating market for: ${query}`);
 
   try {
-    // 1. Check if we already have many results for this exact query recently
-    const existing = await db.collection('market_products')
+    // 1. Check existing results
+    const existingSnap = await db.collection('market_products')
       .where('keywords', 'array-contains', query)
-      .limit(5)
+      .limit(10)
       .get();
 
-    if (existing.size >= 5) {
-      console.log(`[SCRAPER] Already have enough data for ${query}`);
-      return existing.docs.map(d => ({ id: d.id, ...d.data() }));
-    }
+    const existingResults = existingSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
     // 2. Try Real Scrapping on Jumia
     let newResults = await fetchJumiaPrices(query);
 
-    // 3. Fallback to simulation if real scrapping failed or was empty
+    // 3. Fallback logic
     if (newResults.length === 0) {
-      console.log(`[SCRAPER] Real scrape failed or empty for ${query}. Using intelligent fallback simulation.`);
+      // IF we already have ANY results (even old estimates), return them without adding more junk
+      if (existingResults.length > 0) {
+        console.log(`[SCRAPER] Real scrape failed for ${query}, but we have existing data. Skipping estimate creation.`);
+        return existingResults;
+      }
+
+      console.log(`[SCRAPER] Empty market for ${query}. Generating one-time smart estimate.`);
       const keywords = query.split(/\s+/).filter(w => w.length > 2);
       const brands = ['Samsung', 'Sony', 'LG', 'Hisense', 'TCL', 'Apple', 'Huawei'];
       const priceBase = query.includes('télé') || query.includes('tv') ? 150000 : 50000;
@@ -124,8 +127,8 @@ const scrapeProductIfNeeded = async (query) => {
           name: `${brands[Math.floor(Math.random() * brands.length)]} ${query.toUpperCase()} - Crystal Edition`,
           current_price: priceBase + Math.floor(Math.random() * 80000),
           currency: 'XOF',
-          image_url: 'https://placehold.co/400x400?text=Premium+Choice',
-          source_url: 'https://jumia.ci/search?q=' + encodeURIComponent(query),
+          image_url: 'https://placehold.co/400x400?text=Estimation+Galant',
+          source_url: 'https://www.jumia.ci/catalog/?q=' + encodeURIComponent(query),
           keywords: [query, ...keywords],
           is_real: false,
           last_scraped_at: now
@@ -135,12 +138,15 @@ const scrapeProductIfNeeded = async (query) => {
 
     const savedResults = [];
     for (const p of newResults) {
-      const docRef = await db.collection('market_products').add(p);
-      savedResults.push({ id: docRef.id, ...p });
+      // Add only if not already in existing by name (simple dedupe)
+      if (!existingResults.some(er => er.name === p.name)) {
+        const docRef = await db.collection('market_products').add(p);
+        savedResults.push({ id: docRef.id, ...p });
+      }
     }
 
-    console.log(`[SCRAPER] Processed ${savedResults.length} results for ${query}`);
-    return savedResults;
+    console.log(`[SCRAPER] Processed ${savedResults.length} new results for ${query}`);
+    return [...existingResults, ...savedResults];
   } catch (error) {
     console.error('[SCRAPER GLOBAL ERROR]', error.message);
     return [];
