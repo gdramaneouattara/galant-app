@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiRequest } from '@shared/lib/api';
-import { Search, ShoppingCart, TrendingUp, ChevronLeft, Loader2, ArrowRight, ExternalLink, Filter, ShieldCheck } from 'lucide-react';
+import { Search, ShoppingCart, TrendingUp, ChevronLeft, Loader2, ArrowRight, ExternalLink, Filter, ShieldCheck, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface Product {
