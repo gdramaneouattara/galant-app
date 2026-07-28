@@ -95,6 +95,38 @@ const cleanupExpiredChatMedia = async () => {
 };
 
 /**
+ * Checks for expired security timers and triggers alerts.
+ */
+const processSecurityAlerts = async () => {
+  const now = new Date().toISOString();
+  try {
+    const snapshot = await db.collection('security_logs')
+      .where('status', '==', 'PENDING')
+      .where('expires_at', '<=', now)
+      .get();
+
+    if (snapshot.empty) return;
+
+    const batch = db.batch();
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      console.warn(`🚨 [SENTINEL] Alert triggered for user ${data.user_id} (${data.user_name})`);
+
+      batch.update(doc.ref, {
+        status: 'INCIDENT_TRIGGERED',
+        triggered_at: now
+      });
+
+      // Logic to send actual SMS/WhatsApp would go here
+      // For now, we log the incident for admin review
+    }
+    await batch.commit();
+  } catch (error) {
+    console.error('[CRON] Error processing security alerts:', error.message);
+  }
+};
+
+/**
  * Initializes all periodic background tasks.
  * Runs every hour.
  */
@@ -105,8 +137,14 @@ const initCronJobs = () => {
   cleanupExpiredStatuses();
   cleanupExpiredChatMedia();
   reconcileAllCounters();
+  processSecurityAlerts();
 
-  // Then run every hour (3600000 ms)
+  // Frequent interval for security alerts (every 1 minute)
+  setInterval(() => {
+    processSecurityAlerts();
+  }, 60000);
+
+  // Hourly interval for maintenance
   setInterval(() => {
     cleanupExpiredStatuses();
     cleanupExpiredChatMedia();
@@ -114,4 +152,4 @@ const initCronJobs = () => {
   }, 3600000);
 };
 
-module.exports = { cleanupExpiredStatuses, cleanupExpiredChatMedia, initCronJobs };
+module.exports = { cleanupExpiredStatuses, cleanupExpiredChatMedia, initCronJobs, processSecurityAlerts };

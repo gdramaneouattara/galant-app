@@ -1,48 +1,40 @@
-# Implémentation de "La Sentinelle" (Sécurité & Discrétion) - Isolation Totale
+# Revue de "La Sentinelle" (V2) - Sécurité Active & Personnalisation
 
-Ce plan détaille l'ajout du module de sécurité personnel au sein de l'onglet **Apps** pour la version Web Mobile. Fidèle à notre architecture modulaire, ce service sera totalement indépendant de la partie "Rencontres" et du "Marché Galant".
-
-## Architecture d'Isolation
-
-1.  **Backend** : Création de fichiers dédiés `/server/src/controllers/securityController.js` et `/server/src/routes/securityRoutes.js`. Aucune interaction avec les contrôleurs existants.
-2.  **Base de données** : Utilisation d'une collection Firestore isolée `security_logs` pour les timers de sécurité.
-3.  **Frontend** : Création d'une page autonome `/web/src/pages/SentinelPage.tsx`. Aucun import croisé avec les pages de matchmaking ou de marché.
+Ce plan vise à rendre le module **La Sentinelle** totalement opérationnel en ajoutant une surveillance en arrière-plan des minuteurs et en permettant une personnalisation poussée de l'Appel Fantôme.
 
 ## Proposed Changes
 
-### [Server] Module Sécurité (Backend)
+### [Server] Surveillance Active (Backend)
 
-#### [NEW] [securityRoutes.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/routes/securityRoutes.js)
-- Points d'accès :
-    - `POST /api/security/schedule` : Enregistre un timer de sécurité.
-    - `POST /api/security/confirm` : Annule le timer en cours.
+#### [MODIFY] [cronService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/cronService.js)
+- Implémenter `processSecurityAlerts` :
+    - Scanne la collection `security_logs` toutes les minutes.
+    - Identifie les logs dont le statut est `PENDING` et dont l'heure `expires_at` est dépassée.
+    - Marque ces logs comme `INCIDENT_TRIGGERED`.
+    - Prépare l'envoi de la notification d'alerte.
+- Mettre à jour `initCronJobs` pour inclure cette vérification chaque minute.
 
-#### [NEW] [securityController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/securityController.js)
-- Logique de gestion des alertes.
-- Préparation de l'envoi WhatsApp/SMS (Mode "Log" pour la Phase 1 jusqu'à configuration des clés API).
+#### [MODIFY] [securityController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/securityController.js)
+- Ajouter une fonction `triggerImmediateSOS` :
+    - Enregistre immédiatement un log avec le statut `SOS_IMMEDIAT`.
+    - Prépare l'envoi d'une alerte urgente sans délai.
 
-#### [MODIFY] [index.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/index.js)
-- Enregistrement de la nouvelle branche de routes `/api/security`.
+### [Web Mobile] Personnalisation & Contrôle (Frontend)
 
-### [Web] Interface "La Sentinelle" (Frontend)
-
-#### [NEW] [SentinelPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/SentinelPage.tsx)
-- **Tableau de bord** : Interface de réglage du timer (15 min, 30 min, 1h).
+#### [MODIFY] [SentinelPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/SentinelPage.tsx)
 - **Appel Fantôme** :
-    - Bouton d'activation immédiate ou programmée (ex: "Appelez-moi dans 2 minutes").
-    - **Simulation réaliste** : Overlay plein écran avec photo d'un contact ("Bureau", "Maman", "Chauffeur"), sonnerie et boutons Décrocher/Raccrocher.
-    - **Mode Conversation** : Si décroché, l'app affiche un écran d'appel actif avec un chronomètre.
-
-#### [MODIFY] [AppsPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/AppsPage.tsx)
-- Ajout de l'icône **🛡️ La Sentinelle** dans le hub.
-
-#### [MODIFY] [App.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/App.tsx)
-- Déclaration de la route `/sentinel`.
+    - Ajouter un champ de texte pour le **Nom de l'appelant** (ex: "Maman", "Chauffeur").
+    - Ajouter une sélection de photo (avatar) pour l'appelant.
+- **Tableau de bord de Sécurité** :
+    - Affichage du temps restant pour le minuteur actif.
+    - Bouton **"SOS IMMÉDIAT"** (rouge, bien visible) pour alerter les proches instantanément.
+- **Ressources** : Améliorer le pré-chargement de la sonnerie pour éviter tout délai.
 
 ## Verification Plan
 
 ### Manual Verification
 1.  Accéder à **Apps > La Sentinelle**.
-2.  Déclencher un **Appel Fantôme** immédiat : vérifier le réalisme de l'écran et de la sonnerie.
-3.  Programmer un **Check-in** de 1 min : vérifier que l'alerte de confirmation s'affiche au bout du délai.
-4.  Vérifier que les autres fonctionnalités (Swipes, Marché) ne sont pas ralenties ou modifiées.
+2.  Changer le nom de l'appelant en "Maître Ouattara" et déclencher l'appel fantôme.
+3.  Lancer un minuteur de 1 minute. Attendre l'expiration sans cliquer sur "Je vais bien".
+4.  Vérifier dans Firestore que le statut du log est passé en `INCIDENT_TRIGGERED`.
+5.  Cliquer sur le bouton **SOS IMMÉDIAT** et vérifier la création du log correspondant.
