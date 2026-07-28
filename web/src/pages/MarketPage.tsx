@@ -166,7 +166,8 @@ const MarketPage: React.FC = () => {
             </div>
           ))}
         </div>
-      </div>
+      )}
+    </div>
 
       {/* Retention Card */}
       <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-8 rounded-[3rem] text-white space-y-4 shadow-2xl relative overflow-hidden">
