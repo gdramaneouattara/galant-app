@@ -10,6 +10,7 @@ interface Product {
   currency: string;
   image_url: string;
   source_url: string;
+  is_real?: boolean;
 }
 
 const MarketPage: React.FC = () => {
@@ -98,7 +99,17 @@ const MarketPage: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {(products.length > 0 ? products : trends).map((item) => (
-            <div key={item.id} className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-xl border border-slate-50 dark:border-white/5 flex gap-6 group hover:border-primary/20 transition-all">
+            <div key={item.id} className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-xl border border-slate-50 dark:border-white/5 flex gap-6 group hover:border-primary/20 transition-all relative overflow-hidden">
+              {/* Badge Source */}
+              <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm border ${
+                item.is_real
+                  ? 'bg-green-50 text-green-600 border-green-100 dark:bg-green-500/10 dark:border-green-500/20'
+                  : 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-500/10 dark:border-amber-500/20'
+              }`}>
+                <ShieldCheck size={10} className={item.is_real ? 'text-green-500' : 'text-amber-500'} />
+                {item.is_real ? 'Vérifié Jumia' : 'Estimation Galant'}
+              </div>
+
               <div className="w-24 h-24 rounded-3xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex-shrink-0">
                 <img src={item.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={item.name} />
               </div>
