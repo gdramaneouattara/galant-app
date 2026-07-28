@@ -42,6 +42,7 @@ try { const notificationRoutes = require('./routes/notificationRoutes'); app.use
 try { const likeRoutes = require('./routes/likeRoutes'); app.use('/api/likes', likeRoutes); } catch (e) { mountErrors['/api/likes'] = e.message; console.error('❌ Failed /api/likes', e.message); }
 try { const superLikeRoutes = require('./routes/superLikeRoutes'); app.use('/api/super-likes', superLikeRoutes); } catch (e) { mountErrors['/api/super-likes'] = e.message; console.error('❌ Failed /api/super-likes', e.message); }
 try { const mediaRoutes = require('./routes/mediaRoutes'); app.use('/api/media', mediaRoutes); } catch (e) { mountErrors['/api/media'] = e.message; console.error('❌ Failed /api/media', e.message); }
+try { const securityRoutes = require('./routes/securityRoutes'); app.use('/api/security', securityRoutes); } catch (e) { mountErrors['/api/security'] = e.message; console.error('❌ Failed /api/security', e.message); }
 try { const trackingRoutes = require('./routes/trackingRoutes'); app.use('/api/tracking', trackingRoutes); } catch (e) { mountErrors['/api/tracking'] = e.message; console.error('❌ Failed /api/tracking', e.message); }
 try { const marketRoutes = require('./routes/marketRoutes'); app.use('/api/market', marketRoutes); } catch (e) { mountErrors['/api/market'] = e.message; console.error('❌ Failed /api/market', e.message); }
 try { const yangoRoutes = require('./routes/yangoRoutes'); app.use('/api/yango', yangoRoutes); } catch (e) { mountErrors['/api/yango'] = e.message; console.error('❌ Failed /api/yango', e.message); }
