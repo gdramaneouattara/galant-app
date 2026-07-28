@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Crown, Gem, MapPin, Rocket, ShieldCheck, Sparkles, ShoppingCart } from 'lucide-react';
+import { Calendar, Crown, Gem, MapPin, Rocket, ShieldCheck, Sparkles, ShoppingCart, Shield } from 'lucide-react';
 
 const APPS = [
   {
