@@ -24,6 +24,7 @@ import GuidePage from './pages/GuidePage';
 import ExperiencesPage from './pages/ExperiencesPage';
 import StoriesPage from './pages/StoriesPage';
 import MarketPage from './pages/MarketPage';
+import SentinelPage from './pages/SentinelPage';
 import AppsPage from './pages/AppsPage';
 import LikesInboxPage from './pages/LikesInboxPage';
 import RosesInboxPage from './pages/RosesInboxPage';
@@ -244,6 +245,7 @@ const AppContent: React.FC = () => {
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/partner-signup" element={<PartnerSignupPage />} />
           <Route path="/market" element={<MarketPage />} />
+          <Route path="/sentinel" element={<SentinelPage />} />
           <Route path="/stories" element={<StoriesPage />} />
           <Route path="/apps" element={<AppsPage />} />
           <Route path="/matches" element={<MatchesPage />} />

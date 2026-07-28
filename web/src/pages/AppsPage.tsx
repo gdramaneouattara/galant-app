@@ -59,6 +59,14 @@ const APPS = [
     color: 'text-indigo-500',
     bg: 'bg-indigo-50 dark:bg-indigo-500/10',
   },
+  {
+    title: 'La Sentinelle',
+    subtitle: 'Securite privee et appel fantome discret.',
+    href: '/sentinel',
+    icon: Shield,
+    color: 'text-blue-600',
+    bg: 'bg-blue-50 dark:bg-blue-600/10',
+  },
 ];
 
 const AppsPage: React.FC = () => {
