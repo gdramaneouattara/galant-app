@@ -1,7 +1,11 @@
-# Task: Transparence des sources et Optimisation du Scrapping
+# Task: Advanced Scrapper & Cache Management
 
-- `[ ]` [Server] Mettre à jour `scrapperService.js` (champ `is_real` et headers)
-- `[ ]` [Server] Vérifier `marketController.js` pour la transmission du champ
-- `[ ]` [Web] Mettre à jour `MarketPage.tsx` avec les badges visuels
-- `[ ]` Exécuter les tests de qualité
-- `[ ]` Déployer et synchroniser les branches
+- `[/]` Backend: Implement session-based scraping
+    - `[ ]` Add `tough-cookie` and `axios-cookiejar-support` to `server/package.json`
+    - `[ ]` Refactor `scrapperService.js` for session handling
+- `[/]` Maintenance: Force cache refresh
+    - `[ ]` Implement `clearMarketCache` in `marketController.js`
+    - `[ ]` Add route `POST /api/market/clear-cache`
+- `[ ]` Verification
+    - `[ ]` Run quality tests
+    - `[ ]` Deploy and test with real query

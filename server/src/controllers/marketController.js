@@ -51,4 +51,31 @@ const getTrends = async (req, res) => {
   }
 };
 
-module.exports = { searchProducts, getTrends };
+/**
+ * Clears market products for a specific keyword.
+ */
+const clearMarketCache = async (req, res) => {
+  const { q } = req.body;
+  if (!q) return res.status(400).json({ error: 'missing_query' });
+
+  try {
+    const query = q.toLowerCase().trim();
+    const snapshot = await db.collection('market_products')
+      .where('keywords', 'array-contains', query)
+      .get();
+
+    if (snapshot.empty) {
+      return res.json({ success: true, deleted: 0 });
+    }
+
+    const batch = db.batch();
+    snapshot.docs.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+
+    res.json({ success: true, deleted: snapshot.size });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { searchProducts, getTrends, clearMarketCache };
