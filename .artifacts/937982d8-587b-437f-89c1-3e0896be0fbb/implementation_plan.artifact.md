@@ -1,27 +1,32 @@
-# Amélioration de la réactivité du Marché Galant
+# Activation du Scrapping Réel pour le Marché Galant (Phase 2)
 
-Ce plan vise à corriger le problème de résultats vides lors de la première recherche d'un produit et à rendre le moteur de comparaison plus intelligent et réactif.
-
-## Problème identifié
-Actuellement, lors de la toute première recherche d'un terme (ex: "télévision 42 pouces"), le serveur cherche en base de données, ne trouve rien, renvoie une liste vide à l'utilisateur, et **ensuite** seulement lance le scrapping en arrière-plan. L'utilisateur doit donc chercher deux fois pour voir des résultats.
+Ce plan vise à passer du mode simulation au mode réel pour le comparateur de prix, en commençant par l'intégration de **Jumia Côte d'Ivoire**.
 
 ## Proposed Changes
 
-### [Server] Module Marché
+### [Server] Module Marché (Scrapping)
 
-#### [MODIFY] [marketController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/marketController.js)
-- Modifier `searchProducts` pour **attendre** (`await`) le résultat du scrapping si la base de données est vide pour cette recherche.
-- Améliorer la recherche par mots-clés : au lieu de chercher la phrase exacte, nous allons chercher si au moins un des mots importants est présent.
-- Retourner les résultats fraîchement scrapés immédiatement à l'utilisateur.
+#### [MODIFY] [package.json](file:///C:/Users/UTILISATEUR/galant-app/server/package.json)
+- Ajouter la dépendance `cheerio` pour l'analyse du code HTML des sites distants.
 
 #### [MODIFY] [scrapperService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/scrapperService.js)
-- Ajouter une vérification pour éviter de scrapper plusieurs fois le même terme en un temps court (cache de 24h).
-- Améliorer la génération des mots-clés pour inclure des variations (minuscules, sans accents si possible).
+- Implémenter la fonction `fetchJumiaPrices(query)` :
+    - Utiliser `axios` avec des en-têtes (Headers) réalistes pour simuler un navigateur.
+    - Utiliser `cheerio` pour extraire les noms, prix, images et liens des produits sur `jumia.ci`.
+    - Nettoyer les données (ex: transformer "150 000 FCFA" en nombre `150000`).
+- Mettre à jour `scrapeProductIfNeeded` pour :
+    - Tenter d'abord le scrapping réel sur Jumia.
+    - En cas d'échec (blocage Cloudflare ou erreur réseau), basculer automatiquement sur la simulation intelligente (Fallback) pour ne pas laisser l'utilisateur sans réponse.
+
+## User Review Required
+
+> [!WARNING]
+> **Anti-Bot & Stabilité** : Les sites comme Jumia utilisent des protections (Cloudflare). Il est possible que le scrapping soit parfois bloqué selon l'adresse IP du serveur Cloud Run. La stratégie de "Fallback" (simulation) que j'ai incluse garantit que l'application reste fonctionnelle même en cas de blocage.
 
 ## Verification Plan
 
 ### Manual Verification
 1.  Ouvrir **Le Marché**.
-2.  Saisir un nouveau terme jamais recherché auparavant (ex: "Machine à café").
-3.  Vérifier que les résultats s'affichent **dès la première validation** (le temps de chargement sera un peu plus long, environ 2-3 secondes, ce qui est normal pour une recherche en direct).
-4.  Confirmer que la recherche par mots partiels fonctionne aussi.
+2.  Rechercher un produit spécifique (ex: "Samsung A54").
+3.  Vérifier que les résultats affichés correspondent aux produits actuellement en vente sur Jumia CI.
+4.  Vérifier que les liens "Voir sur la boutique" redirigent bien vers les fiches produits réelles.
