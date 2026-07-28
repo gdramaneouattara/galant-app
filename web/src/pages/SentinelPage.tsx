@@ -62,6 +62,24 @@ const SentinelPage: React.FC = () => {
     }
   };
 
+  const acceptCall = () => {
+    setIsFakeCallRinging(false);
+    if (ringtoneRef.current) {
+        ringtoneRef.current.pause();
+        ringtoneRef.current.currentTime = 0;
+    }
+  };
+
+  const endCall = () => {
+    setIsFakeCallActive(false);
+    setIsFakeCallRinging(false);
+    setCallDuration(0);
+    if (ringtoneRef.current) {
+        ringtoneRef.current.pause();
+        ringtoneRef.current.currentTime = 0;
+    }
+  };
+
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
