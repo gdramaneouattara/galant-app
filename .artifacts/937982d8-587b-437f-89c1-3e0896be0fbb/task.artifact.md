@@ -1,14 +1,13 @@
-# Implémentation de "La Sentinelle" (Sécurité & Discrétion)
+# Task: Revue de La Sentinelle (V2)
 
-- `[/]` Backend - Module Sécurité
-    - `[ ]` Créer `server/src/routes/securityRoutes.js`
-    - `[ ]` Créer `server/src/controllers/securityController.js`
-    - `[ ]` Enregistrer les routes dans `server/src/index.js`
-- `[/]` Frontend - Interface Web Mobile
-    - `[ ]` Créer `web/src/pages/SentinelPage.tsx` (Tableau de bord + Appel Fantôme)
-    - `[ ]` Intégrer l'icône dans `web/src/pages/AppsPage.tsx`
-    - `[ ]` Ajouter la route dans `web/src/App.tsx`
-- `[ ]` Vérification & Déploiement
+- `[/]` Backend - Surveillance
+    - `[ ]` Ajouter `processSecurityAlerts` dans `cronService.js`
+    - `[ ]` Ajouter `triggerImmediateSOS` dans `securityController.js`
+    - `[ ]` Exposer la route `/api/security/sos`
+- `[/]` Frontend - Personnalisation
+    - `[ ]` Ajouter les champs "Nom" et "Photo" pour l'appel fantôme dans `SentinelPage.tsx`
+    - `[ ]` Ajouter le bouton "SOS IMMÉDIAT" dans `SentinelPage.tsx`
+    - `[ ]` Implémenter le compte à rebours visuel
+- `[ ]` Vérification & Build
     - `[ ]` Exécuter les tests de qualité
-    - `[ ]` Build de production
-    - `[ ]` Commit et Push (staging/main)
+    - `[ ]` Lancer le build de production
