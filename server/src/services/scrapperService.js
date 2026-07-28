@@ -1,6 +1,11 @@
 const { db } = require('../config/firebase');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const { wrapper } = require('axios-cookiejar-support');
+const { CookieJar } = require('tough-cookie');
+
+const jar = new CookieJar();
+const client = wrapper(axios.create({ jar, withCredentials: true }));
 
 /**
  * Parses Jumia price string (e.g. "150,000 FCFA") to Number.
@@ -11,25 +16,40 @@ const parsePrice = (priceStr) => {
   return parseInt(digits) || 0;
 };
 
+const COMMON_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+  'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+  'Accept-Encoding': 'gzip, deflate, br',
+  'Connection': 'keep-alive',
+  'Upgrade-Insecure-Requests': '1',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+  'Sec-Fetch-User': '?1',
+  'Cache-Control': 'no-cache'
+};
+
 /**
- * Fetches real results from Jumia CI.
+ * Fetches real results from Jumia CI with session support.
  */
 const fetchJumiaPrices = async (query) => {
-  const url = `https://www.jumia.ci/catalog/?q=${encodeURIComponent(query)}`;
   try {
-    const { data } = await axios.get(url, {
-      timeout: 10000,
+    // 1. Visit homepage first to establish session/cookies
+    console.log('[JUMIA] Establishing session...');
+    await client.get('https://www.jumia.ci/', {
+      headers: COMMON_HEADERS,
+      timeout: 8000
+    }).catch(e => console.warn('[JUMIA] Session init warning:', e.message));
+
+    // 2. Perform search with established session
+    const searchUrl = `https://www.jumia.ci/catalog/?q=${encodeURIComponent(query)}`;
+    const { data } = await client.get(searchUrl, {
+      timeout: 12000,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-        'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Upgrade-Insecure-Requests': '1',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Sec-Fetch-User': '?1',
-        'Cache-Control': 'no-cache'
+        ...COMMON_HEADERS,
+        'Referer': 'https://www.jumia.ci/',
+        'Sec-Fetch-Site': 'same-origin'
       }
     });
 
@@ -39,10 +59,10 @@ const fetchJumiaPrices = async (query) => {
     const keywords = query.split(/\s+/).filter(w => w.length > 2);
 
     const productsFound = $('article.prd');
-    console.log(`[JUMIA] HTML fetched. Articles found: ${productsFound.length}`);
+    console.log(`[JUMIA] Results page fetched. Articles found: ${productsFound.length}`);
 
     productsFound.each((i, el) => {
-      if (i >= 6) return;
+      if (i >= 8) return;
       const name = $(el).find('h3.name').text().trim();
       const priceRaw = $(el).find('div.prc').first().text().trim();
       const relativeLink = $(el).find('a.core').attr('href');
@@ -64,7 +84,7 @@ const fetchJumiaPrices = async (query) => {
 
     return results;
   } catch (error) {
-    console.error(`[JUMIA SCRAPE ERROR] ${query}:`, error.response?.status === 403 ? 'BLOCKED BY CLOUDFLARE' : error.message);
+    console.error(`[JUMIA SCRAPE ERROR] ${query}:`, error.response?.status === 403 ? 'BLOCKED' : error.message);
     return [];
   }
 };
