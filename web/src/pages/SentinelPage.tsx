@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiRequest } from '@shared/lib/api';
-import { Shield, PhoneIncoming, Clock, CheckCircle, ChevronLeft, X, Phone, User, AlertTriangle, Loader2 } from 'lucide-react';
+import { Shield, PhoneIncoming, Clock, CheckCircle, ChevronLeft, X, Phone, User, AlertTriangle, Loader2, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showAlert } from '@shared/lib/ui-bridge';
 
