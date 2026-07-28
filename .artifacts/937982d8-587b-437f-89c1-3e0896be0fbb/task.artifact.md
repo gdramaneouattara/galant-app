@@ -1,8 +1,7 @@
-# Amélioration du Marché Galant (Réactivité & Recherche)
+# Activation du Scrapping Réel (Phase 2)
 
-- `[/]` Mise à jour du Backend
-    - `[ ]` Modifier `server/src/controllers/marketController.js` pour attendre le scrapping si nécessaire
-    - `[ ]` Améliorer `server/src/services/scrapperService.js` pour retourner les résultats et gérer les mots-clés
-- `[ ]` Vérification & Build
-    - `[ ]` Exécuter les tests de qualité
-    - `[ ]` Déployer et synchroniser les branches
+- `[ ]` Ajouter `cheerio` aux dépendances du serveur
+- `[ ]` Implémenter la logique de scrapping Jumia dans `scrapperService.js`
+- `[ ]` Mettre à jour `scrapeProductIfNeeded` pour utiliser Jumia en priorité
+- `[ ]` Exécuter les tests de qualité
+- `[ ]` Déployer et synchroniser les branches
