@@ -18,6 +18,7 @@ const MarketPage: React.FC = () => {
   const [query, setQuery] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [trends, setTrends] = useState<Product[]>([]);
 
   const fetchTrends = async () => {
@@ -33,12 +34,22 @@ const MarketPage: React.FC = () => {
     fetchTrends();
   }, []);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = async (e?: React.FormEvent, isRefresh = false) => {
+    if (e) e.preventDefault();
     if (!query.trim()) return;
 
-    setLoading(true);
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
     try {
+      if (isRefresh) {
+        await apiRequest('/api/market/clear-cache', {
+          method: 'POST',
+          requireAuth: true,
+          body: JSON.stringify({ q: query })
+        });
+      }
+
       const res = await apiRequest<{ products: Product[] }>(`/api/market/search?q=${encodeURIComponent(query)}`, {
         requireAuth: true
       });
@@ -47,6 +58,7 @@ const MarketPage: React.FC = () => {
       console.error('Search error:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -90,14 +102,36 @@ const MarketPage: React.FC = () => {
       {/* Results or Trends */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
-            {products.length > 0 ? <Filter size={14} /> : <TrendingUp size={14} />}
-            {products.length > 0 ? `${products.length} Résultats trouvés` : 'Tendances du moment'}
-          </h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
+              {products.length > 0 ? <Filter size={14} /> : <TrendingUp size={14} />}
+              {products.length > 0 ? `${products.length} Résultats` : 'Tendances'}
+            </h3>
+            {products.length > 0 && (
+              <button
+                onClick={() => handleSearch(undefined, true)}
+                disabled={refreshing || loading}
+                className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 dark:bg-white/5 text-slate-500 hover:text-primary rounded-full text-[9px] font-black uppercase tracking-widest transition-all"
+              >
+                {refreshing ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />}
+                Actualiser
+              </button>
+            )}
+          </div>
           <div className="h-px flex-1 bg-slate-100 dark:bg-white/5 ml-4"></div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {refreshing && (
+          <div className="py-20 text-center space-y-4 animate-in fade-in duration-500">
+            <div className="w-16 h-16 bg-primary/5 text-primary rounded-3xl flex items-center justify-center mx-auto animate-bounce">
+              <ShoppingCart size={32} />
+            </div>
+            <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-[10px]">Scan profond du marché en cours...</p>
+          </div>
+        )}
+
+        {!refreshing && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {(products.length > 0 ? products : trends).map((item) => (
             <div key={item.id} className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-xl border border-slate-50 dark:border-white/5 flex gap-6 group hover:border-primary/20 transition-all relative overflow-hidden">
               {/* Badge Source */}
