@@ -6,8 +6,8 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   User as UserIcon, MapPin, Heart, Sparkles, Image as ImageIcon,
-  Camera, CheckCircle2, ChevronRight, ChevronLeft, Loader2,
-  Rocket, Gem, ShieldCheck, Lock
+  CheckCircle2, ChevronRight, ChevronLeft, Loader2,
+  Rocket, Gem, ShieldCheck, Lock, Camera
 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { apiRequest } from '@shared/lib/api';
