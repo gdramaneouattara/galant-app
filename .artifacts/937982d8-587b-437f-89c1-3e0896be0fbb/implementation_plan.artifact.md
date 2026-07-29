@@ -1,45 +1,39 @@
-# Raccordement WhatsApp pour La Sentinelle (Phase 5)
+# La Sentinelle V5 : Paramètres d'Urgence et Géolocalisation
 
-Ce plan vise à rendre les alertes de sécurité réelles en connectant le serveur Galant à l'API **Meta Cloud (WhatsApp Business)**. Les proches recevront désormais un message direct sur leur WhatsApp en cas d'urgence.
+Ce plan vise à rendre l'alerte SOS de La Sentinelle extrêmement précise en incluant les coordonnées GPS de l'utilisateur, le lieu du rendez-vous, ainsi que l'identité de la personne rencontrée, le tout envoyé à deux contacts de confiance pré-enregistrés.
 
 ## Proposed Changes
 
-### [Server] Module de Communication
+### [Server] Module Sécurité & Profil
 
-#### [NEW] [whatsappService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/whatsappService.js)
-- Création d'un service isolé pour gérer l'envoi de messages via Meta.
-- Fonction `sendSecurityAlert(contacts, userDetails, meetingDetails)` :
-    - Boucle sur la liste des contacts de confiance.
-    - Utilise `axios` pour envoyer une requête `POST` vers l'API Meta Graph.
-    - Utilise un "Template Message" (requis par Meta pour les messages proactifs).
-    - Formatage du message incluant le lieu du rendez-vous et l'identité de la personne rencontrée.
-
-#### [MODIFY] [cronService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/cronService.js)
-- Importer `whatsappService`.
-- Dans `processSecurityAlerts`, appeler `sendSecurityAlert` dès qu'un incident est détecté (`INCIDENT_TRIGGERED`).
+#### [MODIFY] [profileController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/profileController.js)
+- Ajouter la possibilité de stocker de façon permanente les `emergency_contacts` (max 2) dans le document de l'utilisateur.
 
 #### [MODIFY] [securityController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/securityController.js)
-- Dans `triggerImmediateSOS`, appeler instantanément `sendSecurityAlert`.
+- Mettre à jour `triggerImmediateSOS` et `scheduleCheckIn` pour accepter les coordonnées GPS (`latitude`, `longitude`).
+- Formater le message WhatsApp pour inclure un lien **Google Maps** vers la position de l'utilisateur.
 
-#### [MODIFY] [.env.example](file:///C:/Users/UTILISATEUR/galant-app/server/.env.example)
-- Ajouter les variables nécessaires :
-    - `WHATSAPP_PHONE_NUMBER_ID`
-    - `WHATSAPP_ACCESS_TOKEN`
-    - `WHATSAPP_TEMPLATE_NAME`
+### [Web Mobile] Interface Utilisateur
 
-## User Review Required
-
-> [!CAUTION]
-> **Validation Meta** : Pour envoyer des alertes WhatsApp proactives, vous devez créer un compte sur [Meta for Developers](https://developers.facebook.com/) et faire valider un "Message Template".
-> - Exemple de template recommandé : *"Alerte de sécurité Galant : Votre proche {{1}} a besoin d'assistance. Dernier lieu connu : {{2}}. Personne rencontrée : {{3}}."*
-> - Le code sera prêt, mais l'envoi réel ne fonctionnera qu'après cette étape de configuration.
+#### [MODIFY] [SentinelPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/SentinelPage.tsx)
+- **Pré-configuration des contacts** :
+    - Ajouter une section "Paramètres de Sécurité" permettant d'enregistrer ses 2 contacts favoris de manière permanente.
+- **Bouton SOS Intelligent** :
+    - Au clic sur le bouton SOS :
+        1. Demander la permission GPS au navigateur.
+        2. Récupérer les coordonnées exactes.
+        3. Envoyer le SOS avec les détails du rendez-vous (lieu, nom rencontre) et le lien Maps.
+- **Saisie des détails** : Conserver les champs de lieu et de rencontre ajoutés en V4.
 
 ## Verification Plan
 
-### Automated Tests
-- Relancer `npm run test:quality` pour valider l'absence de régressions.
-
 ### Manual Verification
-1.  Activer le mode "Log" dans le service WhatsApp (en attendant les clés).
-2.  Déclencher un SOS.
-3.  Vérifier dans les logs du serveur que le message WhatsApp est généré avec les bonnes informations (nom, lieu, contact rencontre).
+1.  Ouvrir **Apps > La Sentinelle**.
+2.  Enregistrer deux contacts de test dans les paramètres permanents.
+3.  Saisir un lieu (ex: "Lounge Riviera") et un nom de rencontre.
+4.  Cliquer sur le bouton rouge **SOS**.
+5.  Autoriser la localisation sur le téléphone.
+6.  Vérifier dans les logs serveur que le message WhatsApp généré contient :
+    - Votre nom.
+    - Le lieu et le nom de la rencontre.
+    - Un lien cliquable `https://www.google.com/maps?q=lat,lon`.

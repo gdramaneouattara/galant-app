@@ -9,7 +9,7 @@ const updateProfile = async (req, res) => {
     bio, interests, relationship_goal, photos,
     city, country, latitude, longitude,
     passport_city, passport_country, passport_latitude, passport_longitude, is_passport_active,
-    radiance_score, onboarding_completed
+    radiance_score, onboarding_completed, emergency_contacts
   } = req.body;
   const userId = req.user.id;
 
@@ -24,6 +24,7 @@ const updateProfile = async (req, res) => {
   if (longitude !== undefined) updates.longitude = longitude;
   if (radiance_score !== undefined) updates.radiance_score = radiance_score;
   if (onboarding_completed !== undefined) updates.onboarding_completed = onboarding_completed;
+  if (emergency_contacts !== undefined) updates.emergency_contacts = Array.isArray(emergency_contacts) ? emergency_contacts.slice(0, 2) : [];
   updates.updated_at = new Date().toISOString();
 
   if (latitude !== undefined || longitude !== undefined) {
