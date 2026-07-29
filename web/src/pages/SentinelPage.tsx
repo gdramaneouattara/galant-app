@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { apiRequest } from '@shared/lib/api';
 import { Shield, PhoneIncoming, Clock, CheckCircle, ChevronLeft, X, Phone, User, AlertTriangle, Loader2, Camera, Plus, Trash2, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { showAlert } from '@shared/lib/ui-bridge';
 
 interface SentinelContact {
