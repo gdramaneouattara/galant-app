@@ -28,6 +28,8 @@ const SentinelPage: React.FC = () => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isSavingContacts, setIsSavingContacts] = useState(false);
 
+  const isDirty = JSON.stringify(contacts) !== JSON.stringify(profile?.emergency_contacts || []);
+
   // Meeting Details State
   const [location, setLocation] = useState('');
   const [personName, setPersonName] = useState('');
@@ -383,7 +385,7 @@ const SentinelPage: React.FC = () => {
               <div className="flex justify-between items-center px-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contacts (Max 2)</label>
                 <div className="flex gap-4">
-                   {contacts.length > 0 && contacts.length <= 2 && (
+                   {isDirty && (
                      <button
                        onClick={saveContactsPermanently}
                        disabled={isSavingContacts}
