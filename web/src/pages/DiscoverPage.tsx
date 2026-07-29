@@ -257,7 +257,7 @@ const DiscoverPage: React.FC = () => {
       {/* Floating Filter Pill */}
       <button
         onClick={() => setIsFilterOpen(true)}
-        className={`fixed top-6 left-1/2 -translate-x-1/2 z-[100] px-5 py-2.5 rounded-full backdrop-blur-xl flex items-center gap-2.5 transition-all active:scale-95 border group ${
+        className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-5 py-2.5 rounded-full backdrop-blur-xl flex items-center gap-2.5 transition-all active:scale-95 border group ${
           isFilterActive
             ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.15)] text-amber-500'
             : 'bg-white/10 dark:bg-slate-900/40 border-white/20 dark:border-white/5 text-slate-400 hover:text-white shadow-xl'
