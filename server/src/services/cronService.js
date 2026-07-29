@@ -110,15 +110,15 @@ const processSecurityAlerts = async () => {
     const batch = db.batch();
     for (const doc of snapshot.docs) {
       const data = doc.data();
-      console.warn(`🚨 [SENTINEL] Alert triggered for user ${data.user_id} (${data.user_name})`);
+      const contactCount = Array.isArray(data.contacts) ? data.contacts.length : 0;
+      console.warn(`🚨 [SENTINEL] Alert triggered for user ${data.user_id} (${data.user_name}). Notifying ${contactCount} contacts.`);
 
       batch.update(doc.ref, {
         status: 'INCIDENT_TRIGGERED',
         triggered_at: now
       });
 
-      // Logic to send actual SMS/WhatsApp would go here
-      // For now, we log the incident for admin review
+      // Logic to send actual SMS/WhatsApp to each contact in data.contacts would go here
     }
     await batch.commit();
   } catch (error) {

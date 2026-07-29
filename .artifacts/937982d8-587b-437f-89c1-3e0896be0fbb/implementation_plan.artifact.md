@@ -1,40 +1,41 @@
-# Revue de "La Sentinelle" (V2) - Sécurité Active & Personnalisation
+# Évolution de "La Sentinelle" (V3) : Flexibilité et Contacts Multiples
 
-Ce plan vise à rendre le module **La Sentinelle** totalement opérationnel en ajoutant une surveillance en arrière-plan des minuteurs et en permettant une personnalisation poussée de l'Appel Fantôme.
+Ce plan vise à enrichir le module de sécurité en permettant une personnalisation totale de la durée de veille et la sélection de plusieurs contacts de confiance directement depuis le répertoire du téléphone (via le Web Mobile).
 
 ## Proposed Changes
 
-### [Server] Surveillance Active (Backend)
-
-#### [MODIFY] [cronService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/cronService.js)
-- Implémenter `processSecurityAlerts` :
-    - Scanne la collection `security_logs` toutes les minutes.
-    - Identifie les logs dont le statut est `PENDING` et dont l'heure `expires_at` est dépassée.
-    - Marque ces logs comme `INCIDENT_TRIGGERED`.
-    - Prépare l'envoi de la notification d'alerte.
-- Mettre à jour `initCronJobs` pour inclure cette vérification chaque minute.
+### [Server] Module Sécurité
 
 #### [MODIFY] [securityController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/securityController.js)
-- Ajouter une fonction `triggerImmediateSOS` :
-    - Enregistre immédiatement un log avec le statut `SOS_IMMEDIAT`.
-    - Prépare l'envoi d'une alerte urgente sans délai.
+- Mettre à jour `scheduleCheckIn` pour accepter un tableau de `contacts` au lieu d'un seul contact.
+- Chaque contact contiendra un `name` et un `number`.
 
-### [Web Mobile] Personnalisation & Contrôle (Frontend)
+#### [MODIFY] [cronService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/cronService.js)
+- Mettre à jour `processSecurityAlerts` pour boucler sur la liste des contacts lors du déclenchement de l'alerte.
+
+### [Web Mobile] Interface Utilisateur
 
 #### [MODIFY] [SentinelPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/SentinelPage.tsx)
-- **Appel Fantôme** :
-    - Ajouter un champ de texte pour le **Nom de l'appelant** (ex: "Maman", "Chauffeur").
-    - Ajouter une sélection de photo (avatar) pour l'appelant.
-- **Tableau de bord de Sécurité** :
-    - Affichage du temps restant pour le minuteur actif.
-    - Bouton **"SOS IMMÉDIAT"** (rouge, bien visible) pour alerter les proches instantanément.
-- **Ressources** : Améliorer le pré-chargement de la sonnerie pour éviter tout délai.
+- **Gestion de la Durée** :
+    - Remplacer les boutons fixes par un sélecteur de durée (Heures / Minutes) permettant de dépasser les 60 minutes.
+    - Ajouter un affichage clair de l'heure de fin estimée (ex: "Sécurité jusqu'à 22:45").
+- **Gestion des Contacts (Max 2)** :
+    - Ajouter une section "Contacts de confiance".
+    - Implémenter l'utilisation de la **Contact Picker API** du navigateur pour sélectionner des numéros depuis le répertoire.
+    - Prévoir un formulaire de saisie manuelle en cas d'incompatibilité du navigateur (fallback).
+    - Limiter la sélection à 2 contacts maximum.
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Compatibilité du Répertoire** : L'accès direct au répertoire téléphonique depuis un site web (Web Mobile) est disponible sur la plupart des navigateurs Android récents (Chrome/Edge). Sur iPhone (Safari), cette fonctionnalité est encore expérimentale et peut nécessiter une activation manuelle dans les réglages. Un mode de saisie manuelle sera systématiquement proposé en alternative.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Accéder à **Apps > La Sentinelle**.
-2.  Changer le nom de l'appelant en "Maître Ouattara" et déclencher l'appel fantôme.
-3.  Lancer un minuteur de 1 minute. Attendre l'expiration sans cliquer sur "Je vais bien".
-4.  Vérifier dans Firestore que le statut du log est passé en `INCIDENT_TRIGGERED`.
-5.  Cliquer sur le bouton **SOS IMMÉDIAT** et vérifier la création du log correspondant.
+1.  Ouvrir **Apps > La Sentinelle**.
+2.  Saisir une durée personnalisée (ex: 2h 15min).
+3.  Cliquer sur "Ajouter un contact".
+4.  Vérifier que le répertoire du téléphone s'ouvre (si supporté) ou qu'un formulaire apparaît.
+5.  Ajouter 2 contacts et vérifier que le bouton d'ajout se grise.
+6.  Lancer le timer et vérifier en base de données que les 2 contacts sont bien enregistrés.
