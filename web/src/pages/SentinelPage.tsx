@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiRequest } from '@shared/lib/api';
-import { Shield, PhoneIncoming, Clock, CheckCircle, ChevronLeft, X, Phone, User, AlertTriangle, Loader2, Camera, Plus, Trash2, MapPin, Save } from 'lucide-react';
+import { Shield, PhoneIncoming, Clock, CheckCircle, ChevronLeft, X, Phone, User, AlertTriangle, Loader2, Camera, Plus, Trash2, MapPin, Save, Edit2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { showAlert } from '@shared/lib/ui-bridge';
@@ -25,6 +25,7 @@ const SentinelPage: React.FC = () => {
   const [manualName, setManualName] = useState('');
   const [manualNumber, setManualNumber] = useState('');
   const [showManualEntry, setShowManualEntry] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isSavingContacts, setIsSavingContacts] = useState(false);
 
   // Meeting Details State
@@ -157,15 +158,43 @@ const SentinelPage: React.FC = () => {
 
   const addManualContact = () => {
     if (manualName && manualNumber) {
-      setContacts(prev => [...prev, { name: manualName, number: manualNumber }]);
+      if (editingIndex !== null) {
+        // Update existing
+        const newContacts = [...contacts];
+        newContacts[editingIndex] = { name: manualName, number: manualNumber };
+        setContacts(newContacts);
+        setEditingIndex(null);
+      } else {
+        // Add new
+        setContacts(prev => [...prev, { name: manualName, number: manualNumber }]);
+      }
       setManualName('');
       setManualNumber('');
       setShowManualEntry(false);
     }
   };
 
+  const startEditingContact = (index: number) => {
+    const contact = contacts[index];
+    setManualName(contact.name);
+    setManualNumber(contact.number);
+    setEditingIndex(index);
+    setShowManualEntry(true);
+  };
+
+  const cancelManualEntry = () => {
+    setManualName('');
+    setManualNumber('');
+    setEditingIndex(null);
+    setShowManualEntry(false);
+  };
+
   const removeContact = (index: number) => {
     setContacts(prev => prev.filter((_, i) => i !== index));
+    if (editingIndex === index) {
+      setEditingIndex(null);
+      setShowManualEntry(false);
+    }
   };
 
   const saveContactsPermanently = async () => {
@@ -389,8 +418,10 @@ const SentinelPage: React.FC = () => {
                     className="w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2 text-sm font-bold outline-none"
                   />
                   <div className="flex gap-2">
-                    <button onClick={() => setShowManualEntry(false)} className="flex-1 py-2 text-xs font-bold text-slate-400">Annuler</button>
-                    <button onClick={addManualContact} className="flex-1 py-2 bg-primary text-white rounded-lg text-xs font-black">Ajouter</button>
+                    <button onClick={cancelManualEntry} className="flex-1 py-2 text-xs font-bold text-slate-400">Annuler</button>
+                    <button onClick={addManualContact} className="flex-1 py-2 bg-primary text-white rounded-lg text-xs font-black">
+                      {editingIndex !== null ? 'Mettre à jour' : 'Ajouter'}
+                    </button>
                   </div>
                 </div>
               )}
@@ -412,9 +443,14 @@ const SentinelPage: React.FC = () => {
                           <p className="text-[9px] font-bold text-slate-400">{c.number}</p>
                         </div>
                       </div>
-                      <button onClick={() => removeContact(i)} className="p-2 text-slate-300 hover:text-red-500">
-                        <Trash2 size={14} />
-                      </button>
+                      <div className="flex gap-1">
+                        <button onClick={() => startEditingContact(i)} className="p-2 text-slate-300 hover:text-primary transition-colors">
+                          <Edit2 size={14} />
+                        </button>
+                        <button onClick={() => removeContact(i)} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
