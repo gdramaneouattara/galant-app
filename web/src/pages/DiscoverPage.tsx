@@ -254,29 +254,29 @@ const DiscoverPage: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto pb-10 px-4 relative">
-      {/* Floating Filter Pill */}
-      <button
-        onClick={() => setIsFilterOpen(true)}
-        className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-5 py-2.5 rounded-full backdrop-blur-xl flex items-center gap-2.5 transition-all active:scale-95 border group ${
-          isFilterActive
-            ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.15)] text-amber-500'
-            : 'bg-white/10 dark:bg-slate-900/40 border-white/20 dark:border-white/5 text-slate-400 hover:text-white shadow-xl'
-        }`}
-      >
-        <SlidersHorizontal size={16} className={isFilterActive ? 'animate-pulse' : 'group-hover:rotate-12 transition-transform'} />
-        <span className="text-[10px] font-black uppercase tracking-[0.2em]">{isFilterActive ? 'Filtres Actifs' : 'Découverte'}</span>
-      </button>
-
-      {/* Header simplifié */}
-      <div className="flex justify-between items-center mb-10 pt-16">
+      {/* Header avec Filtre à droite */}
+      <div className="flex justify-between items-start mb-10 pt-16">
         <div>
           <h2 className="text-3xl font-[1000] italic tracking-tighter text-slate-900 dark:text-white leading-none">
             {t('discover') || "Découvrir"}
           </h2>
           <p className="text-slate-500 dark:text-slate-400 font-bold mt-2 text-[10px] uppercase tracking-[0.3em]">
-            {t('discover_subtitle') || "Nouveaux horizons"}
+            {t('discover_subtitle') || "Découvre de nouvelles personnes"}
           </p>
         </div>
+
+        {/* Pilule de filtre alignée à droite */}
+        <button
+          onClick={() => setIsFilterOpen(true)}
+          className={`px-5 py-2.5 rounded-full backdrop-blur-xl flex items-center gap-2.5 transition-all active:scale-95 border group ${
+            isFilterActive
+              ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.15)] text-amber-500'
+              : 'bg-white/10 dark:bg-slate-900/40 border-white/20 dark:border-white/5 text-slate-400 hover:text-white shadow-lg'
+          }`}
+        >
+          <SlidersHorizontal size={16} className={isFilterActive ? 'animate-pulse' : 'group-hover:rotate-12 transition-transform'} />
+          <span className="text-[10px] font-black uppercase tracking-[0.2em]">{isFilterActive ? 'Filtres Actifs' : 'Filtres'}</span>
+        </button>
       </div>
 
       <section className="mb-8">
