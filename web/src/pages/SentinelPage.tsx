@@ -11,7 +11,7 @@ interface SentinelContact {
 }
 
 const SentinelPage: React.FC = () => {
-  const { profile, reloadUser } = useAuth();
+  const { profile, reloadUser, isFakeCallActive, setIsFakeCallActive } = useAuth();
   const navigate = useNavigate();
   const [activeTimer, setActiveTimer] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
@@ -51,7 +51,6 @@ const SentinelPage: React.FC = () => {
   }, [profile?.id]);
 
   // Fake Call State
-  const [isFakeCallActive, setIsFakeCallActive] = useState(false);
   const [isFakeCallRinging, setIsFakeCallRinging] = useState(false);
   const [callerName, setCallerName] = useState('Bureau');
   const [callerPhoto, setCallerPhoto] = useState<string | null>(null);

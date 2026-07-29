@@ -190,7 +190,7 @@ const Header = () => {
 };
 
 const AppContent: React.FC = () => {
-  const { user, profile, loading, activeTheme } = useAuth();
+  const { user, profile, loading, activeTheme, isFakeCallActive } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const isAuthPage = location.pathname === '/auth';
@@ -234,9 +234,9 @@ const AppContent: React.FC = () => {
         />
       )}
 
-      {(!isAuthPage && !isWelcomePage && !isAdminRoute) && <Header />}
+      {(!isAuthPage && !isWelcomePage && !isAdminRoute && !isFakeCallActive) && <Header />}
 
-      <main className={`relative z-10 flex-1 w-full ${(isAuthPage || isWelcomePage || isAdminRoute) ? '' : 'max-w-6xl mx-auto p-4 md:p-8 mb-20 md:mb-0'}`}>
+      <main className={`relative z-10 flex-1 w-full ${(isAuthPage || isWelcomePage || isAdminRoute || isFakeCallActive) ? '' : 'max-w-6xl mx-auto p-4 md:p-8 mb-20 md:mb-0'}`}>
         <Routes>
           <Route path="/" element={<DiscoverPage />} />
           <Route path="/auth" element={<AuthPage />} />
@@ -277,7 +277,7 @@ const AppContent: React.FC = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-      {(!isAuthPage && !isAdminRoute) && <MobileNav />}
+      {(!isAuthPage && !isAdminRoute && !isFakeCallActive) && <MobileNav />}
       <PWAInstallPrompt />
     </div>
   );
