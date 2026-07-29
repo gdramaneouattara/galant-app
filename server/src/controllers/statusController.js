@@ -4,6 +4,24 @@ const { getDailyUsage, incrementUsage, consumeStoryPurchase, hasUnusedStoryPurch
 const { createStoryLikeNotificationIfNeeded } = require('../services/notificationService');
 const { QUOTAS } = require('../config/constants');
 
+const toPublicProfile = (p) => {
+  if (!p) return null;
+  return {
+    id: p.id,
+    name: p.name,
+    age: p.age,
+    bio: p.bio,
+    photos: p.photos,
+    city: p.city,
+    gender: p.gender,
+    is_verified: p.is_verified,
+    is_premium: p.is_premium,
+    galanterie_score: p.galanterie_score,
+    boosted_until: p.boosted_until || null,
+    is_vip: p.is_vip || false
+  };
+};
+
 const chunkArray = (items, size = 30) => {
   const chunks = [];
   for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
@@ -29,7 +47,7 @@ const getStatuses = async (req, res) => {
     // Hydrate Profiles
     const authors = await Promise.all(rows.map(async row => {
       const profileDoc = await db.collection('profiles').doc(row.user_id).get();
-      return profileDoc.exists ? { id: profileDoc.id, ...profileDoc.data() } : null;
+      return profileDoc.exists ? toPublicProfile({ id: profileDoc.id, ...profileDoc.data() }) : null;
     }));
 
     rows = rows.map((row, i) => ({ ...row, profiles: authors[i] })).filter(r => !!r.profiles);
@@ -180,7 +198,7 @@ const getStatusLikes = async (req, res) => {
     const likes = await Promise.all(snap.docs.map(async doc => {
       const data = doc.data();
       const pDoc = await db.collection('profiles').doc(data.user_id).get();
-      return { user_id: data.user_id, created_at: data.created_at, profile: pDoc.exists ? { id: pDoc.id, ...pDoc.data() } : null };
+      return { user_id: data.user_id, created_at: data.created_at, profile: pDoc.exists ? toPublicProfile({ id: pDoc.id, ...pDoc.data() }) : null };
     }));
 
     const filtered = likes

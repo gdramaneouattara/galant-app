@@ -34,10 +34,18 @@ const SentinelPage: React.FC = () => {
 
   // Sync contacts with profile if updated externally
   useEffect(() => {
-    if (profile?.emergency_contacts && contacts.length === 0) {
-      setContacts(profile.emergency_contacts);
+    if (profile?.id) {
+      // RESET ALL STATES FOR NEW USER
+      setContacts(profile.emergency_contacts || []);
+      setLocation('');
+      setPersonName('');
+      setPersonContact('');
+      setActiveTimer(null);
+      setTimeLeft(null);
+    } else {
+      setContacts([]);
     }
-  }, [profile]);
+  }, [profile?.id]);
 
   // Fake Call State
   const [isFakeCallActive, setIsFakeCallActive] = useState(false);

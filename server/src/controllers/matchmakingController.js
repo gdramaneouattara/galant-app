@@ -12,6 +12,24 @@ const normalizeText = (value) => String(value || '').trim().toLowerCase()
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '');
 
+const toPublicProfile = (p) => {
+  if (!p) return null;
+  return {
+    id: p.id,
+    name: p.name,
+    age: p.age,
+    bio: p.bio,
+    photos: p.photos,
+    city: p.city,
+    gender: p.gender,
+    is_verified: p.is_verified,
+    is_premium: p.is_premium,
+    galanterie_score: p.galanterie_score,
+    boosted_until: p.boosted_until || null,
+    is_vip: p.is_vip || false
+  };
+};
+
 const normalizeGender = (value) => String(value || '').trim().toUpperCase();
 
 const SUPER_LIKE_STATUS_LABELS = {
@@ -313,11 +331,16 @@ const getSuggestions = async (req, res) => {
       });
 
       return {
-        ...c,
+        ...toPublicProfile(c),
         score,
         compatibility_score: compatibilityScore,
         commercial_score: commercialScore,
         common_interests_count: commonInterestsCount,
+        distance_km: Number.isFinite(distanceKm) ? parseFloat(distanceKm.toFixed(1)) : null,
+        discovery_tier: discoveryTier,
+        super_liked_me: incomingSuperLikesByCandidate.has(c.id),
+        has_golden_rose: goldenRoseUserIds.has(c.id),
+      };
         distance_km: Number.isFinite(distanceKm) ? parseFloat(distanceKm.toFixed(1)) : null,
         discovery_tier: discoveryTier,
         super_liked_me: incomingSuperLikesByCandidate.has(c.id),
@@ -654,8 +677,8 @@ const getSuperLikesReceived = async (req, res) => {
         is_matched: isMatched,
         matchId: isMatched ? matchDoc.id : null,
         can_message: isMatched || !!me.is_premium || String(me.gender || '').toUpperCase() === 'FEMALE' || !!directMessagePurchased,
-        user: senderProfile,
-        profiles: senderProfile
+        user: toPublicProfile(senderProfile),
+        profiles: toPublicProfile(senderProfile)
       };
     }));
 
@@ -715,7 +738,7 @@ const getLikesReceived = async (req, res) => {
         created_at: row.created_at,
         liked_back: false,
         is_matched: matchedIds.has(row.liker_id),
-        user: profile
+        user: toPublicProfile(profile)
       };
     }).filter(Boolean));
 
