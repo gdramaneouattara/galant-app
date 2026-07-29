@@ -100,37 +100,4 @@ const triggerImmediateSOS = async (req, res) => {
   }
 };
 
-/**
- * Triggers an immediate SOS alert.
- */
-const triggerImmediateSOS = async (req, res) => {
-  const { contacts, meetingDetails } = req.body;
-  const me = req.user;
-
-  if (!contacts || !Array.isArray(contacts) || contacts.length === 0) {
-    return res.status(400).json({ error: 'missing_contacts' });
-  }
-
-  try {
-    const logRef = await db.collection('security_logs').add({
-      user_id: me.id,
-      user_name: me.name,
-      status: 'SOS_IMMEDIAT',
-      triggered_at: new Date().toISOString(),
-      contacts: contacts.slice(0, 2),
-      meeting_details: meetingDetails || null,
-      created_at: new Date().toISOString()
-    });
-
-    console.warn(`‼️ [SOS] Immediate alert triggered by ${me.name} (${me.id})`);
-
-    // Trigger Real WhatsApp Alert Immediately
-    void sendSecurityAlert(contacts, { name: me.name }, meetingDetails);
-
-    res.json({ success: true, logId: logRef.id });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
 module.exports = { scheduleCheckIn, confirmSafety, triggerImmediateSOS };
