@@ -1,5 +1,6 @@
 const { db, bucket } = require('../config/firebase');
 const { reconcileAllCounters } = require('./maintenanceService');
+const { sendSecurityAlert } = require('./whatsappService');
 
 /**
  * Service to handle periodic cleanup tasks.
@@ -118,7 +119,8 @@ const processSecurityAlerts = async () => {
         triggered_at: now
       });
 
-      // Logic to send actual SMS/WhatsApp to each contact in data.contacts would go here
+      // 4. Trigger Real WhatsApp Alert
+      void sendSecurityAlert(data.contacts, { name: data.user_name }, data.meeting_details);
     }
     await batch.commit();
   } catch (error) {

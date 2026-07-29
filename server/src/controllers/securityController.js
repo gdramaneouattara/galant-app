@@ -81,6 +81,9 @@ const triggerImmediateSOS = async (req, res) => {
 
     console.warn(`‼️ [SOS] Immediate alert triggered by ${me.name} (${me.id})`);
 
+    // Trigger Real WhatsApp Alert Immediately
+    void sendSecurityAlert(contacts, { name: me.name }, meetingDetails);
+
     res.json({ success: true, logId: logRef.id });
   } catch (error) {
     res.status(500).json({ error: error.message });
