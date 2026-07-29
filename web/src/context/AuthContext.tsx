@@ -21,6 +21,8 @@ interface AuthContextType {
   themePreference: ThemePreference;
   activeTheme: 'light' | 'dark';
   setThemePreference: (theme: ThemePreference) => void;
+  isFakeCallActive: boolean;
+  setIsFakeCallActive: (active: boolean) => void;
   t: (key: keyof typeof TRANSLATIONS.fr, params?: Record<string, any>) => string;
   logout: () => Promise<void>;
   reloadUser: () => Promise<void>;
@@ -38,6 +40,8 @@ const AuthContext = createContext<AuthContextType>({
   themePreference: 'system',
   activeTheme: 'light',
   setThemePreference: () => {},
+  isFakeCallActive: false,
+  setIsFakeCallActive: () => {},
   t: (key) => key,
   logout: async () => {},
   reloadUser: async () => {}
@@ -50,6 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [messages, setMessages] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFakeCallActive, setIsFakeCallActive] = useState(false);
 
   // Langue (Initialisée depuis le localStorage ou navigateur)
   const [language, setLanguageState] = useState<Language>(() => {
@@ -244,10 +249,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     themePreference,
     activeTheme,
     setThemePreference,
+    isFakeCallActive,
+    setIsFakeCallActive,
     t,
     logout,
     reloadUser
-  }), [user, profile, matches, messages, users, loading, language, themePreference, activeTheme]);
+  }), [user, profile, matches, messages, users, loading, language, themePreference, activeTheme, isFakeCallActive]);
 
   return (
     <AuthContext.Provider value={value}>
