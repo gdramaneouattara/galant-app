@@ -1,39 +1,38 @@
-# La Sentinelle V5 : Paramètres d'Urgence et Géolocalisation
+# Sécurisation des données sensibles (La Sentinelle)
 
-Ce plan vise à rendre l'alerte SOS de La Sentinelle extrêmement précise en incluant les coordonnées GPS de l'utilisateur, le lieu du rendez-vous, ainsi que l'identité de la personne rencontrée, le tout envoyé à deux contacts de confiance pré-enregistrés.
+Ce plan vise à garantir une isolation totale des données de sécurité (contacts d'urgence, détails de rendez-vous) afin qu'elles ne soient jamais visibles par d'autres utilisateurs, même en cas de session partagée sur un navigateur.
+
+## User Review Required
+
+> [!WARNING]
+> **Fuite de données détectée** : J'ai identifié que le serveur renvoyait par défaut l'intégralité du profil (incluant les contacts d'urgence) lors des suggestions de découverte. Ce correctif va restreindre les données envoyées au strict nécessaire (Nom, Bio, Photos, Ville).
 
 ## Proposed Changes
 
-### [Server] Module Sécurité & Profil
+### [Server] Module Matchmaking
 
-#### [MODIFY] [profileController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/profileController.js)
-- Ajouter la possibilité de stocker de façon permanente les `emergency_contacts` (max 2) dans le document de l'utilisateur.
+#### [MODIFY] [matchmakingController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/matchmakingController.js)
+- Dans la fonction `getSuggestions`, ne plus utiliser le spread `...c`.
+- Créer explicitement l'objet de retour pour n'inclure que les champs publics : `id`, `name`, `age`, `bio`, `photos`, `city`, `is_verified`, `is_premium`, `galanterie_score`, etc.
+- **Exclure systématiquement** `emergency_contacts` et toute autre donnée privée des suggestions envoyées aux autres membres.
 
-#### [MODIFY] [securityController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/securityController.js)
-- Mettre à jour `triggerImmediateSOS` et `scheduleCheckIn` pour accepter les coordonnées GPS (`latitude`, `longitude`).
-- Formater le message WhatsApp pour inclure un lien **Google Maps** vers la position de l'utilisateur.
-
-### [Web Mobile] Interface Utilisateur
+### [Web Mobile] Isolation de l'Interface
 
 #### [MODIFY] [SentinelPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/SentinelPage.tsx)
-- **Pré-configuration des contacts** :
-    - Ajouter une section "Paramètres de Sécurité" permettant d'enregistrer ses 2 contacts favoris de manière permanente.
-- **Bouton SOS Intelligent** :
-    - Au clic sur le bouton SOS :
-        1. Demander la permission GPS au navigateur.
-        2. Récupérer les coordonnées exactes.
-        3. Envoyer le SOS avec les détails du rendez-vous (lieu, nom rencontre) et le lien Maps.
-- **Saisie des détails** : Conserver les champs de lieu et de rencontre ajoutés en V4.
+- **Réinitialisation par utilisateur** : Ajouter un `useEffect` qui surveille `profile.id`. Dès que l'utilisateur change (déconnexion/reconnexion), tous les états locaux (`contacts`, `location`, `personName`, etc.) sont vidés ou réinitialisés avec les données du nouveau profil.
+- **Correctif technique** : Importer `useAuth` qui était manquant.
+
+### [Firebase] Règles de sécurité
+
+#### [MODIFY] [firestore.rules](file:///C:/Users/UTILISATEUR/galant-app/firestore.rules)
+- **Protection par champ** : Bien que Firestore ne permette pas nativement de masquer des champs lors d'un `read` global, je vais recommander de séparer les données sensibles.
+- En attendant, le correctif Backend (ci-dessus) est la barrière la plus efficace.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Ouvrir **Apps > La Sentinelle**.
-2.  Enregistrer deux contacts de test dans les paramètres permanents.
-3.  Saisir un lieu (ex: "Lounge Riviera") et un nom de rencontre.
-4.  Cliquer sur le bouton rouge **SOS**.
-5.  Autoriser la localisation sur le téléphone.
-6.  Vérifier dans les logs serveur que le message WhatsApp généré contient :
-    - Votre nom.
-    - Le lieu et le nom de la rencontre.
-    - Un lien cliquable `https://www.google.com/maps?q=lat,lon`.
+1.  Se connecter avec le Compte A et renseigner des contacts d'urgence.
+2.  Intercepter (via l'inspecteur réseau) l'appel à `/api/matchmaking/suggestions`.
+3.  Vérifier que le profil du Compte A n'affiche plus le champ `emergency_contacts`.
+4.  Sur le même navigateur, se déconnecter du Compte A et se connecter au Compte B.
+5.  Aller sur la page **La Sentinelle** et vérifier qu'aucune information du Compte A ne subsiste.

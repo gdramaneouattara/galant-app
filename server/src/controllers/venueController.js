@@ -1,6 +1,24 @@
 const { db } = require('../config/firebase');
 const { getLatestActiveSubscriptionForUser } = require('../services/subscriptionService');
 
+const toPublicProfile = (p) => {
+  if (!p) return null;
+  return {
+    id: p.id,
+    name: p.name,
+    age: p.age,
+    bio: p.bio,
+    photos: p.photos,
+    city: p.city,
+    gender: p.gender,
+    is_verified: p.is_verified,
+    is_premium: p.is_premium,
+    galanterie_score: p.galanterie_score,
+    boosted_until: p.boosted_until || null,
+    is_vip: p.is_vip || false
+  };
+};
+
 const getVenues = async (req, res) => {
   const { city, type } = req.query;
   try {
@@ -152,7 +170,7 @@ const getPartnerChats = async (req, res) => {
     const chats = await Promise.all(chatsSnap.docs.map(async doc => {
       const data = doc.data();
       const userDoc = await db.collection('profiles').doc(data.user_id).get();
-      return { id: doc.id, ...data, profiles: userDoc.exists ? userDoc.data() : null };
+      return { id: doc.id, ...data, profiles: userDoc.exists ? toPublicProfile({ id: userDoc.id, ...userDoc.data() }) : null };
     }));
     res.json({ chats });
   } catch (error) { res.status(500).json({ error: error.message }); }
