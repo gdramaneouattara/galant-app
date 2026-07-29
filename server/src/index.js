@@ -28,6 +28,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 // Initialisation sécurisée des routes (DO NOT REFACTOR - Tests depend on these exact strings)
 try { const aiRoutes = require('./routes/aiRoutes'); app.use('/api/ai', aiRoutes); } catch (e) { mountErrors['/api/ai'] = e.message; console.error('❌ Failed /api/ai', e.message); }
 try { const messageRoutes = require('./routes/messageRoutes'); app.use('/api/messages', messageRoutes); } catch (e) { mountErrors['/api/messages'] = e.message; console.error('❌ Failed /api/messages', e.message); }
+try { const moderationRoutes = require('./routes/moderationRoutes'); app.use('/api/moderation', moderationRoutes); } catch (e) { mountErrors['/api/moderation'] = e.message; console.error('❌ Failed /api/moderation', e.message); }
 try { const matchmakingRoutes = require('./routes/matchmakingRoutes'); app.use('/api/matchmaking', matchmakingRoutes); } catch (e) { mountErrors['/api/matchmaking'] = e.message; console.error('❌ Failed /api/matchmaking', e.message); }
 try { const paymentRoutes = require('./routes/paymentRoutes'); app.use('/api/payments', paymentRoutes); } catch (e) { mountErrors['/api/payments'] = e.message; console.error('❌ Failed /api/payments', e.message); }
 try { const adminRoutes = require('./routes/adminRoutes'); app.use('/api/admin', adminRoutes); } catch (e) { mountErrors['/api/admin'] = e.message; console.error('❌ Failed /api/admin', e.message); }
