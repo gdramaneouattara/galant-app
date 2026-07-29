@@ -4,7 +4,8 @@ const { db } = require('../config/firebase');
  * Schedules a security check-in.
  */
 const scheduleCheckIn = async (req, res) => {
-  const { durationMinutes, contacts } = req.body; // contacts: [{ name, number }]
+  const { durationMinutes, contacts, meetingDetails } = req.body;
+  // contacts: [{ name, number }], meetingDetails: { location, personName, personContact }
   const me = req.user;
 
   if (!durationMinutes) return res.status(400).json({ error: 'missing_duration' });
@@ -20,7 +21,8 @@ const scheduleCheckIn = async (req, res) => {
       user_name: me.name,
       status: 'PENDING',
       expires_at: expiresAt,
-      contacts: contacts.slice(0, 2), // Limit to 2 for safety
+      contacts: contacts.slice(0, 2),
+      meeting_details: meetingDetails || null,
       created_at: new Date().toISOString()
     });
 
@@ -59,7 +61,7 @@ const confirmSafety = async (req, res) => {
  * Triggers an immediate SOS alert.
  */
 const triggerImmediateSOS = async (req, res) => {
-  const { contacts } = req.body;
+  const { contacts, meetingDetails } = req.body;
   const me = req.user;
 
   if (!contacts || !Array.isArray(contacts) || contacts.length === 0) {
@@ -73,6 +75,7 @@ const triggerImmediateSOS = async (req, res) => {
       status: 'SOS_IMMEDIAT',
       triggered_at: new Date().toISOString(),
       contacts: contacts.slice(0, 2),
+      meeting_details: meetingDetails || null,
       created_at: new Date().toISOString()
     });
 

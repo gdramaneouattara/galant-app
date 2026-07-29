@@ -24,6 +24,11 @@ const SentinelPage: React.FC = () => {
   const [manualNumber, setManualNumber] = useState('');
   const [showManualEntry, setShowManualEntry] = useState(false);
 
+  // Meeting Details State
+  const [location, setLocation] = useState('');
+  const [personName, setPersonName] = useState('');
+  const [personContact, setPersonContact] = useState('');
+
   // Fake Call State
   const [isFakeCallActive, setIsFakeCallActive] = useState(false);
   const [isFakeCallRinging, setIsFakeCallRinging] = useState(false);
@@ -157,7 +162,14 @@ const SentinelPage: React.FC = () => {
       await apiRequest('/api/security/sos', {
         method: 'POST',
         requireAuth: true,
-        body: JSON.stringify({ contacts })
+        body: JSON.stringify({
+          contacts,
+          meetingDetails: {
+            location,
+            personName,
+            personContact
+          }
+        })
       });
       showAlert('⚠️ SOS DÉCLENCHÉ', 'Votre alerte a été envoyée avec priorité absolue.');
     } catch (e: any) {
@@ -185,7 +197,12 @@ const SentinelPage: React.FC = () => {
         requireAuth: true,
         body: JSON.stringify({
           durationMinutes: totalMins,
-          contacts
+          contacts,
+          meetingDetails: {
+            location,
+            personName,
+            personContact
+          }
         })
       });
       setActiveTimer(res);
@@ -337,6 +354,49 @@ const SentinelPage: React.FC = () => {
                     </div>
                   ))
                 )}
+              </div>
+            </div>
+
+            {/* Meeting Details Section */}
+            <div className="space-y-4 pt-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Détails du rendez-vous (Optionnel)</label>
+              <div className="bg-slate-50 dark:bg-white/5 p-5 rounded-[2rem] space-y-4">
+                <div className="space-y-1">
+                   <div className="flex items-center gap-2 text-[8px] font-black text-slate-400 uppercase ml-1">
+                     <MapPin size={10} /> Lieu
+                   </div>
+                   <input
+                    placeholder="Où êtes-vous ?"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2.5 text-xs font-bold outline-none"
+                   />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-[8px] font-black text-slate-400 uppercase ml-1">
+                      <User size={10} /> Nom de la personne
+                    </div>
+                    <input
+                      placeholder="Rencontré(e)"
+                      value={personName}
+                      onChange={(e) => setPersonName(e.target.value)}
+                      className="w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2.5 text-xs font-bold outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-[8px] font-black text-slate-400 uppercase ml-1">
+                      <Phone size={10} /> Son Contact
+                    </div>
+                    <input
+                      placeholder="Numéro"
+                      value={personContact}
+                      onChange={(e) => setPersonContact(e.target.value)}
+                      className="w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2.5 text-xs font-bold outline-none"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
