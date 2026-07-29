@@ -255,7 +255,7 @@ const DiscoverPage: React.FC = () => {
   return (
     <div className="max-w-2xl mx-auto pb-10 px-4 relative">
       {/* Header avec Filtre à droite */}
-      <div className="flex justify-between items-start mb-10 pt-16">
+      <div className="flex justify-between items-start mb-8 pt-2">
         <div>
           <h2 className="text-3xl font-[1000] italic tracking-tighter text-slate-900 dark:text-white leading-none">
             {t('discover') || "Découvrir"}
