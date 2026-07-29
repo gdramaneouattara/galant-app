@@ -10,6 +10,7 @@ interface SentinelContact {
 }
 
 const SentinelPage: React.FC = () => {
+  const { profile, reloadUser } = useAuth();
   const navigate = useNavigate();
   const [activeTimer, setActiveTimer] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
@@ -19,15 +20,23 @@ const SentinelPage: React.FC = () => {
   const [minutes, setMinutes] = useState(30);
 
   // Contacts State
-  const [contacts, setContacts] = useState<SentinelContact[]>([]);
+  const [contacts, setContacts] = useState<SentinelContact[]>(profile?.emergency_contacts || []);
   const [manualName, setManualName] = useState('');
   const [manualNumber, setManualNumber] = useState('');
   const [showManualEntry, setShowManualEntry] = useState(false);
+  const [isSavingContacts, setIsSavingContacts] = useState(false);
 
   // Meeting Details State
   const [location, setLocation] = useState('');
   const [personName, setPersonName] = useState('');
   const [personContact, setPersonContact] = useState('');
+
+  // Sync contacts with profile if updated externally
+  useEffect(() => {
+    if (profile?.emergency_contacts && contacts.length === 0) {
+      setContacts(profile.emergency_contacts);
+    }
+  }, [profile]);
 
   // Fake Call State
   const [isFakeCallActive, setIsFakeCallActive] = useState(false);
@@ -150,6 +159,37 @@ const SentinelPage: React.FC = () => {
     setContacts(prev => prev.filter((_, i) => i !== index));
   };
 
+  const saveContactsPermanently = async () => {
+    setIsSavingContacts(true);
+    try {
+      await apiRequest('/api/profiles/update', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({ emergency_contacts: contacts })
+      });
+      await reloadUser();
+      showAlert('Enregistré', 'Vos contacts de confiance ont été sauvegardés de façon permanente.');
+    } catch (e: any) {
+      showAlert('Erreur', e.message);
+    } finally {
+      setIsSavingContacts(false);
+    }
+  };
+
+  const getCurrentGPS = (): Promise<{ lat: number, lon: number } | null> => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        resolve(null);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+        () => resolve(null),
+        { timeout: 5000 }
+      );
+    });
+  };
+
   const handleSOS = async () => {
     if (contacts.length === 0) {
       showAlert('Attention', 'Veuillez ajouter au moins un contact de confiance avant de lancer un SOS.');
@@ -159,11 +199,13 @@ const SentinelPage: React.FC = () => {
 
     setLoading(true);
     try {
+      const gps = await getCurrentGPS();
       await apiRequest('/api/security/sos', {
         method: 'POST',
         requireAuth: true,
         body: JSON.stringify({
           contacts,
+          location: gps,
           meetingDetails: {
             location,
             personName,
@@ -192,12 +234,14 @@ const SentinelPage: React.FC = () => {
 
     setLoading(true);
     try {
+      const gps = await getCurrentGPS();
       const res = await apiRequest<any>('/api/security/schedule', {
         method: 'POST',
         requireAuth: true,
         body: JSON.stringify({
           durationMinutes: totalMins,
           contacts,
+          location: gps,
           meetingDetails: {
             location,
             personName,
@@ -300,14 +344,25 @@ const SentinelPage: React.FC = () => {
             <div className="space-y-3">
               <div className="flex justify-between items-center px-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contacts (Max 2)</label>
-                {contacts.length < 2 && (
-                  <button
-                    onClick={handlePickContact}
-                    className="text-[10px] font-black text-primary uppercase flex items-center gap-1 hover:underline"
-                  >
-                    <Plus size={12} /> Ajouter
-                  </button>
-                )}
+                <div className="flex gap-4">
+                   {contacts.length > 0 && contacts.length <= 2 && (
+                     <button
+                       onClick={saveContactsPermanently}
+                       disabled={isSavingContacts}
+                       className="text-[10px] font-black text-green-500 uppercase flex items-center gap-1 hover:underline disabled:opacity-50"
+                     >
+                       {isSavingContacts ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Sauvegarder
+                     </button>
+                   )}
+                   {contacts.length < 2 && (
+                     <button
+                       onClick={handlePickContact}
+                       className="text-[10px] font-black text-primary uppercase flex items-center gap-1 hover:underline"
+                     >
+                       <Plus size={12} /> Ajouter
+                     </button>
+                   )}
+                </div>
               </div>
 
               {showManualEntry && (

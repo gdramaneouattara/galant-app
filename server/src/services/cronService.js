@@ -120,7 +120,7 @@ const processSecurityAlerts = async () => {
       });
 
       // 4. Trigger Real WhatsApp Alert
-      void sendSecurityAlert(data.contacts, { name: data.user_name }, data.meeting_details);
+      void sendSecurityAlert(data.contacts, { name: data.user_name }, data.meeting_details, data.gps_location);
     }
     await batch.commit();
   } catch (error) {
