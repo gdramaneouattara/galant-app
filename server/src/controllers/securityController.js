@@ -84,32 +84,4 @@ const triggerImmediateSOS = async (req, res) => {
   }
 };
 
-/**
- * Triggers an immediate SOS alert.
- */
-const triggerImmediateSOS = async (req, res) => {
-  const { contactName, contactNumber } = req.body;
-  const me = req.user;
-
-  try {
-    const logRef = await db.collection('security_logs').add({
-      user_id: me.id,
-      user_name: me.name,
-      status: 'SOS_IMMEDIAT',
-      triggered_at: new Date().toISOString(),
-      contact_info: {
-        name: contactName || 'Contact d\'Urgence',
-        number: contactNumber || ''
-      },
-      created_at: new Date().toISOString()
-    });
-
-    console.warn(`‼️ [SOS] Immediate alert triggered by ${me.name} (${me.id})`);
-
-    res.json({ success: true, logId: logRef.id });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
 module.exports = { scheduleCheckIn, confirmSafety, triggerImmediateSOS };
