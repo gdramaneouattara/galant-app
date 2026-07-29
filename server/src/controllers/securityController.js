@@ -1,4 +1,5 @@
 const { db } = require('../config/firebase');
+const { sendSecurityAlert } = require('../services/whatsappService');
 
 /**
  * Schedules a security check-in.
