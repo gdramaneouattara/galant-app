@@ -39,7 +39,7 @@ const PartnerChatsPage: React.FC = () => {
           <ChevronRight className="rotate-180" size={20} />
         </button>
         <div>
-          <h2 className="text-3xl font-black italic">Messages Clients</h2>
+          <h2 className="text-3xl font-serif italic tracking-tighter text-slate-900">Messages Clients</h2>
           <p className="text-slate-500 font-medium">Répondez aux demandes de vos membres Galant.</p>
         </div>
       </div>
@@ -81,11 +81,11 @@ const PartnerChatsPage: React.FC = () => {
                     )}
                   </div>
                   <div className="min-w-0">
-                    <h4 className="text-xl font-black text-slate-900 group-hover:text-primary transition-colors">
+                    <h4 className="text-xl font-serif italic tracking-tighter text-slate-900 group-hover:text-primary transition-colors">
                       {chat.client?.name || 'Client Galant'}
                     </h4>
                     <div className="flex items-center gap-3 mt-1">
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest ${chat.unlocked_with_rose ? 'bg-amber-100 text-amber-700' : 'bg-primary/10 text-primary'}`}>
+                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md uppercase tracking-prestige ${chat.unlocked_with_rose ? 'bg-amber-100 text-amber-700' : 'bg-primary/10 text-primary'}`}>
                         {chat.unlocked_with_rose ? 'Achat Rose 🌹' : 'Membre Premium 💎'}
                       </span>
                       <span className="text-xs text-slate-400 font-medium flex items-center gap-1">

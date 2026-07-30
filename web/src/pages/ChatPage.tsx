@@ -249,11 +249,11 @@ const ChatPage: React.FC = () => {
         </div>
         <div className="flex-1 cursor-pointer" onClick={() => !targetUser.isVenue && navigate(`/profile/${targetUser.id}`)}>
           <div className="flex items-center gap-1">
-            <span className="font-black text-slate-900">{targetUser.name}</span>
+            <span className="font-serif italic tracking-tighter text-slate-900">{targetUser.name}</span>
             {targetUser.is_verified && <ShieldCheck size={14} className="text-blue-500" />}
             {(targetUser.galanterie_score || 0) >= 4.5 && <Gem size={14} className="text-rose-600" />}
           </div>
-          <span className={`text-[10px] font-bold uppercase tracking-widest ${targetPresence?.state === 'online' ? 'text-green-500' : 'text-slate-400'}`}>
+          <span className={`text-[10px] font-medium uppercase tracking-prestige ${targetPresence?.state === 'online' ? 'text-green-500' : 'text-slate-400'}`}>
             {targetUser.isVenue ? targetUser.presenceLabel : targetPresence?.state === 'online' ? 'En ligne' : 'Hors ligne'}
           </span>
         </div>
@@ -262,7 +262,7 @@ const ChatPage: React.FC = () => {
       {/* Zone des Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30">
         <div className="bg-slate-100/50 p-4 rounded-3xl text-center border border-slate-200/50 mb-4">
-           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-center gap-2">
+           <p className="text-[10px] font-medium text-slate-400 uppercase tracking-prestige flex items-center justify-center gap-2">
              <ShieldCheck size={14} /> Sécurité Galant : Les médias sont effacés tous les 15 jours
            </p>
         </div>
@@ -304,7 +304,7 @@ const ChatPage: React.FC = () => {
                   {/* Suggestions Lieux/Events */}
                   {(isVenue || isEvent) && (
                     <div className="mb-2 p-2 bg-slate-50 rounded-2xl border border-slate-100 text-slate-900">
-                      <p className="text-[10px] font-black uppercase tracking-tighter text-slate-400 mb-2">
+                      <p className="text-[10px] font-medium uppercase tracking-prestige text-slate-400 mb-2">
                         {isMine ? 'Ma suggestion' : 'Proposition de sortie'}
                       </p>
                       <div className="flex items-center gap-3">
@@ -329,7 +329,7 @@ const ChatPage: React.FC = () => {
                   {!isMine && msg.content && !isVenue && !isEvent && (
                     <button
                       onClick={() => handleTranslate(msg)}
-                      className="mt-2 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 border-t border-slate-100 pt-2 w-full text-left hover:text-primary transition-colors"
+                      className="mt-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-prestige text-slate-400 border-t border-slate-100 pt-2 w-full text-left hover:text-primary transition-colors"
                     >
                       {translatingIds.has(msg.id) ? (
                         <Loader2 size={10} className="animate-spin" />
@@ -358,7 +358,7 @@ const ChatPage: React.FC = () => {
           <button
             onClick={handleAiAssist}
             disabled={generating}
-            className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-secondary bg-purple-50 px-4 py-2 rounded-full hover:bg-purple-100 transition-colors"
+            className="mb-3 flex items-center gap-2 text-[10px] font-medium uppercase tracking-prestige text-secondary bg-purple-50 px-4 py-2 rounded-full hover:bg-purple-100 transition-colors"
           >
             {generating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
             {t('ai_nudge')}

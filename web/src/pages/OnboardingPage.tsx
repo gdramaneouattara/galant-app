@@ -191,13 +191,13 @@ const OnboardingPage: React.FC = () => {
                <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/20 rounded-2xl flex items-center justify-center mx-auto text-primary mb-4">
                   <UserIcon size={32} />
                </div>
-               <h3 className="text-3xl font-black italic tracking-tighter dark:text-white">Qui êtes-vous ?</h3>
+               <h3 className="text-3xl font-serif italic tracking-tighter dark:text-white">Qui êtes-vous ?</h3>
                <p className="text-slate-500 dark:text-slate-400 font-medium">L'élégance commence par la transparence.</p>
             </div>
 
             <div className="space-y-5">
                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Nom et prénom(s)</label>
+                  <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige ml-1">Nom et prénom(s)</label>
                   <input
                     type="text"
                     value={formData.name}
@@ -207,7 +207,7 @@ const OnboardingPage: React.FC = () => {
                   />
                </div>
                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Âge</label>
+                  <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige ml-1">Âge</label>
                   <input
                     type="number"
                     value={formData.age}
@@ -218,13 +218,13 @@ const OnboardingPage: React.FC = () => {
                   />
                </div>
                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Genre</label>
+                  <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige ml-1">Genre</label>
                   <div className="grid grid-cols-2 gap-4">
                     {['MALE', 'FEMALE'].map(g => (
                       <button
                         key={g}
                         onClick={() => setForm(prev => ({ ...prev, gender: g }))}
-                        className={`py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${
+                        className={`py-4 rounded-2xl font-medium text-xs uppercase tracking-prestige transition-all ${
                           formData.gender === g ? 'bg-primary text-white shadow-lg' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
                         }`}
                       >
@@ -238,7 +238,7 @@ const OnboardingPage: React.FC = () => {
             <button
               onClick={nextStep}
               disabled={!formData.name || !formData.age || parseInt(formData.age) < 18}
-              className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black transition-all disabled:opacity-30 mt-8"
+              className="w-full bg-slate-900 text-white py-5 rounded-2xl font-medium text-xs uppercase tracking-prestige flex items-center justify-center gap-3 hover:bg-black transition-all disabled:opacity-30 mt-8"
             >
               Suivant <ChevronRight size={16} />
             </button>
@@ -252,7 +252,7 @@ const OnboardingPage: React.FC = () => {
                <div className="w-16 h-16 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center mx-auto text-amber-500 mb-4">
                   <Heart size={32} />
                </div>
-               <h3 className="text-3xl font-black italic tracking-tighter dark:text-white">Vos Intentions</h3>
+               <h3 className="text-3xl font-serif italic tracking-tighter dark:text-white">Vos Intentions</h3>
                <p className="text-slate-500 dark:text-slate-400 font-medium">Pour des rencontres qui vous ressemblent.</p>
             </div>
 
@@ -268,7 +268,7 @@ const OnboardingPage: React.FC = () => {
                     >
                       <span className="text-3xl">{goal.icon}</span>
                       <div className="flex-1">
-                        <p className={`font-black text-sm uppercase tracking-tight ${formData.relationship_goal === goal.id ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>{goal.label}</p>
+                        <p className={`font-serif italic tracking-tighter text-sm uppercase ${formData.relationship_goal === goal.id ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>{goal.label}</p>
                         <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1">{goal.desc}</p>
                       </div>
                       {formData.relationship_goal === goal.id && <CheckCircle2 className="text-primary" size={20} />}
@@ -277,7 +277,7 @@ const OnboardingPage: React.FC = () => {
                </div>
 
                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Centres d'intérêt (choisissez-en 3 ou plus)</label>
+                  <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige ml-1">Centres d'intérêt (choisissez-en 3 ou plus)</label>
                   <div className="flex flex-wrap gap-2">
                     {INTERESTS_OPTIONS.map(interest => (
                       <button
@@ -303,7 +303,7 @@ const OnboardingPage: React.FC = () => {
               <button
                 onClick={nextStep}
                 disabled={formData.interests.length < 3}
-                className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black dark:hover:bg-slate-200 transition-all disabled:opacity-30"
+                className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-medium text-xs uppercase tracking-prestige flex items-center justify-center gap-3 hover:bg-black dark:hover:bg-slate-200 transition-all disabled:opacity-30"
               >
                 Suivant <ChevronRight size={16} />
               </button>
@@ -318,7 +318,7 @@ const OnboardingPage: React.FC = () => {
                <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mx-auto text-blue-500 mb-4">
                   <MapPin size={32} />
                </div>
-               <h3 className="text-3xl font-black italic tracking-tighter dark:text-white">Emplacement & Bio</h3>
+               <h3 className="text-3xl font-serif italic tracking-tighter dark:text-white">Emplacement & Bio</h3>
                <p className="text-slate-500 dark:text-slate-400 font-medium">Où la magie doit-elle opérer ?</p>
             </div>
 
@@ -327,7 +327,7 @@ const OnboardingPage: React.FC = () => {
                   <button
                     onClick={handleGeoLocation}
                     disabled={loading}
-                    className={`w-full py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
+                    className={`w-full py-5 rounded-2xl font-medium text-xs uppercase tracking-prestige flex items-center justify-center gap-3 transition-all ${
                       formData.latitude
                         ? 'bg-green-500 text-white shadow-lg shadow-green-100 dark:shadow-none'
                         : 'bg-blue-600 text-white shadow-lg shadow-blue-100 dark:shadow-none'
@@ -344,7 +344,7 @@ const OnboardingPage: React.FC = () => {
                </div>
 
                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Une accroche élégante (Bio)</label>
+                  <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige ml-1">Une accroche élégante (Bio)</label>
                   <div className="flex flex-wrap gap-2 mb-3">
                      {BIO_PROMPTS.map(p => (
                        <button
@@ -372,7 +372,7 @@ const OnboardingPage: React.FC = () => {
               <button
                 onClick={nextStep}
                 disabled={!formData.latitude || !formData.city || formData.bio.length < 15}
-                className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black dark:hover:bg-slate-200 transition-all disabled:opacity-30"
+                className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-medium text-xs uppercase tracking-prestige flex items-center justify-center gap-3 hover:bg-black dark:hover:bg-slate-200 transition-all disabled:opacity-30"
               >
                 Suivant <ChevronRight size={16} />
               </button>
@@ -387,7 +387,7 @@ const OnboardingPage: React.FC = () => {
                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto text-primary mb-4">
                   <Camera size={32} />
                </div>
-               <h3 className="text-3xl font-black italic tracking-tighter dark:text-white">Votre Galerie</h3>
+               <h3 className="text-3xl font-serif italic tracking-tighter dark:text-white">Votre Galerie</h3>
                <p className="text-slate-500 dark:text-slate-400 font-medium">L'élégance en image (1 photo minimum).</p>
             </div>
 
@@ -409,7 +409,7 @@ const OnboardingPage: React.FC = () => {
                    className="aspect-square rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
                  >
                    <ImageIcon size={24} />
-                   <span className="text-[8px] font-black uppercase mt-2">Ajouter</span>
+                   <span className="text-[8px] font-medium uppercase mt-2 tracking-prestige">Ajouter</span>
                  </button>
                )}
             </div>
@@ -417,7 +417,7 @@ const OnboardingPage: React.FC = () => {
             <div className="bg-slate-950 dark:bg-black p-6 rounded-[2rem] space-y-4 border border-transparent dark:border-white/5">
                <div className="flex items-center gap-3 text-white">
                   <ShieldCheck className="text-green-400" size={20} />
-                  <p className="text-xs font-black uppercase tracking-widest">Guide de Style</p>
+                  <p className="text-xs font-medium uppercase tracking-prestige">Guide de Style</p>
                </div>
                <ul className="space-y-2">
                   {[
@@ -450,7 +450,7 @@ const OnboardingPage: React.FC = () => {
               <button
                 onClick={nextStep}
                 disabled={loading || photoFiles.length === 0}
-                className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black dark:hover:bg-slate-200 transition-all disabled:opacity-30"
+                className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-medium text-xs uppercase tracking-prestige flex items-center justify-center gap-3 hover:bg-black dark:hover:bg-slate-200 transition-all disabled:opacity-30"
               >
                 Signer le Manifeste <ChevronRight size={16} />
               </button>
@@ -462,8 +462,8 @@ const OnboardingPage: React.FC = () => {
         return (
           <div className="space-y-10 animate-in fade-in zoom-in-95 duration-700 py-4">
             <div className="text-center space-y-3">
-               <h3 className="text-4xl font-black italic tracking-tighter text-slate-900 dark:text-white transition-colors">Le Manifeste</h3>
-               <p className="text-amber-600 font-black text-[10px] uppercase tracking-[0.3em]">Contrat de Prestige</p>
+               <h3 className="text-4xl font-serif italic tracking-tighter text-slate-900 dark:text-white transition-colors">Le Manifeste</h3>
+               <p className="text-amber-600 font-medium text-[10px] uppercase tracking-prestige">Contrat de Prestige</p>
             </div>
 
             <div className="space-y-8">
@@ -489,7 +489,7 @@ const OnboardingPage: React.FC = () => {
                        <item.icon size={24} />
                     </div>
                     <div className="space-y-1">
-                       <h4 className="font-black text-xs uppercase tracking-widest text-slate-900 dark:text-white transition-colors">{item.title}</h4>
+                       <h4 className="font-medium text-xs uppercase tracking-prestige text-slate-900 dark:text-white transition-colors">{item.title}</h4>
                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed transition-colors">{item.desc}</p>
                     </div>
                  </div>
@@ -509,7 +509,7 @@ const OnboardingPage: React.FC = () => {
                <button
                  onClick={handleFinalSubmit}
                  disabled={loading}
-                 className="flex-1 bg-primary text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-2xl shadow-red-500/30 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                 className="flex-1 bg-primary text-white py-6 rounded-2xl font-medium text-xs uppercase tracking-prestige flex items-center justify-center gap-3 shadow-2xl shadow-red-500/30 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
                >
                  {loading ? <Loader2 className="animate-spin" /> : <Sparkles size={16} fill="currentColor" />}
                  J'ADHÈRE AUX VALEURS
@@ -532,7 +532,7 @@ const OnboardingPage: React.FC = () => {
         <div className="bg-slate-900 px-10 py-3 flex items-center justify-between">
            <div className="flex items-center gap-2">
               <Sparkles className="text-amber-400" size={14} />
-              <span className="text-[10px] font-black text-white uppercase tracking-widest">Rayonnement</span>
+              <span className="text-[10px] font-medium text-white uppercase tracking-prestige">Rayonnement</span>
            </div>
            <div className="flex items-center gap-3">
               <div className="w-32 h-1 bg-white/10 rounded-full overflow-hidden">
@@ -552,7 +552,7 @@ const OnboardingPage: React.FC = () => {
 
       <div className="mt-8 flex items-center gap-3">
          <Gem className="text-slate-300 dark:text-slate-700" size={16} />
-         <p className="text-[10px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-[0.2em]">Dossier d'adhésion confidentiel</p>
+         <p className="text-[10px] font-medium text-slate-300 dark:text-slate-700 uppercase tracking-prestige">Dossier d'adhésion confidentiel</p>
       </div>
     </div>
   );

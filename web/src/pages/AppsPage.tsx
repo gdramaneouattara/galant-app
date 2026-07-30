@@ -73,10 +73,10 @@ const AppsPage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto pb-24 px-4 space-y-8">
       <div>
-        <h2 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-none">
+        <h2 className="text-4xl font-serif italic tracking-tighter text-slate-900 dark:text-white leading-none">
           Apps
         </h2>
-        <p className="text-slate-500 dark:text-slate-400 font-bold mt-3 text-sm uppercase tracking-widest">
+        <p className="text-slate-500 dark:text-slate-400 font-medium mt-3 text-sm uppercase tracking-prestige">
           Services utiles pour vos rencontres
         </p>
       </div>
@@ -93,7 +93,7 @@ const AppsPage: React.FC = () => {
               <div className={`w-12 h-12 rounded-2xl ${app.bg} ${app.color} flex items-center justify-center mb-5`}>
                 <Icon size={24} />
               </div>
-              <h3 className="text-base font-black text-slate-900 dark:text-white">{app.title}</h3>
+              <h3 className="text-base font-serif italic tracking-tighter text-slate-900 dark:text-white">{app.title}</h3>
               <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">{app.subtitle}</p>
             </Link>
           );

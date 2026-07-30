@@ -43,12 +43,12 @@ const PremiumPage: React.FC = () => {
         <div className="relative z-10 p-10 md:p-24 space-y-8 max-w-3xl">
           <div className="inline-flex items-center gap-3 bg-white/5 backdrop-blur-xl border border-white/10 px-6 py-2.5 rounded-full shadow-2xl">
             <Crown size={20} className="text-amber-400" fill="currentColor" />
-            <span className="text-white font-black uppercase tracking-[0.3em] text-[10px]">
+            <span className="text-white font-medium uppercase tracking-prestige text-[10px]">
               Le Cercle Galant
             </span>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-black text-white italic tracking-tighter leading-[0.95]">
+          <h1 className="text-5xl md:text-7xl font-serif italic tracking-tighter text-white leading-[0.95]">
             L'Élégance n'a pas de <span className="text-primary not-italic">limites.</span>
           </h1>
 
@@ -59,17 +59,17 @@ const PremiumPage: React.FC = () => {
           <div className="flex items-center gap-8 pt-4">
              <div className="flex flex-col">
                <span className="text-2xl font-black text-white leading-none">100%</span>
-               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Discrétion</span>
+               <span className="text-[10px] font-medium text-slate-500 uppercase tracking-prestige mt-1">Discrétion</span>
              </div>
              <div className="w-[1px] h-10 bg-white/10"></div>
              <div className="flex flex-col">
                <span className="text-2xl font-black text-white leading-none">VIP</span>
-               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Traitement</span>
+               <span className="text-[10px] font-medium text-slate-500 uppercase tracking-prestige mt-1">Traitement</span>
              </div>
              <div className="w-[1px] h-10 bg-white/10"></div>
              <div className="flex flex-col">
                <span className="text-2xl font-black text-white leading-none">∞</span>
-               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Opportunités</span>
+               <span className="text-[10px] font-medium text-slate-500 uppercase tracking-prestige mt-1">Opportunités</span>
              </div>
           </div>
         </div>
@@ -80,7 +80,7 @@ const PremiumPage: React.FC = () => {
         {/* SECTION 1: ABONNEMENTS - Design Apple-esque vs Luxury Dark */}
         <div className="lg:col-span-8 space-y-10">
           <div className="flex items-center justify-between">
-            <h3 className="text-3xl font-black italic tracking-tighter text-slate-900 flex items-center gap-4">
+            <h3 className="text-3xl font-serif italic tracking-tighter text-slate-900 flex items-center gap-4">
               <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-primary">
                 <Gem size={24} />
               </div>
@@ -94,8 +94,8 @@ const PremiumPage: React.FC = () => {
               <div className="space-y-8">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="text-2xl font-black uppercase tracking-tighter text-slate-900">Standard</h4>
-                    <p className="text-primary font-black text-[10px] uppercase tracking-widest mt-1">Essentiel Galant</p>
+                    <h4 className="text-2xl font-serif italic tracking-tighter uppercase text-slate-900">Standard</h4>
+                    <p className="text-primary font-medium text-[10px] uppercase tracking-prestige mt-1">Essentiel Galant</p>
                   </div>
                   <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors">
                     <Star size={24} />
@@ -104,7 +104,7 @@ const PremiumPage: React.FC = () => {
 
                 <div className="flex items-baseline gap-2">
                   <span className="text-5xl font-[1000] text-slate-900 tracking-tighter">5 000 F</span>
-                  <span className="text-slate-400 font-black text-xs uppercase tracking-widest">/ mois</span>
+                  <span className="text-slate-400 font-medium text-xs uppercase tracking-prestige">/ mois</span>
                 </div>
 
                 <div className="h-[1px] bg-slate-100 w-full"></div>
@@ -127,7 +127,7 @@ const PremiumPage: React.FC = () => {
               <button
                 onClick={() => handlePurchase('PREMIUM', 'MONTHLY', 5000)}
                 disabled={!!loading || purchaseLoading}
-                className="mt-12 w-full py-5 rounded-2xl bg-slate-900 text-white font-black text-[11px] uppercase tracking-[0.2em] hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95 flex items-center justify-center gap-3"
+                className="mt-12 w-full py-5 rounded-2xl bg-slate-900 text-white font-medium text-[11px] uppercase tracking-prestige hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95 flex items-center justify-center gap-3"
               >
                 {loading === 'MONTHLY' ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'S\'ABONNER AU CERCLE'}
                 <ChevronRight size={16} />
@@ -137,7 +137,7 @@ const PremiumPage: React.FC = () => {
             {/* Plan Trimestriel - The Masterpiece */}
             <div className="bg-slate-950 p-10 rounded-[3.5rem] shadow-[0_60px_120px_-20px_rgba(239,68,68,0.2)] border-4 border-primary/20 flex flex-col justify-between relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-6">
-                <div className="bg-primary text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] shadow-2xl animate-pulse">
+                <div className="bg-primary text-white px-4 py-2 rounded-xl text-[9px] font-medium uppercase tracking-prestige shadow-2xl animate-pulse">
                   Recommandé
                 </div>
               </div>
@@ -148,8 +148,8 @@ const PremiumPage: React.FC = () => {
               <div className="space-y-8 relative z-10">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="text-2xl font-black uppercase tracking-tighter text-white">Privilège</h4>
-                    <p className="text-amber-400 font-black text-[10px] uppercase tracking-widest mt-1">L'Expérience Ultime</p>
+                    <h4 className="text-2xl font-serif italic tracking-tighter uppercase text-white">Privilège</h4>
+                    <p className="text-amber-400 font-medium text-[10px] uppercase tracking-prestige mt-1">L'Expérience Ultime</p>
                   </div>
                   <div className="w-14 h-14 bg-white/5 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/10 shadow-2xl">
                     <Crown size={28} className="text-amber-400" fill="currentColor" />
@@ -159,9 +159,9 @@ const PremiumPage: React.FC = () => {
                 <div className="space-y-1">
                    <div className="flex items-baseline gap-2">
                     <span className="text-5xl font-[1000] text-white tracking-tighter">10 000 F</span>
-                    <span className="text-slate-500 font-black text-xs uppercase tracking-widest">/ 3 mois</span>
+                    <span className="text-slate-500 font-medium text-xs uppercase tracking-prestige">/ 3 mois</span>
                   </div>
-                  <p className="text-primary font-black text-[9px] uppercase tracking-widest italic opacity-80">Soit 3 333 F / mois seulement</p>
+                  <p className="text-primary font-medium text-[9px] uppercase tracking-prestige italic opacity-80">Soit 3 333 F / mois seulement</p>
                 </div>
 
                 <div className="h-[1px] bg-white/10 w-full"></div>
@@ -184,7 +184,7 @@ const PremiumPage: React.FC = () => {
               <button
                 onClick={() => handlePurchase('PREMIUM', 'QUARTERLY', 10000)}
                 disabled={!!loading || purchaseLoading}
-                className="mt-12 w-full py-5 rounded-2xl bg-primary text-white font-black text-[11px] uppercase tracking-[0.2em] shadow-[0_20px_40px_-5px_rgba(239,68,68,0.4)] hover:scale-[1.03] transition-all active:scale-95 flex items-center justify-center gap-3"
+                className="mt-12 w-full py-5 rounded-2xl bg-primary text-white font-medium text-[11px] uppercase tracking-prestige shadow-[0_20px_40px_-5px_rgba(239,68,68,0.4)] hover:scale-[1.03] transition-all active:scale-95 flex items-center justify-center gap-3"
               >
                 {loading === 'QUARTERLY' ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'CHOISIR LE PRIVILÈGE'}
                 <ArrowRight size={16} />
@@ -195,7 +195,7 @@ const PremiumPage: React.FC = () => {
 
         {/* SECTION 2: SOLDE ROSES - Boutique de luxe style */}
         <div className="lg:col-span-4 space-y-10">
-          <h3 className="text-3xl font-black italic tracking-tighter text-slate-900 flex items-center gap-4">
+          <h3 className="text-3xl font-serif italic tracking-tighter text-slate-900 flex items-center gap-4">
             <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600">
                <Award size={24} />
             </div>
@@ -209,7 +209,7 @@ const PremiumPage: React.FC = () => {
             </div>
 
             <div className="text-center space-y-3 relative z-10">
-               <p className="text-[10px] font-black text-amber-600 uppercase tracking-[0.3em] leading-none">Solde Roses</p>
+               <p className="text-[10px] font-medium text-amber-600 uppercase tracking-prestige leading-none">Solde Roses</p>
                <div className="flex items-center justify-center gap-3">
                   <span className="text-5xl font-black text-slate-950 tracking-tighter">{profile?.rose_balance || 0}</span>
                   <span className="text-2xl">🌹</span>
@@ -235,7 +235,7 @@ const PremiumPage: React.FC = () => {
                     </div>
                     <div className="text-left">
                       <p className="text-sm font-black text-slate-950 leading-none">{pack.label}</p>
-                      <p className="text-[9px] font-bold text-slate-400 mt-1.5 uppercase tracking-widest">{pack.sub}</p>
+                      <p className="text-[9px] font-medium text-slate-400 mt-1.5 uppercase tracking-prestige">{pack.sub}</p>
                     </div>
                   </div>
                   <div className="bg-slate-950 text-white px-4 py-2 rounded-xl text-[10px] font-black group-hover:bg-amber-500 transition-colors">
@@ -254,13 +254,13 @@ const PremiumPage: React.FC = () => {
         {/* SECTION 3: BOOSTS - Modern Cards */}
         <div className="lg:col-span-12 space-y-10 pt-8">
            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-              <h3 className="text-3xl font-black italic tracking-tighter text-slate-900 flex items-center gap-4">
+              <h3 className="text-3xl font-serif italic tracking-tighter text-slate-900 flex items-center gap-4">
                 <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600">
                   <Rocket size={24} />
                 </div>
                 Accélérateurs de Destin
               </h3>
-              <p className="text-slate-400 font-bold text-sm">Passez en tête de liste dans votre ville instantanément.</p>
+              <p className="text-slate-400 font-medium text-sm">Passez en tête de liste dans votre ville instantanément.</p>
            </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -278,7 +278,7 @@ const PremiumPage: React.FC = () => {
                       <boost.icon size={32} className={boost.id === '7D' ? 'text-slate-900' : 'text-purple-600'} />
                     </div>
                     <div className="text-right">
-                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Boost</p>
+                       <p className="text-[10px] font-medium text-slate-400 uppercase tracking-prestige">Boost</p>
                        <h4 className="text-2xl font-[1000] text-slate-950 tracking-tighter">{boost.label}</h4>
                     </div>
                   </div>
@@ -291,7 +291,7 @@ const PremiumPage: React.FC = () => {
                   <button
                       onClick={() => handlePurchase('BOOST', boost.id, boost.price)}
                       disabled={!!loading || purchaseLoading}
-                    className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 ${
+                    className={`w-full py-4 rounded-2xl font-medium text-[10px] uppercase tracking-prestige transition-all flex items-center justify-center gap-3 ${
                       boost.id === '7D'
                       ? 'bg-slate-950 text-white shadow-xl shadow-slate-200'
                       : 'bg-slate-50 text-slate-900 hover:bg-slate-950 hover:text-white'
@@ -310,21 +310,21 @@ const PremiumPage: React.FC = () => {
            <div className="flex items-center gap-4 text-slate-400">
               <ShieldCheck size={32} className="text-green-500" />
               <div className="text-left leading-none">
-                 <p className="text-[10px] font-black uppercase tracking-widest mb-1">Sécurité</p>
+                 <p className="text-[10px] font-medium uppercase tracking-prestige mb-1">Sécurité</p>
                  <p className="text-xs font-bold text-slate-500">Paiements Chiffrés</p>
               </div>
            </div>
            <div className="flex items-center gap-4 text-slate-400">
               <CreditCard size={32} className="text-blue-500" />
               <div className="text-left leading-none">
-                 <p className="text-[10px] font-black uppercase tracking-widest mb-1">Partenaire</p>
+                 <p className="text-[10px] font-medium uppercase tracking-prestige mb-1">Partenaire</p>
                  <p className="text-xs font-bold text-slate-500">Paystack Verified</p>
               </div>
            </div>
            <div className="flex items-center gap-4 text-slate-400">
               <Lock size={32} className="text-amber-500" />
               <div className="text-left leading-none">
-                 <p className="text-[10px] font-black uppercase tracking-widest mb-1">Confiance</p>
+                 <p className="text-[10px] font-medium uppercase tracking-prestige mb-1">Confiance</p>
                  <p className="text-xs font-bold text-slate-500">Garantie Galant</p>
               </div>
            </div>

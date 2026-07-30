@@ -88,7 +88,7 @@ const BoostPage: React.FC = () => {
           <ChevronLeft size={24} />
         </button>
         <div>
-          <h2 className="text-3xl font-black italic dark:text-white">{t('boost_your_profile')}</h2>
+          <h2 className="text-3xl font-serif italic tracking-tighter dark:text-white">{t('boost_your_profile')}</h2>
           <p className="text-slate-500 font-medium">{t('boost_subtitle')}</p>
         </div>
       </div>
@@ -100,7 +100,7 @@ const BoostPage: React.FC = () => {
              <div className="w-20 h-20 bg-white/20 rounded-[2rem] flex items-center justify-center mx-auto backdrop-blur-md">
                 <Rocket size={40} className="animate-bounce" />
              </div>
-             <h3 className="text-2xl font-black italic leading-tight">Propulsez votre visibilité</h3>
+             <h3 className="text-2xl font-serif italic tracking-tighter leading-tight">Propulsez votre visibilité</h3>
              <p className="text-sm font-medium text-white/80">
                 Passez en tête de liste et multipliez vos chances de rencontre d'exception.
              </p>
@@ -112,7 +112,7 @@ const BoostPage: React.FC = () => {
                 <Sparkles size={24} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-black uppercase text-secondary tracking-widest leading-none mb-1">Boost Actif</p>
+                <p className="text-xs font-medium uppercase text-secondary tracking-prestige leading-none mb-1">Boost Actif</p>
                 <p className="text-sm font-bold text-slate-900 dark:text-white truncate">Il reste {boostStatus.remainingLabel}</p>
               </div>
             </div>
@@ -122,13 +122,13 @@ const BoostPage: React.FC = () => {
           <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-white/10 space-y-4 shadow-xl transition-colors">
             <div className="flex items-center gap-3 text-primary">
               <Flame size={20} />
-              <p className="text-xs font-black uppercase tracking-widest">{t('free_boost_available')}</p>
+              <p className="text-xs font-medium uppercase tracking-prestige">{t('free_boost_available')}</p>
             </div>
             <p className="text-[11px] text-slate-500 font-medium leading-relaxed">{t('free_boost_subtitle')}</p>
             <button
               onClick={handleFreeBoost}
               disabled={activatingFree || boostStatus.active}
-              className="w-full py-4 rounded-2xl bg-primary/5 text-primary font-black text-xs uppercase tracking-widest hover:bg-primary hover:text-white transition-all disabled:opacity-30"
+              className="w-full py-4 rounded-2xl bg-primary/5 text-primary font-medium text-xs uppercase tracking-prestige hover:bg-primary hover:text-white transition-all disabled:opacity-30"
             >
               {activatingFree ? <Loader2 className="animate-spin mx-auto" size={16} /> : t('activate')}
             </button>
@@ -137,7 +137,7 @@ const BoostPage: React.FC = () => {
 
         {/* Right Column: Plans */}
         <div className="md:col-span-2 space-y-4">
-          <h4 className="text-xs font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.2em] ml-2">Sélectionnez votre plan</h4>
+          <h4 className="text-xs font-medium text-slate-400 dark:text-slate-600 uppercase tracking-prestige ml-2">Sélectionnez votre plan</h4>
           <div className="space-y-4">
             {BOOST_PLANS.map((plan) => (
               <div
@@ -147,7 +147,7 @@ const BoostPage: React.FC = () => {
                 }`}
               >
                 {plan.isBest && (
-                  <div className="absolute top-0 right-0 bg-white/20 backdrop-blur-md px-6 py-2 rounded-bl-[1.5rem] text-[10px] font-black uppercase text-white tracking-widest">
+                  <div className="absolute top-0 right-0 bg-white/20 backdrop-blur-md px-6 py-2 rounded-bl-[1.5rem] text-[10px] font-medium uppercase text-white tracking-prestige">
                     {t('best_choice')}
                   </div>
                 )}
@@ -159,7 +159,7 @@ const BoostPage: React.FC = () => {
 
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center gap-3">
-                       <h5 className={`text-xl font-black italic ${plan.isBest ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{plan.name}</h5>
+                       <h5 className={`text-xl font-serif italic tracking-tighter ${plan.isBest ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{plan.name}</h5>
                        {plan.savings && <span className="bg-green-500 text-white px-2 py-0.5 rounded-lg text-[9px] font-black">-{plan.savings}</span>}
                     </div>
                     <p className={`text-sm font-medium ${plan.isBest ? 'text-white/70' : 'text-slate-500'}`}>{plan.description}</p>
@@ -170,7 +170,7 @@ const BoostPage: React.FC = () => {
                     <button
                       onClick={() => handlePurchase(plan)}
                       disabled={purchaseLoading || boostStatus.active}
-                      className={`w-full md:w-auto px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
+                      className={`w-full md:w-auto px-8 py-4 rounded-2xl font-medium text-xs uppercase tracking-prestige flex items-center justify-center gap-2 transition-all ${
                         plan.isBest
                           ? 'bg-white text-secondary hover:scale-105 active:scale-95 shadow-xl'
                           : 'bg-secondary text-white hover:scale-105 active:scale-95 shadow-lg shadow-secondary/20'

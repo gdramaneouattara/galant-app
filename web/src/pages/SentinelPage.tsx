@@ -328,8 +328,8 @@ const SentinelPage: React.FC = () => {
           <ChevronLeft size={20} />
         </button>
         <div>
-          <h2 className="text-3xl font-[1000] italic tracking-tight text-slate-900 dark:text-white">La Sentinelle</h2>
-          <p className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest text-[10px]">Sécurité & Discrétion Galante</p>
+          <h2 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white">La Sentinelle</h2>
+          <p className="text-slate-500 dark:text-slate-400 font-medium uppercase tracking-prestige text-[10px]">Sécurité & Discrétion Galante</p>
         </div>
       </div>
 
@@ -340,7 +340,7 @@ const SentinelPage: React.FC = () => {
             <div className="w-12 h-12 bg-blue-50 dark:bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center">
               <Shield size={24} />
             </div>
-            <h3 className="font-black text-xl italic">Sécurité Active</h3>
+            <h3 className="font-serif italic text-xl tracking-tighter">Sécurité Active</h3>
           </div>
           <button
             onClick={handleSOS}
@@ -355,7 +355,7 @@ const SentinelPage: React.FC = () => {
           <div className="space-y-6">
             {/* Duration Selector */}
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Durée de la veille</label>
+              <label className="text-[10px] font-medium text-slate-400 uppercase tracking-prestige ml-2">Durée de la veille</label>
               <div className="flex items-center gap-4 bg-slate-50 dark:bg-white/5 p-4 rounded-3xl">
                 <div className="flex-1 flex flex-col items-center gap-1">
                   <span className="text-[8px] font-black text-slate-400 uppercase">Heures</span>
@@ -382,7 +382,7 @@ const SentinelPage: React.FC = () => {
             {/* Contacts Section */}
             <div className="space-y-3">
               <div className="flex justify-between items-center px-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contacts (Max 2)</label>
+                <label className="text-[10px] font-medium text-slate-400 uppercase tracking-prestige">Contacts (Max 2)</label>
                 <div className="flex gap-4">
                    {isDirty && (
                      <button
@@ -460,7 +460,7 @@ const SentinelPage: React.FC = () => {
 
             {/* Meeting Details Section */}
             <div className="space-y-4 pt-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Détails du rendez-vous (Optionnel)</label>
+              <label className="text-[10px] font-medium text-slate-400 uppercase tracking-prestige ml-2">Détails du rendez-vous (Optionnel)</label>
               <div className="bg-slate-50 dark:bg-white/5 p-5 rounded-[2rem] space-y-4">
                 <div className="space-y-1">
                    <div className="flex items-center gap-2 text-[8px] font-black text-slate-400 uppercase ml-1">
@@ -504,7 +504,7 @@ const SentinelPage: React.FC = () => {
             <button
               onClick={handleScheduleCheckIn}
               disabled={loading || contacts.length === 0}
-              className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl disabled:opacity-50 transition-all hover:scale-[1.02]"
+              className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-medium text-xs uppercase tracking-prestige shadow-xl disabled:opacity-50 transition-all hover:scale-[1.02]"
             >
               Activer la Protection
             </button>
@@ -538,7 +538,7 @@ const SentinelPage: React.FC = () => {
           <div className="w-12 h-12 bg-white/10 text-primary rounded-2xl flex items-center justify-center">
             <PhoneIncoming size={24} />
           </div>
-          <h3 className="font-black text-xl italic">Appel Fantôme</h3>
+          <h3 className="font-serif italic text-xl tracking-tighter">Appel Fantôme</h3>
         </div>
 
         <div className="space-y-6 relative z-10">
@@ -566,7 +566,7 @@ const SentinelPage: React.FC = () => {
 
           <button
             onClick={triggerFakeCall}
-            className="w-full bg-white text-slate-900 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
+            className="w-full bg-white text-slate-900 py-5 rounded-2xl font-medium text-xs uppercase tracking-prestige shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
           >
             Lancer la Simulation
           </button>

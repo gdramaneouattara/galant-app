@@ -16,12 +16,12 @@ const PrivacyPage: React.FC = () => {
           <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center">
             <ShieldCheck size={32} />
           </div>
-          <h1 className="text-4xl font-black italic tracking-tighter text-slate-900">Politique de Confidentialité</h1>
+          <h1 className="text-4xl font-serif italic tracking-tighter text-slate-900">Politique de Confidentialité</h1>
           <p className="text-slate-500 font-medium italic">Respecter votre vie privée est notre priorité absolue.</p>
         </header>
 
         <section className="space-y-6">
-          <div className="flex items-center gap-3 text-blue-500 font-black uppercase text-xs tracking-widest">
+          <div className="flex items-center gap-3 text-blue-500 font-medium uppercase text-xs tracking-prestige">
             <Database size={16} /> 1. Données Collectées
           </div>
           <p className="text-slate-600 leading-relaxed font-medium">
@@ -30,7 +30,7 @@ const PrivacyPage: React.FC = () => {
         </section>
 
         <section className="space-y-6">
-          <div className="flex items-center gap-3 text-blue-500 font-black uppercase text-xs tracking-widest">
+          <div className="flex items-center gap-3 text-blue-500 font-medium uppercase text-xs tracking-prestige">
             <Trash2 size={16} /> 2. Éphémérité & Suppression
           </div>
           <div className="bg-blue-50/50 p-8 rounded-[2rem] border border-blue-100 space-y-4">
@@ -44,7 +44,7 @@ const PrivacyPage: React.FC = () => {
         </section>
 
         <section className="space-y-6">
-          <div className="flex items-center gap-3 text-blue-500 font-black uppercase text-xs tracking-widest">
+          <div className="flex items-center gap-3 text-blue-500 font-medium uppercase text-xs tracking-prestige">
             <ShieldOff size={16} /> 3. Non-partage des données
           </div>
           <p className="text-slate-600 leading-relaxed font-medium">
@@ -53,7 +53,7 @@ const PrivacyPage: React.FC = () => {
         </section>
 
         <section className="space-y-6">
-          <div className="flex items-center gap-3 text-blue-500 font-black uppercase text-xs tracking-widest">
+          <div className="flex items-center gap-3 text-blue-500 font-medium uppercase text-xs tracking-prestige">
             <UserCog size={16} /> 4. Vos Droits
           </div>
           <p className="text-slate-600 leading-relaxed font-medium">
@@ -62,7 +62,7 @@ const PrivacyPage: React.FC = () => {
         </section>
 
         <section className="space-y-6">
-          <div className="flex items-center gap-3 text-blue-500 font-black uppercase text-xs tracking-widest">
+          <div className="flex items-center gap-3 text-blue-500 font-medium uppercase text-xs tracking-prestige">
             <EyeOff size={16} /> 5. Sécurité des Échanges
           </div>
           <p className="text-slate-600 leading-relaxed font-medium text-sm">
@@ -71,7 +71,7 @@ const PrivacyPage: React.FC = () => {
         </section>
 
         <section className="space-y-6 pt-10 border-t border-slate-100">
-          <div className="flex items-center gap-3 text-slate-400 font-black uppercase text-xs tracking-widest">
+          <div className="flex items-center gap-3 text-slate-400 font-medium uppercase text-xs tracking-prestige">
             <Mail size={16} /> 6. Contact Légal & Régulation
           </div>
           <p className="text-slate-500 text-sm font-medium leading-relaxed">

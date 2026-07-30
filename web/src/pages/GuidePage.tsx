@@ -123,7 +123,7 @@ const GuidePage: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center py-40">
         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Sélection des meilleures adresses...</p>
+        <p className="text-slate-400 font-medium uppercase tracking-prestige text-[10px]">Sélection des meilleures adresses...</p>
       </div>
     );
   }
@@ -146,12 +146,12 @@ const GuidePage: React.FC = () => {
             <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/20">
               <Compass size={24} className="text-white animate-pulse" />
             </div>
-            <span className="text-white/40 font-black uppercase tracking-[0.3em] text-[10px]">
+            <span className="text-white/40 font-medium uppercase tracking-prestige text-[10px]">
               Expérience Galante
             </span>
           </div>
 
-          <h2 className="text-5xl md:text-7xl font-black text-white italic tracking-tighter leading-none">
+          <h2 className="text-5xl md:text-7xl font-serif italic tracking-tighter text-white leading-none">
             Le Guide <span className="text-primary not-italic">Privilège</span>
           </h2>
 
@@ -162,11 +162,11 @@ const GuidePage: React.FC = () => {
           <div className="flex flex-wrap gap-4 pt-4">
             <div className="bg-white/5 backdrop-blur-md border border-white/10 px-6 py-3 rounded-2xl flex items-center gap-3">
               <Trophy size={20} className="text-amber-500" />
-              <span className="text-white text-xs font-black uppercase tracking-widest">Lieux Certifiés</span>
+              <span className="text-white text-xs font-medium uppercase tracking-prestige">Lieux Certifiés</span>
             </div>
             <div className="bg-white/5 backdrop-blur-md border border-white/10 px-6 py-3 rounded-2xl flex items-center gap-3">
               <Sparkles size={20} className="text-primary" />
-              <span className="text-white text-xs font-black uppercase tracking-widest">Avantages Membres</span>
+              <span className="text-white text-xs font-medium uppercase tracking-prestige">Avantages Membres</span>
             </div>
           </div>
         </div>
@@ -195,7 +195,7 @@ const GuidePage: React.FC = () => {
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id as any)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-[10px] uppercase tracking-prestige transition-all ${
                 activeCategory === cat.id ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'
               }`}
             >
@@ -231,11 +231,11 @@ const GuidePage: React.FC = () => {
               </div>
 
               <div className="absolute bottom-6 left-8 right-8">
-                <div className="flex items-center gap-2 text-primary-light font-black text-[10px] uppercase tracking-[0.2em] mb-2">
+                <div className="flex items-center gap-2 text-primary-light font-medium text-[10px] uppercase tracking-prestige mb-2">
                   <MapPin size={12} className="text-primary" />
                   <span className="text-white/80">{venue.city}</span>
                 </div>
-                <h4 className="text-3xl font-black text-white tracking-tighter leading-none">{venue.name}</h4>
+                <h4 className="text-3xl font-serif italic tracking-tighter text-white leading-none">{venue.name}</h4>
               </div>
             </div>
 
@@ -248,7 +248,7 @@ const GuidePage: React.FC = () => {
                 <div className="bg-gradient-to-br from-rose-50 to-rose-100/30 p-5 rounded-[2rem] border border-rose-100 flex items-start gap-4 shadow-inner">
                   <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-xl">🎁</div>
                   <div>
-                    <p className="text-[8px] font-black text-rose-300 uppercase tracking-widest mb-1">Privilège Membre</p>
+                    <p className="text-[8px] font-medium text-rose-300 uppercase tracking-prestige mb-1">Privilège Membre</p>
                     <p className="text-xs font-black text-primary uppercase tracking-tight leading-tight">
                       {venue.benefit_description}
                     </p>
@@ -260,14 +260,14 @@ const GuidePage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => { setSelectedVenue(venue); setIsModalOpen(true); }}
-                    className="py-4 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-black transition-all shadow-xl shadow-slate-900/10 active:scale-95 group/btn"
+                    className="py-4 rounded-2xl bg-slate-900 text-white font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-2 hover:bg-black transition-all shadow-xl shadow-slate-900/10 active:scale-95 group/btn"
                   >
                     <Send size={14} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
                     Proposer
                   </button>
                   <button
                     onClick={() => handleYangoRide(venue)}
-                    className="py-4 rounded-2xl bg-white border-2 border-slate-100 text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-slate-50 hover:text-slate-900 transition-all active:scale-95"
+                    className="py-4 rounded-2xl bg-white border-2 border-slate-100 text-slate-400 font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-2 hover:bg-slate-50 hover:text-slate-900 transition-all active:scale-95"
                   >
                     <Car size={16} />
                     Yango
@@ -276,7 +276,7 @@ const GuidePage: React.FC = () => {
 
                 <button
                   onClick={() => handleContactVenue(venue)}
-                  className="w-full py-5 rounded-2xl bg-rose-50 border border-rose-100 text-primary font-black text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-primary hover:text-white transition-all group/chat active:scale-95 shadow-lg shadow-rose-500/5"
+                  className="w-full py-5 rounded-2xl bg-rose-50 border border-rose-100 text-primary font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-3 hover:bg-primary hover:text-white transition-all group/chat active:scale-95 shadow-lg shadow-rose-500/5"
                 >
                   <MessageCircle size={18} fill="currentColor" className="opacity-20 group-hover/chat:opacity-100 transition-opacity" />
                   Accès Conciergerie
@@ -293,11 +293,11 @@ const GuidePage: React.FC = () => {
         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 bg-black/10 rounded-full blur-3xl"></div>
 
         <div className="relative z-10 max-w-2xl mx-auto space-y-6">
-          <h3 className="text-3xl md:text-5xl font-black text-white italic tracking-tighter">Votre lieu mérite l'excellence</h3>
+          <h3 className="text-3xl md:text-5xl font-serif italic tracking-tighter text-white">Votre lieu mérite l'excellence</h3>
           <p className="text-white/80 text-lg font-medium">Rejoignez le cercle restreint des établissements certifiés Galant.</p>
           <button
             onClick={() => navigate('/partner-signup')}
-            className="bg-white text-amber-600 px-10 py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all mt-4"
+            className="bg-white text-amber-600 px-10 py-5 rounded-[2rem] font-medium text-sm uppercase tracking-prestige shadow-2xl hover:scale-105 active:scale-95 transition-all mt-4"
           >
             Inscrire mon établissement
           </button>
