@@ -257,10 +257,10 @@ const DiscoverPage: React.FC = () => {
       {/* Header avec Filtre à droite */}
       <div className="flex justify-between items-start mb-8 pt-2">
         <div>
-          <h2 className="text-3xl font-[1000] italic tracking-tighter text-slate-900 dark:text-white leading-none">
+          <h2 className="text-4xl font-serif italic tracking-tighter text-slate-900 dark:text-white leading-none">
             {t('discover') || "Découvrir"}
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 font-bold mt-2 text-[10px] uppercase tracking-[0.3em]">
+          <p className="text-slate-500 dark:text-slate-400 font-medium mt-2 text-[10px] uppercase tracking-prestige">
             {t('discover_subtitle') || "Découvre de nouvelles personnes"}
           </p>
         </div>
@@ -280,11 +280,11 @@ const DiscoverPage: React.FC = () => {
 
       <section className="mb-8">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Stories</p>
+          <p className="text-[11px] font-bold uppercase tracking-prestige text-slate-500 dark:text-slate-400">Stories</p>
           <button
             type="button"
             onClick={() => navigate('/stories')}
-            className="text-[10px] font-black uppercase tracking-widest text-primary"
+            className="text-[10px] font-bold uppercase tracking-prestige text-primary"
           >
             Voir tout
           </button>
@@ -401,13 +401,13 @@ const DiscoverPage: React.FC = () => {
 
               <div className="absolute inset-x-8 bottom-10 text-white pointer-events-none">
                 <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-2xl font-black tracking-tight leading-none">
+                  <h3 className="text-3xl font-serif italic tracking-tight leading-none">
                     {(currentProfile.name || '').trim()}, {currentProfile.age}
                   </h3>
                   {currentProfile.galanterie_score >= 4.5 && (
                     <div className="bg-rose-500/30 backdrop-blur-md px-3 py-1 rounded-full border border-rose-500/20 flex items-center gap-1">
                       <Gem size={12} className="text-rose-400" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-rose-100">Élite</span>
+                      <span className="text-[10px] font-bold uppercase tracking-prestige text-rose-100">Élite</span>
                     </div>
                   )}
                 </div>
