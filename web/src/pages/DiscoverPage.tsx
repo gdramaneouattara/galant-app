@@ -268,14 +268,13 @@ const DiscoverPage: React.FC = () => {
         {/* Pilule de filtre alignée à droite */}
         <button
           onClick={() => setIsFilterOpen(true)}
-          className={`px-5 py-2.5 rounded-full backdrop-blur-xl flex items-center gap-2.5 transition-all active:scale-95 border group ${
+          className={`w-10 h-10 rounded-full backdrop-blur-xl flex items-center justify-center transition-all active:scale-95 border group ${
             isFilterActive
               ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.15)] text-amber-500'
               : 'bg-white/10 dark:bg-slate-900/40 border-white/20 dark:border-white/5 text-slate-400 hover:text-white shadow-lg'
           }`}
         >
           <SlidersHorizontal size={16} className={isFilterActive ? 'animate-pulse' : 'group-hover:rotate-12 transition-transform'} />
-          <span className="text-[10px] font-black uppercase tracking-[0.2em]">{isFilterActive ? 'Filtres Actifs' : 'Filtres'}</span>
         </button>
       </div>
 
