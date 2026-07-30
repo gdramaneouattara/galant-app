@@ -110,10 +110,10 @@ const MatchesPage: React.FC = () => {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h2 className="text-4xl font-serif italic tracking-tighter text-slate-900 leading-none">
+            <h2 className="text-4xl font-serif italic tracking-tighter text-slate-900 dark:text-white leading-none">
               {t('messages')}
             </h2>
-            <p className="text-slate-500 font-medium mt-2 text-lg">
+            <p className="text-slate-500 dark:text-slate-400 font-medium mt-2 text-lg">
               {t('messages_subtitle') || 'Vos connexions élégantes'}
             </p>
           </div>
@@ -129,7 +129,7 @@ const MatchesPage: React.FC = () => {
             placeholder={t('search_conversations') || "Rechercher une conversation..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
+            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl py-4 pl-12 pr-4 text-slate-700 dark:text-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
           />
         </div>
       </div>
@@ -199,7 +199,7 @@ const MatchesPage: React.FC = () => {
                   {/* Petit badge online optionnel */}
                   <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white rounded-full"></div>
                 </div>
-                <span className="text-xs font-serif italic tracking-tighter text-slate-800">{otherUser.name}</span>
+                <span className="text-xs font-serif italic tracking-tighter text-slate-800 dark:text-slate-300">{otherUser.name}</span>
               </button>
             ))
           )}
@@ -213,7 +213,7 @@ const MatchesPage: React.FC = () => {
           <div className="h-[1px] flex-1 bg-slate-100"></div>
         </div>
 
-        <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/40 border border-slate-100 overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-white/5 overflow-hidden">
           {conversations.length === 0 && filteredVenueChats.length === 0 ? (
             <div className="p-16 text-center space-y-4">
               <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
@@ -243,10 +243,10 @@ const MatchesPage: React.FC = () => {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <span className="font-serif italic tracking-tighter text-slate-900 text-lg group-hover:text-primary transition-colors">
+                    <span className="font-serif italic tracking-tighter text-slate-900 dark:text-white text-lg group-hover:text-primary transition-colors">
                       {chat.venues?.name}
                     </span>
-                    <p className="text-sm truncate font-medium text-slate-500">
+                    <p className="text-sm truncate font-medium text-slate-500 dark:text-slate-400">
                       {chat.venues?.benefit_description || 'Conversation avec un etablissement partenaire'}
                     </p>
                   </div>
@@ -277,13 +277,13 @@ const MatchesPage: React.FC = () => {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-serif italic tracking-tighter text-slate-900 text-lg group-hover:text-primary transition-colors">
+                      <span className="font-serif italic tracking-tighter text-slate-900 dark:text-white text-lg group-hover:text-primary transition-colors">
                         {otherUser.name}
                       </span>
                       {otherUser.is_verified && <ShieldCheck size={16} className="text-blue-500 fill-blue-50" />}
                       {(otherUser.galanterie_score || 0) >= 4.5 && <Gem size={16} className="text-rose-600" />}
                     </div>
-                    <p className={`text-sm truncate font-medium ${unreadCount > 0 ? 'text-slate-900 font-bold' : 'text-slate-500'}`}>
+                    <p className={`text-sm truncate font-medium ${unreadCount > 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-500 dark:text-slate-400'}`}>
                       {lastMessage?.content || 'Commencez la discussion...'}
                     </p>
                   </div>
