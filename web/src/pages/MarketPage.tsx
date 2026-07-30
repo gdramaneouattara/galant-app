@@ -73,8 +73,8 @@ const MarketPage: React.FC = () => {
           <ChevronLeft size={20} />
         </button>
         <div>
-          <h2 className="text-3xl font-[1000] italic tracking-tight text-slate-900 dark:text-white">Le Marché Galant</h2>
-          <p className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest text-[10px]">Comparateur de prix intelligent</p>
+          <h2 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white">Le Marché Galant</h2>
+          <p className="text-slate-500 dark:text-slate-400 font-medium uppercase tracking-prestige text-[10px]">Comparateur de prix intelligent</p>
         </div>
       </div>
 

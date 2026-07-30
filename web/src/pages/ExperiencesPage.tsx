@@ -12,7 +12,7 @@ const ExperiencesPage: React.FC = () => {
         <div className="bg-white p-1.5 rounded-[2rem] flex gap-1 shadow-xl border border-slate-200">
           <button
             onClick={() => setActiveTab('AGENDA')}
-            className={`flex items-center gap-2 px-8 py-3 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
+            className={`flex items-center gap-2 px-8 py-3 rounded-full text-xs font-medium uppercase tracking-prestige transition-all ${
               activeTab === 'AGENDA'
                 ? 'bg-slate-900 text-white'
                 : 'text-slate-400 hover:text-slate-600'
@@ -23,7 +23,7 @@ const ExperiencesPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('GUIDE')}
-            className={`flex items-center gap-2 px-8 py-3 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
+            className={`flex items-center gap-2 px-8 py-3 rounded-full text-xs font-medium uppercase tracking-prestige transition-all ${
               activeTab === 'GUIDE'
                 ? 'bg-slate-900 text-white'
                 : 'text-slate-400 hover:text-slate-600'

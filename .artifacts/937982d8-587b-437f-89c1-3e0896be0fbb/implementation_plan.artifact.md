@@ -1,38 +1,37 @@
-# Refonte Typographique "Signature Prestige"
+# Harmonisation Typographique "Web Prestige"
 
-Ce plan vise à donner à Galant une identité visuelle digne d'une marque de luxe en intégrant des polices de caractères spécifiques et en optimisant l'espacement des textes.
+Ce plan vise à appliquer l'identité visuelle de luxe (Playfair Display, Montserrat et espacement Prestige) à l'intégralité des pages de la version Web Mobile de Galant.
 
 ## Proposed Changes
 
-### [Shared] Ressources & Configuration
+### [Web] Généralisation du style sur toutes les pages
 
-#### [MODIFY] [index.html](file:///C:/Users/UTILISATEUR/galant-app/web/index.html)
-- Importer les polices Google Fonts :
-    - **Playfair Display** (Serif) : Pour les titres émotionnels et le prestige.
-    - **Montserrat** (Sans-serif) : Pour une interface moderne, géométrique et lisible.
+Je vais passer sur chaque fichier dans `web/src/pages/` pour appliquer la hiérarchie visuelle validée sur la page Découverte :
 
-#### [MODIFY] [tailwind.config.js](file:///C:/Users/UTILISATEUR/galant-app/web/tailwind.config.js)
-- Étendre le thème Tailwind :
-    - `fontFamily.serif` : Configurer 'Playfair Display' comme police sérif par défaut.
-    - `fontFamily.sans` : Configurer 'Montserrat' comme police sans-sérif par défaut.
-    - `letterSpacing.prestige` : Ajouter un espacement personnalisé (`0.25em`) pour les labels en majuscules.
+1.  **Titres Principaux (H2, H3 selon le contexte)** :
+    - Classe : `font-serif italic tracking-tighter`.
+    - Effet : Look "Éditorial" haut de gamme.
 
-### [Web Mobile] Application du Style (Phase 1 : Découverte)
+2.  **Labels et Sous-titres en Majuscules** :
+    - Classe : `uppercase tracking-prestige font-medium`.
+    - Effet : Élégance technique et aération.
 
-#### [MODIFY] [DiscoverPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/DiscoverPage.tsx)
-- Appliquer `font-serif` sur le titre principal "Découvrir".
-- Appliquer `tracking-prestige` sur tous les labels en majuscules (ex: "DÉCOUVRE DE NOUVELLES PERSONNES", "STORIES", "VÉRIFIÉ JUMIA").
-- Harmoniser les graisses de police : utiliser des poids plus légers (`font-medium` ou `font-light`) pour les textes espacés.
-
-## User Review Required
-
-> [!NOTE]
-> L'utilisation d'une police Serif (avec empattements) pour les titres est un changement majeur qui donne immédiatement un aspect "Magazine" ou "Conciergerie". Le texte Montserrat apportera la clarté nécessaire pour le reste de l'application.
+3.  **Pages concernées** :
+    - `AppsPage.tsx` (Hub des services)
+    - `ProfilePage.tsx` & `ProfileDetailPage.tsx`
+    - `MarketPage.tsx` (Comparateur de prix)
+    - `SentinelPage.tsx` (Sécurité)
+    - `PremiumPage.tsx` & `BoostPage.tsx` (Monétisation)
+    - `MatchesPage.tsx` & `ChatPage.tsx` (Interactions)
+    - `AuthPage.tsx` & `OnboardingPage.tsx` (Entrée dans l'app)
+    - Toutes les pages de contenu (Guide, Expériences, Agenda, CGU, Privacy).
 
 ## Verification Plan
 
+### Automated Tests
+- Relancer `npm run test:quality` pour valider l'intégrité de la navigation.
+
 ### Manual Verification
-1.  Ouvrir la page **Découverte**.
-2.  Vérifier que le titre "Découvrir" a changé d'aspect (élégance classique).
-3.  Vérifier que les textes en majuscules sont plus aérés et prestigieux.
-4.  Tester la lisibilité globale sur écran mobile.
+- Naviguer sur l'ensemble de l'application Web pour vérifier que l'unité de style est respectée sans exception.
+- Vérifier que les polices se chargent correctement (Playfair pour les titres, Montserrat pour le texte).
+- S'assurer que le `tracking-prestige` ne nuit pas à la lisibilité sur les petits écrans.

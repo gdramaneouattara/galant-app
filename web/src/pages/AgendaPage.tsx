@@ -121,12 +121,12 @@ const AgendaPage: React.FC = () => {
             <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/10 shadow-2xl">
               <Sparkles size={24} className="text-amber-400 animate-pulse" />
             </div>
-            <span className="text-amber-400/80 font-black uppercase tracking-[0.3em] text-[10px]">
+            <span className="text-amber-400/80 font-medium uppercase tracking-prestige text-[10px]">
               Événements de Prestige
             </span>
           </div>
 
-          <h2 className="text-5xl md:text-7xl font-black text-white italic tracking-tighter leading-none">
+          <h2 className="text-5xl md:text-7xl font-serif italic tracking-tighter text-white leading-none">
             Agenda <span className="text-primary not-italic">Galant</span>
           </h2>
 
@@ -150,7 +150,7 @@ const AgendaPage: React.FC = () => {
             <button
               key={cat.id}
               onClick={() => setFilter(cat.id as any)}
-              className={`px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${
+              className={`px-8 py-3 rounded-2xl font-medium text-[10px] uppercase tracking-prestige transition-all whitespace-nowrap ${
                 filter === cat.id ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'
               }`}
             >
@@ -159,7 +159,7 @@ const AgendaPage: React.FC = () => {
           ))}
         </div>
 
-        <div className="hidden lg:flex items-center gap-3 text-slate-400 font-bold text-xs uppercase tracking-widest bg-white/80 backdrop-blur-xl px-6 py-4 rounded-[2rem] border border-slate-200 shadow-xl">
+        <div className="hidden lg:flex items-center gap-3 text-slate-400 font-medium text-xs uppercase tracking-prestige bg-white/80 backdrop-blur-xl px-6 py-4 rounded-[2rem] border border-slate-200 shadow-xl">
            <Filter size={16} className="text-primary" />
            <span>Filtrer par ville</span>
            <div className="w-[1px] h-4 bg-slate-200 mx-2"></div>
@@ -221,11 +221,11 @@ const AgendaPage: React.FC = () => {
               {/* Content Section - Half Width */}
               <div className="p-8 md:p-10 flex-1 flex flex-col space-y-6">
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em]">
+                  <div className="flex items-center gap-2 text-slate-400 font-medium text-[10px] uppercase tracking-prestige">
                     <MapPin size={12} className="text-primary" />
                     <span>{event.venues?.city || 'Ville non définie'}</span>
                   </div>
-                  <h3 className="text-3xl font-black text-slate-900 tracking-tighter leading-none group-hover:text-primary transition-colors">
+                  <h3 className="text-3xl font-serif italic tracking-tighter text-slate-900 leading-none group-hover:text-primary transition-colors">
                     {event.title}
                   </h3>
                 </div>
@@ -266,7 +266,7 @@ const AgendaPage: React.FC = () => {
                 <div className="flex gap-3 pt-2">
                   <button
                     onClick={(e) => { e.stopPropagation(); handleAttendToggle(event.id, event.is_attending); }}
-                    className={`flex-1 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-xl ${
+                    className={`flex-1 py-5 rounded-2xl font-medium text-[10px] uppercase tracking-prestige transition-all flex items-center justify-center gap-3 shadow-xl ${
                       event.is_attending
                         ? 'bg-rose-50 text-primary border border-rose-100 shadow-rose-500/5'
                         : 'bg-slate-950 text-white shadow-slate-950/10 hover:bg-black active:scale-95'
@@ -298,12 +298,12 @@ const AgendaPage: React.FC = () => {
             </div>
           </div>
           <div className="space-y-4">
-            <h3 className="text-3xl md:text-5xl font-black text-white italic tracking-tighter">Accédez à l'Élite Galante</h3>
+            <h3 className="text-3xl md:text-5xl font-serif italic tracking-tighter text-white">Accédez à l'Élite Galante</h3>
             <p className="text-slate-400 text-lg font-medium leading-relaxed">
               Les membres Premium bénéficient d'invitations prioritaires et de places garanties dans les lieux les plus convoités.
             </p>
           </div>
-          <button className="bg-primary text-white px-12 py-5 rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-red-500/20 hover:scale-105 active:scale-95 transition-all">
+          <button className="bg-primary text-white px-12 py-5 rounded-[2rem] font-medium text-xs uppercase tracking-prestige shadow-2xl shadow-red-500/20 hover:scale-105 active:scale-95 transition-all">
             Devenir Premium
           </button>
         </div>

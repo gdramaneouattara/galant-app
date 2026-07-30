@@ -275,13 +275,13 @@ const ProfilePage: React.FC = () => {
           {/* Status Badge Over Image */}
           <div className="absolute top-6 left-6 flex gap-2">
             {profile.is_premium && (
-              <div className="bg-gradient-to-r from-amber-400 to-amber-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2">
+              <div className="bg-gradient-to-r from-amber-400 to-amber-600 text-white px-4 py-2 rounded-xl text-[10px] font-medium uppercase tracking-prestige shadow-lg flex items-center gap-2">
                 <Crown size={14} fill="currentColor" />
                 Premium
               </div>
             )}
             {profile.is_verified && (
-              <div className="bg-blue-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2">
+              <div className="bg-blue-500 text-white px-4 py-2 rounded-xl text-[10px] font-medium uppercase tracking-prestige shadow-lg flex items-center gap-2">
                 <ShieldCheck size={14} fill="currentColor" />
                 Vérifié
               </div>
@@ -304,9 +304,9 @@ const ProfilePage: React.FC = () => {
                 className="text-xl md:text-4xl font-black border-b-2 border-primary outline-none bg-transparent w-full md:w-auto"
               />
             ) : (
-              <h2 className="text-xl md:text-4xl font-black tracking-tight leading-tight">{profile.name}, {profile.age}</h2>
+              <h2 className="text-xl md:text-4xl font-serif italic tracking-tighter leading-tight">{profile.name}, {profile.age}</h2>
             )}
-            <div className="flex items-center gap-2 text-white/90 font-bold text-[10px] md:text-xs uppercase tracking-[0.2em] mt-1">
+            <div className="flex items-center gap-2 text-white/90 font-medium text-[10px] md:text-xs uppercase tracking-prestige mt-1">
               <MapPin size={12} className="text-primary" />
               <span>{(profile.city || 'Ville non renseignée').toUpperCase()}</span>
             </div>
@@ -315,15 +315,15 @@ const ProfilePage: React.FC = () => {
           <div className="flex gap-2 w-full md:w-auto justify-center md:justify-end">
             <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl shadow-xl flex flex-col items-center min-w-[75px] border border-white/50 dark:border-white/10 transition-all">
               <span className="text-lg font-black text-primary leading-none">{profile.galanterie_score || '5.0'}</span>
-              <span className="text-[7px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mt-1">Galanterie</span>
+              <span className="text-[7px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige mt-1">Galanterie</span>
             </div>
             <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl shadow-xl flex flex-col items-center min-w-[75px] border border-white/50 dark:border-white/10 transition-all">
               <span className="text-lg font-black text-rose-500 leading-none">{profile.likes_count || 0}</span>
-              <span className="text-[7px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mt-1">Likes</span>
+              <span className="text-[7px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige mt-1">Likes</span>
             </div>
             <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl shadow-xl flex flex-col items-center min-w-[75px] border border-white/50 dark:border-white/10 transition-all">
               <span className="text-lg font-black text-amber-600 leading-none">{profile.roses_count || 0}</span>
-              <span className="text-[7px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mt-1">Recues</span>
+              <span className="text-[7px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige mt-1">Recues</span>
             </div>
           </div>
         </div>
@@ -350,7 +350,7 @@ const ProfilePage: React.FC = () => {
         <div className="md:col-span-2 space-y-8">
           <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-white/10 transition-colors">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors">{t('my_bio')}</h3>
+              <h3 className="text-sm font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige transition-colors">{t('my_bio')}</h3>
               <div className="flex gap-2">
                 {editing && (
                   <button
@@ -401,7 +401,7 @@ const ProfilePage: React.FC = () => {
                 <Share2 size={32} />
               </div>
               <div className="text-left">
-                <p className="text-lg font-black italic uppercase tracking-tighter leading-none mb-1">Inviter un Ami 🌹</p>
+                <p className="text-lg font-serif italic uppercase tracking-tighter leading-none mb-1">Inviter un Ami 🌹</p>
                 <p className="text-sm font-bold text-slate-400">Gagnez des Roses a consommer gratuitement</p>
               </div>
             </div>
@@ -423,7 +423,7 @@ const ProfilePage: React.FC = () => {
                 <Heart size={24} />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Je cherche...</p>
+                <p className="text-sm font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">Je cherche...</p>
                 <p className="text-[10px] font-bold text-slate-400">
                   {RELATIONSHIP_GOALS.find(g => g.id === profile.relationship_goal)?.label || 'Définir mon objectif'}
                 </p>
@@ -440,7 +440,7 @@ const ProfilePage: React.FC = () => {
                 <Plane size={24} />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Mode Voyage</p>
+                <p className="text-sm font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">Mode Voyage</p>
                 <p className="text-[10px] font-bold text-slate-400">
                   {profile.passport_city ? profile.passport_city : 'Changez de ville'}
                 </p>
@@ -458,7 +458,7 @@ const ProfilePage: React.FC = () => {
                   <ShieldCheck size={24} />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-black text-blue-900 dark:text-blue-400 uppercase tracking-tight">Certification</p>
+                  <p className="text-sm font-serif italic tracking-tighter text-blue-900 dark:text-blue-400 uppercase">Certification</p>
                   <p className="text-[10px] font-bold text-blue-400">Devenir Membre Certifié</p>
                 </div>
                 <ChevronRight size={16} className="text-blue-200" />
@@ -474,7 +474,7 @@ const ProfilePage: React.FC = () => {
                 <Heart size={24} />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Likes Reçus</p>
+                <p className="text-sm font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">Likes Reçus</p>
                 <p className="text-[10px] font-bold text-slate-400">Voir vos admirateurs</p>
               </div>
               <ChevronRight size={16} className="text-slate-200 dark:text-slate-700" />
@@ -489,7 +489,7 @@ const ProfilePage: React.FC = () => {
                 🌹
               </div>
               <div className="flex-1">
-                <p className="text-sm font-black text-amber-900 dark:text-amber-400 uppercase tracking-tight">Roses recues</p>
+                <p className="text-sm font-serif italic tracking-tighter text-amber-900 dark:text-amber-400 uppercase">Roses recues</p>
                 <p className="text-[10px] font-bold text-amber-600">
                   {rosesInboxCount > 0 ? `${rosesInboxCount} rose${rosesInboxCount > 1 ? 's' : ''} a traiter` : 'Super Likes recus'}
                 </p>
@@ -511,7 +511,7 @@ const ProfilePage: React.FC = () => {
                 <Rocket size={24} />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">{t('boosts')}</p>
+                <p className="text-sm font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">{t('boosts')}</p>
                 <p className="text-[10px] font-bold text-slate-400">Rayonner dans votre ville</p>
               </div>
               <ChevronRight size={16} className="text-slate-200 dark:text-slate-700" />
@@ -531,7 +531,7 @@ const ProfilePage: React.FC = () => {
                 {profile.is_invisible ? <EyeOff size={24} /> : <Eye size={24} />}
               </div>
               <div className="flex-1">
-                <p className={`text-sm font-black uppercase tracking-tight ${profile.is_invisible ? 'text-teal-900 dark:text-teal-400' : 'text-slate-900 dark:text-white'}`}>
+                <p className={`text-sm font-serif italic tracking-tighter uppercase ${profile.is_invisible ? 'text-teal-900 dark:text-teal-400' : 'text-slate-900 dark:text-white'}`}>
                   Mode Invisible
                 </p>
                 <p className="text-[10px] font-bold text-slate-400">
@@ -615,7 +615,7 @@ const ProfilePage: React.FC = () => {
 
           <button
             onClick={() => logout()}
-            className="w-full py-5 rounded-[2rem] border-2 border-slate-100 dark:border-white/10 text-slate-300 dark:text-slate-700 font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-rose-50 dark:hover:bg-rose-900/10 hover:text-primary hover:border-primary/10 transition-all group"
+            className="w-full py-5 rounded-[2rem] border-2 border-slate-100 dark:border-white/10 text-slate-300 dark:text-slate-700 font-medium text-xs uppercase tracking-prestige flex items-center justify-center gap-3 hover:bg-rose-50 dark:hover:bg-rose-900/10 hover:text-primary hover:border-primary/10 transition-all group"
           >
             <LogOut size={18} className="group-hover:-translate-x-1 transition-transform" />
             {t('logout')}

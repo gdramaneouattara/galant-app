@@ -110,7 +110,7 @@ const MatchesPage: React.FC = () => {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h2 className="text-4xl font-black tracking-tight text-slate-900 leading-none">
+            <h2 className="text-4xl font-serif italic tracking-tighter text-slate-900 leading-none">
               {t('messages')}
             </h2>
             <p className="text-slate-500 font-medium mt-2 text-lg">
@@ -143,7 +143,7 @@ const MatchesPage: React.FC = () => {
           <div className="absolute -right-4 -bottom-4 bg-white/10 w-24 h-24 rounded-full blur-2xl group-hover:bg-white/20 transition-all"></div>
           <Heart size={24} className="mb-3 opacity-80 group-hover:scale-110 transition-transform" fill="currentColor" />
           <p className="text-2xl font-[1000] tracking-tighter leading-none">{likesCount}</p>
-          <p className="text-[10px] font-black uppercase tracking-widest mt-1 opacity-80">Likes Reçus</p>
+          <p className="text-[10px] font-medium uppercase tracking-prestige mt-1 opacity-80">Likes Reçus</p>
           {likesCount > 0 && <div className="absolute top-4 right-4 w-2 h-2 bg-white rounded-full animate-ping"></div>}
         </button>
 
@@ -154,7 +154,7 @@ const MatchesPage: React.FC = () => {
           <div className="absolute -right-4 -bottom-4 bg-white/10 w-24 h-24 rounded-full blur-2xl group-hover:bg-white/20 transition-all"></div>
           <div className="text-2xl mb-2 group-hover:rotate-12 transition-transform">🌹</div>
           <p className="text-2xl font-[1000] tracking-tighter leading-none">{rosesInboxCount}</p>
-          <p className="text-[10px] font-black uppercase tracking-widest mt-1 opacity-80">Roses a traiter</p>
+          <p className="text-[10px] font-medium uppercase tracking-prestige mt-1 opacity-80">Roses a traiter</p>
           {rosesInboxCount > 0 && <div className="absolute top-4 right-4 w-2 h-2 bg-white rounded-full animate-ping"></div>}
         </button>
       </div>
@@ -162,7 +162,7 @@ const MatchesPage: React.FC = () => {
       {/* Nouveaux Matches (Horizontal) */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
-          <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t('matches')}</h3>
+          <h3 className="text-xs font-medium uppercase tracking-prestige text-slate-400">{t('matches')}</h3>
           <div className="h-[1px] flex-1 bg-slate-100"></div>
         </div>
 
@@ -199,7 +199,7 @@ const MatchesPage: React.FC = () => {
                   {/* Petit badge online optionnel */}
                   <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white rounded-full"></div>
                 </div>
-                <span className="text-xs font-black text-slate-800 tracking-tight">{otherUser.name}</span>
+                <span className="text-xs font-serif italic tracking-tighter text-slate-800">{otherUser.name}</span>
               </button>
             ))
           )}
@@ -209,7 +209,7 @@ const MatchesPage: React.FC = () => {
       {/* Liste des Conversations */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
-          <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Conversations</h3>
+          <h3 className="text-xs font-medium uppercase tracking-prestige text-slate-400">Conversations</h3>
           <div className="h-[1px] flex-1 bg-slate-100"></div>
         </div>
 
@@ -243,7 +243,7 @@ const MatchesPage: React.FC = () => {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <span className="font-black text-slate-900 text-lg tracking-tight group-hover:text-primary transition-colors">
+                    <span className="font-serif italic tracking-tighter text-slate-900 text-lg group-hover:text-primary transition-colors">
                       {chat.venues?.name}
                     </span>
                     <p className="text-sm truncate font-medium text-slate-500">
@@ -277,7 +277,7 @@ const MatchesPage: React.FC = () => {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-black text-slate-900 text-lg tracking-tight group-hover:text-primary transition-colors">
+                      <span className="font-serif italic tracking-tighter text-slate-900 text-lg group-hover:text-primary transition-colors">
                         {otherUser.name}
                       </span>
                       {otherUser.is_verified && <ShieldCheck size={16} className="text-blue-500 fill-blue-50" />}
@@ -289,7 +289,7 @@ const MatchesPage: React.FC = () => {
                   </div>
 
                   <div className="flex flex-col items-end gap-3 flex-shrink-0">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                    <span className="text-[10px] font-medium uppercase tracking-prestige text-slate-400">
                       {lastActivityAt ? new Date(lastActivityAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                     </span>
                     <div className="bg-slate-100 p-1.5 rounded-lg group-hover:bg-primary/10 group-hover:text-primary transition-colors text-slate-300">

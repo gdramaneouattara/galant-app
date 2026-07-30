@@ -51,7 +51,7 @@ const PartnerDashboard: React.FC = () => {
       {/* Header Dashboard */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h2 className="text-3xl font-black italic text-slate-900 flex items-center gap-3">
+          <h2 className="text-3xl font-serif italic tracking-tighter text-slate-900 flex items-center gap-3">
             <LayoutDashboard className="text-primary" />
             Espace Partenaire
           </h2>
@@ -59,7 +59,7 @@ const PartnerDashboard: React.FC = () => {
         </div>
         <button
           onClick={() => navigate('/partner/create-event')}
-          className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-2xl font-black text-sm shadow-lg shadow-red-100 hover:scale-105 active:scale-95 transition-all"
+          className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-2xl font-medium text-sm uppercase tracking-prestige shadow-lg shadow-red-100 hover:scale-105 active:scale-95 transition-all"
         >
           <PlusCircle size={18} />
           CRÉER UN ÉVÉNEMENT
@@ -73,14 +73,14 @@ const PartnerDashboard: React.FC = () => {
             <TrendingUp size={24} />
           </div>
           <span className="block text-3xl font-black text-slate-900">1,284</span>
-          <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Vues du profil</span>
+          <span className="text-xs font-medium text-slate-400 uppercase tracking-prestige">Vues du profil</span>
         </div>
         <div className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-50">
           <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center mb-4">
             <Star size={24} fill="currentColor" />
           </div>
           <span className="block text-3xl font-black text-slate-900">4.8</span>
-          <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Note moyenne</span>
+          <span className="text-xs font-medium text-slate-400 uppercase tracking-prestige">Note moyenne</span>
         </div>
         <div
           onClick={() => navigate('/partner/chats')}
@@ -90,7 +90,7 @@ const PartnerDashboard: React.FC = () => {
             <MessageSquare size={24} />
           </div>
           <span className="block text-3xl font-black text-slate-900">12</span>
-          <span className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
+          <span className="text-xs font-medium text-slate-400 uppercase tracking-prestige flex items-center justify-between">
             Messages Clients
             <ChevronRight size={14} className="text-primary" />
           </span>
@@ -105,7 +105,7 @@ const PartnerDashboard: React.FC = () => {
             <img src={venue?.photo_url || 'https://placehold.co/600x300'} className="w-full h-full object-cover" alt="" />
             <div className="absolute inset-0 bg-black/20" />
             <div className="absolute bottom-4 left-6 text-white">
-              <h3 className="text-xl font-black uppercase tracking-tight">{venue?.name || 'Mon Établissement'}</h3>
+              <h3 className="text-xl font-serif italic tracking-tighter uppercase">{venue?.name || 'Mon Établissement'}</h3>
               <div className="flex items-center gap-1 text-sm font-bold opacity-90">
                 <MapPin size={14} />
                 <span>{venue?.city || 'Douala, Cameroun'}</span>
@@ -113,7 +113,7 @@ const PartnerDashboard: React.FC = () => {
             </div>
           </div>
           <div className="p-6">
-            <button className="w-full py-4 rounded-2xl bg-slate-50 text-slate-600 font-bold text-sm hover:bg-slate-100 transition-colors uppercase tracking-widest">
+            <button className="w-full py-4 rounded-2xl bg-slate-50 text-slate-600 font-medium text-sm hover:bg-slate-100 transition-colors uppercase tracking-prestige">
               Modifier ma fiche
             </button>
           </div>
@@ -122,11 +122,11 @@ const PartnerDashboard: React.FC = () => {
         {/* Événements à venir */}
         <section className="bg-white rounded-[3rem] shadow-xl border border-slate-100 p-8">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-black italic flex items-center gap-2">
+            <h3 className="text-lg font-serif italic tracking-tighter flex items-center gap-2">
               <Calendar className="text-primary" size={20} />
               Mes Événements
             </h3>
-            <span className="text-xs font-black text-slate-400">VOIR TOUT</span>
+            <span className="text-xs font-medium text-slate-400 uppercase tracking-prestige">VOIR TOUT</span>
           </div>
 
           <div className="space-y-4">

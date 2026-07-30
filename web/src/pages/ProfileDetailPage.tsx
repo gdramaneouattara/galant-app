@@ -173,10 +173,10 @@ const ProfileDetailPage: React.FC = () => {
           <div className="bg-white rounded-[3rem] p-8 shadow-xl border border-slate-50 space-y-6">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <h2 className="text-4xl font-black text-slate-900">{profile.name}, {profile.age}</h2>
+                <h2 className="text-4xl font-serif italic tracking-tighter text-slate-900">{profile.name}, {profile.age}</h2>
                 {profile.is_verified && <ShieldCheck size={28} className="text-blue-500 fill-blue-50" />}
               </div>
-              <div className="flex items-center gap-2 text-slate-400 font-bold uppercase tracking-widest text-xs">
+              <div className="flex items-center gap-2 text-slate-400 font-medium uppercase tracking-prestige text-xs">
                 <MapPin size={16} className="text-primary" />
                 {profile.city || 'Cameroun'}
                 {profile.distance_km && <span> • {profile.distance_km.toFixed(1)} km</span>}
@@ -188,13 +188,13 @@ const ProfileDetailPage: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-slate-50 p-4 rounded-2xl space-y-1">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-prestige flex items-center gap-1">
                   <UserIcon size={12} /> Genre
                 </span>
                 <p className="font-bold text-slate-700">{GENDER_LABELS[profile.gender] || profile.gender || 'Non renseigné'}</p>
               </div>
               <div className="bg-slate-50 p-4 rounded-2xl space-y-1">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-prestige flex items-center gap-1">
                   <Target size={12} /> Objectif
                 </span>
                 <p className="font-bold text-slate-700">{RELATIONSHIP_GOAL_LABELS[profile.relationship_goal] || 'En recherche'}</p>
@@ -202,7 +202,7 @@ const ProfileDetailPage: React.FC = () => {
             </div>
 
             <div className="space-y-3">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">À propos</h3>
+              <h3 className="text-xs font-medium text-slate-400 uppercase tracking-prestige">À propos</h3>
               <p className="text-slate-600 font-medium leading-relaxed italic">
                 "{profile.bio || 'Ce membre préfère garder une part de mystère...'}"
               </p>
@@ -210,7 +210,7 @@ const ProfileDetailPage: React.FC = () => {
 
             {profile.interests?.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Centres d'intérêt</h3>
+                <h3 className="text-xs font-medium text-slate-400 uppercase tracking-prestige">Centres d'intérêt</h3>
                 <div className="flex flex-wrap gap-2">
                   {profile.interests.map((it: string) => (
                     <span key={it} className="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold">
@@ -226,7 +226,7 @@ const ProfileDetailPage: React.FC = () => {
               <button
                 onClick={() => onLike()}
                 disabled={liking}
-                className="bg-primary text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-red-100 hover:scale-[1.02] active:scale-95 transition-all"
+                className="bg-primary text-white py-5 rounded-2xl font-medium text-sm uppercase tracking-prestige flex items-center justify-center gap-3 shadow-lg shadow-red-100 hover:scale-[1.02] active:scale-95 transition-all"
               >
                 {liking ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Heart size={20} fill="currentColor" />}
                 Envoyer un Like
@@ -235,7 +235,7 @@ const ProfileDetailPage: React.FC = () => {
               <button
                 onClick={() => onLike(true)}
                 disabled={superLiking}
-                className="bg-white border-2 border-primary text-primary py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-red-50 transition-all active:scale-95"
+                className="bg-white border-2 border-primary text-primary py-5 rounded-2xl font-medium text-sm uppercase tracking-prestige flex items-center justify-center gap-3 hover:bg-red-50 transition-all active:scale-95"
               >
                 {superLiking ? <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div> : <span className="text-xl">🌹</span>}
                 Offrir un bouquet
@@ -243,7 +243,7 @@ const ProfileDetailPage: React.FC = () => {
 
               <button
                 onClick={onDirectMessage}
-                className="bg-blue-600 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-blue-100 hover:scale-[1.02] active:scale-95 transition-all"
+                className="bg-blue-600 text-white py-5 rounded-2xl font-medium text-sm uppercase tracking-prestige flex items-center justify-center gap-3 shadow-lg shadow-blue-100 hover:scale-[1.02] active:scale-95 transition-all"
               >
                 <MessageCircle size={20} />
                 Message Direct

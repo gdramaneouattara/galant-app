@@ -403,10 +403,10 @@ const StoriesPage: React.FC = () => {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
-          <h2 className="text-4xl sm:text-5xl font-black tracking-tighter text-slate-900 leading-none mb-3">
+          <h2 className="text-4xl sm:text-5xl font-serif italic tracking-tighter text-slate-900 leading-none mb-3">
             Galant <span className="text-primary italic">Stories</span>
           </h2>
-          <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">
+          <p className="text-slate-400 font-medium uppercase tracking-prestige text-sm">
             Les moments de la communaute
           </p>
         </div>
@@ -415,7 +415,7 @@ const StoriesPage: React.FC = () => {
           type="button"
           onClick={() => void openStoryPicker()}
           disabled={uploading}
-          className="bg-slate-900 text-white px-6 sm:px-8 py-4 rounded-2xl shadow-2xl shadow-slate-900/20 hover:scale-[1.03] active:scale-95 transition-all flex items-center gap-3 font-black text-xs uppercase tracking-widest disabled:opacity-60"
+          className="bg-slate-900 text-white px-6 sm:px-8 py-4 rounded-2xl shadow-2xl shadow-slate-900/20 hover:scale-[1.03] active:scale-95 transition-all flex items-center gap-3 font-medium text-xs uppercase tracking-prestige disabled:opacity-60"
         >
           {uploading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Plus size={20} />}
           Partager un moment
@@ -432,7 +432,7 @@ const StoriesPage: React.FC = () => {
           <div className="w-14 h-14 rounded-2xl bg-white shadow-xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
             {uploading ? <div className="w-5 h-5 border-2 border-primary/20 border-t-primary rounded-full animate-spin" /> : <Plus size={28} />}
           </div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary transition-colors">Ma Story</p>
+          <p className="text-[10px] font-medium uppercase tracking-prestige text-slate-400 group-hover:text-primary transition-colors">Ma Story</p>
         </button>
 
         {statuses.map((status) => {
@@ -485,7 +485,7 @@ const StoriesPage: React.FC = () => {
               </div>
 
               <div className="absolute bottom-5 left-5 right-5 z-20">
-                <p className="text-sm font-black text-white truncate">{status.profiles.name}</p>
+                <p className="text-sm font-serif italic tracking-tighter text-white truncate">{status.profiles.name}</p>
                 <p className="text-[9px] font-bold text-white/60 uppercase tracking-widest mt-1">{formatPublishedAt(status.created_at)}</p>
               </div>
 
@@ -541,10 +541,10 @@ const StoriesPage: React.FC = () => {
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="font-black text-white text-base sm:text-lg tracking-tight truncate">{selectedStatus.profiles.name}</p>
+                    <p className="font-serif italic tracking-tighter text-white text-base sm:text-lg truncate">{selectedStatus.profiles.name}</p>
                     {selectedStatus.profiles.is_premium && <Crown size={14} className="text-amber-400 flex-shrink-0" fill="currentColor" />}
                   </div>
-                  <p className="text-[10px] font-black text-white/60 uppercase tracking-widest mt-0.5">
+                  <p className="text-[10px] font-medium text-white/60 uppercase tracking-prestige mt-0.5">
                     {formatPublishedAt(selectedStatus.created_at)}
                   </p>
                 </div>
@@ -552,12 +552,12 @@ const StoriesPage: React.FC = () => {
 
               {selectedStatus.user_id === user?.uid && (
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <button
+                    <button
                     onClick={() => handleOpenLikers(selectedStatus)}
                     className="bg-white/10 backdrop-blur-xl border border-white/10 px-3 sm:px-5 py-3 rounded-2xl flex items-center gap-2 text-white hover:bg-white/20 transition-all"
                   >
                     <Users size={18} />
-                    <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest">
+                    <span className="text-[10px] sm:text-xs font-medium uppercase tracking-prestige">
                       {selectedStatus.likes_count || 0}
                     </span>
                   </button>
