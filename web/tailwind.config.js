@@ -7,6 +7,13 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Montserrat', 'sans-serif'],
+        serif: ['Playfair Display', 'serif'],
+      },
+      letterSpacing: {
+        prestige: '.25em',
+      },
       colors: {
         primary: "#ef4444", // Le rouge Galant
         secondary: "#8b5cf6", // Le violet Boost
