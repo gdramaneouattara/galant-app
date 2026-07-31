@@ -1,49 +1,36 @@
-# Monétisation de la Galerie (Vue Grille)
+# Implémentation du Quota de Consultation (Galerie)
 
-Ce plan vise à restreindre l'accès à la "Galerie" (Discover Grid) aux membres payants ou via un achat unique, tout en permettant à l'administrateur de configurer le prix du déblocage.
+Ce plan vise à instaurer une limite de consultation sur la Galerie (Vue Grille) pour les membres non-premium, garantissant une rentabilité maximale et protégeant l'exclusivité du service.
 
 ## Proposed Changes
 
-### [Server] Configuration & Prix
+### [Server] Configuration & Logique
 
 #### [MODIFY] [constants.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/config/constants.js)
-- Ajouter le prix par défaut `DISCOVER_GRID_UNLOCK: 1000` dans l'objet `PRICES`.
-
-#### [MODIFY] [adminController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/adminController.js)
-- Le contrôleur de tarification prendra automatiquement en compte le nouveau champ ajouté dans les constantes.
-
-### [Server] Gestion des Droits
+- Ajouter `DEFAULT_GRID_QUOTA: 100` dans les constantes.
 
 #### [MODIFY] [subscriptionService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/subscriptionService.js)
-- Ajouter le cas `DISCOVER_GRID_UNLOCK` dans `applyPurchasedEntitlement` pour marquer le champ `is_grid_unlocked: true` dans le profil de l'utilisateur.
+- Lors de l'achat `DISCOVER_GRID_UNLOCK`, initialiser le champ `grid_consultations_remaining` dans le profil avec la valeur configurée par l'admin.
+
+#### [MODIFY] [matchmakingController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/matchmakingController.js)
+- Modifier `getSuggestions` pour la vue grille :
+    - Décompter du quota `grid_consultations_remaining` le nombre de profils effectivement renvoyés.
+    - Bloquer la réponse si le quota est épuisé (retourner une erreur spécifique).
 
 ### [Web Mobile] Interface Utilisateur
 
 #### [MODIFY] [AdminPricing.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminPricing.tsx)
-- Ajouter le champ de saisie pour le prix du déblocage de la Galerie dans la section "Interactions".
-
-#### [MODIFY] [DiscoverPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/DiscoverPage.tsx)
-- Modifier le comportement du bouton de bascule vers la grille :
-    - Si l'utilisateur est Premium ou a déjà débloqué la grille : Navigation directe.
-    - Si l'utilisateur est gratuit : Ouverture de la modal `InteractionPurchaseModal` avec le type `DISCOVER_GRID_UNLOCK`.
+- Ajouter un champ pour configurer le quota (ex: "Nombre de profils par achat").
 
 #### [MODIFY] [DiscoverGridPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/DiscoverGridPage.tsx)
-- Ajouter un garde-fou : Rediriger vers `/` (Swipe) si l'utilisateur n'a pas les droits d'accès à la grille.
-
-#### [MODIFY] [InteractionPurchaseModal.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/InteractionPurchaseModal.tsx)
-- Ajouter le support visuel et textuel pour le produit "Accès Galerie".
-
-## User Review Required
-
-> [!NOTE]
-> **Privilège Premium** : Les membres Premium (Mensuel/Trimestriel) auront un accès **illimité et gratuit** à la Galerie par défaut. L'achat de 1000 F ne concerne que les membres "Classiques" qui souhaitent cette fonctionnalité spécifique sans s'abonner.
+- Afficher un bandeau discret en haut indiquant le quota restant : *"Exploration : [X] profils restants"*.
+- Gérer l'état de fin de quota avec une redirection vers une proposition de rachat ou de passage au Premium.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  **Admin** : Changer le prix du déblocage à 1500 F dans l'espace Admin et enregistrer.
-2.  **Membre Classique** : Tenter d'ouvrir la Grille sur la page Découverte.
-3.  Vérifier que la modal d'achat s'affiche avec le prix de 1500 F.
-4.  Effectuer un achat de test.
-5.  Vérifier que le bouton de Grille devient fonctionnel et permet d'accéder à la Galerie.
-6.  **Membre Premium** : Vérifier que l'accès à la Galerie est direct et sans demande de paiement.
+1.  **Admin** : Fixer le quota à 5 profils (pour le test) et le prix à 1000 F.
+2.  **Membre Classique** : Acheter l'accès Galerie.
+3.  Ouvrir la Galerie : Vérifier que 5 profils s'affichent et que le compteur indique "5 restants".
+4.  Rafraîchir ou faire une recherche : Vérifier que le quota diminue.
+5.  Une fois à 0 : Vérifier que la Galerie se verrouille et propose de repasser au mode Swipe ou de racheter un quota.

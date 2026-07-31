@@ -2,7 +2,7 @@ const { db } = require('../config/firebase');
 const { FieldValue } = require('firebase-admin/firestore');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
-const { PLAN_DURATIONS, BOOST_SCORES } = require('../config/constants');
+const { PLAN_DURATIONS, BOOST_SCORES, QUOTAS } = require('../config/constants');
 const { getCurrentPricing } = require('./pricingService');
 
 const SUBSCRIPTION_RENEWAL_REFRESH_COOLDOWN_MS = 5 * 60 * 1000;
@@ -223,8 +223,12 @@ const applyPurchasedEntitlement = async ({
       likes_unlocked_until: expiresAt
     });
   } else if (normalizedType === 'DISCOVER_GRID_UNLOCK') {
+    const pricing = await getCurrentPricing();
+    const quota = pricing.PRICES.GRID_QUOTA || 100;
+
     await db.collection('profiles').doc(userId).update({
-      is_grid_unlocked: true,
+      grid_consultations_remaining: FieldValue.increment(quota),
+      is_grid_unlocked: true, // Legacy flag if needed
       updated_at: new Date().toISOString()
     });
   }
