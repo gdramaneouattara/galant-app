@@ -146,12 +146,12 @@ const UserTabNavigator = () => {
       <UserTab.Screen
         name="AgendaTab"
         component={AgendaScreen}
-        options={{ title: 'Sorties', tabBarIcon: ({ color, size }) => <Calendar color={color} size={size} /> }}
+        options={{ title: t('agenda'), tabBarIcon: ({ color, size }) => <Calendar color={color} size={size} /> }}
       />
       <UserTab.Screen
         name="AppsTab"
         component={AppsScreen}
-        options={{ title: 'Apps', tabBarIcon: ({ color, size }) => <LayoutGrid color={color} size={size} /> }}
+        options={{ title: t('apps'), tabBarIcon: ({ color, size }) => <LayoutGrid color={color} size={size} /> }}
       />
       <UserTab.Screen
         name="ProfileTab"

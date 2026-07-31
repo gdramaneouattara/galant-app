@@ -56,14 +56,48 @@ test('Rules: Sentinel fake call is wired on web and mobile', async () => {
   const nativeSentinel = await read('src/screens/apps/SentinelScreen.tsx');
   const webSentinel = await read('web/src/pages/SentinelPage.tsx');
 
-  assert.match(nativeApps, /La Sentinelle/);
+  assert.match(nativeApps, /titleKey: 'sentinel'/);
   assert.match(nativeApps, /Sentinel/);
   assert.match(nativeNavigator, /SentinelScreen/);
   assert.match(nativeSentinel, /triggerFakeCall/);
   assert.match(nativeSentinel, /Vibration/);
-  assert.match(nativeSentinel, /Appel fantome/);
+  assert.match(nativeSentinel, /fake_call/);
   assert.match(webSentinel, /playRingtonePulse/);
   assert.match(webSentinel, /isFakeCallActive/);
+});
+
+test('Rules: Apps, Sentinel and Chat use shared bilingual copy', async () => {
+  const files = [
+    'src/screens/apps/AppsScreen.tsx',
+    'src/screens/apps/SentinelScreen.tsx',
+    'src/screens/messages/ChatScreen.tsx',
+    'src/screens/messages/components/ChatMessageItem.tsx',
+    'web/src/App.tsx',
+    'web/src/pages/AppsPage.tsx',
+    'web/src/pages/ChatPage.tsx',
+    'web/src/pages/SentinelPage.tsx',
+  ];
+  const forbiddenCopies = [
+    'La Sentinelle',
+    'Appel fant',
+    'Video trop',
+    'Serenade trop',
+    'Sérénade trop',
+    'Micro requis',
+    'Le partage de',
+    'En ligne',
+    'Hors ligne',
+    'Refuser',
+    'Accepter',
+    'Raccrocher',
+  ];
+
+  for (const file of files) {
+    const code = await read(file);
+    for (const copy of forbiddenCopies) {
+      assert.equal(code.includes(copy), false, `${file} still contains hardcoded copy: ${copy}`);
+    }
+  }
 });
 
 test('Rules: ProfileScreen manages internationalization', async () => {

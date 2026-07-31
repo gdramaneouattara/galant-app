@@ -35,12 +35,12 @@ const buildSelectedPhoto = (asset: ImagePicker.ImagePickerAsset | null | undefin
 };
 
 const PhotosStep: React.FC<PhotosStepProps> = ({ form, setForm, onNext }) => {
-  const { colors } = useApp();
+  const { colors, t } = useApp();
 
   const pickImage = async (slot: number) => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permission.status !== 'granted') {
-      Alert.alert('Permission refusée', 'Vous devez autoriser l\'accès à la galerie pour continuer.');
+      Alert.alert(t('permission_denied'), t('gallery_permission_body'));
       return;
     }
 
@@ -73,8 +73,8 @@ const PhotosStep: React.FC<PhotosStepProps> = ({ form, setForm, onNext }) => {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Text style={[styles.title, { color: colors.text }]}>Ajoute tes plus belles photos</Text>
-      <Text style={[styles.caption, { color: colors.textMuted }]}>Ajoute 3 photos pour activer ton profil. Premium permet jusqu'a 6 photos.</Text>
+      <Text style={[styles.title, { color: colors.text }]}>{t('add_best_photos')}</Text>
+      <Text style={[styles.caption, { color: colors.textMuted }]}>{t('add_photos_caption')}</Text>
       <View style={styles.photoGrid}>
         {[0, 1, 2].map((slot) => {
           const photo = form.photos[slot];

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { X, CheckCircle } from 'lucide-react-native';
 import { COLORS } from '../../../data/mock';
+import { useApp } from '../../../state/AppContext';
 
 interface MatchmakingFiltersProps {
   visible: boolean;
@@ -31,14 +32,16 @@ const MatchmakingFilters: React.FC<MatchmakingFiltersProps> = ({
   is_premium,
   onGoPremium,
 }) => {
+  const { t } = useApp();
+
   const handlePremiumFilter = (key: string) => {
     if (!is_premium) {
       Alert.alert(
-        'Privilège Premium 💎',
-        'Les filtres de standing sont réservés aux membres Premium.',
+        t('premium_privilege'),
+        t('standing_filters_premium'),
         [
-          { text: 'Plus tard', style: 'cancel' },
-          { text: 'Devenir Premium', onPress: onGoPremium }
+          { text: t('maybe_later_short'), style: 'cancel' },
+          { text: t('become_premium'), onPress: onGoPremium }
         ]
       );
       return;
@@ -48,7 +51,7 @@ const MatchmakingFilters: React.FC<MatchmakingFiltersProps> = ({
 
   const handleScoreFilter = (score: number) => {
     if (score > 0 && !is_premium) {
-      Alert.alert('Privilège Premium 💎', 'Le filtrage par score de galanterie est une option Premium.');
+      Alert.alert(t('premium_privilege'), t('score_filter_premium'));
       return;
     }
     setFilters({ ...filters, minScore: score });
@@ -59,7 +62,7 @@ const MatchmakingFilters: React.FC<MatchmakingFiltersProps> = ({
         <View style={[styles.filterContent, { backgroundColor: colors.card }]}>
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>
-              Filtres de recherche
+              {t('search_filters')}
             </Text>
             <Pressable onPress={onClose}>
               <X size={24} color={colors.text} />
@@ -137,7 +140,7 @@ const MatchmakingFilters: React.FC<MatchmakingFiltersProps> = ({
 
             {/* HIGH STANDING FILTERS */}
             <View style={styles.premiumSection}>
-              <Text style={[styles.filterLabel, { color: COLORS.primary }]}>Critères de standing 💎</Text>
+              <Text style={[styles.filterLabel, { color: COLORS.primary }]}>{t('standing_criteria')}</Text>
 
               <Pressable
                 onPress={() => handlePremiumFilter('premiumOnly')}
@@ -165,7 +168,7 @@ const MatchmakingFilters: React.FC<MatchmakingFiltersProps> = ({
                 </View>
               </Pressable>
 
-              <Text style={[styles.filterLabel, { marginTop: 24 }]}>Score minimum : {filters.minScore || 0}</Text>
+              <Text style={[styles.filterLabel, { marginTop: 24 }]}>{t('minimum_score')} : {filters.minScore || 0}</Text>
               <View style={styles.scoreRow}>
                  {[0, 4, 4.5, 4.8].map((s) => (
                    <Pressable
@@ -173,7 +176,7 @@ const MatchmakingFilters: React.FC<MatchmakingFiltersProps> = ({
                      onPress={() => handleScoreFilter(s)}
                      style={[styles.scoreChip, filters.minScore === s && styles.scoreChipActive]}
                    >
-                     <Text style={[styles.scoreText, filters.minScore === s && { color: '#fff' }]}>{s === 0 ? 'Tous' : `${s}+`}</Text>
+                     <Text style={[styles.scoreText, filters.minScore === s && { color: '#fff' }]}>{s === 0 ? t('all') : `${s}+`}</Text>
                    </Pressable>
                  ))}
               </View>

@@ -25,6 +25,7 @@ import DirectMessagePurchaseModal from '../../components/DirectMessagePurchaseMo
 import OptimizedImage from '../../components/OptimizedImage';
 import { optimizedPhotoUrl } from '../../lib/mediaVariants';
 import type { ProfileDetailParam, RootStackParamList } from '../../navigation/MainNavigator';
+import { useApp } from '../../state/AppContext';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -52,6 +53,7 @@ const RELATIONSHIP_GOAL_LABELS: Record<string, string> = {
 const BoostedProfileDetailScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<any>();
+  const { t } = useApp();
   const profile = route.params?.profile as ProfileDetailParam | undefined;
   const [liking, setLiking] = useState(false);
   const [superLiking, setSuperLiking] = useState(false);
@@ -103,12 +105,12 @@ const BoostedProfileDetailScreen: React.FC = () => {
         body: JSON.stringify({ targetUserId, direction: 'RIGHT' }),
       });
       if (payload?.matched) {
-        Alert.alert('Match 🎉', `Vous et ${profile?.name || 'ce profil'} vous plaisez mutuellement.`);
+        Alert.alert(t('match_title'), t('matched_with', { name: profile?.name || t('this_profile') }));
       } else {
-        Alert.alert('Like envoyé', `Votre like a été envoyé à ${profile?.name || 'ce profil'}.`);
+        Alert.alert(t('like_sent'), t('like_sent_to', { name: profile?.name || t('this_profile') }));
       }
     } catch (error: any) {
-      Alert.alert('Erreur', String(error?.message || 'Impossible d’envoyer le like pour le moment.'));
+      Alert.alert(t('error'), String(error?.message || t('like_failed')));
     } finally {
       setLiking(false);
     }
@@ -124,15 +126,15 @@ const BoostedProfileDetailScreen: React.FC = () => {
         body: JSON.stringify({ targetUserId, direction: 'RIGHT', isSuperLike: true }),
       });
       if (payload?.matched) {
-        Alert.alert('Match 🎉', `Bouquet de roses envoyé. Vous et ${profile?.name || 'ce profil'} matchez !`);
+        Alert.alert(t('match_title'), t('matched_with_short', { name: profile?.name || t('this_profile') }));
       } else {
-        Alert.alert('Bouquet de roses envoyé', `Votre bouquet de roses a été envoyé à ${profile?.name || 'ce profil'}.`);
+        Alert.alert(t('success'), t('super_like_sent'));
       }
     } catch (error: any) {
       if (String(error?.message || '').includes('premium_required_for_super_like')) {
         setShowSuperLikePurchaseModal(true);
       } else {
-        Alert.alert('Erreur', String(error?.message || 'Impossible d’envoyer le bouquet de roses.'));
+        Alert.alert(t('error'), String(error?.message || t('super_like_sent')));
       }
     } finally {
       setSuperLiking(false);
@@ -154,7 +156,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
       if (message.includes('payment_required') || message.includes('subscription_required')) {
         setShowDirectMessagePurchaseModal(true);
       } else {
-        Alert.alert('Erreur', message || 'Impossible d’ouvrir le message direct.');
+        Alert.alert(t('error'), message || t('open_chat_failed'));
       }
     } finally {
       setDirectMessageLoading(false);
@@ -181,10 +183,10 @@ const BoostedProfileDetailScreen: React.FC = () => {
       if (verify.status === 'active') {
         onSuccess();
       } else {
-        Alert.alert('Paiement en attente', 'Le paiement est en cours de validation.');
+        Alert.alert(t('payment_pending'), t('payment_validation'));
       }
     } catch (error: any) {
-      Alert.alert('Erreur', String(error?.message || 'Paiement non finalisé.'));
+      Alert.alert(t('error'), String(error?.message || t('purchase_not_finalized')));
     } finally {
       setPurchaseLoading(false);
     }
@@ -197,7 +199,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
     onSuccess: () => void
   ) => {
     if (isExpoGo) {
-      Alert.alert('Achat indisponible', IAP_EXPO_GO_MESSAGE);
+      Alert.alert(t('purchase_unavailable'), IAP_EXPO_GO_MESSAGE);
       return;
     }
     try {
@@ -207,7 +209,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
         resolvedIds = await loadProducts();
       }
       if (Platform.OS === 'android' && !resolvedIds.has(sku)) {
-        Alert.alert('Erreur Google Play', `Le produit (${sku}) n’est pas disponible pour ce build.`);
+        Alert.alert(t('google_play_error'), t('product_unavailable', { sku }));
         return;
       }
 
@@ -235,7 +237,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
       onSuccess();
     } catch (error: any) {
       if (error?.code !== 'E_USER_CANCELLED') {
-        Alert.alert('Erreur Google Play', String(error?.message || 'Achat non finalisé.'));
+        Alert.alert(t('google_play_error'), String(error?.message || t('purchase_not_finalized')));
       }
     } finally {
       setPurchaseLoading(false);
@@ -246,7 +248,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
     if (!targetUserId) return;
     void initiatePurchasePaystack('SUPER_LIKE', targetUserId, () => {
       setShowSuperLikePurchaseModal(false);
-      Alert.alert('Super Like envoyé', `Votre Super Like a été envoyé à ${profile?.name || 'ce profil'}.`);
+      Alert.alert(t('success'), t('super_like_sent'));
     });
   };
 
@@ -254,7 +256,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
     if (!targetUserId) return;
     void requestGooglePurchase(SUPER_LIKE_SKU, 'SUPER_LIKE', targetUserId, () => {
       setShowSuperLikePurchaseModal(false);
-      Alert.alert('Super Like envoyé', `Votre Super Like a été envoyé à ${profile?.name || 'ce profil'}.`);
+      Alert.alert(t('success'), t('super_like_sent'));
     });
   };
 
@@ -262,7 +264,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
     if (!targetUserId) return;
     void initiatePurchasePaystack('DIRECT_MESSAGE', targetUserId, () => {
       setShowDirectMessagePurchaseModal(false);
-      Alert.alert('Message direct débloqué', `Vous pouvez écrire à ${profile?.name || 'ce profil'}.`);
+      Alert.alert(t('success'), t('direct_message_unlocked_for', { name: profile?.name || t('this_profile') }));
       navigation.navigate('Chat', { userId: targetUserId });
     });
   };
@@ -271,7 +273,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
     if (!targetUserId) return;
     void requestGooglePurchase(DIRECT_MESSAGE_SKU, 'DIRECT_MESSAGE', targetUserId, () => {
       setShowDirectMessagePurchaseModal(false);
-      Alert.alert('Message direct débloqué', `Vous pouvez écrire à ${profile?.name || 'ce profil'}.`);
+      Alert.alert(t('success'), t('direct_message_unlocked_for', { name: profile?.name || t('this_profile') }));
       navigation.navigate('Chat', { userId: targetUserId });
     });
   };
@@ -280,9 +282,9 @@ const BoostedProfileDetailScreen: React.FC = () => {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.emptyWrap}>
-          <Text style={styles.emptyText}>Profil introuvable.</Text>
+          <Text style={styles.emptyText}>{t('profile_not_found')}</Text>
           <Pressable style={styles.backButtonSolid} onPress={() => navigation.goBack()}>
-            <Text style={styles.backButtonSolidText}>Retour</Text>
+            <Text style={styles.backButtonSolidText}>{t('back_to_login')}</Text>
           </Pressable>
         </View>
       </SafeAreaView>

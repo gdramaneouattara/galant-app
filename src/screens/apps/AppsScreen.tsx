@@ -7,8 +7,8 @@ import { useApp } from '../../state/AppContext';
 const APPS = [
   {
     id: 'sorties',
-    title: 'Sorties',
-    subtitle: 'Agenda, lieux et idees de rendez-vous',
+    titleKey: 'agenda',
+    subtitleKey: 'agenda_subtitle',
     icon: Calendar,
     color: '#0ea5e9',
     route: 'AgendaTab',
@@ -16,48 +16,48 @@ const APPS = [
   },
   {
     id: 'guide',
-    title: 'Guide Galant',
-    subtitle: 'Les adresses utiles pour vos rencontres',
+    titleKey: 'guide',
+    subtitleKey: 'guide_subtitle',
     icon: MapPin,
     color: '#e11d48',
     route: 'Guide',
   },
   {
     id: 'premium',
-    title: 'Premium',
-    subtitle: 'IA, mode invisible et avantages exclusifs',
+    titleKey: 'premium_join',
+    subtitleKey: 'premium_subtitle',
     icon: Crown,
     color: '#f59e0b',
     route: 'Premium',
   },
   {
     id: 'boost',
-    title: 'Boost',
-    subtitle: 'Gagnez plus de visibilite dans Decouverte',
+    titleKey: 'boost_your_profile',
+    subtitleKey: 'boost_subtitle',
     icon: Rocket,
     color: '#7c3aed',
     route: 'Boost',
   },
   {
     id: 'sentinel',
-    title: 'La Sentinelle',
-    subtitle: 'Securite privee et appel fantome discret',
+    titleKey: 'sentinel',
+    subtitleKey: 'sentinel_subtitle',
     icon: Shield,
     color: '#2563eb',
     route: 'Sentinel',
   },
   {
     id: 'verification',
-    title: 'Certification',
-    subtitle: 'Verifiez votre identite et inspirez confiance',
+    titleKey: 'verify_identity',
+    subtitleKey: 'certified_badge_desc',
     icon: ShieldCheck,
     color: '#2563eb',
     route: 'Verify',
   },
   {
     id: 'roses',
-    title: 'Roses',
-    subtitle: 'Roses recues, solde et historique',
+    titleKey: 'rose_box',
+    subtitleKey: 'roses',
     icon: Gem,
     color: '#be123c',
     route: 'LikesReceived',
@@ -66,15 +66,15 @@ const APPS = [
 
 const AppsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
-  const { colors } = useApp();
+  const { colors, t } = useApp();
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>Apps</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{t('apps')}</Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            Services utiles pour organiser, verifier et booster vos rencontres.
+            {t('useful_services_subtitle')}
           </Text>
         </View>
 
@@ -90,8 +90,8 @@ const AppsScreen: React.FC = () => {
                 <View style={[styles.iconBox, { backgroundColor: `${item.color}18` }]}>
                   <Icon size={24} color={item.color} />
                 </View>
-                <Text style={[styles.appTitle, { color: colors.text }]}>{item.title}</Text>
-                <Text style={[styles.appSubtitle, { color: colors.textMuted }]}>{item.subtitle}</Text>
+                <Text style={[styles.appTitle, { color: colors.text }]}>{t(item.titleKey as any)}</Text>
+                <Text style={[styles.appSubtitle, { color: colors.textMuted }]}>{t(item.subtitleKey as any)}</Text>
               </Pressable>
             );
           })}

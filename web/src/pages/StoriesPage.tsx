@@ -37,7 +37,7 @@ interface Status {
 }
 
 const StoriesPage: React.FC = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, t } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const routeState = location.state as { initialStatusId?: string; openComposer?: boolean } | null;
@@ -163,16 +163,16 @@ const StoriesPage: React.FC = () => {
         await validateVideoFileWeb(file, STORY_VIDEO_MAX_DURATION_SECONDS);
       } catch (error: any) {
         if (error?.message === 'video_too_large') {
-          showAlert('Video trop lourde', "La video doit peser moins de 30 Mo avant envoi.");
+          showAlert(t('video_too_heavy_title'), t('video_too_heavy'));
           e.target.value = '';
           return;
         }
         if (error?.message === 'video_too_long') {
-          showAlert('Video trop longue', "Les stories sont limitees a 15 secondes. Veuillez raccourcir votre video avant de l'envoyer.");
+          showAlert(t('video_too_long_title'), t('video_too_long_story'));
           e.target.value = '';
           return;
         }
-        showAlert('Erreur', "Impossible de lire cette video.");
+        showAlert(t('error'), t('video_unreadable'));
         e.target.value = '';
         return;
       }
@@ -190,7 +190,7 @@ const StoriesPage: React.FC = () => {
           maxDurationSeconds: STORY_VIDEO_MAX_DURATION_SECONDS,
         });
         if (optimizedVideo.size > VIDEO_UPLOAD_MAX_BYTES) {
-          showAlert('Video trop lourde', "La video reste trop lourde apres optimisation. Essayez une video plus courte.");
+          showAlert(t('video_too_heavy_title'), t('video_still_too_heavy'));
           return;
         }
         const formData = new FormData();
@@ -216,11 +216,11 @@ const StoriesPage: React.FC = () => {
         body: JSON.stringify({ mediaUrl, thumbnailUrl, type, content: '' }),
       });
 
-      showAlert('Succes', 'Votre story a ete publiee !');
+      showAlert(t('success'), t('story_published'));
       setStoryUploadUnlocked(false);
       await fetchStatuses();
     } catch {
-      showAlert('Erreur', "Impossible de publier la story.");
+      showAlert(t('error'), t('story_publish_failed'));
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -262,7 +262,7 @@ const StoriesPage: React.FC = () => {
       setLikers(data.likes || []);
     } catch {
       setLikers([]);
-      showAlert('Erreur', "Impossible de charger les likes de cette story.");
+      showAlert(t('error'), t('story_likes_load_failed'));
     } finally {
       setLikersLoading(false);
     }
@@ -283,13 +283,13 @@ const StoriesPage: React.FC = () => {
       if (res) {
         updateLikerState(targetUserId, { liked_back: true, is_matched: !!res.matched });
         if (res.matched) {
-          showAlert('Match', `Vous et ${liker.profile.name} vous plaisez mutuellement.`);
+          showAlert(t('match_title'), t('matched_with', { name: liker.profile.name }));
         } else {
-          showAlert('Succes', 'Like envoye.');
+          showAlert(t('success'), t('like_sent'));
         }
       }
     } catch {
-      showAlert('Erreur', 'Impossible de liker en retour.');
+      showAlert(t('error'), t('like_back_failed'));
     } finally {
       setLikingBackUserId(null);
     }
@@ -302,7 +302,7 @@ const StoriesPage: React.FC = () => {
     if (purchaseAction.type === 'SUPER_LIKE') {
       const res = await handleSwipe(targetUserId, 'RIGHT', true);
       updateLikerState(targetUserId, { liked_back: true, is_matched: !!res?.matched });
-      showAlert('Succes', res?.matched ? 'Super Like envoye et match cree.' : 'Super Like envoye !');
+      showAlert(t('success'), res?.matched ? t('super_like_sent_match') : t('super_like_sent'));
       return;
     }
 
@@ -312,12 +312,12 @@ const StoriesPage: React.FC = () => {
         requireAuth: true,
         body: JSON.stringify({ targetUserId }),
       });
-      showAlert('Succes', 'Message direct debloque !');
+      showAlert(t('success'), t('direct_message_unlocked'));
       setSelectedLiker(null);
       setIsLikersOpen(false);
       navigate(`/chat/${res.matchId}`);
     } catch (error: any) {
-      showAlert('Erreur', error?.message || 'Impossible d ouvrir cette discussion.');
+      showAlert(t('error'), error?.message || t('open_chat_failed'));
     }
   };
 
@@ -326,7 +326,7 @@ const StoriesPage: React.FC = () => {
     if (ok) {
       setIsPurchaseOpen(false);
       setStoryUploadUnlocked(true);
-      showAlert('Achat reussi', 'Vous pouvez maintenant publier votre story !');
+      showAlert(t('purchase_success'), t('story_upload_unlocked'));
       window.setTimeout(() => fileInputRef.current?.click(), 600);
     }
   };
@@ -339,22 +339,22 @@ const StoriesPage: React.FC = () => {
         await navigator.share({ title: 'Story Galant', url });
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(url);
-        showAlert('Lien copie', 'Le lien de la story a ete copie.');
+        showAlert(t('link_copied'), t('story_link_copied_body'));
       }
     } catch {}
   };
 
   const handleDeleteStatus = async (status: Status) => {
     if (status.user_id !== user?.uid) return;
-    if (!window.confirm('Supprimer cette story ?')) return;
+    if (!window.confirm(t('story_delete_confirm'))) return;
 
     try {
       await apiRequest(`/api/statuses/${status.id}`, { method: 'DELETE', requireAuth: true });
       setSelectedStatusId(null);
       setStatuses((prev) => prev.filter((item) => item.id !== status.id));
-      showAlert('Story supprimee', 'Votre story a ete retiree.');
+      showAlert(t('success'), t('story_removed'));
     } catch (error: any) {
-      showAlert('Erreur', error?.message || 'Impossible de supprimer la story.');
+      showAlert(t('error'), error?.message || t('story_delete_failed'));
     }
   };
 
@@ -439,7 +439,7 @@ const StoriesPage: React.FC = () => {
           <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 shadow-xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
             {uploading ? <div className="w-5 h-5 border-2 border-primary/20 border-t-primary rounded-full animate-spin" /> : <Plus size={28} />}
           </div>
-          <p className="text-[10px] font-medium uppercase tracking-prestige text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors">Ma Story</p>
+          <p className="text-[10px] font-medium uppercase tracking-prestige text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors">{t('my_story')}</p>
         </button>
 
         {statuses.map((status) => {
@@ -573,7 +573,7 @@ const StoriesPage: React.FC = () => {
                   <button
                     onClick={() => void handleDeleteStatus(selectedStatus)}
                     className="bg-red-500/20 backdrop-blur-xl border border-red-400/20 p-3 rounded-2xl text-white hover:bg-red-500/40 transition-all"
-                    aria-label="Supprimer"
+                    aria-label={t('delete')}
                   >
                     <Trash2 size={18} />
                   </button>

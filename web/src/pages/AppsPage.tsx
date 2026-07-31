@@ -2,19 +2,20 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, ShoppingCart, Shield } from 'lucide-react';
 import FeatureHighlight from '../components/FeatureHighlight';
+import { useAuth } from '../context/AuthContext';
 
 const APPS = [
   {
-    title: 'Le Marché',
-    subtitle: 'Comparez les prix et optimisez vos achats.',
+    titleKey: 'market',
+    subtitleKey: 'market_subtitle',
     href: '/market',
     icon: ShoppingCart,
     color: 'text-indigo-500',
     bg: 'bg-indigo-50 dark:bg-indigo-500/10',
   },
   {
-    title: 'La Sentinelle',
-    subtitle: 'Securite privee et appel fantome discret.',
+    titleKey: 'sentinel',
+    subtitleKey: 'sentinel_subtitle',
     href: '/sentinel',
     icon: Shield,
     color: 'text-blue-600',
@@ -23,14 +24,16 @@ const APPS = [
 ];
 
 const AppsPage: React.FC = () => {
+  const { t } = useAuth();
+
   return (
     <div className="max-w-4xl mx-auto pb-24 px-4 space-y-8">
       <div>
         <h2 className="text-4xl font-serif italic tracking-tighter text-slate-900 dark:text-white leading-none">
-          Apps
+          {t('apps')}
         </h2>
         <p className="text-slate-500 dark:text-slate-400 font-medium mt-3 text-sm uppercase tracking-prestige">
-          Services utiles pour vos rencontres
+          {t('apps_subtitle')}
         </p>
       </div>
 
@@ -48,8 +51,8 @@ const AppsPage: React.FC = () => {
                 <div className={`w-12 h-12 rounded-2xl ${app.bg} ${app.color} flex items-center justify-center mb-5`}>
                   <Icon size={24} />
                 </div>
-                <h3 className="text-base font-serif italic tracking-tighter text-slate-900 dark:text-white">{app.title}</h3>
-                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">{app.subtitle}</p>
+                <h3 className="text-base font-serif italic tracking-tighter text-slate-900 dark:text-white">{t(app.titleKey as any)}</h3>
+                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">{t(app.subtitleKey as any)}</p>
               </Link>
             </FeatureHighlight>
           );
@@ -64,8 +67,8 @@ const AppsPage: React.FC = () => {
           <Sparkles size={22} />
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-black text-slate-900 dark:text-white">Rejoignez le Guide Galant</p>
-          <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1">Votre etablissement aussi merite l'elegance.</p>
+          <p className="text-sm font-black text-slate-900 dark:text-white">{t('partner_signup_short')}</p>
+          <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1">{t('partner_signup_short_desc')}</p>
         </div>
       </Link>
     </div>

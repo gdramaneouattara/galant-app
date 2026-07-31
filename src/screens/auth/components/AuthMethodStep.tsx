@@ -19,7 +19,7 @@ interface AuthMethodStepProps {
 }
 
 const AuthMethodStep: React.FC<AuthMethodStepProps> = ({ mode, onBack, onSuccess, loading, setLoading }) => {
-  const { colors } = useApp();
+  const { colors, t } = useApp();
   const navigation = useNavigation<any>();
   const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
   const [identifier, setIdentifier] = useState('');
@@ -31,7 +31,7 @@ const AuthMethodStep: React.FC<AuthMethodStepProps> = ({ mode, onBack, onSuccess
 
   const handleEmailAction = async () => {
     if (mode === 'signup' && !hasAcceptedLegal) {
-      Alert.alert('Consentement requis', "Veuillez accepter les CGU.");
+      Alert.alert(t('consent_required'), t('consent_required_body'));
       return;
     }
 
@@ -65,11 +65,11 @@ const AuthMethodStep: React.FC<AuthMethodStepProps> = ({ mode, onBack, onSuccess
     } catch (error: any) {
       setLoading(false);
       let msg = error.message;
-      if (error.code === 'auth/email-already-in-use') msg = "Cet email est déjà utilisé.";
-      if (error.code === 'auth/invalid-email') msg = "Format d'email invalide.";
-      if (error.code === 'auth/weak-password') msg = "Le mot de passe est trop faible.";
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') msg = "Identifiants incorrects.";
-      Alert.alert('Erreur', msg);
+      if (error.code === 'auth/email-already-in-use') msg = t('email_already_used');
+      if (error.code === 'auth/invalid-email') msg = t('invalid_email');
+      if (error.code === 'auth/weak-password') msg = t('weak_password');
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') msg = t('invalid_credentials');
+      Alert.alert(t('error'), msg);
     }
   };
 
@@ -79,7 +79,7 @@ const AuthMethodStep: React.FC<AuthMethodStepProps> = ({ mode, onBack, onSuccess
         <ChevronLeft color={colors.textMuted} size={32} />
       </Pressable>
 
-      <Text style={[styles.title, { color: colors.text }]}>{mode === 'signup' ? 'Créer un compte' : 'Se connecter'}</Text>
+      <Text style={[styles.title, { color: colors.text }]}>{mode === 'signup' ? t('create_account') : t('login')}</Text>
 
       <View style={styles.authMethodRow}>
         <Pressable
@@ -89,10 +89,10 @@ const AuthMethodStep: React.FC<AuthMethodStepProps> = ({ mode, onBack, onSuccess
           <Text style={[styles.authMethodLabel, authMethod === 'email' && styles.authMethodLabelActive]}>Email</Text>
         </Pressable>
         <Pressable
-          onPress={() => Alert.alert('Bientôt disponible', 'La connexion par téléphone arrive bientôt.')}
+          onPress={() => Alert.alert(t('coming_soon'), t('phone_auth_soon'))}
           style={[styles.authMethodChip, { borderColor: colors.border }, authMethod === 'phone' && styles.authMethodChipActive]}
         >
-          <Text style={[styles.authMethodLabel, authMethod === 'phone' && styles.authMethodLabelActive]}>Téléphone</Text>
+          <Text style={[styles.authMethodLabel, authMethod === 'phone' && styles.authMethodLabelActive]}>{t('phone')}</Text>
         </Pressable>
       </View>
 
@@ -110,7 +110,7 @@ const AuthMethodStep: React.FC<AuthMethodStepProps> = ({ mode, onBack, onSuccess
       </View>
 
       <View style={styles.field}>
-        <Text style={[styles.label, { color: colors.text }]}>Mot de passe</Text>
+        <Text style={[styles.label, { color: colors.text }]}>{t('password')}</Text>
         <View style={styles.passwordInputWrap}>
           <TextInput
             value={password}
@@ -127,7 +127,7 @@ const AuthMethodStep: React.FC<AuthMethodStepProps> = ({ mode, onBack, onSuccess
 
       {mode === 'login' && (
         <Pressable onPress={() => navigation.navigate('ResetPassword')} style={styles.forgotBtn}>
-          <Text style={styles.forgotText}>Mot de passe oublié ?</Text>
+          <Text style={styles.forgotText}>{t('forgot_password')}</Text>
         </Pressable>
       )}
 
@@ -137,13 +137,13 @@ const AuthMethodStep: React.FC<AuthMethodStepProps> = ({ mode, onBack, onSuccess
             {hasAcceptedLegal ? <CheckSquare color={COLORS.primary} size={20} /> : <Square color={colors.textMuted} size={20} />}
           </Pressable>
           <Text style={[styles.checkboxText, { color: colors.text }]}>
-            J'accepte les <Text onPress={() => Linking.openURL(`${WEB_URL}/cgu`)} style={styles.legalLink}>CGU</Text> et la <Text onPress={() => Linking.openURL(`${WEB_URL}/privacy`)} style={styles.legalLink}>Politique de confidentialité</Text>
+            {t('accept_terms_prefix')} <Text onPress={() => Linking.openURL(`${WEB_URL}/cgu`)} style={styles.legalLink}>{t('terms')}</Text> {t('and')} <Text onPress={() => Linking.openURL(`${WEB_URL}/privacy`)} style={styles.legalLink}>{t('privacy_policy')}</Text>
           </Text>
         </View>
       )}
 
       <PrimaryButton
-        label={mode === 'signup' ? 'S\'inscrire' : 'Se connecter'}
+        label={mode === 'signup' ? t('sign_up') : t('login')}
         onPress={handleEmailAction}
         loading={loading}
         disabled={loading || !identifier || !password || (mode === 'signup' && !hasAcceptedLegal)}
@@ -151,13 +151,13 @@ const AuthMethodStep: React.FC<AuthMethodStepProps> = ({ mode, onBack, onSuccess
 
       <View style={styles.dividerRow}>
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
-        <Text style={[styles.dividerText, { color: colors.textMuted }]}>OU</Text>
+        <Text style={[styles.dividerText, { color: colors.textMuted }]}>{t('or')}</Text>
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
       </View>
 
       <View style={styles.socialRow}>
         <Pressable
-          onPress={() => Alert.alert('Google Auth', 'La connexion Google nécessite une configuration native. Utilise l\'email pour le moment.')}
+          onPress={() => Alert.alert(t('google_auth'), t('google_auth_native_required'))}
           style={[styles.socialButton, { borderColor: colors.border }]}
         >
           <Image source={{ uri: "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" }} style={{ width: 20, height: 20 }} />
@@ -165,7 +165,7 @@ const AuthMethodStep: React.FC<AuthMethodStepProps> = ({ mode, onBack, onSuccess
         </Pressable>
 
         <Pressable
-          onPress={() => Alert.alert('Apple Auth', 'La connexion Apple arrive bientôt sur mobile.')}
+          onPress={() => Alert.alert(t('apple_auth'), t('apple_auth_soon'))}
           style={[styles.socialButton, { backgroundColor: '#000', borderColor: '#000' }]}
         >
           <Text style={{ fontSize: 18, color: '#fff' }}></Text>

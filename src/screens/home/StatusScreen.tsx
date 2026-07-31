@@ -81,7 +81,7 @@ const VIDEO_UPLOAD_MAX_BYTES = 30 * 1024 * 1024;
 const StatusScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<RootStackParamList, 'Status'>>();
-  const { currentUser, appResumeVersion } = useApp();
+  const { currentUser, appResumeVersion, t } = useApp();
   const { handleSwipe } = useMatchmaking();
   const { purchaseLoading, purchaseWithPaystack, purchaseWithStore, initIAP, endIAP } = useSubscription();
 
@@ -174,7 +174,7 @@ const StatusScreen: React.FC = () => {
       return;
     }
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (perm.status !== 'granted') return Alert.alert('Permission requise', "Autorisez l'accès à la galerie.");
+    if (perm.status !== 'granted') return Alert.alert(t('permission_required'), t('gallery_permission_body'));
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images', 'videos'],
@@ -190,11 +190,11 @@ const StatusScreen: React.FC = () => {
       const type = asset.type === 'video' ? 'VIDEO' : 'IMAGE';
       if (type === 'VIDEO') {
         if (typeof asset.duration === 'number' && asset.duration > STORY_VIDEO_MAX_DURATION_MS) {
-          Alert.alert('Video trop longue', "Les stories sont limitees a 15 secondes.");
+          Alert.alert(t('video_too_long_title'), t('video_too_long_story'));
           return;
         }
         if (typeof asset.fileSize === 'number' && asset.fileSize > VIDEO_UPLOAD_MAX_BYTES) {
-          Alert.alert('Video trop lourde', "La video doit peser moins de 30 Mo avant envoi.");
+          Alert.alert(t('video_too_heavy_title'), t('video_too_heavy'));
           return;
         }
       }
@@ -237,7 +237,7 @@ const StatusScreen: React.FC = () => {
         setStoryUploadUnlocked(false);
         void fetchStatuses();
       } catch (e) {
-        Alert.alert('Erreur', "Impossible de publier le statut.");
+        Alert.alert(t('error'), t('story_publish_failed'));
       } finally {
         setUploading(false);
       }
@@ -291,7 +291,7 @@ const StatusScreen: React.FC = () => {
       const res = await handleSwipe(targetUserId, 'RIGHT');
       if (res) {
         setLikers(prev => prev.map(l => l.user_id === targetUserId ? { ...l, liked_back: true, is_matched: !!res.matched } : l));
-        if (res.matched) Alert.alert('Match 🎉', `Vous et ${entry.profile.name} vous plaisez mutuellement.`);
+        if (res.matched) Alert.alert(t('match_title'), t('matched_with', { name: entry.profile.name }));
       }
     } finally { setLikingBackUserId(null); }
   };
@@ -310,7 +310,7 @@ const StatusScreen: React.FC = () => {
     if (type === 'SUPER_LIKE') {
       const res = await handleSwipe(selectedLiker.user_id, 'RIGHT', true);
       setLikers(prev => prev.map(l => l.user_id === selectedLiker.user_id ? { ...l, liked_back: true, is_matched: !!res?.matched } : l));
-      Alert.alert('Succes', res?.matched ? 'Super Like envoye et match cree.' : 'Super Like envoye !');
+      Alert.alert(t('success'), res?.matched ? t('super_like_sent_match') : t('super_like_sent'));
       setShowSuperLikePurchaseModal(false);
       return;
     }
@@ -320,7 +320,7 @@ const StatusScreen: React.FC = () => {
       requireAuth: true,
       body: JSON.stringify({ targetUserId: selectedLiker.user_id }),
     });
-    Alert.alert('Succes', 'Message direct debloque !');
+    Alert.alert(t('success'), t('direct_message_unlocked'));
     setShowDirectMessagePurchaseModal(false);
     (navigation as any).navigate('Chat', { userId: selectedLiker.user_id, matchId: thread.matchId });
   };
@@ -351,15 +351,15 @@ const StatusScreen: React.FC = () => {
 
   const deleteStatus = async (status: Status) => {
     if (!status || String(status.user_id) !== String(currentUser?.id)) return;
-    Alert.alert('Supprimer la story', 'Voulez-vous retirer cette story ?', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Supprimer', style: 'destructive', onPress: async () => {
+    Alert.alert(t('story_delete_title'), t('story_delete_confirm'), [
+      { text: t('cancel'), style: 'cancel' },
+      { text: t('delete'), style: 'destructive', onPress: async () => {
         try {
           await apiRequest(`/api/statuses/${status.id}`, { method: 'DELETE', requireAuth: true });
           setSelectedStatusId(null);
           setStatuses(prev => prev.filter(item => item.id !== status.id));
         } catch (e: any) {
-          Alert.alert('Erreur', e.message || 'Impossible de supprimer la story.');
+          Alert.alert(t('error'), e.message || t('story_delete_failed'));
         }
       }},
     ]);
@@ -404,11 +404,11 @@ const StatusScreen: React.FC = () => {
           <View style={styles.empty}>
             {locked ? (
               <>
-                <Text style={styles.emptyTitle}>Essai expiré</Text>
-                <Text style={styles.emptyText}>Passez à Premium pour accéder aux stories.</Text>
-                <Pressable style={styles.premiumBtn} onPress={() => (navigation as any).navigate('Premium')}><Text style={styles.premiumBtnText}>Passer à Premium</Text></Pressable>
+                <Text style={styles.emptyTitle}>{t('trial_expired')}</Text>
+                <Text style={styles.emptyText}>{t('stories_premium_required')}</Text>
+                <Pressable style={styles.premiumBtn} onPress={() => (navigation as any).navigate('Premium')}><Text style={styles.premiumBtnText}>{t('become_premium')}</Text></Pressable>
               </>
-            ) : <Text style={styles.emptyText}>Aucun statut pour le moment.</Text>}
+            ) : <Text style={styles.emptyText}>{t('no_status_yet')}</Text>}
           </View>
         }
       />

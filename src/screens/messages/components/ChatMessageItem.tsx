@@ -85,7 +85,7 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
       setTranslatedText(res.translatedText);
       setShowOriginal(false);
     } catch (e) {
-      Alert.alert(t('error'), "Translation error");
+      Alert.alert(t('error'), t('translation_failed'));
     } finally {
       setIsTranslating(false);
     }
@@ -148,7 +148,7 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
 
         {isVenue && (
           <View style={styles.venueContent}>
-            <Text style={styles.venueHint}>{isMine ? 'Vous proposez un lieu :' : 'Suggestion de rendez-vous :'}</Text>
+            <Text style={styles.venueHint}>{isMine ? t('my_suggestion') : t('date_suggestion')}</Text>
             <View style={styles.venueCardInner}>
               <OptimizedImage uri={venueData?.photo_url || 'https://placehold.co/80x80'} style={styles.venueThumb} />
               <View style={styles.venueTextWrap}>
@@ -161,7 +161,7 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
 
         {isEvent && (
           <View style={styles.venueContent}>
-            <Text style={styles.venueHint}>{isMine ? 'Vous proposez une sortie :' : 'Suggestion de sortie :'}</Text>
+            <Text style={styles.venueHint}>{isMine ? t('my_outing_suggestion') : t('outing_suggestion')}</Text>
             <View style={styles.venueCardInner}>
               <OptimizedImage uri={eventData?.photo_url || 'https://placehold.co/80x80'} style={styles.venueThumb} />
               <View style={styles.venueTextWrap}>
@@ -194,7 +194,7 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
           <Pressable style={[styles.voiceAction, isExpired && styles.voiceExpired]} onPress={playVoice} disabled={playing || isExpired}>
             {isExpired ? <Trash2 size={20} color="#94a3b8" /> : (playing ? <ActivityIndicator color={isMine ? '#fff' : '#e11d48'} /> : <Play size={20} color={isMine ? '#fff' : '#e11d48'} fill={isMine ? '#fff' : '#e11d48'} />)}
             <Text style={[styles.voiceText, isMine && { color: '#fff' }, isExpired && { color: '#94a3b8' }]}>
-              {isExpired ? 'Sérénade expirée' : playing ? 'Lecture...' : 'Écouter la sérénade'}
+              {isExpired ? t('serenade_expired') : playing ? t('playing') : t('listen_serenade')}
             </Text>
           </Pressable>
         )}
@@ -217,7 +217,7 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
         )}
 
         <Text style={[styles.messageMeta, isMine && styles.myMessageMeta]}>
-          {displayTime}{isMine ? ` • ${item.is_read ? 'Lu ✓✓' : t('sent')}` : ''}
+          {displayTime}{isMine ? ` • ${item.is_read ? `${t('read_receipt')} ✓✓` : t('sent')}` : ''}
           {isSerenade && !isMine && !isExpired && ` • ${t('one_listen_only')}`}
         </Text>
       </View>

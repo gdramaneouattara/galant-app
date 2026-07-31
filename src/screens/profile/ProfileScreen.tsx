@@ -26,9 +26,9 @@ import SettingsModal from './components/SettingsModal';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const RELATIONSHIP_GOALS = [
-  { id: 'SERIOUS', label: 'Amour sérieux', icon: (props: any) => <Heart {...props} /> },
-  { id: 'FRIENDSHIP', label: 'Amitié', icon: (props: any) => <Users {...props} /> },
-  { id: 'CASUAL', label: 'On verra bien', icon: (props: any) => <Coffee {...props} /> },
+  { id: 'SERIOUS', labelKey: 'serious_love', icon: (props: any) => <Heart {...props} /> },
+  { id: 'FRIENDSHIP', labelKey: 'friendship_goal', icon: (props: any) => <Users {...props} /> },
+  { id: 'CASUAL', labelKey: 'casual_goal', icon: (props: any) => <Coffee {...props} /> },
 ];
 
 const ProfileScreen: React.FC = () => {
@@ -74,15 +74,15 @@ const ProfileScreen: React.FC = () => {
   const hasQuarterlyLimitedInvisible = String(currentUser.subscription_plan_id || '').toUpperCase() === 'QUARTERLY' && currentUser.is_premium && currentUser.gender === 'MALE';
 
   const invisibleModeDescription = isInvisibleEnabled
-    ? (hasQuarterlyLimitedInvisible ? 'Mode discret 3 mois actif.' : 'Votre profil est masqué dans la découverte standard.')
-    : (isInvisibleEligible ? 'Masquez votre profil quand vous le souhaitez.' : 'Disponible avec Premium.');
+    ? (hasQuarterlyLimitedInvisible ? t('invisible_mode_active_short') : t('invisible_profile_hidden'))
+    : (isInvisibleEligible ? t('invisible_mode_available') : t('available_with_premium'));
 
   const currentGoal = RELATIONSHIP_GOALS.find(g => g.id === currentUser.relationship_goal) || RELATIONSHIP_GOALS[0];
 
   const handleInvisibleToggle = async (enabled: boolean) => {
     setIsTogglingInvisible(true);
     const success = await toggleInvisibleMode(enabled);
-    if (!success) Alert.alert('Erreur', 'Impossible de mettre à jour le mode invisible.');
+    if (!success) Alert.alert(t('error'), t('invisible_mode_update_failed'));
     setIsTogglingInvisible(false);
   };
 
@@ -92,26 +92,26 @@ const ProfileScreen: React.FC = () => {
       await apiRequest('/api/profiles/update', { method: 'POST', requireAuth: true, body: JSON.stringify({ bio: tempBio.trim() }) });
       updateCurrentUser({ bio: tempBio.trim() });
       setShowBioModal(false);
-    } catch (e: any) { Alert.alert('Erreur', e.message); }
+    } catch (e: any) { Alert.alert(t('error'), e.message); }
     finally { setSavingBio(false); }
   };
 
   const getAiBioSuggestion = async () => {
     if (!currentUser?.is_premium) {
-      Alert.alert("Assistant IA 💎", "L'amélioration de profil par IA est réservée aux membres Premium.", [{ text: "Plus tard" }, { text: "Premium", onPress: () => navigation.navigate('Premium') }]);
+      Alert.alert(t('ai_assistant_title'), t('ai_profile_premium_only'), [{ text: t('maybe_later_short') }, { text: 'Premium', onPress: () => navigation.navigate('Premium') }]);
       return;
     }
     try {
       setAiLoading(true);
       const res = await apiRequest<{ suggestions: string[] }>('/api/ai/writing-assistant', { method: 'POST', requireAuth: true, body: JSON.stringify({ type: 'BIO_IMPROVEMENT', currentBio: tempBio, lang: language }) });
       if (res.suggestions?.length) setTempBio(res.suggestions[Math.floor(Math.random() * res.suggestions.length)]);
-    } catch (e) { Alert.alert("Erreur IA", "Impossible de générer une suggestion."); }
+    } catch (e) { Alert.alert(t('ai_error'), t('ai_error_desc')); }
     finally { setAiLoading(false); }
   };
 
   const changeProfilePhoto = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (perm.status !== 'granted') return Alert.alert('Permission requise', "Autorisez l'accès à la galerie.");
+    if (perm.status !== 'granted') return Alert.alert(t('permission_required'), t('gallery_permission_body'));
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.9 });
     if (result.canceled || !result.assets?.[0]?.uri) return;
 
@@ -122,7 +122,7 @@ const ProfileScreen: React.FC = () => {
       const { fullUrl: publicUrl, variants } = await uploadImageVariantsToBucket({ bucket: 'photos', path, uri: asset.uri });
 
       const moderation = await apiRequest<{ status?: string }>('/api/moderation/photos/check', { method: 'POST', requireAuth: true, body: JSON.stringify({ photoUrls: [publicUrl] }) });
-      if (String(moderation?.status).toUpperCase() === 'REJECTED') return Alert.alert('Photo refusée', "La photo ne respecte pas les règles.");
+      if (String(moderation?.status).toUpperCase() === 'REJECTED') return Alert.alert(t('photo_rejected'), t('photo_rejected_body'));
 
       const maxPhotos = currentUser.is_premium || currentUser.is_vip ? 6 : 3;
       const nextPhotos = [publicUrl, ...(currentUser.photos || []).slice(1)].slice(0, maxPhotos);
@@ -139,7 +139,7 @@ const ProfileScreen: React.FC = () => {
         photos: payload.profile?.photos || nextPhotos,
         photo_variants: payload.profile?.photo_variants || nextPhotoVariants,
       });
-    } catch (e: any) { Alert.alert('Erreur', e.message); }
+    } catch (e: any) { Alert.alert(t('error'), e.message); }
     finally { setUpdatingProfilePhoto(false); }
   };
 
@@ -148,18 +148,18 @@ const ProfileScreen: React.FC = () => {
       setExportingData(true);
       const payload = await apiRequest<any>('/api/privacy/export', { requireAuth: true });
       await Share.share({ title: `export-${currentUser.id}.json`, message: JSON.stringify(payload, null, 2) });
-    } catch (e: any) { Alert.alert('Erreur', e.message); }
+    } catch (e: any) { Alert.alert(t('error'), e.message); }
     finally { setExportingData(false); }
   };
 
   const deleteAccount = async () => {
-    Alert.alert('Supprimer le compte', 'Cette action est définitive.', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Supprimer', style: 'destructive', onPress: async () => {
+    Alert.alert(t('delete_account_title'), t('delete_account_body'), [
+      { text: t('cancel'), style: 'cancel' },
+      { text: t('delete'), style: 'destructive', onPress: async () => {
         try {
           await apiRequest('/api/privacy/delete-account', { method: 'POST', requireAuth: true });
           await logout();
-        } catch (e: any) { Alert.alert('Erreur', e.message); }
+        } catch (e: any) { Alert.alert(t('error'), e.message); }
       }},
     ]);
   };
@@ -167,15 +167,15 @@ const ProfileScreen: React.FC = () => {
   const handleShareInvite = async () => {
     try {
       const url = `https://galant.app/invite/${currentUser.id}`;
-      const message = `Rejoins-moi sur Galant, l'application de rencontre la plus élégante ! Utilise mon lien pour t'inscrire : ${url}`;
+      const message = t('invite_share_body', { url });
 
       await Share.share({
         message,
         url, // iOS only
-        title: 'Invitation Galant 🌹',
+        title: t('invite_share_title'),
       });
     } catch (error: any) {
-      Alert.alert('Erreur', error.message);
+      Alert.alert(t('error'), error.message);
     }
   };
 
@@ -197,7 +197,7 @@ const ProfileScreen: React.FC = () => {
 
         <ProfileMenu
           currentUser={currentUser}
-          currentGoalLabel={currentGoal.label}
+          currentGoalLabel={t(currentGoal.labelKey as any)}
           currentGoalIcon={currentGoal.icon}
           invisibleModeEnabled={isInvisibleEnabled}
           isTogglingInvisible={isTogglingInvisible}
@@ -216,7 +216,7 @@ const ProfileScreen: React.FC = () => {
           onOpenLikes={() => navigation.navigate('LikesReceived')}
           onOpenBoost={() => {
             const msg = getBoostActiveMessage(currentUser.boosted_until);
-            if (msg) Alert.alert('Boost actif', msg);
+            if (msg) Alert.alert(t('boost_active'), msg);
             else navigation.navigate('Boost');
           }}
           onExportData={exportData}
@@ -257,7 +257,7 @@ const ProfileScreen: React.FC = () => {
             updateCurrentUser({ relationship_goal: payload.profile?.relationship_goal || id });
             setShowGoalModal(false);
           } catch (e: any) {
-            Alert.alert('Erreur', e.message || 'Impossible de mettre a jour votre objectif.');
+            Alert.alert(t('error'), e.message || t('goal_update_failed'));
           }
         }}
         colors={colors}
