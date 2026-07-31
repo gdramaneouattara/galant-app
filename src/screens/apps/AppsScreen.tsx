@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Calendar, Crown, Gem, MapPin, Rocket, ShieldCheck } from 'lucide-react-native';
+import { Calendar, Crown, Gem, MapPin, Rocket, Shield, ShieldCheck } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useApp } from '../../state/AppContext';
 
@@ -37,6 +37,14 @@ const APPS = [
     icon: Rocket,
     color: '#7c3aed',
     route: 'Boost',
+  },
+  {
+    id: 'sentinel',
+    title: 'La Sentinelle',
+    subtitle: 'Securite privee et appel fantome discret',
+    icon: Shield,
+    color: '#2563eb',
+    route: 'Sentinel',
   },
   {
     id: 'verification',
