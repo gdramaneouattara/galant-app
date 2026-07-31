@@ -1,36 +1,39 @@
-# Finalisation du Mode Sombre Global (Web Prestige)
+# Synchronisation Web <-> Mobile (Feature Parity)
 
-Ce plan vise à corriger toutes les erreurs de contraste et de visibilité en mode sombre sur l'ensemble des pages de la version Web.
+Ce plan vise à porter toutes les fonctionnalités exclusives de la version mobile native vers la version Web afin d'offrir une expérience 100% identique sur tous les supports.
 
 ## Proposed Changes
 
-### [Web Mobile] Correction Systématique des Couleurs
+### [Web Mobile] Nouvelles Fonctionnalités Utilisateurs
 
-Je vais modifier tous les composants identifiés lors du scan pour appliquer les variantes `dark:` manquantes :
+#### [NEW] [DiscoverGridPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/DiscoverGridPage.tsx)
+- Implémentation d'une vue en grille responsive (2 colonnes sur mobile, 4 sur desktop).
+- Affichage des badges (Vérifié, Premium, Score) sur chaque miniature.
+- Ajout d'un bouton de bascule sur `DiscoverPage.tsx` pour passer du Swipe à la Grille.
 
-1.  **Surfaces (Cards & Containers)** :
-    - `bg-white` -> `bg-white dark:bg-slate-900`
-    - `bg-slate-50` -> `bg-slate-50 dark:bg-slate-800/50`
-2.  **Textes (Headings & Body)** :
-    - `text-slate-900` -> `text-slate-900 dark:text-white`
-    - `text-slate-700` -> `text-slate-700 dark:text-slate-200`
-    - `text-slate-800` -> `text-slate-800 dark:text-slate-200`
-3.  **Éléments d'interface (Inputs & Borders)** :
-    - `border-slate-100/200` -> `dark:border-white/10`
-    - `bg-slate-50` (inputs) -> `dark:bg-white/5`
+#### [NEW] [VenueDetailPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/VenueDetailPage.tsx)
+- Page de présentation complète d'un partenaire.
+- Galerie de photos, description riche, liste des avantages membres.
+- Bouton "Discuter avec l'établissement".
 
-### Pages priorisantes :
-- `ChatPage.tsx` : Bulles de message et barre de saisie.
-- `AgendaPage.tsx` : Filtres et cartes d'événements.
-- `GuidePage.tsx` : Cartes des établissements et recherche.
-- `ProfilePage.tsx` : Tous les textes de paramètres.
-- `SentinelPage.tsx` : Champs de saisie du rendez-vous.
-- `Admin/*` : Intégralité du tableau de bord.
+---
+
+### [Web Mobile] Nouvelles Fonctionnalités Admin & Partner
+
+#### [NEW] [AdminMessaging.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminMessaging.tsx)
+- Interface d'envoi de notifications push massives.
+- Sélection de l'audience (Tous, Hommes uniquement, Femmes uniquement, Premium).
+
+#### [NEW] [AdminVenues.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminVenues.tsx)
+- Liste des établissements en attente d'approbation.
+- Outils de validation des avantages partenaires.
+
+#### [NEW] [AdminAuditLogs.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminAuditLogs.tsx)
+- Historique des actions de modération et d'administration.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Activer le mode sombre dans les réglages du profil.
-2.  Parcourir chaque onglet (Découverte, Messages, Sorties, Apps, Moi).
-3.  Vérifier que chaque titre est blanc et que chaque fond est noir/gris très sombre.
-4.  Vérifier la lisibilité des formulaires et des boutons.
+1.  Tester la bascule Swipe/Grid sur la page Découverte.
+2.  Cliquer sur un établissement dans le Guide et vérifier l'ouverture de la page détail.
+3.  Accéder aux nouveaux modules Admin et vérifier la cohérence des données avec la version mobile.
