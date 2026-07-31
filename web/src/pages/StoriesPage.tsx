@@ -7,6 +7,7 @@ import { apiRequest } from '@shared/lib/api';
 import { fbStorage } from '../firebase';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { compressImageWeb } from '../lib/imageCompression';
+import { compressVideoWeb, STORY_VIDEO_MAX_DURATION_SECONDS, validateVideoFileWeb, VIDEO_UPLOAD_MAX_BYTES } from '../lib/videoOptimization';
 import StatusLikersModal from '../components/StatusLikersModal';
 import StoryPurchaseModal from '../components/StoryPurchaseModal';
 import LikerProfileModal, { type StatusLiker } from '../components/LikerProfileModal';
@@ -19,6 +20,7 @@ interface Status {
   user_id: string;
   content: string;
   media_url: string;
+  thumbnail_url?: string | null;
   message_type: 'TEXT' | 'IMAGE' | 'VIDEO';
   created_at: string;
   likes_count?: number;
@@ -67,15 +69,17 @@ const StoriesPage: React.FC = () => {
 
   const resolveMediaUrls = useCallback((items: Status[]) => {
     items.forEach((status) => {
-      if (!status.media_url) return;
-      setResolvedUrls((prev) => {
-        if (prev[status.media_url]) return prev;
-        getDownloadURL(ref(fbStorage, `statuses/${status.media_url}`))
-          .then((url) => {
-            setResolvedUrls((current) => current[status.media_url] ? current : { ...current, [status.media_url]: url });
-          })
-          .catch(() => {});
-        return prev;
+      [status.media_url, status.thumbnail_url].filter(Boolean).forEach((mediaPath) => {
+        const path = String(mediaPath);
+        setResolvedUrls((prev) => {
+          if (prev[path]) return prev;
+          getDownloadURL(ref(fbStorage, `statuses/${path}`))
+            .then((url) => {
+              setResolvedUrls((current) => current[path] ? current : { ...current, [path]: url });
+            })
+            .catch(() => {});
+          return prev;
+        });
       });
     });
   }, []);
@@ -152,29 +156,20 @@ const StoriesPage: React.FC = () => {
     const type = file.type.startsWith('video') ? 'VIDEO' : 'IMAGE';
 
     if (type === 'VIDEO') {
-      const objectUrl = URL.createObjectURL(file);
-      const duration = await new Promise<number>((resolve, reject) => {
-        const video = document.createElement('video');
-        video.preload = 'metadata';
-        video.onloadedmetadata = () => {
-          URL.revokeObjectURL(objectUrl);
-          resolve(video.duration);
-        };
-        video.onerror = () => {
-          URL.revokeObjectURL(objectUrl);
-          reject(new Error('invalid_video'));
-        };
-        video.src = objectUrl;
-      }).catch(() => null);
-
-      if (!duration) {
+      try {
+        await validateVideoFileWeb(file, STORY_VIDEO_MAX_DURATION_SECONDS);
+      } catch (error: any) {
+        if (error?.message === 'video_too_large') {
+          showAlert('Video trop lourde', "La video doit peser moins de 30 Mo avant envoi.");
+          e.target.value = '';
+          return;
+        }
+        if (error?.message === 'video_too_long') {
+          showAlert('Video trop longue', "Les stories sont limitees a 15 secondes. Veuillez raccourcir votre video avant de l'envoyer.");
+          e.target.value = '';
+          return;
+        }
         showAlert('Erreur', "Impossible de lire cette video.");
-        e.target.value = '';
-        return;
-      }
-
-      if (duration > 16) {
-        showAlert('Video trop longue', "Les stories sont limitees a 15 secondes. Veuillez raccourcir votre video avant de l'envoyer.");
         e.target.value = '';
         return;
       }
@@ -184,17 +179,27 @@ const StoriesPage: React.FC = () => {
 
     try {
       let mediaUrl = '';
+      let thumbnailUrl: string | null = null;
 
       if (type === 'VIDEO') {
+        const optimizedVideo = await compressVideoWeb(file, {
+          kind: 'STORY',
+          maxDurationSeconds: STORY_VIDEO_MAX_DURATION_SECONDS,
+        });
+        if (optimizedVideo.size > VIDEO_UPLOAD_MAX_BYTES) {
+          showAlert('Video trop lourde', "La video reste trop lourde apres optimisation. Essayez une video plus courte.");
+          return;
+        }
         const formData = new FormData();
-        formData.append('video', file);
+        formData.append('video', optimizedVideo, optimizedVideo.name || 'story.webm');
 
-        const res = await apiRequest<{ mediaUrl: string }>('/api/media/upload-video', {
+        const res = await apiRequest<{ mediaUrl: string; thumbnailUrl?: string }>('/api/media/upload-video', {
           method: 'POST',
           requireAuth: true,
           body: formData,
         });
         mediaUrl = res.mediaUrl;
+        thumbnailUrl = res.thumbnailUrl || null;
       } else {
         const compressedBlob = await compressImageWeb(file);
         const path = `${user.uid}/${Date.now()}.webp`;
@@ -206,7 +211,7 @@ const StoriesPage: React.FC = () => {
       await apiRequest('/api/statuses', {
         method: 'POST',
         requireAuth: true,
-        body: JSON.stringify({ mediaUrl, type, content: '' }),
+        body: JSON.stringify({ mediaUrl, thumbnailUrl, type, content: '' }),
       });
 
       showAlert('Succes', 'Votre story a ete publiee !');
@@ -437,6 +442,7 @@ const StoriesPage: React.FC = () => {
 
         {statuses.map((status) => {
           const mediaUrl = resolvedUrls[status.media_url];
+          const thumbnailUrl = status.thumbnail_url ? resolvedUrls[status.thumbnail_url] : null;
           return (
             <button
               type="button"
@@ -446,13 +452,12 @@ const StoriesPage: React.FC = () => {
             >
               {status.message_type === 'VIDEO' ? (
                 <div className="w-full h-full relative bg-slate-900">
-                  {mediaUrl ? (
-                    <video
-                      src={mediaUrl}
+                  {thumbnailUrl ? (
+                    <img
+                      src={thumbnailUrl}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
-                      muted
-                      playsInline
-                      preload="metadata"
+                      alt=""
+                      loading="lazy"
                     />
                   ) : (
                     <div className="w-full h-full bg-slate-800 flex items-center justify-center">

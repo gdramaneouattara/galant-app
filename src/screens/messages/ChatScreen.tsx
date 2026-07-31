@@ -11,7 +11,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
-import { rtdb, db, COLLECTIONS } from '../../lib/firebase';
+import { rtdb, db, COLLECTIONS, fbStorage } from '../../lib/firebase';
 import { PresenceInfo, subscribeToUserPresence } from '../../lib/presence';
 import { uploadArrayBufferToBucket, getPublicUrl } from '../../lib/storageUpload';
 
@@ -31,6 +31,9 @@ interface ChatMessage {
   is_read: boolean;
   created_at: string;
 }
+
+const CHAT_VIDEO_MAX_DURATION_MS = 31 * 1000;
+const VIDEO_UPLOAD_MAX_BYTES = 30 * 1024 * 1024;
 
 const ChatScreen: React.FC = () => {
   const route = useRoute<any>();
@@ -138,25 +141,59 @@ const ChatScreen: React.FC = () => {
       mediaTypes: type === 'IMAGE' ? ImagePicker.MediaTypeOptions.Images : ImagePicker.MediaTypeOptions.Videos,
       allowsEditing: true,
       quality: 0.8,
+      videoMaxDuration: type === 'VIDEO' ? 30 : undefined,
+      videoExportPreset: type === 'VIDEO' ? ImagePicker.VideoExportPreset.H264_960x540 : undefined,
+      videoQuality: type === 'VIDEO' ? ImagePicker.UIImagePickerControllerQualityType.Medium : undefined,
     };
 
     const result = await ImagePicker.launchImageLibraryAsync(options);
     if (result.canceled || !result.assets[0]) return;
 
     const asset = result.assets[0];
+    if (type === 'VIDEO') {
+      if (typeof asset.duration === 'number' && asset.duration > CHAT_VIDEO_MAX_DURATION_MS) {
+        Alert.alert('Video trop longue', "Les videos chat sont limitees a 30 secondes.");
+        return;
+      }
+      if (typeof asset.fileSize === 'number' && asset.fileSize > VIDEO_UPLOAD_MAX_BYTES) {
+        Alert.alert('Video trop lourde', "La video doit peser moins de 30 Mo avant envoi.");
+        return;
+      }
+    }
 
     try {
       setUploading(true);
-      const bucketPath = `chats/${activeMatchId || activeVenueChatId}/${Date.now()}`;
+      let mediaUrl = '';
+      let metadata: Record<string, any> = {};
 
-      await uploadArrayBufferToBucket({
-        bucket: COLLECTIONS.MATCHES,
-        path: bucketPath,
-        uri: asset.uri,
-        contentType: type === 'IMAGE' ? 'image/webp' : 'video/mp4'
-      });
+      if (type === 'VIDEO') {
+        const formData = new FormData();
+        formData.append('type', 'CHAT');
+        formData.append('video', {
+          uri: asset.uri,
+          name: 'chat.mp4',
+          type: asset.mimeType || 'video/mp4',
+        } as any);
 
-      const mediaUrl = await getPublicUrl(COLLECTIONS.MATCHES, bucketPath);
+        const res = await apiRequest<{ mediaUrl: string; thumbnailUrl?: string }>('/api/media/upload-video', {
+          method: 'POST',
+          requireAuth: true,
+          body: formData,
+        });
+        mediaUrl = await fbStorage.ref(`chat-media/${res.mediaUrl}`).getDownloadURL();
+        if (res.thumbnailUrl) {
+          metadata.thumbnail_url = await fbStorage.ref(`chat-media/${res.thumbnailUrl}`).getDownloadURL();
+        }
+      } else {
+        const bucketPath = `chats/${activeMatchId || activeVenueChatId}/${Date.now()}`;
+        await uploadArrayBufferToBucket({
+          bucket: COLLECTIONS.MATCHES,
+          path: bucketPath,
+          uri: asset.uri,
+          contentType: 'image/webp'
+        });
+        mediaUrl = await getPublicUrl(COLLECTIONS.MATCHES, bucketPath);
+      }
 
       await apiRequest('/api/messages/send', {
         method: 'POST',
@@ -166,6 +203,7 @@ const ChatScreen: React.FC = () => {
           venueChatId: activeVenueChatId,
           messageType: type,
           mediaPath: mediaUrl,
+          metadata,
           recipientId: userId
         })
       });
