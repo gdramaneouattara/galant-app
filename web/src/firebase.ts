@@ -3,6 +3,7 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
 import { getStorage } from 'firebase/storage';
+import { getMessaging } from 'firebase/messaging';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -33,6 +34,7 @@ export const fbAuth = app ? getAuth(app) : ({} as any);
 export const db = app ? getFirestore(app) : ({} as any);
 export const rtdb = app ? getDatabase(app) : ({} as any);
 export const fbStorage = app ? getStorage(app) : ({} as any);
+export const fbMessaging = app ? getMessaging(app) : null;
 
 export const COLLECTIONS = {
   PROFILES: 'profiles',
