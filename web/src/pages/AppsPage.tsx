@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Crown, Gem, MapPin, Rocket, ShieldCheck, Sparkles, ShoppingCart, Shield } from 'lucide-react';
+import FeatureHighlight from '../components/FeatureHighlight';
 
 const APPS = [
   {
@@ -84,18 +85,21 @@ const AppsPage: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {APPS.map((app) => {
           const Icon = app.icon;
+          const isNew = app.href === '/market' || app.href === '/sentinel';
+
           return (
-            <Link
-              key={app.href}
-              to={app.href}
-              className="min-h-[180px] rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-5 shadow-sm hover:-translate-y-1 hover:shadow-xl transition-all"
-            >
-              <div className={`w-12 h-12 rounded-2xl ${app.bg} ${app.color} flex items-center justify-center mb-5`}>
-                <Icon size={24} />
-              </div>
-              <h3 className="text-base font-serif italic tracking-tighter text-slate-900 dark:text-white">{app.title}</h3>
-              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">{app.subtitle}</p>
-            </Link>
+            <FeatureHighlight key={app.href} id={`app_${app.href.replace('/', '')}`} active={isNew} type={app.href === '/market' ? 'GOLD' : 'ROSE'}>
+              <Link
+                to={app.href}
+                className="min-h-[180px] rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-5 shadow-sm hover:-translate-y-1 hover:shadow-xl transition-all w-full flex flex-col"
+              >
+                <div className={`w-12 h-12 rounded-2xl ${app.bg} ${app.color} flex items-center justify-center mb-5`}>
+                  <Icon size={24} />
+                </div>
+                <h3 className="text-base font-serif italic tracking-tighter text-slate-900 dark:text-white">{app.title}</h3>
+                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">{app.subtitle}</p>
+              </Link>
+            </FeatureHighlight>
           );
         })}
       </div>

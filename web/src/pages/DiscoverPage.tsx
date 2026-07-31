@@ -8,6 +8,7 @@ import FilterModal from '../components/FilterModal';
 import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
 import { apiRequest } from '@shared/lib/api';
 import logoImg from '../assets/galant-logo.png';
+import FeatureHighlight from '../components/FeatureHighlight';
 
 const DiscoverPage: React.FC = () => {
   const { user, profile: myProfile, loading: authLoading, t } = useAuth();
@@ -267,13 +268,15 @@ const DiscoverPage: React.FC = () => {
 
         {/* Boutons de vue & filtre alignés à droite */}
         <div className="flex gap-3">
-          <button
-            onClick={() => navigate('/discover-grid')}
-            className="w-10 h-10 rounded-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 shadow-lg flex items-center justify-center text-slate-400 hover:text-primary transition-all active:scale-95"
-            title="Vue Grille"
-          >
-            <LayoutGrid size={18} />
-          </button>
+          <FeatureHighlight id="discover_grid" type="GOLD">
+            <button
+              onClick={() => navigate('/discover-grid')}
+              className="w-10 h-10 rounded-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 shadow-lg flex items-center justify-center text-slate-400 hover:text-primary transition-all active:scale-95"
+              title="Vue Grille"
+            >
+              <LayoutGrid size={18} />
+            </button>
+          </FeatureHighlight>
 
           <button
             onClick={() => setIsFilterOpen(true)}
