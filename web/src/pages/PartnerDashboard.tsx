@@ -55,7 +55,15 @@ const PartnerDashboard: React.FC = () => {
             <LayoutDashboard className="text-primary" />
             Espace Partenaire
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 font-medium mt-1 transition-colors">Gérez votre établissement {venue?.name}</p>
+          <div className="flex items-center gap-4 mt-1">
+            <p className="text-slate-500 dark:text-slate-400 font-medium transition-colors">Gérez votre établissement {venue?.name}</p>
+            <button
+              onClick={() => navigate('/partner-premium')}
+              className="px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-500 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-amber-500 hover:text-white transition-all"
+            >
+              Gérer l'abonnement
+            </button>
+          </div>
         </div>
         <button
           onClick={() => navigate('/partner/create-event')}

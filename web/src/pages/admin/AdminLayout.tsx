@@ -9,7 +9,10 @@ import {
   AlertCircle,
   Settings,
   ChevronRight,
-  CreditCard
+  CreditCard,
+  Building2,
+  Send,
+  History
 } from 'lucide-react';
 import { hasAdminProfileAccess } from '../../lib/adminAccess';
 
@@ -28,10 +31,13 @@ const AdminLayout: React.FC = () => {
     { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/admin/users', icon: Users, label: 'Membres' },
     { path: '/admin/pricing', icon: Settings, label: 'Tarifs' },
+    { path: '/admin/venues', icon: Building2, label: 'Partenaires' },
     { path: '/admin/kyc', icon: ShieldCheck, label: 'KYC' },
     { path: '/admin/support', icon: MessageSquare, label: 'Support' },
+    { path: '/admin/messaging', icon: Send, label: 'Diffusion' },
     { path: '/admin/finances', icon: CreditCard, label: 'Finances' },
     { path: '/admin/reports', icon: AlertCircle, label: 'Alertes' },
+    { path: '/admin/audit', icon: History, label: 'Audit' },
   ];
 
   return (

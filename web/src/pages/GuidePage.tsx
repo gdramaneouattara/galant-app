@@ -209,7 +209,11 @@ const GuidePage: React.FC = () => {
       {/* Grid des Lieux - Design Magazine */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
         {filteredVenues.map((venue) => (
-          <div key={venue.id} className="group bg-white dark:bg-slate-900 rounded-[3.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.08)] dark:shadow-none border border-slate-100 dark:border-white/10 overflow-hidden hover:scale-[1.02] transition-all duration-500 flex flex-col">
+          <div
+            key={venue.id}
+            onClick={() => navigate(`/venue/${venue.id}`)}
+            className="group bg-white dark:bg-slate-900 rounded-[3.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.08)] dark:shadow-none border border-slate-100 dark:border-white/10 overflow-hidden hover:scale-[1.02] transition-all duration-500 flex flex-col cursor-pointer"
+          >
             <div className="relative h-72 overflow-hidden">
               <img
                 src={venue.photo_url}
