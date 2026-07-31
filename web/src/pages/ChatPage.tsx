@@ -5,11 +5,15 @@ import { db, rtdb, COLLECTIONS, fbStorage } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { ref, onValue } from 'firebase/database';
 import { apiRequest } from '@shared/lib/api';
-import { Send, ChevronLeft, ShieldCheck, Gem, Sparkles, Languages, Loader2, MapPin, Calendar, Image as ImageIcon, Video, Paperclip } from 'lucide-react';
+import { Send, ChevronLeft, ShieldCheck, Gem, Sparkles, Languages, Loader2, MapPin, Calendar, Image as ImageIcon, Video, Paperclip, Mic, Square, Trash2 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { compressImageWeb } from '../lib/imageCompression';
 import { CHAT_VIDEO_MAX_DURATION_SECONDS, compressVideoWeb, validateVideoFileWeb, VIDEO_UPLOAD_MAX_BYTES } from '../lib/videoOptimization';
+import { startRecording, stopRecording } from '../lib/audioRecording';
 import { ref as storageRef, uploadBytes, getDownloadURL as getStorageUrl } from 'firebase/storage';
+import OptimizedImage from '../components/OptimizedImage';
+import VoicePlayer from '../components/VoicePlayer';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 const ChatPage: React.FC = () => {
   const { matchId } = useParams();
@@ -29,6 +33,31 @@ const ChatPage: React.FC = () => {
   const [translations, setTranslations] = useState<Record<string, string>>({});
   const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Audio Recording State
+  const [isRecording, setIsRecording] = useState(false);
+  const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const timerRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (isRecording) {
+      timerRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+    } else {
+      clearInterval(timerRef.current);
+      setRecordingDuration(0);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [isRecording]);
+
+  const formatRecDuration = (s: number) => {
+    const mins = Math.floor(s / 60);
+    const secs = s % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     if (!matchId || !user) return;
@@ -196,15 +225,15 @@ const ChatPage: React.FC = () => {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'IMAGE' | 'VIDEO') => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | Blob, type: 'IMAGE' | 'VIDEO' | 'VOICE') => {
     if (!profile?.is_premium) {
       showAlert('Privilège Premium 💎', 'Le partage de médias est réservé aux membres Premium.');
       navigate('/premium');
       return;
     }
 
-    const file = e.target.files?.[0];
-    if (!file || !user || !matchId) return;
+    const file = e instanceof Blob ? e : (e as React.ChangeEvent<HTMLInputElement>).target.files?.[0];
+    if (!file || !user || (!matchId && !venueChatId)) return;
 
     setUploading(true);
     try {
@@ -212,13 +241,14 @@ const ChatPage: React.FC = () => {
       let metadata: Record<string, any> = {};
 
       if (type === 'IMAGE') {
-        const finalFile = await compressImageWeb(file);
-        const sRef = storageRef(fbStorage, `chats/${venueChatId || matchId}/${Date.now()}_${file.name}`);
+        const finalFile = await compressImageWeb(file as File);
+        const sRef = storageRef(fbStorage, `chats/${venueChatId || matchId}/${Date.now()}_image.webp`);
         await uploadBytes(sRef, finalFile, { contentType: 'image/webp' });
         mediaUrl = await getStorageUrl(sRef);
-      } else {
+      } else if (type === 'VIDEO') {
+        const videoFile = file as File;
         try {
-          await validateVideoFileWeb(file, CHAT_VIDEO_MAX_DURATION_SECONDS);
+          await validateVideoFileWeb(videoFile, CHAT_VIDEO_MAX_DURATION_SECONDS);
         } catch (error: any) {
           if (error?.message === 'video_too_large') {
             showAlert('Video trop lourde', "La video doit peser moins de 30 Mo avant envoi.");
@@ -230,7 +260,7 @@ const ChatPage: React.FC = () => {
           return;
         }
 
-        const optimizedVideo = await compressVideoWeb(file, {
+        const optimizedVideo = await compressVideoWeb(videoFile, {
           kind: 'CHAT',
           maxDurationSeconds: CHAT_VIDEO_MAX_DURATION_SECONDS,
         });
@@ -252,6 +282,11 @@ const ChatPage: React.FC = () => {
         if (res.thumbnailUrl) {
           metadata.thumbnail_url = await getStorageUrl(storageRef(fbStorage, `chat-media/${res.thumbnailUrl}`));
         }
+      } else if (type === 'VOICE') {
+        const sRef = storageRef(fbStorage, `chats/${venueChatId || matchId}/${Date.now()}_serenade.webm`);
+        await uploadBytes(sRef, file, { contentType: file.type || 'audio/webm' });
+        mediaUrl = await getStorageUrl(sRef);
+        metadata.is_serenade = true;
       }
 
       await apiRequest('/api/messages/send', {
@@ -270,8 +305,35 @@ const ChatPage: React.FC = () => {
       showAlert('Erreur Upload', error.message);
     } finally {
       setUploading(false);
-      e.target.value = '';
+      if (!(e instanceof Blob)) {
+        (e as React.ChangeEvent<HTMLInputElement>).target.value = '';
+      }
     }
+  };
+
+  const handleStartRec = async () => {
+    try {
+      const { recorder, stream } = await startRecording();
+      setRecorder(recorder);
+      setAudioStream(stream);
+      setIsRecording(true);
+      recorder.start();
+    } catch (e: any) {
+      if (e.message === 'micro_not_supported') {
+        showAlert('Micro non détecté', "Votre navigateur ne supporte pas l'enregistrement audio ou l'accès a été refusé.");
+      }
+    }
+  };
+
+  const handleStopRec = async () => {
+    if (!recorder || !audioStream) return;
+    setIsRecording(false);
+    const blob = await stopRecording(recorder, audioStream);
+    if (blob.size > 1000) { // Minimum size to avoid empty rec
+      await handleFileUpload(blob, 'VOICE');
+    }
+    setRecorder(null);
+    setAudioStream(null);
   };
 
   if (!targetUser) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
@@ -284,7 +346,7 @@ const ChatPage: React.FC = () => {
           <ChevronLeft size={24} />
         </button>
         <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-slate-100 dark:border-white/10 cursor-pointer" onClick={() => !targetUser.isVenue && navigate(`/profile/${targetUser.id}`)}>
-          <img src={targetUser.photos?.[0]} className="w-full h-full object-cover" alt="" />
+          <OptimizedImage src={optimizedPhotoUrl(targetUser.photos?.[0], targetUser.photo_variants, 'thumb')} className="w-full h-full object-cover" alt="" eager />
         </div>
         <div className="flex-1 cursor-pointer" onClick={() => !targetUser.isVenue && navigate(`/profile/${targetUser.id}`)}>
           <div className="flex items-center gap-1">
@@ -324,7 +386,7 @@ const ChatPage: React.FC = () => {
 
                   {/* Media Content */}
                   {msg.message_type === 'IMAGE' && msg.media_url && (
-                    <img
+                    <OptimizedImage
                       src={msg.media_url}
                       className="max-w-full rounded-2xl mb-2 hover:scale-[1.02] transition-transform cursor-pointer"
                       alt="Shared media"
@@ -342,6 +404,16 @@ const ChatPage: React.FC = () => {
                     />
                   )}
 
+                  {msg.message_type === 'VOICE' && msg.media_url && (
+                    <VoicePlayer
+                      messageId={msg.id}
+                      url={msg.media_url}
+                      isSerenade={msg.metadata?.is_serenade}
+                      isMine={isMine}
+                      playedAt={msg.metadata?.played_at}
+                    />
+                  )}
+
                   {/* Suggestions Lieux/Events */}
                   {(isVenue || isEvent) && (
                     <div className="mb-2 p-2 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-white/10 text-slate-900 dark:text-white">
@@ -349,7 +421,7 @@ const ChatPage: React.FC = () => {
                         {isMine ? 'Ma suggestion' : 'Proposition de sortie'}
                       </p>
                       <div className="flex items-center gap-3">
-                        <img
+                        <OptimizedImage
                           src={isVenue ? msg.metadata?.venue?.photo_url : msg.metadata?.event?.photo_url}
                           className="w-12 h-12 rounded-xl object-cover"
                           alt=""
@@ -394,8 +466,33 @@ const ChatPage: React.FC = () => {
       </div>
 
       {/* Input de Message */}
-      <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-50 dark:border-white/5">
-        {inputText === '' && (
+      <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-50 dark:border-white/5 relative">
+        {isRecording && (
+          <div className="absolute inset-0 bg-white dark:bg-slate-900 z-20 flex items-center justify-between px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-center gap-3">
+              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+              <span className="text-sm font-black font-serif italic tracking-tighter text-slate-900 dark:text-white">
+                Sérénade en cours... {formatRecDuration(recordingDuration)}
+              </span>
+            </div>
+            <div className="flex gap-4">
+              <button
+                onClick={() => { setIsRecording(false); recorder?.stop(); setRecorder(null); setAudioStream(null); }}
+                className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-400 flex items-center justify-center hover:text-red-500 transition-colors"
+              >
+                <Trash2 size={20} />
+              </button>
+              <button
+                onClick={handleStopRec}
+                className="w-12 h-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-red-200 animate-bounce"
+              >
+                <Square size={20} fill="white" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {inputText === '' && !isRecording && (
           <button
             onClick={handleAiAssist}
             disabled={generating}
@@ -423,6 +520,14 @@ const ChatPage: React.FC = () => {
               className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl text-slate-400 dark:text-slate-500 transition-colors"
             >
               <Video size={20} />
+            </button>
+            <button
+              type="button"
+              onClick={handleStartRec}
+              disabled={uploading}
+              className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl text-primary transition-colors animate-in zoom-in"
+            >
+              <Mic size={20} />
             </button>
             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'IMAGE')} />
             <input type="file" ref={videoInputRef} className="hidden" accept="video/*" onChange={(e) => handleFileUpload(e, 'VIDEO')} />

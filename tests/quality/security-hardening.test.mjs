@@ -26,7 +26,7 @@ test('galleries use economical image loading strategies', async () => {
   assert.match(nativeGrid, /FlatList/);
   assert.match(nativeGrid, /initialNumToRender=\{8\}/);
   assert.match(nativeGrid, /removeClippedSubviews/);
-  assert.match(webGrid, /loading="lazy"/);
+  assert.match(webGrid, /OptimizedImage/);
   assert.match(webCompression, /DEFAULT_TARGET_BYTES\s*=\s*180\s*\*\s*1024/);
   assert.match(webCompression, /image\/webp/);
 });
@@ -60,6 +60,34 @@ test('video uploads are bounded, compressed, and use persisted thumbnails', asyn
   assert.match(webVideo, /MediaRecorder/);
   assert.match(webVideo, /VIDEO_UPLOAD_MAX_BYTES\s*=\s*30\s*\*\s*1024\s*\*\s*1024/);
   assert.match(storageRules, /match \/chat-media\/\{userId\}/);
+});
+
+test('media v2 uses optimized rendering and browser caching on high traffic surfaces', async () => {
+  const webOptimizedImage = await read('web/src/components/OptimizedImage.tsx');
+  const nativeOptimizedImage = await read('src/components/OptimizedImage.tsx');
+  const viteConfig = await read('web/vite.config.ts');
+  const webDiscover = await read('web/src/pages/DiscoverPage.tsx');
+  const webGrid = await read('web/src/pages/DiscoverGridPage.tsx');
+  const webChat = await read('web/src/pages/ChatPage.tsx');
+  const webStories = await read('web/src/pages/StoriesPage.tsx');
+  const nativeGrid = await read('src/screens/discover/DiscoverGridScreen.tsx');
+  const nativeChat = await read('src/screens/messages/components/ChatMessageItem.tsx');
+  const nativeMessages = await read('src/screens/messages/MessagesScreen.tsx');
+
+  assert.match(webOptimizedImage, /loading=.*lazy/s);
+  assert.match(webOptimizedImage, /decoding=.*async/s);
+  assert.match(nativeOptimizedImage, /cache: 'force-cache'/);
+  assert.match(nativeOptimizedImage, /resizeMethod="resize"/);
+  assert.match(nativeOptimizedImage, /progressiveRenderingEnabled/);
+  assert.match(viteConfig, /galant-media-cache/);
+  assert.match(viteConfig, /maxEntries:\s*250/);
+  assert.match(webDiscover, /OptimizedImage/);
+  assert.match(webGrid, /OptimizedImage/);
+  assert.match(webChat, /OptimizedImage/);
+  assert.match(webStories, /OptimizedImage/);
+  assert.match(nativeGrid, /OptimizedImage/);
+  assert.match(nativeChat, /OptimizedImage/);
+  assert.match(nativeMessages, /OptimizedImage/);
 });
 
 test('backend auth returns profile_not_found for missing profile', async () => {

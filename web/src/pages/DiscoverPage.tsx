@@ -9,6 +9,8 @@ import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
 import { apiRequest } from '@shared/lib/api';
 import logoImg from '../assets/galant-logo.png';
 import FeatureHighlight from '../components/FeatureHighlight';
+import OptimizedImage from '../components/OptimizedImage';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 const DiscoverPage: React.FC = () => {
   const { user, profile: myProfile, loading: authLoading, t } = useAuth();
@@ -221,10 +223,11 @@ const DiscoverPage: React.FC = () => {
         <div className="w-full max-w-md p-10 bg-slate-900/60 backdrop-blur-3xl rounded-[3.5rem] shadow-2xl border border-white/10 text-center space-y-10 animate-in fade-in zoom-in-95 duration-700">
           {/* Logo without frame for visible animation */}
           <div className="relative mx-auto w-32 h-32 flex items-center justify-center animate-pulse">
-            <img
+            <OptimizedImage
               src={logoImg}
               alt="Galant"
               className="w-24 h-24 object-contain drop-shadow-[0_0_15px_rgba(239,68,68,0.6)]"
+              eager
             />
           </div>
 
@@ -340,8 +343,8 @@ const DiscoverPage: React.FC = () => {
                 className="w-[72px] flex flex-col items-center gap-2 group"
               >
                 <div className={`relative w-16 h-16 rounded-full p-0.5 border-2 ${story.profiles?.is_premium ? 'border-amber-400' : 'border-primary'} group-hover:scale-105 transition-transform`}>
-                  <img
-                    src={story.profiles?.photos?.[0] || 'https://placehold.co/100x100'}
+                  <OptimizedImage
+                    src={optimizedPhotoUrl(story.profiles?.photos?.[0], story.profiles?.photo_variants, 'thumb') || 'https://placehold.co/100x100'}
                     alt=""
                     className="w-full h-full rounded-full object-cover bg-slate-200"
                   />
@@ -384,10 +387,11 @@ const DiscoverPage: React.FC = () => {
             className="relative aspect-[3/4.2] w-full rounded-[3.5rem] overflow-hidden shadow-[0_40px_80px_-15px_rgba(0,0,0,0.15)] border-8 border-white group bg-slate-100 touch-none"
           >
             <div onClick={() => openDetail(currentProfile)} className="w-full h-full cursor-pointer">
-              <img
-                src={currentProfile.photos?.[0] || 'https://placehold.co/400x600'}
+              <OptimizedImage
+                src={optimizedPhotoUrl(currentProfile.photos?.[0], currentProfile.photo_variants, 'medium') || 'https://placehold.co/400x600'}
                 className="w-full h-full object-cover pointer-events-none"
                 alt={currentProfile.name}
+                eager
               />
 
               {/* Swipe Badges */}

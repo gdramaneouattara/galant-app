@@ -50,10 +50,24 @@ export default defineConfig(({ mode }) => {
             urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/.*$/,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'galant-images-cache',
+              cacheName: 'galant-media-cache',
               expiration: {
-                maxEntries: 100,
+                maxEntries: 250,
                 maxAgeSeconds: 60 * 60 * 24 * 30 // 30 jours
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/(images\.unsplash\.com|i\.pravatar\.cc|placehold\.co)\/.*$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'galant-remote-image-cache',
+              expiration: {
+                maxEntries: 120,
+                maxAgeSeconds: 60 * 60 * 24 * 7
               },
               cacheableResponse: {
                 statuses: [0, 200]

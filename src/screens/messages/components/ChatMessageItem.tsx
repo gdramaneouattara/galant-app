@@ -1,9 +1,10 @@
 import React, { memo, useState } from 'react';
-import { Modal, View, Text, Image, Pressable, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import { Modal, View, Text, Pressable, ActivityIndicator, StyleSheet, Alert } from 'react-native';
 import { Music, Play, Languages, MapPin, Calendar, Trash2, Film, X } from 'lucide-react-native';
 import { Audio, Video, ResizeMode } from 'expo-av';
 import { apiRequest } from '../../../lib/api';
 import { COLORS } from '../../../data/mock';
+import OptimizedImage from '../../../components/OptimizedImage';
 
 interface ChatMessage {
   id: string;
@@ -114,7 +115,7 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
 
   return (
     <View style={[styles.messageRow, isMine && styles.myMessageRow]}>
-      {!isMine && <Image source={{ uri: avatarUri }} style={styles.senderAvatar} />}
+      {!isMine && <OptimizedImage uri={avatarUri} style={styles.senderAvatar} />}
       <View style={[
         styles.bubble,
         isMine ? styles.myBubble : styles.theirBubble,
@@ -133,7 +134,7 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
           <View style={styles.venueContent}>
             <Text style={styles.venueHint}>{isMine ? 'Vous proposez un lieu :' : 'Suggestion de rendez-vous :'}</Text>
             <View style={styles.venueCardInner}>
-              <Image source={{ uri: venueData?.photo_url || 'https://placehold.co/80x80' }} style={styles.venueThumb} />
+              <OptimizedImage uri={venueData?.photo_url || 'https://placehold.co/80x80'} style={styles.venueThumb} />
               <View style={styles.venueTextWrap}>
                 <Text style={styles.venueNameText}>{venueData?.name}</Text>
                 <Text style={styles.venueBenefitText}>🎁 {venueData?.benefit_description}</Text>
@@ -146,7 +147,7 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
           <View style={styles.venueContent}>
             <Text style={styles.venueHint}>{isMine ? 'Vous proposez une sortie :' : 'Suggestion de sortie :'}</Text>
             <View style={styles.venueCardInner}>
-              <Image source={{ uri: eventData?.photo_url || 'https://placehold.co/80x80' }} style={styles.venueThumb} />
+              <OptimizedImage uri={eventData?.photo_url || 'https://placehold.co/80x80'} style={styles.venueThumb} />
               <View style={styles.venueTextWrap}>
                 <Text style={styles.venueNameText}>{eventData?.title}</Text>
                 <Text style={styles.venueBenefitText}>{eventData?.venues?.name}</Text>
@@ -182,12 +183,12 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
           </Pressable>
         )}
 
-        {hasImage && <Image source={{ uri: mediaUrl! }} style={[styles.imageContent, (hasText || isVenue) && styles.mediaAfterText]} />}
+        {hasImage && <OptimizedImage uri={mediaUrl!} style={[styles.imageContent, (hasText || isVenue) && styles.mediaAfterText]} />}
 
         {isVideo && (
           <Pressable style={[styles.videoContainer, (hasText || isVenue) && styles.mediaAfterText]} onPress={() => setVideoOpen(true)}>
             {thumbnailUrl ? (
-              <Image source={{ uri: thumbnailUrl }} style={styles.videoContent} />
+              <OptimizedImage uri={thumbnailUrl} style={styles.videoContent} />
             ) : (
               <View style={[styles.videoContent, styles.videoFallback]}>
                 <Film size={30} color="rgba(255,255,255,0.55)" />

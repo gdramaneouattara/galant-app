@@ -1,5 +1,7 @@
 import React from 'react';
 import { X, Heart, Sparkles, MessageCircle, MapPin } from 'lucide-react';
+import OptimizedImage from './OptimizedImage';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 export interface StatusLiker {
   user_id: string;
@@ -15,6 +17,7 @@ export interface StatusLiker {
     country?: string | null;
     bio?: string;
     photos: string[];
+    photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
     interests?: string[];
     is_verified?: boolean;
     is_premium?: boolean;
@@ -70,9 +73,9 @@ const LikerProfileModal: React.FC<Props> = ({
         <div className="overflow-y-auto max-h-[calc(92vh-73px)] sm:max-h-[calc(88vh-73px)] p-5 space-y-5">
           <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
             {photos.map((photo, index) => (
-              <img
+              <OptimizedImage
                 key={`${liker.user_id}-${index}`}
-                src={photo}
+                src={optimizedPhotoUrl(photo, liker.profile.photo_variants, 'medium')}
                 alt=""
                 className="w-56 h-72 sm:w-60 sm:h-80 flex-shrink-0 rounded-xl object-cover bg-slate-100"
               />

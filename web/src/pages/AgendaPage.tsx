@@ -4,12 +4,15 @@ import { apiRequest } from '@shared/lib/api';
 import { Calendar, MapPin, Zap, ChevronRight, Clock, Star, Users, CheckCircle, Sparkles, Filter, Ticket, Share2, Trophy } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { showAlert } from '@shared/lib/ui-bridge';
+import OptimizedImage from '../components/OptimizedImage';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 interface AgendaEvent {
   id: string;
   title: string;
   description: string;
   photo_url: string;
+  photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
   event_type: 'PARTY' | 'FLASH_OFFER' | 'NETWORKING' | 'LIVE_MUSIC';
   starts_at: string;
   expires_at: string;
@@ -19,6 +22,7 @@ interface AgendaEvent {
     name: string;
     city: string;
     photo_url: string;
+    photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
   } | null;
 }
 
@@ -192,11 +196,10 @@ const AgendaPage: React.FC = () => {
             >
               {/* Image Section - Half Width */}
               <div className="relative w-full md:w-2/5 aspect-square md:aspect-auto overflow-hidden">
-                <img
-                  src={event.photo_url || 'https://placehold.co/600x800'}
+                <OptimizedImage
+                  src={optimizedPhotoUrl(event.photo_url, event.photo_variants, 'medium') || 'https://placehold.co/600x800'}
                   className="w-full h-full object-cover transition-transform duration-[4000ms] group-hover:scale-110"
                   alt={event.title}
-                  loading="lazy"
                 />
 
                 {/* Date Floating Badge */}
@@ -231,7 +234,7 @@ const AgendaPage: React.FC = () => {
                 </div>
 
                 <div className="bg-slate-50/50 dark:bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 border border-slate-100/50 dark:border-white/5">
-                  <img src={event.venues?.photo_url} className="w-10 h-10 rounded-xl shadow-sm border border-white dark:border-slate-700" alt="" />
+                  <OptimizedImage src={optimizedPhotoUrl(event.venues?.photo_url, event.venues?.photo_variants, 'thumb')} className="w-10 h-10 rounded-xl shadow-sm border border-white dark:border-slate-700" alt="" />
                   <div className="flex-1 min-w-0">
                     <p className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1">Établissement Hôte</p>
                     <p className="text-sm font-black text-slate-800 dark:text-slate-200 truncate">{event.venues?.name}</p>
@@ -254,7 +257,7 @@ const AgendaPage: React.FC = () => {
                   <div className="flex -space-x-2">
                     {[1, 2, 3].map(i => (
                       <div key={i} className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800 bg-slate-200 dark:bg-slate-700 overflow-hidden shadow-sm">
-                        <img src={`https://i.pravatar.cc/100?img=${event.id.length + i}`} alt="Attendee" />
+                        <OptimizedImage src={`https://i.pravatar.cc/100?img=${event.id.length + i}`} alt="Attendee" />
                       </div>
                     ))}
                     <div className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800 bg-slate-900 dark:bg-slate-700 flex items-center justify-center text-[8px] font-black text-white shadow-sm">

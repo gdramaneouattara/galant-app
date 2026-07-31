@@ -1,7 +1,9 @@
 import React from 'react';
-import { View, Text, Modal, Pressable, Image, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Modal, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { X, Heart, Check } from 'lucide-react-native';
 import { COLORS } from '../../../data/mock';
+import OptimizedImage from '../../../components/OptimizedImage';
+import { optimizedPhotoUrl } from '../../../lib/mediaVariants';
 
 type SuperLikeStatus = 'PENDING' | 'ACCEPTED' | 'IGNORED';
 
@@ -13,6 +15,7 @@ interface SuperLikeRow {
     name: string;
     age: number;
     photos: string[];
+    photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
     city: string | null;
     country: string | null;
     relationship_goal: string | null;
@@ -80,10 +83,8 @@ const SuperLikeDetailModal: React.FC<SuperLikeDetailModalProps> = ({
             <X size={18} color="#64748b" />
           </Pressable>
           <ScrollView showsVerticalScrollIndicator={false}>
-            <Image
-              source={{
-                uri: selectedSuperLike.user.photos?.[0] || 'https://placehold.co/800x1000',
-              }}
+            <OptimizedImage
+              uri={optimizedPhotoUrl(selectedSuperLike.user.photos?.[0], selectedSuperLike.user.photo_variants, 'medium') || 'https://placehold.co/800x1000'}
               style={styles.modalPhoto}
             />
             <View style={styles.modalHeader}>

@@ -7,6 +7,8 @@ import { showAlert } from '@shared/lib/ui-bridge';
 import { useMatchmaking } from '@shared/hooks/useMatchmaking';
 import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
 import SuperLikeDetailModal, { type SuperLikeRow } from '../components/SuperLikeDetailModal';
+import OptimizedImage from '../components/OptimizedImage';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 type RoseTab = 'PENDING' | 'HISTORY';
 
@@ -202,8 +204,8 @@ const RosesInboxPage: React.FC = () => {
                   className="relative w-20 h-24 flex-shrink-0 rounded-2xl overflow-hidden shadow-md"
                   aria-label={`Ouvrir la fiche de ${row.user.name}`}
                 >
-                  <img
-                    src={row.user.photos?.[0] || 'https://placehold.co/200x300?text=?'}
+                  <OptimizedImage
+                    src={optimizedPhotoUrl(row.user.photos?.[0], row.user.photo_variants, 'thumb') || 'https://placehold.co/200x300?text=?'}
                     className="w-full h-full object-cover"
                     alt=""
                   />

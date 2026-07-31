@@ -1,11 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Image, Pressable, Dimensions, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Pressable, Dimensions, Alert, Platform } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { ChevronLeft, MapPin, MessageCircle, Star, Sparkles, Navigation as NavigationIcon } from 'lucide-react-native';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 import * as Linking from 'expo-linking';
+import OptimizedImage from '../../components/OptimizedImage';
+import { optimizedPhotoUrl } from '../../lib/mediaVariants';
 
 const { width } = Dimensions.get('window');
 
@@ -55,7 +57,7 @@ const VenueDetailScreen: React.FC = () => {
       <ScrollView showsVerticalScrollIndicator={false}>
         <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.gallery}>
           {photos.map((photo: string, index: number) => (
-            <Image key={index} source={{ uri: photo }} style={styles.galleryImage} />
+            <OptimizedImage key={index} uri={optimizedPhotoUrl(photo, venue.photo_variants, 'medium')} style={styles.galleryImage} />
           ))}
         </ScrollView>
 

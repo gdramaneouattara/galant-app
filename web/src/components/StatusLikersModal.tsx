@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Heart, ShieldCheck, Gem, Loader2 } from 'lucide-react';
 import type { StatusLiker } from './LikerProfileModal';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 interface Props {
   isOpen: boolean;
@@ -68,7 +69,7 @@ const StatusLikersModal: React.FC<Props> = ({
                   className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-sm flex-shrink-0"
                   aria-label={`Ouvrir le profil de ${liker.profile.name}`}
                 >
-                  <img src={liker.profile.photos?.[0] || 'https://placehold.co/100x100'} className="w-full h-full object-cover" alt="" />
+                  <img src={optimizedPhotoUrl(liker.profile.photos?.[0], liker.profile.photo_variants, 'thumb') || 'https://placehold.co/100x100'} className="w-full h-full object-cover" alt="" />
                 </button>
 
                 <div className="flex-1 min-w-0">

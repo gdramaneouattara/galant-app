@@ -26,6 +26,7 @@ import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 import { IAP_EXPO_GO_MESSAGE, isExpoGo } from '../../lib/iapRuntime';
 import { getBoostActiveMessage } from '../../lib/boostStatus';
+import { optimizedPhotoUrl } from '../../lib/mediaVariants';
 import type { RootStackParamList } from '../../navigation/MainNavigator';
 
 // Components
@@ -72,6 +73,7 @@ type StoryBubble = {
   profiles?: {
     name?: string;
     photos?: string[];
+    photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
     is_premium?: boolean;
   };
 };
@@ -414,7 +416,7 @@ const HomeScreen: React.FC = () => {
           ))}
 
           {!storiesLoading && storyBubbles.map((story) => {
-            const avatar = story.profiles?.photos?.[0] || 'https://placehold.co/100x100';
+            const avatar = optimizedPhotoUrl(story.profiles?.photos?.[0], story.profiles?.photo_variants, 'thumb') || 'https://placehold.co/100x100';
             const name = story.profiles?.name || 'Story';
             return (
               <Pressable

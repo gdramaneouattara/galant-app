@@ -5,6 +5,8 @@ import { Heart, ShieldCheck, MapPin, MessageCircle, Lock, Star, ChevronLeft, Cre
 import { showAlert } from '@shared/lib/ui-bridge';
 import { Link, useNavigate } from 'react-router-dom';
 import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
+import OptimizedImage from '../components/OptimizedImage';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 interface LikeInboxRow {
   liker_id: string;
@@ -17,6 +19,7 @@ interface LikeInboxRow {
     age: number;
     city: string | null;
     photos: string[];
+    photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
     is_verified: boolean;
     is_premium: boolean;
     bio?: string;
@@ -142,7 +145,7 @@ const LikesInboxPage: React.FC = () => {
           {likes.map((row) => (
             <div key={row.liker_id} className="bg-white dark:bg-slate-900 p-4 rounded-[2.5rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-50 dark:border-white/5 flex gap-4 items-center transition-colors">
               <div className="relative w-24 h-32 flex-shrink-0 rounded-2xl overflow-hidden shadow-md">
-                <img src={row.user.photos?.[0]} className="w-full h-full object-cover" alt="" />
+                <OptimizedImage src={optimizedPhotoUrl(row.user.photos?.[0], row.user.photo_variants, 'thumb')} className="w-full h-full object-cover" alt="" />
                 {row.user.is_premium && (
                   <div className="absolute top-2 right-2 bg-accent text-white p-1 rounded-full shadow-sm">
                     <Star size={10} fill="currentColor" />

@@ -1,7 +1,9 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Heart, Play } from 'lucide-react-native';
 import { COLORS } from '../../../data/mock';
+import OptimizedImage from '../../../components/OptimizedImage';
+import { optimizedPhotoUrl } from '../../../lib/mediaVariants';
 
 interface Status {
   id: string;
@@ -16,6 +18,7 @@ interface Status {
     id?: string;
     name: string;
     photos: string[];
+    photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
   };
 }
 
@@ -44,20 +47,17 @@ const StatusCard: React.FC<StatusCardProps> = ({
     <Pressable style={styles.statusCard} onPress={() => onPress(item.id)}>
       {item.message_type === 'VIDEO' ? (
         videoPreviewUrl ? (
-          <Image source={{ uri: videoPreviewUrl }} style={styles.statusPreview} />
+          <OptimizedImage uri={videoPreviewUrl} style={styles.statusPreview} />
         ) : (
           <View style={[styles.statusPreview, styles.videoPreviewFallback]}>
             <Play size={26} color="#fff" fill="#fff" />
           </View>
         )
       ) : (
-        <Image source={{ uri: resolvedUrl || item.profiles.photos[0] }} style={styles.statusPreview} />
+        <OptimizedImage uri={resolvedUrl || item.profiles.photos[0]} style={styles.statusPreview} />
       )}
       <View style={styles.statusAuthorChip}>
-        <Image
-          source={{ uri: item.profiles.photos?.[0] || 'https://placehold.co/80x80' }}
-          style={styles.statusAuthorAvatar}
-        />
+        <OptimizedImage uri={optimizedPhotoUrl(item.profiles.photos?.[0], item.profiles.photo_variants, 'thumb') || 'https://placehold.co/80x80'} style={styles.statusAuthorAvatar} />
       </View>
       <Pressable
         style={[styles.statusLikeButton, item.liked_by_me ? styles.statusLikeButtonActive : null]}

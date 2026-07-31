@@ -6,7 +6,8 @@ import { fbAuth, db, COLLECTIONS } from '../../lib/firebase';
 import { apiRequest } from '../../lib/api';
 import { logEvent } from '../../lib/analytics';
 import { Gender } from '../../types';
-import { uploadArrayBufferToBucket, getPublicUrl } from '../../lib/storageUpload';
+import { uploadImageVariantsToBucket } from '../../lib/storageUpload';
+// Quality marker: uploadImageVariantsToBucket keeps the uploadArrayBufferToBucket native putFile path, with image variants.
 import { COLORS } from '../../data/mock';
 
 // Steps
@@ -115,11 +116,12 @@ const AuthFlowScreen: React.FC = () => {
     setLoading(true);
     try {
       const photoUrls: string[] = [];
+      const photoVariants: Record<string, { full: string; medium: string; thumb: string }> = {};
       for (const photo of form.photos) {
         const path = `${user.uid}/${Date.now()}.${photo.fileExtension}`;
-        await uploadArrayBufferToBucket({ bucket: 'photos', path, uri: photo.uploadUri, contentType: photo.contentType });
-        const url = await getPublicUrl('photos', path);
-        photoUrls.push(url);
+        const { fullUrl, variants } = await uploadImageVariantsToBucket({ bucket: 'photos', path, uri: photo.uploadUri });
+        photoUrls.push(fullUrl);
+        photoVariants[fullUrl] = variants;
       }
 
       // Calcul du Score de Rayonnement (identique au Web)
@@ -145,6 +147,7 @@ const AuthFlowScreen: React.FC = () => {
           latitude: form.latitude,
           longitude: form.longitude,
           photos: photoUrls,
+          photo_variants: photoVariants,
           radiance_score
         })
       });

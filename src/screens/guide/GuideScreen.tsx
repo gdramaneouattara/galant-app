@@ -6,7 +6,6 @@ import {
   SafeAreaView,
   ScrollView,
   Pressable,
-  Image,
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
@@ -15,6 +14,8 @@ import { Search, MapPin, Utensils, Coffee, Music, Scissors, Flower2, TreePine, S
 import { COLORS } from '../../data/mock';
 import { apiRequest } from '../../lib/api';
 import { useApp } from '../../state/AppContext';
+import OptimizedImage from '../../components/OptimizedImage';
+import { optimizedPhotoUrl } from '../../lib/mediaVariants';
 
 const CATEGORIES = [
   { id: 'ALL', labelKey: 'all' as const, icon: Search },
@@ -35,6 +36,7 @@ interface Venue {
   address: string;
   benefit_description: string;
   photo_url: string;
+  photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
   description: string;
   photos?: string[];
 }
@@ -89,7 +91,7 @@ const GuideScreen: React.FC = () => {
       style={[styles.venueCard, { backgroundColor: colors.card, borderColor: colors.border }, isRecommendation && styles.recommendationCard]}
       onPress={() => handleVenuePress(item)}
     >
-      <Image source={{ uri: item.photo_url || 'https://placehold.co/300x200' }} style={[styles.venueImage, { backgroundColor: colors.input }]} />
+      <OptimizedImage uri={optimizedPhotoUrl(item.photo_url, item.photo_variants, 'thumb') || 'https://placehold.co/300x200'} style={[styles.venueImage, { backgroundColor: colors.input }]} />
       <View style={styles.venueInfo}>
         <Text style={[styles.venueName, { color: colors.text }]}>{item.name}</Text>
         <View style={styles.locationRow}>

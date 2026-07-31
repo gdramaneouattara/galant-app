@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '@shared/lib/api';
 import { db } from '../firebase';
 import { collection, doc, getDoc, getDocs, orderBy, query, where } from 'firebase/firestore';
+import OptimizedImage from '../components/OptimizedImage';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 const MatchesPage: React.FC = () => {
   const { user, profile, matches, users, messages, loading, t } = useAuth();
@@ -194,7 +196,7 @@ const MatchesPage: React.FC = () => {
               >
                 <div className="relative">
                   <div className="w-20 h-20 rounded-[1.8rem] border-2 border-white dark:border-slate-800 shadow-xl overflow-hidden group-hover:scale-105 transition-transform ring-2 ring-primary/20">
-                    <img src={otherUser.photos?.[0]} className="w-full h-full object-cover" alt="" />
+                    <OptimizedImage src={optimizedPhotoUrl(otherUser.photos?.[0], otherUser.photo_variants, 'thumb')} className="w-full h-full object-cover" alt="" />
                   </div>
                   {/* Petit badge online optionnel */}
                   <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white dark:border-slate-800 rounded-full"></div>
@@ -232,7 +234,7 @@ const MatchesPage: React.FC = () => {
                   className="w-full flex items-center gap-5 p-6 hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-all text-left group"
                 >
                   <div className="relative flex-shrink-0">
-                    <img
+                    <OptimizedImage
                       src={chat.venues?.photo_url || 'https://placehold.co/100x100'}
                       className="w-16 h-16 rounded-2xl object-cover shadow-md group-hover:scale-105 transition-transform"
                       alt=""
@@ -263,8 +265,8 @@ const MatchesPage: React.FC = () => {
                   className="w-full flex items-center gap-5 p-6 hover:bg-slate-50/50 dark:hover:bg-white/5 transition-all text-left group"
                 >
                   <div className="relative flex-shrink-0">
-                    <img
-                      src={otherUser.photos?.[0]}
+                    <OptimizedImage
+                      src={optimizedPhotoUrl(otherUser.photos?.[0], otherUser.photo_variants, 'thumb')}
                       className="w-16 h-16 rounded-2xl object-cover shadow-md group-hover:scale-105 transition-transform"
                       alt=""
                     />

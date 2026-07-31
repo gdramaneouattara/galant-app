@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/MainNavigator';
@@ -9,6 +9,8 @@ import { apiRequest } from '../../lib/api';
 import { db, COLLECTIONS } from '../../lib/firebase';
 import { ShieldCheck, Gem, ChevronRight, MessageSquare, Search, Sparkles } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import OptimizedImage from '../../components/OptimizedImage';
+import { optimizedPhotoUrl } from '../../lib/mediaVariants';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -230,7 +232,7 @@ const MessagesScreen: React.FC = () => {
           )}
           {filteredRecentMatches.map(({ match, user }) => (
             <Pressable key={match.id} onPress={() => navigation.navigate('Chat', { userId: user.id, matchId: match.id })} style={[styles.matchItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Image source={{ uri: user.photos[0] }} style={styles.matchAvatar} />
+              <OptimizedImage uri={optimizedPhotoUrl(user.photos?.[0], user.photo_variants, 'thumb')} style={styles.matchAvatar} />
               <View style={styles.matchNameRow}>
                 <Text style={[styles.matchName, { color: colors.text }]}>{user.name}</Text>
                 {user.is_verified && <ShieldCheck size={12} color="#60a5fa" />}
@@ -243,7 +245,7 @@ const MessagesScreen: React.FC = () => {
         <View style={styles.list}>
           {filteredVenueChats.map(vChat => (
             <Pressable key={vChat.id} onPress={() => navigation.navigate('Chat', { userId: vChat.venues.owner_id, venueChatId: vChat.id, venueName: vChat.venues.name, venuePhoto: vChat.venues.photo_url })} style={[styles.row, styles.venueRow, activeTheme === 'dark' && { backgroundColor: '#450a0a', borderColor: '#7f1d1d' }]}>
-              <Image source={{ uri: vChat.venues.photo_url || 'https://placehold.co/100x100' }} style={styles.rowAvatar} />
+              <OptimizedImage uri={vChat.venues.photo_url || 'https://placehold.co/100x100'} style={styles.rowAvatar} />
               <View style={styles.rowText}>
                 <View style={styles.rowNameRow}>
                   <Text style={[styles.rowName, { color: colors.text }]}>{vChat.venues.name}</Text>
@@ -256,7 +258,7 @@ const MessagesScreen: React.FC = () => {
           ))}
           {conversations.map(({ match, user, lastMessage, unreadCount, lastActivityAt }) => (
             <Pressable key={match.id} onPress={() => navigation.navigate('Chat', { userId: user.id, matchId: match.id })} style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Image source={{ uri: user.photos[0] }} style={styles.rowAvatar} />
+              <OptimizedImage uri={optimizedPhotoUrl(user.photos?.[0], user.photo_variants, 'thumb')} style={styles.rowAvatar} />
               <View style={styles.rowText}>
                 <View style={styles.rowNameRow}>
                   <Text style={[styles.rowName, { color: colors.text }]}>{user.name}</Text>

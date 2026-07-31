@@ -32,6 +32,7 @@ import AppsPage from './pages/AppsPage';
 import LikesInboxPage from './pages/LikesInboxPage';
 import RosesInboxPage from './pages/RosesInboxPage';
 import BoostPage from './pages/BoostPage';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 import {
   Crown,
   Briefcase,
@@ -85,7 +86,7 @@ const AuthButton: React.FC = () => {
           <span className="hidden sm:inline font-bold text-sm text-slate-700 dark:text-slate-300 group-hover:text-primary transition-colors">{profile?.name || user.email}</span>
           <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-primary overflow-hidden shadow-sm group-hover:scale-105 transition-transform">
             <img
-              src={profile?.photos?.[0] || 'https://placehold.co/100x100?text=User'}
+              src={optimizedPhotoUrl(profile?.photos?.[0], profile?.photo_variants, 'thumb') || 'https://placehold.co/100x100?text=User'}
               alt="Avatar"
               className="w-full h-full object-cover"
             />

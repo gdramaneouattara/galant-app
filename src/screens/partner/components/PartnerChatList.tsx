@@ -1,7 +1,9 @@
 import React from 'react';
-import { View, Text, ScrollView, Pressable, Image, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { MessageSquare } from 'lucide-react-native';
 import { COLORS } from '../../../data/mock';
+import OptimizedImage from '../../../components/OptimizedImage';
+import { optimizedPhotoUrl } from '../../../lib/mediaVariants';
 
 interface VenueChat {
   id: string;
@@ -9,6 +11,7 @@ interface VenueChat {
     id: string;
     name: string;
     photos: string[];
+    photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
   };
 }
 
@@ -40,7 +43,7 @@ const PartnerChatList: React.FC<PartnerChatListProps> = ({
               style={[styles.chatCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => onOpenChat(chat)}
             >
-              <Image source={{ uri: chat.profiles.photos[0] }} style={styles.chatAvatar} />
+              <OptimizedImage uri={optimizedPhotoUrl(chat.profiles.photos?.[0], chat.profiles.photo_variants, 'thumb')} style={styles.chatAvatar} />
               <Text style={[styles.chatName, { color: colors.text }]} numberOfLines={1}>
                 {chat.profiles.name}
               </Text>

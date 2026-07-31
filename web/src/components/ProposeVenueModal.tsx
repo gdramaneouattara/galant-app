@@ -3,6 +3,7 @@ import { X, Send, Search, MapPin, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '@shared/lib/api';
 import { showAlert } from '@shared/lib/ui-bridge';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 interface Props {
   isOpen: boolean;
@@ -109,7 +110,7 @@ const ProposeVenueModal: React.FC<Props> = ({ isOpen, onClose, venue }) => {
               >
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-slate-100">
-                    <img src={otherUser.photos?.[0]} className="w-full h-full object-cover" alt="" />
+                    <img src={optimizedPhotoUrl(otherUser.photos?.[0], otherUser.photo_variants, 'thumb')} className="w-full h-full object-cover" alt="" />
                   </div>
                   <span className="font-bold text-slate-700">{otherUser.name}</span>
                 </div>

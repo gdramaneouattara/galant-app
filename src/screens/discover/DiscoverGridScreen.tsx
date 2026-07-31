@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, ActivityIndicator, FlatList, Image, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, ActivityIndicator, FlatList, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Rocket, Search, Star } from 'lucide-react-native';
@@ -7,6 +7,8 @@ import { useApp } from '../../state/AppContext';
 import { COLORS } from '../../data/mock';
 import { apiRequest } from '../../lib/api';
 import ProfileBadges from '../../components/ProfileBadges';
+import OptimizedImage from '../../components/OptimizedImage';
+import { optimizedPhotoUrl } from '../../lib/mediaVariants';
 import type { RootStackParamList } from '../../navigation/MainNavigator';
 
 type DiscoverSuggestion = {
@@ -14,6 +16,7 @@ type DiscoverSuggestion = {
   name: string;
   age: number;
   photos: string[];
+  photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
   city: string | null;
   score: number;
   is_verified: boolean;
@@ -65,11 +68,9 @@ const DiscoverGridScreen: React.FC = () => {
       style={[styles.card, { backgroundColor: colors.card }, profile.current_user && styles.myCard]}
       onPress={() => profile.current_user ? Alert.alert(t('your_position'), t('boost_grid_desc')) : navigation.navigate('ProfileDetail', { profile })}
     >
-      <Image
-        source={{ uri: profile.photos?.[0] || 'https://placehold.co/300x400' }}
+      <OptimizedImage
+        uri={optimizedPhotoUrl(profile.photos?.[0], profile.photo_variants, 'thumb') || 'https://placehold.co/300x400'}
         style={styles.photo}
-        resizeMode="cover"
-        resizeMethod="resize"
       />
       <View style={styles.badgesOverlay}><ProfileBadges user={profile as any} /></View>
       {profile.super_liked_me && <View style={styles.superLikeBadge}><Star size={12} color="#fff" fill="#fff" /></View>}

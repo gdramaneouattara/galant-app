@@ -1,5 +1,7 @@
 import React from 'react';
 import { X, Heart, Check, Star, MapPin } from 'lucide-react';
+import OptimizedImage from './OptimizedImage';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 export type SuperLikeStatus = 'PENDING' | 'ACCEPTED' | 'IGNORED';
 
@@ -25,6 +27,7 @@ export interface SuperLikeRow {
     relationship_goal?: string | null;
     bio?: string | null;
     photos: string[];
+    photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
     interests?: string[];
     is_verified?: boolean;
     is_premium?: boolean;
@@ -96,7 +99,7 @@ const SuperLikeDetailModal: React.FC<Props> = ({
         </div>
 
         <div className="overflow-y-auto max-h-[calc(92vh-73px)] sm:max-h-[calc(90vh-73px)] p-5 space-y-5">
-          <img src={photo} alt="" className="w-full aspect-[4/5] rounded-xl object-cover bg-slate-100" />
+          <OptimizedImage src={optimizedPhotoUrl(photo, row.user.photo_variants, 'medium')} alt="" className="w-full aspect-[4/5] rounded-xl object-cover bg-slate-100" eager />
 
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">

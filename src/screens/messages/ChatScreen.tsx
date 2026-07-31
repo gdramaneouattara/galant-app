@@ -14,6 +14,7 @@ import { apiRequest } from '../../lib/api';
 import { rtdb, db, COLLECTIONS, fbStorage } from '../../lib/firebase';
 import { PresenceInfo, subscribeToUserPresence } from '../../lib/presence';
 import { uploadArrayBufferToBucket, getPublicUrl } from '../../lib/storageUpload';
+import { optimizedPhotoUrl } from '../../lib/mediaVariants';
 
 // Components
 import ChatHeader from './components/ChatHeader';
@@ -223,7 +224,7 @@ const ChatScreen: React.FC = () => {
         matchId={activeMatchId}
         venueChatId={activeVenueChatId}
         isMine={isMine}
-        avatarUri={targetUser?.photos?.[0] || 'https://placehold.co/80x80'}
+        avatarUri={optimizedPhotoUrl(targetUser?.photos?.[0], targetUser?.photo_variants, 'thumb') || 'https://placehold.co/80x80'}
         mediaUrl={item.media_url || null}
         displayTime={item.created_at}
         t={t}

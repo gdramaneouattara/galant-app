@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { MapPin } from 'lucide-react-native';
 import ProfileBadges from '../../../components/ProfileBadges';
+import { optimizedPhotoUrl } from '../../../lib/mediaVariants';
 
 interface ProfileCardProps {
   profile: any;
@@ -46,7 +47,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
       <Pressable style={{ flex: 1 }} onPress={onPress}>
         <ImageBackground
           source={{
-            uri: profile.photos[0],
+            uri: optimizedPhotoUrl(profile.photos?.[0], profile.photo_variants, 'medium') || profile.photos[0],
             cache: 'force-cache'
           }}
           style={styles.cardImage}

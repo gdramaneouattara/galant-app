@@ -13,7 +13,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useApp } from '../../state/AppContext';
 import type { RootStackParamList } from '../../navigation/MainNavigator';
 import { apiRequest } from '../../lib/api';
-import { uploadArrayBufferToBucket, getPublicUrl } from '../../lib/storageUpload';
+import { uploadImageVariantsToBucket } from '../../lib/storageUpload';
 import { getBoostActiveMessage, getBoostStatus } from '../../lib/boostStatus';
 
 // Components
@@ -119,19 +119,26 @@ const ProfileScreen: React.FC = () => {
       setUpdatingProfilePhoto(true);
       const asset = result.assets[0];
       const path = `profiles/${currentUser.id}/profile-${Date.now()}.webp`;
-      await uploadArrayBufferToBucket({ bucket: 'photos', path, uri: asset.uri, contentType: asset.mimeType || 'image/jpeg' });
-      const publicUrl = await getPublicUrl('photos', path);
+      const { fullUrl: publicUrl, variants } = await uploadImageVariantsToBucket({ bucket: 'photos', path, uri: asset.uri });
 
       const moderation = await apiRequest<{ status?: string }>('/api/moderation/photos/check', { method: 'POST', requireAuth: true, body: JSON.stringify({ photoUrls: [publicUrl] }) });
       if (String(moderation?.status).toUpperCase() === 'REJECTED') return Alert.alert('Photo refusée', "La photo ne respecte pas les règles.");
 
-      const nextPhotos = [publicUrl, ...(currentUser.photos || []).slice(1)];
+      const maxPhotos = currentUser.is_premium || currentUser.is_vip ? 6 : 3;
+      const nextPhotos = [publicUrl, ...(currentUser.photos || []).slice(1)].slice(0, maxPhotos);
+      const nextPhotoVariants = {
+        ...(currentUser.photo_variants || {}),
+        [publicUrl]: variants,
+      };
       const payload = await apiRequest<{ profile?: any }>('/api/profiles/update', {
         method: 'POST',
         requireAuth: true,
-        body: JSON.stringify({ photos: nextPhotos.slice(0, 6) }),
+        body: JSON.stringify({ photos: nextPhotos, photo_variants: nextPhotoVariants }),
       });
-      updateCurrentUser({ photos: payload.profile?.photos || nextPhotos.slice(0, 6) });
+      updateCurrentUser({
+        photos: payload.profile?.photos || nextPhotos,
+        photo_variants: payload.profile?.photo_variants || nextPhotoVariants,
+      });
     } catch (e: any) { Alert.alert('Erreur', e.message); }
     finally { setUpdatingProfilePhoto(false); }
   };

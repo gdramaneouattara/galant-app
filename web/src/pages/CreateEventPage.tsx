@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '@shared/lib/api';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { ChevronLeft, Calendar, Image as ImageIcon, AlignLeft, Tag, Clock, Camera } from 'lucide-react';
-import { fbStorage } from '../firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { compressImageWeb } from '../lib/imageCompression';
+import { uploadImageVariantsWeb } from '../lib/imageUploadVariants';
+import OptimizedImage from '../components/OptimizedImage';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 const EVENT_TYPES = [
   { value: 'PARTY', label: 'Soirée' },
@@ -25,6 +25,7 @@ const CreateEventPage: React.FC = () => {
     title: '',
     description: '',
     photoUrl: '',
+    photoVariants: {} as Record<string, { full: string; medium: string; thumb: string }>,
     eventType: 'PARTY',
     startsAt: '',
     expiresAt: ''
@@ -40,12 +41,8 @@ const CreateEventPage: React.FC = () => {
 
     setUploading(true);
     try {
-      // Compression avant upload
-      const compressedBlob = await compressImageWeb(file);
-      const storageRef = ref(fbStorage, `events/${user.uid}/${Date.now()}.webp`);
-      await uploadBytes(storageRef, compressedBlob, { contentType: 'image/webp' });
-      const url = await getDownloadURL(storageRef);
-      setForm(prev => ({ ...prev, photoUrl: url }));
+      const { fullUrl, variants } = await uploadImageVariantsWeb(file, `events/${user.uid}/${Date.now()}.webp`);
+      setForm(prev => ({ ...prev, photoUrl: fullUrl, photoVariants: { [fullUrl]: variants } }));
       showAlert('Succès', 'Image de l\'événement chargée.');
     } catch (error: any) {
       showAlert('Erreur', 'Échec du chargement de l\'image.');
@@ -102,7 +99,7 @@ const CreateEventPage: React.FC = () => {
           <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors">Image de couverture</h3>
           <div className="relative aspect-video rounded-3xl overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-slate-50 dark:border-white/5 transition-colors">
             {form.photoUrl ? (
-              <img src={form.photoUrl} className="w-full h-full object-cover" alt="" />
+              <OptimizedImage src={optimizedPhotoUrl(form.photoUrl, form.photoVariants, 'medium')} className="w-full h-full object-cover" alt="" />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 gap-2 transition-colors">
                 <ImageIcon size={40} strokeWidth={1} />

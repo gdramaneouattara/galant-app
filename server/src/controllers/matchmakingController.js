@@ -20,6 +20,7 @@ const toPublicProfile = (p) => {
     age: p.age,
     bio: p.bio,
     photos: p.photos,
+    photo_variants: p.photo_variants || {},
     city: p.city,
     gender: p.gender,
     is_verified: p.is_verified,
