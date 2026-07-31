@@ -159,6 +159,7 @@ const DiscoverGridPage: React.FC = () => {
                 src={profile.photos?.[0] || 'https://placehold.co/300x400'}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                 alt={profile.name}
+                loading="lazy"
               />
 
               {/* Badges */}

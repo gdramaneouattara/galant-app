@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { apiRequest } from '@shared/lib/api';
+import { compressImageWeb } from '../lib/imageCompression';
 
 const INTERESTS_OPTIONS = [
   'Voyage', 'Gastronomie', 'Vin', 'Art', 'Mode', 'Fitness',
@@ -143,8 +144,10 @@ const OnboardingPage: React.FC = () => {
     try {
       const uploadedUrls: string[] = [];
       for (const file of photoFiles) {
+        // COMPRESSION: Reduce size before upload to save storage & bandwidth
+        const compressedBlob = await compressImageWeb(file);
         const storageRef = ref(fbStorage, `profiles/${user.uid}/${Date.now()}_${file.name}`);
-        const snapshot = await uploadBytes(storageRef, file);
+        const snapshot = await uploadBytes(storageRef, compressedBlob);
         const url = await getDownloadURL(snapshot.ref);
         uploadedUrls.push(url);
       }
