@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Alert,
   FlatList,
@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import { Audio } from 'expo-av';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 import { rtdb, db, COLLECTIONS, fbStorage } from '../../lib/firebase';
@@ -35,6 +37,8 @@ interface ChatMessage {
 
 const CHAT_VIDEO_MAX_DURATION_MS = 31 * 1000;
 const VIDEO_UPLOAD_MAX_BYTES = 30 * 1024 * 1024;
+const VOICE_MAX_DURATION_SECONDS = 30;
+const VOICE_UPLOAD_MAX_BYTES = 2 * 1024 * 1024;
 
 const ChatScreen: React.FC = () => {
   const route = useRoute<any>();
@@ -51,6 +55,36 @@ const ChatScreen: React.FC = () => {
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [targetPresence, setTargetPresence] = useState<PresenceInfo | null>(null);
+  const [voiceRecording, setVoiceRecording] = useState<Audio.Recording | null>(null);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (voiceRecording) {
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+    } else {
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      setRecordingDuration(0);
+    }
+
+    return () => {
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    };
+  }, [voiceRecording]);
+
+  useEffect(() => {
+    if (voiceRecording && recordingDuration >= VOICE_MAX_DURATION_SECONDS) {
+      void stopVoiceRecording(true);
+    }
+  }, [voiceRecording, recordingDuration]);
+
+  const formatRecordingDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     if (!userId || activeVenueChatId) {
@@ -216,6 +250,92 @@ const ChatScreen: React.FC = () => {
     }
   };
 
+  const startVoiceRecording = async () => {
+    if (!currentUser?.is_premium) {
+      Alert.alert(
+        t('premium_join'),
+        "La sérénade vocale est réservée aux membres Premium.",
+        [
+          { text: t('maybe_later'), style: 'cancel' },
+          { text: t('become_premium'), onPress: () => navigation.navigate('Premium') }
+        ]
+      );
+      return;
+    }
+
+    try {
+      const permission = await Audio.requestPermissionsAsync();
+      if (permission.status !== 'granted') {
+        Alert.alert('Micro requis', "Autorisez l'accès au micro pour envoyer une sérénade vocale.");
+        return;
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      setVoiceRecording(recording);
+    } catch (e: any) {
+      Alert.alert('Erreur', e.message || "Impossible de démarrer l'enregistrement.");
+    }
+  };
+
+  const stopVoiceRecording = async (shouldSend: boolean) => {
+    const recording = voiceRecording;
+    if (!recording) return;
+
+    setVoiceRecording(null);
+    try {
+      await recording.stopAndUnloadAsync();
+    } catch {}
+    await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+
+    const uri = recording.getURI();
+    if (!shouldSend || !uri) return;
+
+    try {
+      setUploading(true);
+      const info = await FileSystem.getInfoAsync(uri);
+      if (info.exists && typeof info.size === 'number' && info.size > VOICE_UPLOAD_MAX_BYTES) {
+        Alert.alert('Sérénade trop lourde', 'La sérénade vocale est limitée à 2 Mo. Essayez un message plus court.');
+        return;
+      }
+
+      const ref = fbStorage.ref(`chats/${activeMatchId || activeVenueChatId}/${Date.now()}_serenade.m4a`);
+      await ref.putFile(uri, { contentType: 'audio/m4a' });
+      const mediaUrl = await ref.getDownloadURL();
+
+      await apiRequest('/api/messages/send', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({
+          matchId: activeMatchId,
+          venueChatId: activeVenueChatId,
+          messageType: 'VOICE',
+          mediaPath: mediaUrl,
+          metadata: {
+            is_serenade: true,
+            duration_seconds: Math.min(recordingDuration, VOICE_MAX_DURATION_SECONDS),
+          },
+          recipientId: userId
+        })
+      });
+    } catch (e: any) {
+      Alert.alert('Erreur Upload', e.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleToggleVoice = async () => {
+    if (voiceRecording) {
+      await stopVoiceRecording(true);
+    } else {
+      await startVoiceRecording();
+    }
+  };
+
   const renderMessage = useCallback(({ item }: { item: ChatMessage }) => {
     const isMine = item.sender_id === currentUser?.id;
     return (
@@ -232,7 +352,7 @@ const ChatScreen: React.FC = () => {
         language={language}
       />
     );
-  }, [currentUser, targetUser, t, language]);
+  }, [currentUser, targetUser, t, language, activeMatchId, activeVenueChatId]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
@@ -265,8 +385,12 @@ const ChatScreen: React.FC = () => {
         setInputText={setInputText}
         onSend={handleSend}
         onAttachMedia={handleAttachMedia}
+        onToggleVoice={handleToggleVoice}
+        onCancelVoice={() => void stopVoiceRecording(false)}
         sending={sending}
         uploading={uploading}
+        isRecording={!!voiceRecording}
+        recordingDuration={formatRecordingDuration(recordingDuration)}
         t={t}
         colors={colors}
       />

@@ -197,11 +197,30 @@ const reportUser = async (req, res) => {
 
 const markMessagePlayed = async (req, res) => {
   const { id } = req.params; // For RTDB, this id is the message key
-  const { matchId } = req.query;
-  if (!matchId) return res.status(400).json({ error: 'missing_matchId' });
+  const matchId = req.body?.matchId || req.query?.matchId;
+  const venueChatId = req.body?.venueChatId || req.query?.venueChatId;
+  if (!matchId && !venueChatId) return res.status(400).json({ error: 'missing_chat_context' });
 
   try {
-    const msgRef = rtdb.ref(`messages/${matchId}/${id}`);
+    if (matchId) {
+      const matchDoc = await db.collection('matches').doc(String(matchId)).get();
+      if (!matchDoc.exists) return res.status(404).json({ error: 'match_not_found' });
+      const match = matchDoc.data();
+      if (match.user_one_id !== req.user.id && match.user_two_id !== req.user.id) {
+        return res.status(403).json({ error: 'unauthorized' });
+      }
+    }
+
+    if (venueChatId) {
+      const chatDoc = await db.collection('venue_chats').doc(String(venueChatId)).get();
+      if (!chatDoc.exists) return res.status(404).json({ error: 'chat_not_found' });
+      const chat = chatDoc.data();
+      if (chat.user_id !== req.user.id && chat.partner_id !== req.user.id) {
+        return res.status(403).json({ error: 'unauthorized' });
+      }
+    }
+
+    const msgRef = rtdb.ref(matchId ? `messages/${matchId}/${id}` : `venue_messages/${venueChatId}/${id}`);
     const snap = await msgRef.once('value');
     if (!snap.exists()) return res.status(404).json({ error: 'message_not_found' });
 
