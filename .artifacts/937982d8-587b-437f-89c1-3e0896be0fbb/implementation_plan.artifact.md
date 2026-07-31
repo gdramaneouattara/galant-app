@@ -1,39 +1,53 @@
-# Synchronisation Web <-> Mobile (Feature Parity)
+# Synchronisation Web <-> Mobile (Feature Parity - Phase 2)
 
-Ce plan vise à porter toutes les fonctionnalités exclusives de la version mobile native vers la version Web afin d'offrir une expérience 100% identique sur tous les supports.
+Ce plan vise à porter les fonctionnalités utilisateurs et administratives restantes de la version mobile native vers la version Web, garantissant une parité fonctionnelle totale.
 
 ## Proposed Changes
 
-### [Web Mobile] Nouvelles Fonctionnalités Utilisateurs
-
-#### [NEW] [DiscoverGridPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/DiscoverGridPage.tsx)
-- Implémentation d'une vue en grille responsive (2 colonnes sur mobile, 4 sur desktop).
-- Affichage des badges (Vérifié, Premium, Score) sur chaque miniature.
-- Ajout d'un bouton de bascule sur `DiscoverPage.tsx` pour passer du Swipe à la Grille.
+### [Web Mobile] Nouvelles Fonctionnalités Utilisateurs & Partenaires
 
 #### [NEW] [VenueDetailPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/VenueDetailPage.tsx)
-- Page de présentation complète d'un partenaire.
-- Galerie de photos, description riche, liste des avantages membres.
-- Bouton "Discuter avec l'établissement".
+- **Objectif** : Remplacer l'absence de fiche établissement détaillée sur le Web.
+- **Fonctionnalités** :
+    - Galerie d'images responsive.
+    - Affichage des avantages "Signature Galant".
+    - Lien d'itinéraire vers Google Maps.
+    - Bouton "Contacter l'hôte" ouvrant un thread de discussion dédié.
+
+#### [NEW] [PartnerPremiumPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/PartnerPremiumPage.tsx)
+- **Objectif** : Permettre aux partenaires de gérer leur visibilité depuis le Web.
+- **Fonctionnalités** :
+    - Comparatif des plans "Visibilité" et "Prestige".
+    - Tunnel de paiement intégré (identique au mode Premium utilisateur).
 
 ---
 
-### [Web Mobile] Nouvelles Fonctionnalités Admin & Partner
+### [Web Mobile] Modules Admin (Poste de Commandement)
 
 #### [NEW] [AdminMessaging.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminMessaging.tsx)
-- Interface d'envoi de notifications push massives.
-- Sélection de l'audience (Tous, Hommes uniquement, Femmes uniquement, Premium).
+- **Fonctionnalité** : Interface d'envoi de messages système (broadcast) par segment (Premium, Sexe, Tous).
 
 #### [NEW] [AdminVenues.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminVenues.tsx)
-- Liste des établissements en attente d'approbation.
-- Outils de validation des avantages partenaires.
+- **Fonctionnalité** : Tableau de bord de validation des nouveaux établissements partenaires.
 
 #### [NEW] [AdminAuditLogs.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminAuditLogs.tsx)
-- Historique des actions de modération et d'administration.
+- **Fonctionnalité** : Journal de traçabilité des actions administratives pour la sécurité.
+
+---
+
+### [Shared] Navigation Web
+
+#### [MODIFY] [App.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/App.tsx)
+- Enregistrer les nouvelles routes : `/venue/:id`, `/partner-premium`, `/admin/messaging`, `/admin/venues`, `/admin/audit`.
+
+## User Review Required
+
+> [!NOTE]
+> L'ajout de ces pages complète l'écosystème Galant Web. Les outils Admin sont placés en fin d'implémentation comme demandé, pour privilégier d'abord l'expérience des partenaires et des membres.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Tester la bascule Swipe/Grid sur la page Découverte.
-2.  Cliquer sur un établissement dans le Guide et vérifier l'ouverture de la page détail.
-3.  Accéder aux nouveaux modules Admin et vérifier la cohérence des données avec la version mobile.
+1.  Cliquer sur un restaurant dans le **Guide Galant** et vérifier l'affichage de la fiche détaillée.
+2.  Accéder à l'espace partenaire et tester l'ouverture de la page d'abonnement.
+3.  Vérifier que les nouvelles routes Admin sont bien protégées par le garde-fou `requireAdmin`.
