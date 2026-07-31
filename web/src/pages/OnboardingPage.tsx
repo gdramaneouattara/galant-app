@@ -529,7 +529,7 @@ const OnboardingPage: React.FC = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 transition-colors duration-300">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[3.5rem] shadow-2xl overflow-hidden border border-transparent dark:border-white/5 transition-colors">
         {/* Progress & Radiance */}
-        <div className="bg-slate-900 px-10 py-3 flex items-center justify-between">
+        <div className="bg-slate-900 dark:bg-black px-10 py-3 flex items-center justify-between transition-colors">
            <div className="flex items-center gap-2">
               <Sparkles className="text-amber-400" size={14} />
               <span className="text-[10px] font-medium text-white uppercase tracking-prestige">Rayonnement</span>
@@ -551,8 +551,8 @@ const OnboardingPage: React.FC = () => {
       </div>
 
       <div className="mt-8 flex items-center gap-3">
-         <Gem className="text-slate-300 dark:text-slate-700" size={16} />
-         <p className="text-[10px] font-medium text-slate-300 dark:text-slate-700 uppercase tracking-prestige">Dossier d'adhésion confidentiel</p>
+         <Gem className="text-slate-300 dark:text-slate-700 transition-colors" size={16} />
+         <p className="text-[10px] font-medium text-slate-300 dark:text-slate-700 uppercase tracking-prestige transition-colors">Dossier d'adhésion confidentiel</p>
       </div>
     </div>
   );

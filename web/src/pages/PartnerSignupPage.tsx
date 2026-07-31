@@ -59,67 +59,67 @@ const PartnerSignupPage: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto py-10 px-4">
-      <button onClick={() => navigate('/auth')} className="mb-6 flex items-center gap-2 text-slate-400 font-bold text-sm hover:text-primary transition-colors">
+      <button onClick={() => navigate('/auth')} className="mb-6 flex items-center gap-2 text-slate-400 dark:text-slate-500 font-bold text-sm hover:text-primary transition-colors">
         <ChevronLeft size={20} /> RETOUR
       </button>
 
-      <div className="bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
-        <div className="bg-slate-900 p-10 text-white text-center">
+      <div className="bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl dark:shadow-none border border-slate-100 dark:border-white/10 overflow-hidden transition-colors">
+        <div className="bg-slate-900 dark:bg-black p-10 text-white text-center transition-colors">
           <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-red-500/20">
             <Building2 size={32} />
           </div>
           <h2 className="text-3xl font-serif italic tracking-tighter">Galant Business</h2>
-          <p className="text-slate-400 mt-2 font-medium">Propulsez votre établissement vers une clientèle d'exception.</p>
+          <p className="text-slate-400 dark:text-slate-500 mt-2 font-medium transition-colors">Propulsez votre établissement vers une clientèle d'exception.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-10 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-xs font-medium uppercase text-slate-400 tracking-prestige ml-1">Nom du Responsable</label>
+              <label className="text-xs font-medium uppercase text-slate-400 dark:text-slate-500 tracking-prestige ml-1 transition-colors">Nom du Responsable</label>
               <input
                 type="text" required
                 value={form.name} onChange={e => setForm({...form, name: e.target.value})}
-                className="w-full bg-slate-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 font-medium"
+                className="w-full bg-slate-50 dark:bg-slate-800 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 font-medium text-slate-900 dark:text-white transition-colors"
                 placeholder="Votre nom complet"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-medium uppercase text-slate-400 tracking-prestige ml-1">Email Professionnel</label>
+              <label className="text-xs font-medium uppercase text-slate-400 dark:text-slate-500 tracking-prestige ml-1 transition-colors">Email Professionnel</label>
               <input
                 type="email" required
                 value={form.email} onChange={e => setForm({...form, email: e.target.value})}
-                className="w-full bg-slate-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 font-medium"
+                className="w-full bg-slate-50 dark:bg-slate-800 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 font-medium text-slate-900 dark:text-white transition-colors"
                 placeholder="contact@etablissement.com"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-medium uppercase text-slate-400 tracking-prestige ml-1">Mot de passe</label>
+            <label className="text-xs font-medium uppercase text-slate-400 dark:text-slate-500 tracking-prestige ml-1 transition-colors">Mot de passe</label>
             <input
               type="password" required
               value={form.password} onChange={e => setForm({...form, password: e.target.value})}
-              className="w-full bg-slate-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 font-medium"
+              className="w-full bg-slate-50 dark:bg-slate-800 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 font-medium text-slate-900 dark:text-white transition-colors"
               placeholder="••••••••"
             />
           </div>
 
-          <div className="pt-4 border-t border-slate-100 space-y-6">
+          <div className="pt-4 border-t border-slate-100 dark:border-white/5 space-y-6 transition-colors">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-xs font-medium uppercase text-slate-400 tracking-prestige ml-1">Nom de l'établissement</label>
+                <label className="text-xs font-medium uppercase text-slate-400 dark:text-slate-500 tracking-prestige ml-1 transition-colors">Nom de l'établissement</label>
                 <input
                   type="text" required
                   value={form.venueName} onChange={e => setForm({...form, venueName: e.target.value})}
-                  className="w-full bg-slate-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 font-medium"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 font-medium text-slate-900 dark:text-white transition-colors"
                   placeholder="Ex: Sky Lounge"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium uppercase text-slate-400 tracking-prestige ml-1">Type de lieu</label>
+                <label className="text-xs font-medium uppercase text-slate-400 dark:text-slate-500 tracking-prestige ml-1 transition-colors">Type de lieu</label>
                 <select
                   value={form.venueType} onChange={e => setForm({...form, venueType: e.target.value})}
-                  className="w-full bg-slate-50 border-none px-6 py-4 rounded-2xl outline-none font-bold text-sm text-slate-700"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border-none px-6 py-4 rounded-2xl outline-none font-bold text-sm text-slate-700 dark:text-slate-300 transition-colors"
                 >
                   {VENUE_TYPES.map(v => <option key={v.value} value={v.value}>{v.label}</option>)}
                 </select>
@@ -127,22 +127,22 @@ const PartnerSignupPage: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-medium uppercase text-slate-400 tracking-prestige ml-1">Adresse exacte</label>
+              <label className="text-xs font-medium uppercase text-slate-400 dark:text-slate-500 tracking-prestige ml-1 transition-colors">Adresse exacte</label>
               <div className="relative">
                 <input
                   type="text" required
                   value={form.address} onChange={e => setForm({...form, address: e.target.value})}
-                  className="w-full bg-slate-50 border-none px-12 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 font-medium"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border-none px-12 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 font-medium text-slate-900 dark:text-white transition-colors"
                   placeholder="Quartier, Rue..."
                 />
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600" size={18} />
               </div>
             </div>
           </div>
 
           <button
             disabled={loading}
-            className="w-full bg-slate-900 text-white py-6 rounded-3xl font-medium text-lg uppercase tracking-prestige shadow-xl shadow-slate-200 hover:bg-black active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+            className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-6 rounded-3xl font-medium text-lg uppercase tracking-prestige shadow-xl dark:shadow-none shadow-slate-200 hover:bg-black dark:hover:bg-slate-100 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
           >
             {loading ? <Loader2 className="animate-spin" /> : 'DEMANDER L\'ACCÈS PARTENAIRE'}
           </button>

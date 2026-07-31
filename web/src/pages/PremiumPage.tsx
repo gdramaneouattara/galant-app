@@ -80,8 +80,8 @@ const PremiumPage: React.FC = () => {
         {/* SECTION 1: ABONNEMENTS - Design Apple-esque vs Luxury Dark */}
         <div className="lg:col-span-8 space-y-10">
           <div className="flex items-center justify-between">
-            <h3 className="text-3xl font-serif italic tracking-tighter text-slate-900 flex items-center gap-4">
-              <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-primary">
+            <h3 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white flex items-center gap-4 transition-colors">
+              <div className="w-12 h-12 bg-rose-50 dark:bg-rose-900/20 rounded-2xl flex items-center justify-center text-primary">
                 <Gem size={24} />
               </div>
               Privilèges Adhésion
@@ -90,24 +90,24 @@ const PremiumPage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Plan Mensuel - Chic Minimaliste */}
-            <div className="bg-white p-10 rounded-[3.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col justify-between hover:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] transition-all duration-500 group">
+            <div className="bg-white dark:bg-slate-900 p-10 rounded-[3.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.05)] dark:shadow-none border border-slate-100 dark:border-white/10 flex flex-col justify-between hover:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] dark:hover:shadow-none transition-all duration-500 group">
               <div className="space-y-8">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="text-2xl font-serif italic tracking-tighter uppercase text-slate-900">Standard</h4>
+                    <h4 className="text-2xl font-serif italic tracking-tighter uppercase text-slate-900 dark:text-white">Standard</h4>
                     <p className="text-primary font-medium text-[10px] uppercase tracking-prestige mt-1">Essentiel Galant</p>
                   </div>
-                  <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors">
+                  <div className="w-12 h-12 bg-slate-50 dark:bg-white/5 rounded-2xl flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors">
                     <Star size={24} />
                   </div>
                 </div>
 
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-[1000] text-slate-900 tracking-tighter">5 000 F</span>
-                  <span className="text-slate-400 font-medium text-xs uppercase tracking-prestige">/ mois</span>
+                  <span className="text-5xl font-[1000] text-slate-900 dark:text-white tracking-tighter transition-colors">5 000 F</span>
+                  <span className="text-slate-400 dark:text-slate-500 font-medium text-xs uppercase tracking-prestige transition-colors">/ mois</span>
                 </div>
 
-                <div className="h-[1px] bg-slate-100 w-full"></div>
+                <div className="h-[1px] bg-slate-100 dark:bg-white/5 w-full transition-colors"></div>
 
                 <ul className="space-y-4">
                   {[
@@ -116,7 +116,7 @@ const PremiumPage: React.FC = () => {
                     'Découvrir qui vous a liké',
                     'Chat gratuit avec tous les Hôtes'
                   ].map((f, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm font-bold text-slate-600 leading-tight">
+                    <li key={i} className="flex items-start gap-3 text-sm font-bold text-slate-600 dark:text-slate-300 leading-tight transition-colors">
                       <CheckCircle2 size={18} className="text-green-500 flex-shrink-0 mt-0.5" />
                       {f}
                     </li>
@@ -127,9 +127,9 @@ const PremiumPage: React.FC = () => {
               <button
                 onClick={() => handlePurchase('PREMIUM', 'MONTHLY', 5000)}
                 disabled={!!loading || purchaseLoading}
-                className="mt-12 w-full py-5 rounded-2xl bg-slate-900 text-white font-medium text-[11px] uppercase tracking-prestige hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95 flex items-center justify-center gap-3"
+                className="mt-12 w-full py-5 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-medium text-[11px] uppercase tracking-prestige hover:bg-black dark:hover:bg-slate-100 transition-all shadow-xl shadow-slate-200 dark:shadow-none active:scale-95 flex items-center justify-center gap-3"
               >
-                {loading === 'MONTHLY' ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'S\'ABONNER AU CERCLE'}
+                {loading === 'MONTHLY' ? <div className="w-4 h-4 border-2 border-white/30 border-t-white dark:border-slate-900/30 dark:border-t-slate-900 rounded-full animate-spin"></div> : 'S\'ABONNER AU CERCLE'}
                 <ChevronRight size={16} />
               </button>
             </div>
@@ -195,23 +195,23 @@ const PremiumPage: React.FC = () => {
 
         {/* SECTION 2: SOLDE ROSES - Boutique de luxe style */}
         <div className="lg:col-span-4 space-y-10">
-          <h3 className="text-3xl font-serif italic tracking-tighter text-slate-900 flex items-center gap-4">
-            <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600">
+          <h3 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white flex items-center gap-4 transition-colors">
+            <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center text-amber-600">
                <Award size={24} />
             </div>
             Solde Roses
           </h3>
 
-          <div className="bg-gradient-to-b from-amber-50 to-white rounded-[3.5rem] p-10 border border-amber-100/50 shadow-xl space-y-8 relative overflow-hidden">
+          <div className="bg-gradient-to-b from-amber-50 to-white dark:from-slate-800 dark:to-slate-900 rounded-[3.5rem] p-10 border border-amber-100/50 dark:border-white/5 shadow-xl dark:shadow-none space-y-8 relative overflow-hidden transition-colors">
             {/* Background Rose Pattern/Decoration */}
-            <div className="absolute top-10 right-10 text-amber-200/20 rotate-12 -z-0">
+            <div className="absolute top-10 right-10 text-amber-200/20 dark:text-white/5 rotate-12 -z-0 transition-colors">
                <Sparkles size={120} />
             </div>
 
             <div className="text-center space-y-3 relative z-10">
-               <p className="text-[10px] font-medium text-amber-600 uppercase tracking-prestige leading-none">Solde Roses</p>
+               <p className="text-[10px] font-medium text-amber-600 dark:text-amber-500 uppercase tracking-prestige leading-none transition-colors">Solde Roses</p>
                <div className="flex items-center justify-center gap-3">
-                  <span className="text-5xl font-black text-slate-950 tracking-tighter">{profile?.rose_balance || 0}</span>
+                  <span className="text-5xl font-black text-slate-950 dark:text-white tracking-tighter transition-colors">{profile?.rose_balance || 0}</span>
                   <span className="text-2xl">🌹</span>
                </div>
             </div>
@@ -227,25 +227,25 @@ const PremiumPage: React.FC = () => {
                   key={pack.id}
                   onClick={() => handlePurchase(pack.type, pack.id, pack.price)}
                   disabled={!!loading || purchaseLoading}
-                  className="w-full bg-white/60 backdrop-blur-md p-5 rounded-[1.8rem] flex items-center justify-between group hover:bg-white hover:shadow-2xl transition-all border border-amber-200/30 active:scale-[0.98]"
+                  className="w-full bg-white/60 dark:bg-white/5 backdrop-blur-md p-5 rounded-[1.8rem] flex items-center justify-between group hover:bg-white dark:hover:bg-white/10 hover:shadow-2xl dark:hover:shadow-none transition-all border border-amber-200/30 dark:border-white/5 active:scale-[0.98]"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-xl shadow-sm group-hover:scale-110 transition-transform">
+                    <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center text-xl shadow-sm group-hover:scale-110 transition-transform">
                        {pack.icon}
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-black text-slate-950 leading-none">{pack.label}</p>
-                      <p className="text-[9px] font-medium text-slate-400 mt-1.5 uppercase tracking-prestige">{pack.sub}</p>
+                      <p className="text-sm font-black text-slate-950 dark:text-white leading-none transition-colors">{pack.label}</p>
+                      <p className="text-[9px] font-medium text-slate-400 dark:text-slate-500 mt-1.5 uppercase tracking-prestige transition-colors">{pack.sub}</p>
                     </div>
                   </div>
-                  <div className="bg-slate-950 text-white px-4 py-2 rounded-xl text-[10px] font-black group-hover:bg-amber-500 transition-colors">
+                  <div className="bg-slate-950 dark:bg-white text-white dark:text-slate-950 px-4 py-2 rounded-xl text-[10px] font-black group-hover:bg-amber-500 dark:group-hover:bg-amber-500 dark:group-hover:text-white transition-colors">
                     {pack.price} F
                   </div>
                 </button>
               ))}
             </div>
 
-            <p className="text-[9px] text-center text-slate-400 font-medium px-4 leading-relaxed italic">
+            <p className="text-[9px] text-center text-slate-400 dark:text-slate-500 font-medium px-4 leading-relaxed italic transition-colors">
               Le Solde Roses sert aux attentions consommables. La Rose d'Or est un boost de visibilite separe.
             </p>
           </div>
@@ -254,13 +254,13 @@ const PremiumPage: React.FC = () => {
         {/* SECTION 3: BOOSTS - Modern Cards */}
         <div className="lg:col-span-12 space-y-10 pt-8">
            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-              <h3 className="text-3xl font-serif italic tracking-tighter text-slate-900 flex items-center gap-4">
-                <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600">
+              <h3 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white flex items-center gap-4 transition-colors">
+                <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center text-purple-600">
                   <Rocket size={24} />
                 </div>
                 Accélérateurs de Destin
               </h3>
-              <p className="text-slate-400 font-medium text-sm">Passez en tête de liste dans votre ville instantanément.</p>
+              <p className="text-slate-400 dark:text-slate-500 font-medium text-sm transition-colors">Passez en tête de liste dans votre ville instantanément.</p>
            </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -269,23 +269,23 @@ const PremiumPage: React.FC = () => {
               { id: '3D', label: '3 Jours', price: 2500, color: 'bg-purple-600', sub: 'Maître du Weekend', icon: Rocket },
               { id: '7D', label: '7 Jours', price: 5000, color: 'bg-slate-950', sub: 'Icône de la Semaine', icon: Crown },
             ].map((boost) => (
-              <div key={boost.id} className="group bg-white p-10 rounded-[3.5rem] shadow-xl border border-slate-50 relative overflow-hidden hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+              <div key={boost.id} className="group bg-white dark:bg-slate-900 p-10 rounded-[3.5rem] shadow-xl dark:shadow-none border border-slate-50 dark:border-white/5 relative overflow-hidden hover:shadow-2xl dark:hover:shadow-none transition-all duration-500 hover:-translate-y-2">
                 <div className={`absolute top-0 left-0 w-full h-2 ${boost.color}`}></div>
 
                 <div className="space-y-8">
                   <div className="flex justify-between items-center">
-                    <div className={`w-14 h-14 ${boost.id === '7D' ? 'bg-slate-100' : 'bg-purple-50'} rounded-2xl flex items-center justify-center text-purple-600 transition-transform group-hover:rotate-12`}>
-                      <boost.icon size={32} className={boost.id === '7D' ? 'text-slate-900' : 'text-purple-600'} />
+                    <div className={`w-14 h-14 ${boost.id === '7D' ? 'bg-slate-100 dark:bg-white/5' : 'bg-purple-50 dark:bg-purple-900/20'} rounded-2xl flex items-center justify-center text-purple-600 transition-transform group-hover:rotate-12 transition-colors`}>
+                      <boost.icon size={32} className={boost.id === '7D' ? 'text-slate-900 dark:text-white' : 'text-purple-600'} />
                     </div>
                     <div className="text-right">
-                       <p className="text-[10px] font-medium text-slate-400 uppercase tracking-prestige">Boost</p>
-                       <h4 className="text-2xl font-[1000] text-slate-950 tracking-tighter">{boost.label}</h4>
+                       <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige transition-colors">Boost</p>
+                       <h4 className="text-2xl font-[1000] text-slate-950 dark:text-white tracking-tighter transition-colors">{boost.label}</h4>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-sm font-bold text-slate-600 italic">"{boost.sub}"</p>
-                    <div className="text-4xl font-black text-slate-950 tracking-tighter">{boost.price} F</div>
+                    <p className="text-sm font-bold text-slate-600 dark:text-slate-400 italic transition-colors">"{boost.sub}"</p>
+                    <div className="text-4xl font-black text-slate-950 dark:text-white tracking-tighter transition-colors">{boost.price} F</div>
                   </div>
 
                   <button
@@ -293,8 +293,8 @@ const PremiumPage: React.FC = () => {
                       disabled={!!loading || purchaseLoading}
                     className={`w-full py-4 rounded-2xl font-medium text-[10px] uppercase tracking-prestige transition-all flex items-center justify-center gap-3 ${
                       boost.id === '7D'
-                      ? 'bg-slate-950 text-white shadow-xl shadow-slate-200'
-                      : 'bg-slate-50 text-slate-900 hover:bg-slate-950 hover:text-white'
+                      ? 'bg-slate-950 dark:bg-white text-white dark:text-slate-950 shadow-xl shadow-slate-200 dark:shadow-none'
+                      : 'bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white hover:bg-slate-950 dark:hover:bg-white hover:text-white dark:hover:text-slate-950'
                     }`}
                   >
                     {loading === boost.id ? 'TRAITEMENT...' : 'ACTIVER LE BOOST'}
@@ -306,26 +306,26 @@ const PremiumPage: React.FC = () => {
         </div>
 
         {/* Security & Trust - Footer of the page */}
-        <div className="lg:col-span-12 pt-16 flex flex-col md:flex-row items-center justify-center gap-12 border-t border-slate-100">
-           <div className="flex items-center gap-4 text-slate-400">
+        <div className="lg:col-span-12 pt-16 flex flex-col md:flex-row items-center justify-center gap-12 border-t border-slate-100 dark:border-white/5 transition-colors">
+           <div className="flex items-center gap-4 text-slate-400 dark:text-slate-500 transition-colors">
               <ShieldCheck size={32} className="text-green-500" />
               <div className="text-left leading-none">
                  <p className="text-[10px] font-medium uppercase tracking-prestige mb-1">Sécurité</p>
-                 <p className="text-xs font-bold text-slate-500">Paiements Chiffrés</p>
+                 <p className="text-xs font-bold text-slate-500 dark:text-slate-400">Paiements Chiffrés</p>
               </div>
            </div>
-           <div className="flex items-center gap-4 text-slate-400">
+           <div className="flex items-center gap-4 text-slate-400 dark:text-slate-500 transition-colors">
               <CreditCard size={32} className="text-blue-500" />
               <div className="text-left leading-none">
                  <p className="text-[10px] font-medium uppercase tracking-prestige mb-1">Partenaire</p>
-                 <p className="text-xs font-bold text-slate-500">Paystack Verified</p>
+                 <p className="text-xs font-bold text-slate-500 dark:text-slate-400">Paystack Verified</p>
               </div>
            </div>
-           <div className="flex items-center gap-4 text-slate-400">
+           <div className="flex items-center gap-4 text-slate-400 dark:text-slate-500 transition-colors">
               <Lock size={32} className="text-amber-500" />
               <div className="text-left leading-none">
                  <p className="text-[10px] font-medium uppercase tracking-prestige mb-1">Confiance</p>
-                 <p className="text-xs font-bold text-slate-500">Garantie Galant</p>
+                 <p className="text-xs font-bold text-slate-500 dark:text-slate-400">Garantie Galant</p>
               </div>
            </div>
         </div>

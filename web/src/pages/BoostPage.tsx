@@ -84,19 +84,19 @@ const BoostPage: React.FC = () => {
     <div className="max-w-4xl mx-auto pb-20 space-y-12">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <button onClick={() => navigate('/profile')} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-400 transition-colors">
+        <button onClick={() => navigate('/profile')} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-400 dark:text-slate-500 transition-colors">
           <ChevronLeft size={24} />
         </button>
         <div>
-          <h2 className="text-3xl font-serif italic tracking-tighter dark:text-white">{t('boost_your_profile')}</h2>
-          <p className="text-slate-500 font-medium">{t('boost_subtitle')}</p>
+          <h2 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white">{t('boost_your_profile')}</h2>
+          <p className="text-slate-500 dark:text-slate-400 font-medium">{t('boost_subtitle')}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Left Column: Hero & Status */}
         <div className="md:col-span-1 space-y-6">
-          <div className="bg-secondary p-10 rounded-[3rem] text-white text-center space-y-6 shadow-2xl shadow-secondary/20">
+          <div className="bg-secondary dark:bg-secondary/80 p-10 rounded-[3rem] text-white text-center space-y-6 shadow-2xl shadow-secondary/20 dark:shadow-none">
              <div className="w-20 h-20 bg-white/20 rounded-[2rem] flex items-center justify-center mx-auto backdrop-blur-md">
                 <Rocket size={40} className="animate-bounce" />
              </div>
@@ -107,7 +107,7 @@ const BoostPage: React.FC = () => {
           </div>
 
           {boostStatus.active && (
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border-2 border-secondary/20 shadow-xl flex items-center gap-4 transition-colors">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border-2 border-secondary/20 shadow-xl dark:shadow-none flex items-center gap-4 transition-colors">
               <div className="w-12 h-12 bg-secondary text-white rounded-2xl flex items-center justify-center">
                 <Sparkles size={24} />
               </div>
@@ -119,16 +119,16 @@ const BoostPage: React.FC = () => {
           )}
 
           {/* Free Boost Card (If applicable - basic check) */}
-          <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-white/10 space-y-4 shadow-xl transition-colors">
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-white/10 space-y-4 shadow-xl dark:shadow-none transition-colors">
             <div className="flex items-center gap-3 text-primary">
               <Flame size={20} />
               <p className="text-xs font-medium uppercase tracking-prestige">{t('free_boost_available')}</p>
             </div>
-            <p className="text-[11px] text-slate-500 font-medium leading-relaxed">{t('free_boost_subtitle')}</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">{t('free_boost_subtitle')}</p>
             <button
               onClick={handleFreeBoost}
               disabled={activatingFree || boostStatus.active}
-              className="w-full py-4 rounded-2xl bg-primary/5 text-primary font-medium text-xs uppercase tracking-prestige hover:bg-primary hover:text-white transition-all disabled:opacity-30"
+              className="w-full py-4 rounded-2xl bg-primary/5 dark:bg-primary/10 text-primary font-medium text-xs uppercase tracking-prestige hover:bg-primary hover:text-white transition-all disabled:opacity-30"
             >
               {activatingFree ? <Loader2 className="animate-spin mx-auto" size={16} /> : t('activate')}
             </button>
@@ -137,17 +137,17 @@ const BoostPage: React.FC = () => {
 
         {/* Right Column: Plans */}
         <div className="md:col-span-2 space-y-4">
-          <h4 className="text-xs font-medium text-slate-400 dark:text-slate-600 uppercase tracking-prestige ml-2">Sélectionnez votre plan</h4>
+          <h4 className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige ml-2">Sélectionnez votre plan</h4>
           <div className="space-y-4">
             {BOOST_PLANS.map((plan) => (
               <div
                 key={plan.id}
                 className={`relative p-8 rounded-[2.5rem] border-2 transition-all group overflow-hidden ${
-                  plan.isBest ? 'bg-secondary border-secondary shadow-2xl shadow-secondary/20' : 'bg-white dark:bg-slate-900 border-slate-50 dark:border-white/5 hover:border-secondary/30'
+                  plan.isBest ? 'bg-secondary border-secondary shadow-2xl shadow-secondary/20 dark:shadow-none' : 'bg-white dark:bg-slate-900 border-slate-50 dark:border-white/5 hover:border-secondary/30'
                 }`}
               >
                 {plan.isBest && (
-                  <div className="absolute top-0 right-0 bg-white/20 backdrop-blur-md px-6 py-2 rounded-bl-[1.5rem] text-[10px] font-medium uppercase text-white tracking-prestige">
+                  <div className="absolute top-0 right-0 bg-white/20 dark:bg-white/10 backdrop-blur-md px-6 py-2 rounded-bl-[1.5rem] text-[10px] font-medium uppercase text-white tracking-prestige">
                     {t('best_choice')}
                   </div>
                 )}
@@ -162,7 +162,7 @@ const BoostPage: React.FC = () => {
                        <h5 className={`text-xl font-serif italic tracking-tighter ${plan.isBest ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{plan.name}</h5>
                        {plan.savings && <span className="bg-green-500 text-white px-2 py-0.5 rounded-lg text-[9px] font-black">-{plan.savings}</span>}
                     </div>
-                    <p className={`text-sm font-medium ${plan.isBest ? 'text-white/70' : 'text-slate-500'}`}>{plan.description}</p>
+                    <p className={`text-sm font-medium ${plan.isBest ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'}`}>{plan.description}</p>
                   </div>
 
                   <div className="flex flex-col items-center gap-3">
@@ -172,8 +172,8 @@ const BoostPage: React.FC = () => {
                       disabled={purchaseLoading || boostStatus.active}
                       className={`w-full md:w-auto px-8 py-4 rounded-2xl font-medium text-xs uppercase tracking-prestige flex items-center justify-center gap-2 transition-all ${
                         plan.isBest
-                          ? 'bg-white text-secondary hover:scale-105 active:scale-95 shadow-xl'
-                          : 'bg-secondary text-white hover:scale-105 active:scale-95 shadow-lg shadow-secondary/20'
+                          ? 'bg-white text-secondary hover:scale-105 active:scale-95 shadow-xl shadow-white/10'
+                          : 'bg-secondary text-white hover:scale-105 active:scale-95 shadow-lg shadow-secondary/20 dark:shadow-none'
                       }`}
                     >
                       {purchaseLoading ? <Loader2 className="animate-spin" size={16} /> : <CreditCard size={16} />}

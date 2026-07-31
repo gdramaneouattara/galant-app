@@ -340,12 +340,12 @@ const SentinelPage: React.FC = () => {
             <div className="w-12 h-12 bg-blue-50 dark:bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center">
               <Shield size={24} />
             </div>
-            <h3 className="font-serif italic text-xl tracking-tighter">Sécurité Active</h3>
+            <h3 className="font-serif italic text-xl tracking-tighter text-slate-900 dark:text-white">Sécurité Active</h3>
           </div>
           <button
             onClick={handleSOS}
             disabled={loading}
-            className="w-12 h-12 bg-red-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-red-200 animate-pulse hover:scale-110 transition-all"
+            className="w-12 h-12 bg-red-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-red-200 dark:shadow-none animate-pulse hover:scale-110 transition-all"
           >
             <AlertTriangle size={24} />
           </button>
@@ -355,25 +355,25 @@ const SentinelPage: React.FC = () => {
           <div className="space-y-6">
             {/* Duration Selector */}
             <div className="space-y-3">
-              <label className="text-[10px] font-medium text-slate-400 uppercase tracking-prestige ml-2">Durée de la veille</label>
+              <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige ml-2">Durée de la veille</label>
               <div className="flex items-center gap-4 bg-slate-50 dark:bg-white/5 p-4 rounded-3xl">
                 <div className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-[8px] font-black text-slate-400 uppercase">Heures</span>
+                  <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">Heures</span>
                   <input
                     type="number"
                     value={hours}
                     onChange={(e) => setHours(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-full bg-transparent text-center font-black text-2xl outline-none"
+                    className="w-full bg-transparent text-center font-black text-2xl outline-none text-slate-900 dark:text-white"
                   />
                 </div>
-                <div className="text-slate-200 font-black text-2xl">:</div>
+                <div className="text-slate-200 dark:text-white/10 font-black text-2xl">:</div>
                 <div className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-[8px] font-black text-slate-400 uppercase">Minutes</span>
+                  <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">Minutes</span>
                   <input
                     type="number"
                     value={minutes}
                     onChange={(e) => setMinutes(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
-                    className="w-full bg-transparent text-center font-black text-2xl outline-none"
+                    className="w-full bg-transparent text-center font-black text-2xl outline-none text-slate-900 dark:text-white"
                   />
                 </div>
               </div>
@@ -382,7 +382,7 @@ const SentinelPage: React.FC = () => {
             {/* Contacts Section */}
             <div className="space-y-3">
               <div className="flex justify-between items-center px-2">
-                <label className="text-[10px] font-medium text-slate-400 uppercase tracking-prestige">Contacts (Max 2)</label>
+                <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige">Contacts (Max 2)</label>
                 <div className="flex gap-4">
                    {isDirty && (
                      <button
@@ -410,16 +410,16 @@ const SentinelPage: React.FC = () => {
                     placeholder="Nom du contact"
                     value={manualName}
                     onChange={(e) => setManualName(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2 text-sm font-bold outline-none"
+                    className="w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2 text-sm font-bold outline-none text-slate-900 dark:text-white"
                   />
                   <input
                     placeholder="Numéro (ex: +225...)"
                     value={manualNumber}
                     onChange={(e) => setManualNumber(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2 text-sm font-bold outline-none"
+                    className="w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2 text-sm font-bold outline-none text-slate-900 dark:text-white"
                   />
                   <div className="flex gap-2">
-                    <button onClick={cancelManualEntry} className="flex-1 py-2 text-xs font-bold text-slate-400">Annuler</button>
+                    <button onClick={cancelManualEntry} className="flex-1 py-2 text-xs font-bold text-slate-400 dark:text-slate-500">Annuler</button>
                     <button onClick={addManualContact} className="flex-1 py-2 bg-primary text-white rounded-lg text-xs font-black">
                       {editingIndex !== null ? 'Mettre à jour' : 'Ajouter'}
                     </button>
@@ -429,7 +429,7 @@ const SentinelPage: React.FC = () => {
 
               <div className="space-y-2">
                 {contacts.length === 0 ? (
-                  <p className="text-[10px] text-slate-400 italic text-center py-4 border-2 border-dashed border-slate-100 dark:border-white/5 rounded-2xl">
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 italic text-center py-4 border-2 border-dashed border-slate-100 dark:border-white/5 rounded-2xl">
                     Aucun contact sélectionné
                   </p>
                 ) : (
@@ -440,15 +440,15 @@ const SentinelPage: React.FC = () => {
                           <User size={14} className="text-primary" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-black truncate">{c.name}</p>
-                          <p className="text-[9px] font-bold text-slate-400">{c.number}</p>
+                          <p className="text-xs font-black truncate text-slate-900 dark:text-white">{c.name}</p>
+                          <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500">{c.number}</p>
                         </div>
                       </div>
                       <div className="flex gap-1">
-                        <button onClick={() => startEditingContact(i)} className="p-2 text-slate-300 hover:text-primary transition-colors">
+                        <button onClick={() => startEditingContact(i)} className="p-2 text-slate-300 dark:text-slate-700 hover:text-primary transition-colors">
                           <Edit2 size={14} />
                         </button>
-                        <button onClick={() => removeContact(i)} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
+                        <button onClick={() => removeContact(i)} className="p-2 text-slate-300 dark:text-slate-700 hover:text-red-500 transition-colors">
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -460,41 +460,41 @@ const SentinelPage: React.FC = () => {
 
             {/* Meeting Details Section */}
             <div className="space-y-4 pt-2">
-              <label className="text-[10px] font-medium text-slate-400 uppercase tracking-prestige ml-2">Détails du rendez-vous (Optionnel)</label>
+              <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige ml-2">Détails du rendez-vous (Optionnel)</label>
               <div className="bg-slate-50 dark:bg-white/5 p-5 rounded-[2rem] space-y-4">
                 <div className="space-y-1">
-                   <div className="flex items-center gap-2 text-[8px] font-black text-slate-400 uppercase ml-1">
+                   <div className="flex items-center gap-2 text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1">
                      <MapPin size={10} /> Lieu
                    </div>
                    <input
                     placeholder="Où êtes-vous ?"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2.5 text-xs font-bold outline-none"
+                    className="w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2.5 text-xs font-bold outline-none text-slate-900 dark:text-white"
                    />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-[8px] font-black text-slate-400 uppercase ml-1">
+                    <div className="flex items-center gap-2 text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1">
                       <User size={10} /> Nom de la personne
                     </div>
                     <input
                       placeholder="Rencontré(e)"
                       value={personName}
                       onChange={(e) => setPersonName(e.target.value)}
-                      className="w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2.5 text-xs font-bold outline-none"
+                      className="w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2.5 text-xs font-bold outline-none text-slate-900 dark:text-white"
                     />
                   </div>
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-[8px] font-black text-slate-400 uppercase ml-1">
+                    <div className="flex items-center gap-2 text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1">
                       <Phone size={10} /> Son Contact
                     </div>
                     <input
                       placeholder="Numéro"
                       value={personContact}
                       onChange={(e) => setPersonContact(e.target.value)}
-                      className="w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2.5 text-xs font-bold outline-none"
+                      className="w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2.5 text-xs font-bold outline-none text-slate-900 dark:text-white"
                     />
                   </div>
                 </div>
@@ -504,7 +504,7 @@ const SentinelPage: React.FC = () => {
             <button
               onClick={handleScheduleCheckIn}
               disabled={loading || contacts.length === 0}
-              className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-medium text-xs uppercase tracking-prestige shadow-xl disabled:opacity-50 transition-all hover:scale-[1.02]"
+              className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-medium text-xs uppercase tracking-prestige shadow-xl dark:shadow-none disabled:opacity-50 transition-all hover:scale-[1.02]"
             >
               Activer la Protection
             </button>
@@ -519,7 +519,7 @@ const SentinelPage: React.FC = () => {
             </div>
             <div>
               <p className="text-blue-900 dark:text-blue-300 font-black text-[10px] uppercase tracking-widest mb-1">Protection Active</p>
-              <p className="text-slate-400 text-[9px] font-bold uppercase">Alerte auto à {new Date(activeTimer.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+              <p className="text-slate-400 dark:text-slate-500 text-[9px] font-bold uppercase">Alerte auto à {new Date(activeTimer.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
             </div>
             <button
               onClick={handleConfirmSafety}

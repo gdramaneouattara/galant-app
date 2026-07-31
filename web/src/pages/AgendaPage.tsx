@@ -98,7 +98,7 @@ const AgendaPage: React.FC = () => {
             <Calendar className="text-primary/40 animate-pulse" size={32} />
           </div>
         </div>
-        <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">Consultation de l'Agenda Royal...</p>
+        <p className="text-slate-400 dark:text-slate-500 font-black uppercase tracking-[0.3em] text-[10px]">Consultation de l'Agenda Royal...</p>
       </div>
     );
   }
@@ -106,7 +106,7 @@ const AgendaPage: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto pb-20 px-4 space-y-12">
       {/* Sophisticated Hero Header */}
-      <div className="relative rounded-[4rem] overflow-hidden bg-slate-950 min-h-[400px] flex items-center shadow-2xl">
+      <div className="relative rounded-[4rem] overflow-hidden bg-slate-950 dark:bg-black min-h-[400px] flex items-center shadow-2xl">
         <div className="absolute inset-0">
           <img
             src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200"
@@ -138,7 +138,7 @@ const AgendaPage: React.FC = () => {
 
       {/* Modern Filter Section */}
       <div className="flex flex-col lg:flex-row gap-6 items-center justify-between sticky top-24 z-40">
-        <div className="flex gap-2 p-1.5 bg-white/80 backdrop-blur-xl rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/40 w-full lg:w-auto overflow-x-auto no-scrollbar">
+        <div className="flex gap-2 p-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2rem] border border-slate-200 dark:border-white/10 shadow-xl shadow-slate-200/40 dark:shadow-none w-full lg:w-auto overflow-x-auto no-scrollbar">
           {[
             { id: 'ALL', label: 'Tout' },
             { id: 'EVENT', label: 'Evenements' },
@@ -151,7 +151,7 @@ const AgendaPage: React.FC = () => {
               key={cat.id}
               onClick={() => setFilter(cat.id as any)}
               className={`px-8 py-3 rounded-2xl font-medium text-[10px] uppercase tracking-prestige transition-all whitespace-nowrap ${
-                filter === cat.id ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'
+                filter === cat.id ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl shadow-slate-900/20' : 'text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5'
               }`}
             >
               {cat.label}
@@ -159,22 +159,22 @@ const AgendaPage: React.FC = () => {
           ))}
         </div>
 
-        <div className="hidden lg:flex items-center gap-3 text-slate-400 font-medium text-xs uppercase tracking-prestige bg-white/80 backdrop-blur-xl px-6 py-4 rounded-[2rem] border border-slate-200 shadow-xl">
+        <div className="hidden lg:flex items-center gap-3 text-slate-400 dark:text-slate-500 font-medium text-xs uppercase tracking-prestige bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl px-6 py-4 rounded-[2rem] border border-slate-200 dark:border-white/10 shadow-xl dark:shadow-none">
            <Filter size={16} className="text-primary" />
            <span>Filtrer par ville</span>
-           <div className="w-[1px] h-4 bg-slate-200 mx-2"></div>
-           <span className="text-slate-900">Douala, Yaoundé</span>
+           <div className="w-[1px] h-4 bg-slate-200 dark:bg-white/10 mx-2"></div>
+           <span className="text-slate-900 dark:text-white">Douala, Yaoundé</span>
         </div>
       </div>
 
       {filteredEvents.length === 0 ? (
-        <div className="text-center py-32 bg-white rounded-[4rem] border-2 border-dashed border-slate-100 p-12 space-y-8 animate-in fade-in duration-700">
-          <div className="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mx-auto text-slate-200">
+        <div className="text-center py-32 bg-white dark:bg-slate-900 rounded-[4rem] border-2 border-dashed border-slate-100 dark:border-white/5 p-12 space-y-8 animate-in fade-in duration-700">
+          <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-[2.5rem] flex items-center justify-center mx-auto text-slate-200 dark:text-slate-700">
             <Calendar size={48} />
           </div>
           <div>
-            <p className="text-2xl font-black text-slate-900 mb-2">Aucun événement prévu</p>
-            <p className="text-slate-400 font-medium max-w-sm mx-auto">Revenez bientôt pour découvrir les prochaines sorties du Cercle Galant.</p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white mb-2">Aucun événement prévu</p>
+            <p className="text-slate-400 dark:text-slate-500 font-medium max-w-sm mx-auto">Revenez bientôt pour découvrir les prochaines sorties du Cercle Galant.</p>
           </div>
           <button
             onClick={fetchEvents}
@@ -188,7 +188,7 @@ const AgendaPage: React.FC = () => {
           {filteredEvents.map((event) => (
             <div
               key={event.id}
-              className="group bg-white rounded-[3.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.08)] border border-slate-100 overflow-hidden flex flex-col md:flex-row transition-all duration-500 hover:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.12)] hover:-translate-y-1"
+              className="group bg-white dark:bg-slate-900 rounded-[3.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.08)] dark:shadow-none border border-slate-100 dark:border-white/10 overflow-hidden flex flex-col md:flex-row transition-all duration-500 hover:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.12)] dark:hover:shadow-none hover:-translate-y-1"
             >
               {/* Image Section - Half Width */}
               <div className="relative w-full md:w-2/5 aspect-square md:aspect-auto overflow-hidden">
@@ -200,18 +200,18 @@ const AgendaPage: React.FC = () => {
                 />
 
                 {/* Date Floating Badge */}
-                <div className="absolute top-6 left-6 bg-white/95 backdrop-blur-md rounded-2xl p-3 flex flex-col items-center justify-center min-w-[65px] shadow-2xl border border-white/50">
+                <div className="absolute top-6 left-6 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-3 flex flex-col items-center justify-center min-w-[65px] shadow-2xl border border-white/50 dark:border-white/10">
                   <span className="text-[10px] font-black text-primary leading-none mb-1 tracking-widest uppercase">
                     {new Date(event.starts_at).toLocaleDateString('fr-FR', { month: 'short' })}
                   </span>
-                  <span className="text-3xl font-black text-slate-950 leading-none">
+                  <span className="text-3xl font-black text-slate-950 dark:text-white leading-none">
                     {new Date(event.starts_at).getDate()}
                   </span>
                 </div>
 
                 {/* Event Type Ribbon */}
                 <div className={`absolute bottom-6 left-6 px-4 py-2 rounded-xl text-[8px] font-black uppercase tracking-[0.2em] shadow-2xl flex items-center gap-2 backdrop-blur-md border border-white/20 ${
-                  event.event_type === 'FLASH_OFFER' ? 'bg-amber-400 text-black' : 'bg-slate-950/80 text-white'
+                  event.event_type === 'FLASH_OFFER' ? 'bg-amber-400 text-black' : 'bg-slate-950/80 dark:bg-black/80 text-white'
                 }`}>
                   {event.event_type === 'FLASH_OFFER' ? <Zap size={12} fill="currentColor" /> : <Star size={12} fill="currentColor" />}
                   {event.event_type}
@@ -221,31 +221,31 @@ const AgendaPage: React.FC = () => {
               {/* Content Section - Half Width */}
               <div className="p-8 md:p-10 flex-1 flex flex-col space-y-6">
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-slate-400 font-medium text-[10px] uppercase tracking-prestige">
+                  <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 font-medium text-[10px] uppercase tracking-prestige">
                     <MapPin size={12} className="text-primary" />
                     <span>{event.venues?.city || 'Ville non définie'}</span>
                   </div>
-                  <h3 className="text-3xl font-serif italic tracking-tighter text-slate-900 leading-none group-hover:text-primary transition-colors">
+                  <h3 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white leading-none group-hover:text-primary transition-colors">
                     {event.title}
                   </h3>
                 </div>
 
-                <div className="bg-slate-50/50 p-4 rounded-2xl flex items-center gap-3 border border-slate-100/50">
-                  <img src={event.venues?.photo_url} className="w-10 h-10 rounded-xl shadow-sm border border-white" alt="" />
+                <div className="bg-slate-50/50 dark:bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 border border-slate-100/50 dark:border-white/5">
+                  <img src={event.venues?.photo_url} className="w-10 h-10 rounded-xl shadow-sm border border-white dark:border-slate-700" alt="" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Établissement Hôte</p>
-                    <p className="text-sm font-black text-slate-800 truncate">{event.venues?.name}</p>
+                    <p className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1">Établissement Hôte</p>
+                    <p className="text-sm font-black text-slate-800 dark:text-slate-200 truncate">{event.venues?.name}</p>
                   </div>
-                  <ChevronRight size={16} className="text-slate-300" />
+                  <ChevronRight size={16} className="text-slate-300 dark:text-slate-700" />
                 </div>
 
-                <p className="text-slate-500 font-medium text-sm leading-relaxed line-clamp-3">
+                <p className="text-slate-500 dark:text-slate-400 font-medium text-sm leading-relaxed line-clamp-3">
                   {event.description}
                 </p>
 
-                <div className="flex items-center justify-between py-4 border-y border-slate-50">
+                <div className="flex items-center justify-between py-4 border-y border-slate-50 dark:border-white/5">
                   <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2 text-slate-900 font-black text-xs uppercase">
+                    <div className="flex items-center gap-2 text-slate-900 dark:text-white font-black text-xs uppercase">
                       <Clock size={16} className="text-primary" />
                       <span>{new Date(event.starts_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
@@ -253,11 +253,11 @@ const AgendaPage: React.FC = () => {
 
                   <div className="flex -space-x-2">
                     {[1, 2, 3].map(i => (
-                      <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 overflow-hidden shadow-sm">
+                      <div key={i} className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800 bg-slate-200 dark:bg-slate-700 overflow-hidden shadow-sm">
                         <img src={`https://i.pravatar.cc/100?img=${event.id.length + i}`} alt="Attendee" />
                       </div>
                     ))}
-                    <div className="w-8 h-8 rounded-full border-2 border-white bg-slate-900 flex items-center justify-center text-[8px] font-black text-white shadow-sm">
+                    <div className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800 bg-slate-900 dark:bg-slate-700 flex items-center justify-center text-[8px] font-black text-white shadow-sm">
                       +{event.attendees_count || 0}
                     </div>
                   </div>
@@ -268,15 +268,15 @@ const AgendaPage: React.FC = () => {
                     onClick={(e) => { e.stopPropagation(); handleAttendToggle(event.id, event.is_attending); }}
                     className={`flex-1 py-5 rounded-2xl font-medium text-[10px] uppercase tracking-prestige transition-all flex items-center justify-center gap-3 shadow-xl ${
                       event.is_attending
-                        ? 'bg-rose-50 text-primary border border-rose-100 shadow-rose-500/5'
-                        : 'bg-slate-950 text-white shadow-slate-950/10 hover:bg-black active:scale-95'
+                        ? 'bg-rose-50 dark:bg-rose-900/20 text-primary border border-rose-100 dark:border-rose-900/30 shadow-rose-500/5'
+                        : 'bg-slate-950 dark:bg-white text-white dark:text-slate-900 shadow-slate-950/10 dark:shadow-none hover:bg-black dark:hover:bg-slate-100 active:scale-95'
                     }`}
                   >
                     {event.is_attending ? <CheckCircle size={18} fill="currentColor" className="opacity-40" /> : <Ticket size={18} />}
                     {event.is_attending ? 'J\'Y SERAI' : 'RÉSERVER MA PLACE'}
                   </button>
 
-                  <button onClick={() => void handleShareEvent(event)} className="w-16 py-5 rounded-2xl bg-white border border-slate-100 text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all flex items-center justify-center">
+                  <button onClick={() => void handleShareEvent(event)} className="w-16 py-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-white/10 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5 transition-all flex items-center justify-center">
                     <Share2 size={20} />
                   </button>
                 </div>

@@ -238,31 +238,31 @@ const ChatPage: React.FC = () => {
   if (!targetUser) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200 border border-slate-100 flex flex-col h-[80vh] overflow-hidden">
+    <div className="max-w-2xl mx-auto bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl shadow-slate-200 dark:shadow-none border border-slate-100 dark:border-white/10 flex flex-col h-[80vh] overflow-hidden">
       {/* Header du Chat */}
-      <div className="p-4 border-b border-slate-50 flex items-center gap-4 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <button onClick={() => navigate('/matches')} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
+      <div className="p-4 border-b border-slate-50 dark:border-white/5 flex items-center gap-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
+        <button onClick={() => navigate('/matches')} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full transition-colors text-slate-400 dark:text-slate-500">
           <ChevronLeft size={24} />
         </button>
-        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-slate-100 cursor-pointer" onClick={() => !targetUser.isVenue && navigate(`/profile/${targetUser.id}`)}>
+        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-slate-100 dark:border-white/10 cursor-pointer" onClick={() => !targetUser.isVenue && navigate(`/profile/${targetUser.id}`)}>
           <img src={targetUser.photos?.[0]} className="w-full h-full object-cover" alt="" />
         </div>
         <div className="flex-1 cursor-pointer" onClick={() => !targetUser.isVenue && navigate(`/profile/${targetUser.id}`)}>
           <div className="flex items-center gap-1">
-            <span className="font-serif italic tracking-tighter text-slate-900">{targetUser.name}</span>
+            <span className="font-serif italic tracking-tighter text-slate-900 dark:text-white">{targetUser.name}</span>
             {targetUser.is_verified && <ShieldCheck size={14} className="text-blue-500" />}
             {(targetUser.galanterie_score || 0) >= 4.5 && <Gem size={14} className="text-rose-600" />}
           </div>
-          <span className={`text-[10px] font-medium uppercase tracking-prestige ${targetPresence?.state === 'online' ? 'text-green-500' : 'text-slate-400'}`}>
+          <span className={`text-[10px] font-medium uppercase tracking-prestige ${targetPresence?.state === 'online' ? 'text-green-500' : 'text-slate-400 dark:text-slate-500'}`}>
             {targetUser.isVenue ? targetUser.presenceLabel : targetPresence?.state === 'online' ? 'En ligne' : 'Hors ligne'}
           </span>
         </div>
       </div>
 
       {/* Zone des Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30">
-        <div className="bg-slate-100/50 p-4 rounded-3xl text-center border border-slate-200/50 mb-4">
-           <p className="text-[10px] font-medium text-slate-400 uppercase tracking-prestige flex items-center justify-center gap-2">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30 dark:bg-slate-950/30">
+        <div className="bg-slate-100/50 dark:bg-slate-800/50 p-4 rounded-3xl text-center border border-slate-200/50 dark:border-white/5 mb-4">
+           <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige flex items-center justify-center gap-2">
              <ShieldCheck size={14} /> Sécurité Galant : Les médias sont effacés tous les 15 jours
            </p>
         </div>
@@ -280,7 +280,7 @@ const ChatPage: React.FC = () => {
                 <div className={`p-4 rounded-3xl text-sm font-medium shadow-sm overflow-hidden ${
                   isMine
                     ? 'bg-primary text-white rounded-tr-none'
-                    : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-white/10 rounded-tl-none'
                 }`}>
 
                   {/* Media Content */}
@@ -303,8 +303,8 @@ const ChatPage: React.FC = () => {
 
                   {/* Suggestions Lieux/Events */}
                   {(isVenue || isEvent) && (
-                    <div className="mb-2 p-2 bg-slate-50 rounded-2xl border border-slate-100 text-slate-900">
-                      <p className="text-[10px] font-medium uppercase tracking-prestige text-slate-400 mb-2">
+                    <div className="mb-2 p-2 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-white/10 text-slate-900 dark:text-white">
+                      <p className="text-[10px] font-medium uppercase tracking-prestige text-slate-400 dark:text-slate-500 mb-2">
                         {isMine ? 'Ma suggestion' : 'Proposition de sortie'}
                       </p>
                       <div className="flex items-center gap-3">
@@ -329,7 +329,7 @@ const ChatPage: React.FC = () => {
                   {!isMine && msg.content && !isVenue && !isEvent && (
                     <button
                       onClick={() => handleTranslate(msg)}
-                      className="mt-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-prestige text-slate-400 border-t border-slate-100 pt-2 w-full text-left hover:text-primary transition-colors"
+                      className="mt-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-prestige text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-white/10 pt-2 w-full text-left hover:text-primary transition-colors"
                     >
                       {translatingIds.has(msg.id) ? (
                         <Loader2 size={10} className="animate-spin" />
@@ -341,7 +341,7 @@ const ChatPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className={`text-[9px] font-bold uppercase tracking-tighter text-slate-400 px-2`}>
+                <div className={`text-[9px] font-bold uppercase tracking-tighter text-slate-400 dark:text-slate-500 px-2`}>
                   {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   {isMine && ` • ${msg.is_read ? 'Lu' : 'Envoyé'}`}
                 </div>
@@ -353,12 +353,12 @@ const ChatPage: React.FC = () => {
       </div>
 
       {/* Input de Message */}
-      <div className="p-4 bg-white border-t border-slate-50">
+      <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-50 dark:border-white/5">
         {inputText === '' && (
           <button
             onClick={handleAiAssist}
             disabled={generating}
-            className="mb-3 flex items-center gap-2 text-[10px] font-medium uppercase tracking-prestige text-secondary bg-purple-50 px-4 py-2 rounded-full hover:bg-purple-100 transition-colors"
+            className="mb-3 flex items-center gap-2 text-[10px] font-medium uppercase tracking-prestige text-secondary bg-purple-50 dark:bg-purple-900/20 px-4 py-2 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
           >
             {generating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
             {t('ai_nudge')}
@@ -371,7 +371,7 @@ const ChatPage: React.FC = () => {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 transition-colors"
+              className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl text-slate-400 dark:text-slate-500 transition-colors"
             >
               <ImageIcon size={20} />
             </button>
@@ -379,7 +379,7 @@ const ChatPage: React.FC = () => {
               type="button"
               onClick={() => videoInputRef.current?.click()}
               disabled={uploading}
-              className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 transition-colors"
+              className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl text-slate-400 dark:text-slate-500 transition-colors"
             >
               <Video size={20} />
             </button>
@@ -393,7 +393,7 @@ const ChatPage: React.FC = () => {
             onChange={(e) => setInputText(e.target.value)}
             disabled={uploading}
             placeholder={uploading ? "Envoi..." : t('write_message')}
-            className="flex-1 min-w-0 bg-slate-50 border-none px-4 py-3 md:py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium disabled:opacity-50 text-sm md:text-base"
+            className="flex-1 min-w-0 bg-slate-50 dark:bg-slate-800 border-none px-4 py-3 md:py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium disabled:opacity-50 text-sm md:text-base text-slate-900 dark:text-white"
           />
           <button
             type="submit"

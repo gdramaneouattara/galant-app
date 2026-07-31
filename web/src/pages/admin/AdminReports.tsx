@@ -106,45 +106,45 @@ const AdminReports: React.FC = () => {
     <div className="space-y-6 lg:space-y-10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Alertes</h2>
-          <p className="mt-1 text-sm font-medium text-slate-500 sm:text-lg">Signalements et photos a moderer.</p>
+          <h2 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">Alertes</h2>
+          <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400 sm:text-lg">Signalements et photos a moderer.</p>
         </div>
         <button
           onClick={fetchData}
-          className="flex w-fit items-center gap-2 rounded-xl bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 shadow-sm"
+          className="flex w-fit items-center gap-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/10 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 shadow-sm transition-colors"
         >
           <RefreshCw size={14} />
           Actualiser
         </button>
       </div>
 
-      <section className="rounded-[2rem] border border-slate-50 bg-white p-4 shadow-xl sm:p-6 lg:p-8">
+      <section className="rounded-[2rem] border border-slate-50 dark:border-white/5 bg-white dark:bg-slate-900 p-4 shadow-xl dark:shadow-none sm:p-6 lg:p-8 transition-colors">
         <div className="mb-5 flex items-center justify-between gap-4">
-          <h3 className="flex items-center gap-2 text-lg font-black text-slate-900">
+          <h3 className="flex items-center gap-2 text-lg font-black text-slate-900 dark:text-white">
             <AlertCircle className="text-red-500" size={20} />
             Signalements
           </h3>
-          <span className="rounded-full bg-red-50 px-3 py-1 text-[10px] font-black text-red-500">{reports.filter(r => r.status === 'PENDING').length} ouverts</span>
+          <span className="rounded-full bg-red-50 dark:bg-red-900/20 px-3 py-1 text-[10px] font-black text-red-500 dark:text-red-400">{reports.filter(r => r.status === 'PENDING').length} ouverts</span>
         </div>
 
         <div className="space-y-3">
           {reports.length === 0 ? (
-            <p className="rounded-2xl bg-slate-50 p-6 text-center text-sm font-bold text-slate-400">Aucun signalement.</p>
+            <p className="rounded-2xl bg-slate-50 dark:bg-slate-800 p-6 text-center text-sm font-bold text-slate-400 dark:text-slate-500">Aucun signalement.</p>
           ) : reports.map(report => (
-            <div key={report.id} className="rounded-2xl border border-slate-100 p-4">
+            <div key={report.id} className="rounded-2xl border border-slate-100 dark:border-white/5 p-4">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <p className="text-sm font-black text-slate-900">
+                  <p className="text-sm font-black text-slate-900 dark:text-white">
                     {report.reported_user?.name || report.reported_user_id}
                   </p>
-                  <p className="mt-1 text-xs font-bold uppercase tracking-widest text-slate-400">{report.reason || 'GENERAL'} - {report.status}</p>
-                  {report.details && <p className="mt-3 text-sm font-medium text-slate-600">{report.details}</p>}
+                  <p className="mt-1 text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">{report.reason || 'GENERAL'} - {report.status}</p>
+                  {report.details && <p className="mt-3 text-sm font-medium text-slate-600 dark:text-slate-400">{report.details}</p>}
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <button
                     onClick={() => resolveReport(report.id)}
                     disabled={processingId === report.id || report.status !== 'PENDING'}
-                    className="rounded-xl bg-slate-900 p-3 text-white disabled:opacity-40"
+                    className="rounded-xl bg-slate-900 dark:bg-white p-3 text-white dark:text-slate-900 disabled:opacity-40"
                     title="Marquer traite"
                   >
                     <CheckCircle2 size={18} />
@@ -152,7 +152,7 @@ const AdminReports: React.FC = () => {
                   <button
                     onClick={() => resolveReport(report.id, true)}
                     disabled={processingId === report.id || report.status !== 'PENDING'}
-                    className="rounded-xl bg-red-50 p-3 text-red-500 disabled:opacity-40"
+                    className="rounded-xl bg-red-50 dark:bg-red-900/20 p-3 text-red-500 disabled:opacity-40"
                     title="Suspendre"
                   >
                     <Ban size={18} />
@@ -164,31 +164,31 @@ const AdminReports: React.FC = () => {
         </div>
       </section>
 
-      <section className="rounded-[2rem] border border-slate-50 bg-white p-4 shadow-xl sm:p-6 lg:p-8">
+      <section className="rounded-[2rem] border border-slate-50 dark:border-white/5 bg-white dark:bg-slate-900 p-4 shadow-xl dark:shadow-none sm:p-6 lg:p-8 transition-colors">
         <div className="mb-5 flex items-center justify-between gap-4">
-          <h3 className="flex items-center gap-2 text-lg font-black text-slate-900">
+          <h3 className="flex items-center gap-2 text-lg font-black text-slate-900 dark:text-white">
             <Camera className="text-blue-500" size={20} />
             Photos en attente
           </h3>
-          <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black text-blue-500">{photoReviews.length}</span>
+          <span className="rounded-full bg-blue-50 dark:bg-blue-900/20 px-3 py-1 text-[10px] font-black text-blue-500 dark:text-blue-400">{photoReviews.length}</span>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {photoReviews.length === 0 ? (
-            <p className="rounded-2xl bg-slate-50 p-6 text-center text-sm font-bold text-slate-400 sm:col-span-2 xl:col-span-3">Aucune photo a moderer.</p>
+            <p className="rounded-2xl bg-slate-50 dark:bg-slate-800 p-6 text-center text-sm font-bold text-slate-400 dark:text-slate-500 sm:col-span-2 xl:col-span-3">Aucune photo a moderer.</p>
           ) : photoReviews.map(review => (
-            <div key={review.id} className="overflow-hidden rounded-2xl border border-slate-100">
+            <div key={review.id} className="overflow-hidden rounded-2xl border border-slate-100 dark:border-white/5">
               <img src={getPhotoUrl(review)} className="aspect-[4/5] w-full object-cover" alt="" />
               <div className="space-y-4 p-4">
                 <div>
-                  <p className="text-sm font-black text-slate-900">{review.user?.name || review.user_id}</p>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{review.status}</p>
+                  <p className="text-sm font-black text-slate-900 dark:text-white">{review.user?.name || review.user_id}</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">{review.status}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => reviewPhoto(review.id, 'REJECTED')}
                     disabled={processingId === review.id}
-                    className="flex items-center justify-center gap-2 rounded-xl bg-red-50 py-3 text-[10px] font-black uppercase tracking-widest text-red-500 disabled:opacity-40"
+                    className="flex items-center justify-center gap-2 rounded-xl bg-red-50 dark:bg-red-900/20 py-3 text-[10px] font-black uppercase tracking-widest text-red-500 disabled:opacity-40"
                   >
                     <XCircle size={16} />
                     Rejeter
@@ -196,7 +196,7 @@ const AdminReports: React.FC = () => {
                   <button
                     onClick={() => reviewPhoto(review.id, 'APPROVED')}
                     disabled={processingId === review.id}
-                    className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 py-3 text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-40"
+                    className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 dark:bg-white py-3 text-[10px] font-black uppercase tracking-widest text-white dark:text-slate-900 disabled:opacity-40"
                   >
                     <ShieldCheck size={16} />
                     Valider

@@ -156,13 +156,13 @@ const AdminDashboard: React.FC = () => {
     <div className="space-y-6 lg:space-y-10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Vue d'ensemble</h2>
-          <p className="mt-1 text-sm font-medium text-slate-500 sm:text-lg">Pilotage reel de la communaute Galant.</p>
+          <h2 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">Vue d'ensemble</h2>
+          <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400 sm:text-lg">Pilotage reel de la communaute Galant.</p>
         </div>
         <button
           onClick={fetchStats}
           disabled={loading}
-          className="flex w-fit items-center gap-2 rounded-xl border border-slate-100 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 shadow-sm disabled:opacity-50"
+          className="flex w-fit items-center gap-2 rounded-xl border border-slate-100 dark:border-white/10 bg-white dark:bg-slate-900 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 shadow-sm disabled:opacity-50"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           Actualiser
@@ -171,21 +171,21 @@ const AdminDashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((stat) => (
-          <div key={stat.label} className="rounded-[2rem] border border-slate-50 bg-white p-6 shadow-xl shadow-slate-200/50">
+          <div key={stat.label} className="rounded-[2rem] border border-slate-50 dark:border-white/5 bg-white dark:bg-slate-900 p-6 shadow-xl shadow-slate-200/50 dark:shadow-none">
             <div className="mb-5 flex items-start justify-between gap-4">
-              <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${stat.bg} ${stat.color}`}>
+              <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${stat.bg} dark:bg-opacity-10 ${stat.color}`}>
                 <stat.icon size={24} />
               </div>
             </div>
-            <span className="block text-3xl font-black tracking-tighter text-slate-900">{stat.value}</span>
-            <span className="mt-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">{stat.label}</span>
-            <span className="mt-3 block text-xs font-bold text-slate-500">{stat.detail}</span>
+            <span className="block text-3xl font-black tracking-tighter text-slate-900 dark:text-white">{stat.value}</span>
+            <span className="mt-1 block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">{stat.label}</span>
+            <span className="mt-3 block text-xs font-bold text-slate-500 dark:text-slate-400">{stat.detail}</span>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <div className="rounded-[2rem] bg-slate-900 p-6 text-white shadow-2xl lg:p-10">
+        <div className="rounded-[2rem] bg-slate-900 dark:bg-slate-950 p-6 text-white shadow-2xl lg:p-10">
           <div className="mb-8 flex items-center justify-between gap-4">
             <h3 className="flex items-center gap-3 text-lg font-black italic sm:text-xl">
               <PieChart className="text-primary" />
@@ -228,13 +228,13 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-slate-50 bg-white p-6 shadow-xl lg:p-10">
-          <h3 className="mb-6 text-xl font-black italic">Maintenance & outils</h3>
+        <div className="rounded-[2rem] border border-slate-50 dark:border-white/5 bg-white dark:bg-slate-900 p-6 shadow-xl lg:p-10 dark:shadow-none">
+          <h3 className="mb-6 text-xl font-black italic text-slate-900 dark:text-white">Maintenance & outils</h3>
           <div className="grid grid-cols-1 gap-4">
             <button
               onClick={handleReconcileCounters}
               disabled={reconciling}
-              className="flex items-center justify-center gap-3 rounded-2xl bg-slate-900 px-6 py-4 text-xs font-black uppercase tracking-widest text-white transition-all disabled:opacity-50"
+              className="flex items-center justify-center gap-3 rounded-2xl bg-slate-900 dark:bg-white px-6 py-4 text-xs font-black uppercase tracking-widest text-white dark:text-slate-900 transition-all disabled:opacity-50"
             >
               {reconciling ? <RefreshCw className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
               Reconciler likes/roses
@@ -250,7 +250,7 @@ const AdminDashboard: React.FC = () => {
             </button>
           </div>
 
-          <div className="mt-6 rounded-2xl bg-slate-50 p-5 text-xs font-medium leading-relaxed text-slate-500">
+          <div className="mt-6 rounded-2xl bg-slate-50 dark:bg-slate-800 p-5 text-xs font-medium leading-relaxed text-slate-500 dark:text-slate-400">
             Les donnees de chiffre d'affaires ne sont pas encore exposees par l'API admin. Le dashboard n'affiche donc plus de faux CA.
           </div>
         </div>

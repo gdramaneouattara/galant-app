@@ -162,23 +162,23 @@ const MatchesPage: React.FC = () => {
       {/* Nouveaux Matches (Horizontal) */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
-          <h3 className="text-xs font-medium uppercase tracking-prestige text-slate-400">{t('matches')}</h3>
-          <div className="h-[1px] flex-1 bg-slate-100"></div>
+          <h3 className="text-xs font-medium uppercase tracking-prestige text-slate-400 dark:text-slate-500">{t('matches')}</h3>
+          <div className="h-[1px] flex-1 bg-slate-100 dark:bg-white/5"></div>
         </div>
 
         <div className="flex gap-5 overflow-x-auto pb-4 no-scrollbar -mx-2 px-2">
           {recentMatches.length === 0 ? (
             <div
               onClick={() => navigate('/')}
-              className="flex-1 bg-gradient-to-br from-white to-slate-50 p-8 rounded-[2.5rem] border border-dashed border-slate-300 text-center cursor-pointer hover:border-primary/50 transition-all group shadow-sm hover:shadow-md"
+              className="flex-1 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 p-8 rounded-[2.5rem] border border-dashed border-slate-300 dark:border-white/10 text-center cursor-pointer hover:border-primary/50 transition-all group shadow-sm hover:shadow-md"
             >
-              <div className="bg-white w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+              <div className="bg-white dark:bg-slate-800 w-14 h-14 rounded-2xl shadow-lg flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                 <Sparkles size={28} className="text-primary animate-pulse" />
               </div>
-              <p className="text-slate-900 font-extrabold text-lg mb-1">
+              <p className="text-slate-900 dark:text-white font-extrabold text-lg mb-1">
                 {t('no_matches_yet') || 'Prêt pour une rencontre ?'}
               </p>
-              <p className="text-slate-500 font-medium text-sm mb-4">
+              <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-4">
                 {t('swipe_to_start') || 'Swippez pour obtenir vos premiers matches !'}
               </p>
               <button className="bg-primary text-white px-6 py-2 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:scale-105 transition-transform active:scale-95">
@@ -193,11 +193,11 @@ const MatchesPage: React.FC = () => {
                 className="flex-shrink-0 group flex flex-col items-center gap-3"
               >
                 <div className="relative">
-                  <div className="w-20 h-20 rounded-[1.8rem] border-2 border-white shadow-xl overflow-hidden group-hover:scale-105 transition-transform ring-2 ring-primary/20">
+                  <div className="w-20 h-20 rounded-[1.8rem] border-2 border-white dark:border-slate-800 shadow-xl overflow-hidden group-hover:scale-105 transition-transform ring-2 ring-primary/20">
                     <img src={otherUser.photos?.[0]} className="w-full h-full object-cover" alt="" />
                   </div>
                   {/* Petit badge online optionnel */}
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white rounded-full"></div>
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white dark:border-slate-800 rounded-full"></div>
                 </div>
                 <span className="text-xs font-serif italic tracking-tighter text-slate-800 dark:text-slate-300">{otherUser.name}</span>
               </button>
@@ -209,27 +209,27 @@ const MatchesPage: React.FC = () => {
       {/* Liste des Conversations */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
-          <h3 className="text-xs font-medium uppercase tracking-prestige text-slate-400">Conversations</h3>
-          <div className="h-[1px] flex-1 bg-slate-100"></div>
+          <h3 className="text-xs font-medium uppercase tracking-prestige text-slate-400 dark:text-slate-500">Conversations</h3>
+          <div className="h-[1px] flex-1 bg-slate-100 dark:bg-white/5"></div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-white/5 overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-white/5 overflow-hidden transition-colors">
           {conversations.length === 0 && filteredVenueChats.length === 0 ? (
             <div className="p-16 text-center space-y-4">
-              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
-                <MessageSquare size={40} className="text-slate-200" />
+              <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto transition-colors">
+                <MessageSquare size={40} className="text-slate-200 dark:text-slate-700" />
               </div>
-              <p className="font-bold text-slate-400 text-lg">
+              <p className="font-bold text-slate-400 dark:text-slate-500 text-lg transition-colors">
                 {searchQuery ? "Aucun résultat pour cette recherche." : "Aucune conversation pour le moment."}
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-slate-50 dark:divide-white/5">
               {filteredVenueChats.map((chat) => (
                 <button
                   key={chat.id}
                   onClick={() => navigate(`/chat/${chat.id}`, { state: { venueChatId: chat.id, venueName: chat.venues?.name } })}
-                  className="w-full flex items-center gap-5 p-6 hover:bg-amber-50/50 transition-all text-left group"
+                  className="w-full flex items-center gap-5 p-6 hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-all text-left group"
                 >
                   <div className="relative flex-shrink-0">
                     <img
@@ -237,7 +237,7 @@ const MatchesPage: React.FC = () => {
                       className="w-16 h-16 rounded-2xl object-cover shadow-md group-hover:scale-105 transition-transform"
                       alt=""
                     />
-                    <div className="absolute -bottom-1 -right-1 bg-amber-500 text-white px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase border border-white">
+                    <div className="absolute -bottom-1 -right-1 bg-amber-500 text-white px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase border border-white dark:border-slate-800">
                       Guide
                     </div>
                   </div>
@@ -251,7 +251,7 @@ const MatchesPage: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="bg-slate-100 p-1.5 rounded-lg group-hover:bg-primary/10 group-hover:text-primary transition-colors text-slate-300">
+                  <div className="bg-slate-100 dark:bg-white/5 p-1.5 rounded-lg group-hover:bg-primary/10 group-hover:text-primary transition-colors text-slate-300 dark:text-slate-700">
                     <ChevronRight size={18} />
                   </div>
                 </button>
@@ -260,7 +260,7 @@ const MatchesPage: React.FC = () => {
                 <button
                   key={match.id}
                   onClick={() => navigate(`/chat/${match.id}`)}
-                  className="w-full flex items-center gap-5 p-6 hover:bg-slate-50/50 transition-all text-left group"
+                  className="w-full flex items-center gap-5 p-6 hover:bg-slate-50/50 dark:hover:bg-white/5 transition-all text-left group"
                 >
                   <div className="relative flex-shrink-0">
                     <img
@@ -269,7 +269,7 @@ const MatchesPage: React.FC = () => {
                       alt=""
                     />
                     {unreadCount > 0 && (
-                      <div className="absolute -top-2 -right-2 bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white shadow-lg animate-bounce">
+                      <div className="absolute -top-2 -right-2 bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white dark:border-slate-800 shadow-lg animate-bounce">
                         {unreadCount}
                       </div>
                     )}
@@ -289,10 +289,10 @@ const MatchesPage: React.FC = () => {
                   </div>
 
                   <div className="flex flex-col items-end gap-3 flex-shrink-0">
-                    <span className="text-[10px] font-medium uppercase tracking-prestige text-slate-400">
+                    <span className="text-[10px] font-medium uppercase tracking-prestige text-slate-400 dark:text-slate-500">
                       {lastActivityAt ? new Date(lastActivityAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                     </span>
-                    <div className="bg-slate-100 p-1.5 rounded-lg group-hover:bg-primary/10 group-hover:text-primary transition-colors text-slate-300">
+                    <div className="bg-slate-100 dark:bg-white/5 p-1.5 rounded-lg group-hover:bg-primary/10 group-hover:text-primary transition-colors text-slate-300 dark:text-slate-700">
                       <ChevronRight size={18} />
                     </div>
                   </div>

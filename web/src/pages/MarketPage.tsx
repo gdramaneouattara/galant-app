@@ -170,11 +170,11 @@ const MarketPage: React.FC = () => {
     </div>
 
       {/* Retention Card */}
-      <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-8 rounded-[3rem] text-white space-y-4 shadow-2xl relative overflow-hidden">
+      <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-8 rounded-[3rem] text-white space-y-4 shadow-2xl dark:shadow-none relative overflow-hidden transition-colors">
         <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl"></div>
         <ShoppingCart className="text-primary mb-2" size={32} />
         <h3 className="text-2xl font-black italic">Le saviez-vous ?</h3>
-        <p className="text-slate-400 font-medium text-sm leading-relaxed max-w-md">
+        <p className="text-slate-400 dark:text-slate-500 font-medium text-sm leading-relaxed max-w-md transition-colors">
           Les membres **Privilège** peuvent créer des alertes de prix. Nous vous envoyons une notification dès que votre produit favori baisse de prix.
         </p>
         <button className="text-primary font-black text-xs uppercase tracking-widest hover:underline flex items-center gap-2">
