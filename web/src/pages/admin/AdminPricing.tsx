@@ -71,8 +71,8 @@ const AdminPricing: React.FC = () => {
     <div className="space-y-6 lg:space-y-10 max-w-4xl mx-auto">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-3xl sm:text-4xl font-black italic tracking-tighter">Gestion des Tarifs</h2>
-          <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-2">Configurez les coûts de l'écosystème Galant</p>
+          <h2 className="text-3xl sm:text-4xl font-black italic tracking-tighter text-slate-900 dark:text-white transition-colors">Gestion des Tarifs</h2>
+          <p className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-2 transition-colors">Configurez les coûts de l'écosystème Galant</p>
         </div>
         <button
           onClick={handleUpdate}
@@ -86,12 +86,12 @@ const AdminPricing: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Interactions Individuelles */}
-        <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-xl border border-slate-100 space-y-6">
+        <div className="bg-white dark:bg-slate-900 rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-xl dark:shadow-none border border-slate-100 dark:border-white/5 space-y-6 transition-colors">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-primary">
+            <div className="w-10 h-10 bg-rose-50 dark:bg-rose-900/20 rounded-xl flex items-center justify-center text-primary transition-colors">
               <Heart size={20} />
             </div>
-            <h3 className="font-black text-lg uppercase tracking-tight">Interactions</h3>
+            <h3 className="font-black text-lg uppercase tracking-tight text-slate-900 dark:text-white transition-colors">Interactions</h3>
           </div>
 
           <div className="space-y-4">
@@ -104,15 +104,15 @@ const AdminPricing: React.FC = () => {
               { id: 'LIKES_INBOX_2H', label: 'Déblocage Likes (2h)', icon: Heart }
             ].map(item => (
               <div key={item.id} className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.label}</label>
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors">{item.label}</label>
                 <div className="relative">
                   <input
                     type="number"
                     value={pricing.PRICES[item.id]}
                     onChange={(e) => updateField('PRICES', item.id, e.target.value)}
-                    className="w-full bg-slate-50 border-none rounded-xl py-3 pl-10 pr-4 font-bold text-slate-900"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl py-3 pl-10 pr-4 font-bold text-slate-900 dark:text-white transition-colors"
                   />
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 font-bold text-xs">F</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 font-bold text-xs transition-colors">F</span>
                 </div>
               </div>
             ))}
@@ -120,12 +120,12 @@ const AdminPricing: React.FC = () => {
         </div>
 
         {/* Packs de Roses */}
-        <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-xl border border-slate-100 space-y-6">
+        <div className="bg-white dark:bg-slate-900 rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-xl dark:shadow-none border border-slate-100 dark:border-white/5 space-y-6 transition-colors">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500">
+            <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center text-amber-500 transition-colors">
               <Gem size={20} />
             </div>
-            <h3 className="font-black text-lg uppercase tracking-tight">Packs Solde Roses</h3>
+            <h3 className="font-black text-lg uppercase tracking-tight text-slate-900 dark:text-white transition-colors">Packs Solde Roses</h3>
           </div>
 
           <div className="space-y-4">
@@ -135,15 +135,15 @@ const AdminPricing: React.FC = () => {
               { id: 'ROSE_10', label: '10 Roses a consommer' }
             ].map(item => (
               <div key={item.id} className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.label}</label>
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors">{item.label}</label>
                 <div className="relative">
                   <input
                     type="number"
                     value={pricing.ROSE_PACKS?.[item.id]?.amount ?? 0}
                     onChange={(e) => updateNestedField('ROSE_PACKS', item.id, 'amount', e.target.value)}
-                    className="w-full bg-slate-50 border-none rounded-xl py-3 pl-10 pr-4 font-bold text-slate-900"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl py-3 pl-10 pr-4 font-bold text-slate-900 dark:text-white transition-colors"
                   />
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 font-bold text-xs">F</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 font-bold text-xs transition-colors">F</span>
                 </div>
               </div>
             ))}
@@ -151,12 +151,12 @@ const AdminPricing: React.FC = () => {
         </div>
 
         {/* Abonnements */}
-        <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-xl border border-slate-100 space-y-6">
+        <div className="bg-white dark:bg-slate-900 rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-xl dark:shadow-none border border-slate-100 dark:border-white/5 space-y-6 transition-colors">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500">
+            <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center text-amber-500 transition-colors">
               <Gem size={20} />
             </div>
-            <h3 className="font-black text-lg uppercase tracking-tight">Abonnements</h3>
+            <h3 className="font-black text-lg uppercase tracking-tight text-slate-900 dark:text-white transition-colors">Abonnements</h3>
           </div>
 
           <div className="space-y-4">
@@ -167,15 +167,15 @@ const AdminPricing: React.FC = () => {
               { id: 'PRESTIGE', label: 'Partenaire - Prestige', cat: 'PARTNER_PLAN_AMOUNTS' }
             ].map(item => (
               <div key={item.id} className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.label}</label>
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors">{item.label}</label>
                 <div className="relative">
                   <input
                     type="number"
                     value={pricing[item.cat][item.id]}
                     onChange={(e) => updateField(item.cat, item.id, e.target.value)}
-                    className="w-full bg-slate-50 border-none rounded-xl py-3 pl-10 pr-4 font-bold text-slate-900"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl py-3 pl-10 pr-4 font-bold text-slate-900 dark:text-white transition-colors"
                   />
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 font-bold text-xs">F</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 font-bold text-xs transition-colors">F</span>
                 </div>
               </div>
             ))}

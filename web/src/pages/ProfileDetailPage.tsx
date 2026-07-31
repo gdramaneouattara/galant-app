@@ -135,7 +135,7 @@ const ProfileDetailPage: React.FC = () => {
       <div className="flex flex-col md:flex-row gap-8">
         {/* Colonne Gauche: Photos */}
         <div className="w-full md:w-1/2 space-y-4">
-          <div className="relative aspect-[3/4] rounded-[3rem] overflow-hidden shadow-2xl border-4 border-white">
+          <div className="relative aspect-[3/4] rounded-[3rem] overflow-hidden shadow-2xl dark:shadow-none border-4 border-white dark:border-slate-800 transition-colors">
             <img src={coverPhoto} className="w-full h-full object-cover" alt="" />
             <button
               onClick={() => navigate(-1)}
@@ -170,50 +170,50 @@ const ProfileDetailPage: React.FC = () => {
 
         {/* Colonne Droite: Détails */}
         <div className="w-full md:w-1/2 space-y-6">
-          <div className="bg-white rounded-[3rem] p-8 shadow-xl border border-slate-50 space-y-6">
+          <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-8 shadow-xl dark:shadow-none border border-slate-50 dark:border-white/5 space-y-6 transition-colors">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <h2 className="text-4xl font-serif italic tracking-tighter text-slate-900">{profile.name}, {profile.age}</h2>
+                <h2 className="text-4xl font-serif italic tracking-tighter text-slate-900 dark:text-white transition-colors">{profile.name}, {profile.age}</h2>
                 {profile.is_verified && <ShieldCheck size={28} className="text-blue-500 fill-blue-50" />}
               </div>
-              <div className="flex items-center gap-2 text-slate-400 font-medium uppercase tracking-prestige text-xs">
+              <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 font-medium uppercase tracking-prestige text-xs transition-colors">
                 <MapPin size={16} className="text-primary" />
                 {profile.city || 'Cameroun'}
                 {profile.distance_km && <span> • {profile.distance_km.toFixed(1)} km</span>}
               </div>
-              <div className="inline-block bg-rose-50 text-primary px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter">
+              <div className="inline-block bg-rose-50 dark:bg-rose-900/20 text-primary px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter transition-colors">
                 🌹 {profile.roses_count || 0} roses recues
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-50 p-4 rounded-2xl space-y-1">
-                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-prestige flex items-center gap-1">
+              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl space-y-1 transition-colors">
+                <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige flex items-center gap-1 transition-colors">
                   <UserIcon size={12} /> Genre
                 </span>
-                <p className="font-bold text-slate-700">{GENDER_LABELS[profile.gender] || profile.gender || 'Non renseigné'}</p>
+                <p className="font-bold text-slate-700 dark:text-slate-300 transition-colors">{GENDER_LABELS[profile.gender] || profile.gender || 'Non renseigné'}</p>
               </div>
-              <div className="bg-slate-50 p-4 rounded-2xl space-y-1">
-                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-prestige flex items-center gap-1">
+              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl space-y-1 transition-colors">
+                <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige flex items-center gap-1 transition-colors">
                   <Target size={12} /> Objectif
                 </span>
-                <p className="font-bold text-slate-700">{RELATIONSHIP_GOAL_LABELS[profile.relationship_goal] || 'En recherche'}</p>
+                <p className="font-bold text-slate-700 dark:text-slate-300 transition-colors">{RELATIONSHIP_GOAL_LABELS[profile.relationship_goal] || 'En recherche'}</p>
               </div>
             </div>
 
             <div className="space-y-3">
-              <h3 className="text-xs font-medium text-slate-400 uppercase tracking-prestige">À propos</h3>
-              <p className="text-slate-600 font-medium leading-relaxed italic">
+              <h3 className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige transition-colors">À propos</h3>
+              <p className="text-slate-600 dark:text-slate-400 font-medium leading-relaxed italic transition-colors">
                 "{profile.bio || 'Ce membre préfère garder une part de mystère...'}"
               </p>
             </div>
 
             {profile.interests?.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-xs font-medium text-slate-400 uppercase tracking-prestige">Centres d'intérêt</h3>
+                <h3 className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige transition-colors">Centres d'intérêt</h3>
                 <div className="flex flex-wrap gap-2">
                   {profile.interests.map((it: string) => (
-                    <span key={it} className="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold">
+                    <span key={it} className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-4 py-2 rounded-xl text-xs font-bold transition-colors">
                       {it}
                     </span>
                   ))}
@@ -226,7 +226,7 @@ const ProfileDetailPage: React.FC = () => {
               <button
                 onClick={() => onLike()}
                 disabled={liking}
-                className="bg-primary text-white py-5 rounded-2xl font-medium text-sm uppercase tracking-prestige flex items-center justify-center gap-3 shadow-lg shadow-red-100 hover:scale-[1.02] active:scale-95 transition-all"
+                className="bg-primary text-white py-5 rounded-2xl font-medium text-sm uppercase tracking-prestige flex items-center justify-center gap-3 shadow-lg shadow-red-100 dark:shadow-none hover:scale-[1.02] active:scale-95 transition-all"
               >
                 {liking ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Heart size={20} fill="currentColor" />}
                 Envoyer un Like
@@ -235,7 +235,7 @@ const ProfileDetailPage: React.FC = () => {
               <button
                 onClick={() => onLike(true)}
                 disabled={superLiking}
-                className="bg-white border-2 border-primary text-primary py-5 rounded-2xl font-medium text-sm uppercase tracking-prestige flex items-center justify-center gap-3 hover:bg-red-50 transition-all active:scale-95"
+                className="bg-white dark:bg-slate-800 border-2 border-primary text-primary dark:text-white py-5 rounded-2xl font-medium text-sm uppercase tracking-prestige flex items-center justify-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all active:scale-95"
               >
                 {superLiking ? <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div> : <span className="text-xl">🌹</span>}
                 Offrir un bouquet
@@ -243,7 +243,7 @@ const ProfileDetailPage: React.FC = () => {
 
               <button
                 onClick={onDirectMessage}
-                className="bg-blue-600 text-white py-5 rounded-2xl font-medium text-sm uppercase tracking-prestige flex items-center justify-center gap-3 shadow-lg shadow-blue-100 hover:scale-[1.02] active:scale-95 transition-all"
+                className="bg-blue-600 text-white py-5 rounded-2xl font-medium text-sm uppercase tracking-prestige flex items-center justify-center gap-3 shadow-lg shadow-blue-100 dark:shadow-none hover:scale-[1.02] active:scale-95 transition-all"
               >
                 <MessageCircle size={20} />
                 Message Direct

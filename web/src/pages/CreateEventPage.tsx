@@ -96,25 +96,25 @@ const CreateEventPage: React.FC = () => {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 p-8 space-y-6">
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-xl dark:shadow-none border border-slate-100 dark:border-white/10 p-8 space-y-6 transition-colors">
         {/* Photo de l'événement */}
         <div className="space-y-4">
-          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Image de couverture</h3>
-          <div className="relative aspect-video rounded-3xl overflow-hidden bg-slate-100 border-2 border-slate-50">
+          <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors">Image de couverture</h3>
+          <div className="relative aspect-video rounded-3xl overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-slate-50 dark:border-white/5 transition-colors">
             {form.photoUrl ? (
               <img src={form.photoUrl} className="w-full h-full object-cover" alt="" />
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2">
+              <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 gap-2 transition-colors">
                 <ImageIcon size={40} strokeWidth={1} />
                 <span className="text-xs font-bold">Format 16:9 recommandé</span>
               </div>
             )}
-            <label className="absolute bottom-4 right-4 bg-white p-3 rounded-2xl shadow-lg cursor-pointer hover:scale-105 active:scale-95 transition-all text-primary">
+            <label className="absolute bottom-4 right-4 bg-white dark:bg-slate-700 p-3 rounded-2xl shadow-lg cursor-pointer hover:scale-105 active:scale-95 transition-all text-primary">
               <Camera size={20} />
               <input type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} />
             </label>
             {uploading && (
-              <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center">
+              <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm flex items-center justify-center">
                 <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             )}
@@ -123,7 +123,7 @@ const CreateEventPage: React.FC = () => {
 
         {/* Titre */}
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-bold text-slate-700 ml-1">
+          <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 ml-1 transition-colors">
             <Tag size={16} className="text-primary" />
             Titre de l'événement
           </label>
@@ -132,13 +132,13 @@ const CreateEventPage: React.FC = () => {
             value={form.title}
             onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))}
             placeholder="Ex: Soirée Blanche, Offre Spéciale Dîner..."
-            className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium"
+            className="w-full px-6 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium text-slate-900 dark:text-white"
           />
         </div>
 
         {/* Type d'événement */}
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-bold text-slate-700 ml-1">
+          <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 ml-1 transition-colors">
             <Calendar size={16} className="text-primary" />
             Type
           </label>
@@ -148,7 +148,7 @@ const CreateEventPage: React.FC = () => {
                 key={t.value}
                 type="button"
                 onClick={() => setForm(prev => ({ ...prev, eventType: t.value }))}
-                className={`px-6 py-3 rounded-xl font-bold text-sm transition-all ${form.eventType === t.value ? 'bg-primary text-white shadow-lg' : 'bg-slate-50 text-slate-500'}`}
+                className={`px-6 py-3 rounded-xl font-bold text-sm transition-all ${form.eventType === t.value ? 'bg-primary text-white shadow-lg dark:shadow-none' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}
               >
                 {t.label}
               </button>
@@ -158,7 +158,7 @@ const CreateEventPage: React.FC = () => {
 
         {/* Description */}
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-bold text-slate-700 ml-1">
+          <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 ml-1 transition-colors">
             <AlignLeft size={16} className="text-primary" />
             Description / Détails
           </label>
@@ -167,14 +167,14 @@ const CreateEventPage: React.FC = () => {
             onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
             rows={4}
             placeholder="Présentez les détails de votre offre ou programme..."
-            className="w-full p-6 rounded-[2rem] bg-slate-50 border-none outline-none focus:ring-2 focus:ring-primary/10 font-medium text-slate-700"
+            className="w-full p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-800 border-none outline-none focus:ring-2 focus:ring-primary/10 font-medium text-slate-700 dark:text-slate-300 transition-colors"
           />
         </div>
 
         {/* Horaires */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-bold text-slate-700 ml-1">
+            <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 ml-1 transition-colors">
               <Clock size={16} className="text-primary" />
               Début
             </label>
@@ -182,19 +182,19 @@ const CreateEventPage: React.FC = () => {
               type="datetime-local"
               value={form.startsAt}
               onChange={e => setForm(prev => ({ ...prev, startsAt: e.target.value }))}
-              className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium"
+              className="w-full px-6 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium text-slate-900 dark:text-white"
             />
           </div>
           <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-bold text-slate-700 ml-1">
-              <Clock size={16} className="text-slate-400" />
+            <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 ml-1 transition-colors">
+              <Clock size={16} className="text-slate-400 dark:text-slate-500" />
               Fin / Expiration
             </label>
             <input
               type="datetime-local"
               value={form.expiresAt}
               onChange={e => setForm(prev => ({ ...prev, expiresAt: e.target.value }))}
-              className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium"
+              className="w-full px-6 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium text-slate-900 dark:text-white"
             />
           </div>
         </div>
@@ -202,7 +202,7 @@ const CreateEventPage: React.FC = () => {
         <button
           type="submit"
           disabled={submitting || uploading}
-          className="w-full bg-slate-900 text-white py-6 rounded-3xl font-black text-lg shadow-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30"
+          className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-6 rounded-3xl font-black text-lg shadow-xl dark:shadow-none hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30"
         >
           {submitting ? 'Publication en cours...' : 'PUBLIER L\'ÉVÉNEMENT'}
         </button>

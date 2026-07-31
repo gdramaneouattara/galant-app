@@ -373,13 +373,13 @@ const StoriesPage: React.FC = () => {
 
   if (locked) {
     return (
-      <div className="max-w-md mx-auto text-center py-16 bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-8 space-y-8">
-        <div className="w-20 h-20 bg-rose-50 text-primary rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-red-500/10">
+      <div className="max-w-md mx-auto text-center py-16 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl dark:shadow-none border border-slate-100 dark:border-white/10 p-8 space-y-8 transition-colors">
+        <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-primary rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-red-500/10 dark:shadow-none transition-colors">
           <Lock size={40} />
         </div>
         <div>
-          <h2 className="text-3xl font-black mb-2 tracking-tight">Stories exclusives</h2>
-          <p className="text-slate-500 font-medium leading-relaxed">
+          <h2 className="text-3xl font-black mb-2 tracking-tight text-slate-900 dark:text-white transition-colors">Stories exclusives</h2>
+          <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed transition-colors">
             Passez a Premium pour decouvrir les moments de vie de la communaute Galant et partager les votres.
           </p>
         </div>
@@ -403,10 +403,10 @@ const StoriesPage: React.FC = () => {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
-          <h2 className="text-4xl sm:text-5xl font-serif italic tracking-tighter text-slate-900 leading-none mb-3">
+          <h2 className="text-4xl sm:text-5xl font-serif italic tracking-tighter text-slate-900 dark:text-white leading-none mb-3 transition-colors">
             Galant <span className="text-primary italic">Stories</span>
           </h2>
-          <p className="text-slate-400 font-medium uppercase tracking-prestige text-sm">
+          <p className="text-slate-400 dark:text-slate-500 font-medium uppercase tracking-prestige text-sm transition-colors">
             Les moments de la communaute
           </p>
         </div>
@@ -415,9 +415,9 @@ const StoriesPage: React.FC = () => {
           type="button"
           onClick={() => void openStoryPicker()}
           disabled={uploading}
-          className="bg-slate-900 text-white px-6 sm:px-8 py-4 rounded-2xl shadow-2xl shadow-slate-900/20 hover:scale-[1.03] active:scale-95 transition-all flex items-center gap-3 font-medium text-xs uppercase tracking-prestige disabled:opacity-60"
+          className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 sm:px-8 py-4 rounded-2xl shadow-2xl shadow-slate-900/20 dark:shadow-none hover:scale-[1.03] active:scale-95 transition-all flex items-center gap-3 font-medium text-xs uppercase tracking-prestige disabled:opacity-60"
         >
-          {uploading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Plus size={20} />}
+          {uploading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white dark:border-slate-900/30 dark:border-t-slate-900 rounded-full animate-spin" /> : <Plus size={20} />}
           Partager un moment
         </button>
       </div>
@@ -427,12 +427,12 @@ const StoriesPage: React.FC = () => {
           type="button"
           onClick={() => void openStoryPicker()}
           disabled={uploading}
-          className="relative aspect-[9/16] rounded-[2rem] overflow-hidden bg-slate-100 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-primary/50 hover:bg-rose-50/30 transition-all group disabled:opacity-60"
+          className="relative aspect-[9/16] rounded-[2rem] overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-white/10 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-primary/50 hover:bg-rose-50/30 dark:hover:bg-rose-900/10 transition-all group disabled:opacity-60"
         >
-          <div className="w-14 h-14 rounded-2xl bg-white shadow-xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+          <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 shadow-xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
             {uploading ? <div className="w-5 h-5 border-2 border-primary/20 border-t-primary rounded-full animate-spin" /> : <Plus size={28} />}
           </div>
-          <p className="text-[10px] font-medium uppercase tracking-prestige text-slate-400 group-hover:text-primary transition-colors">Ma Story</p>
+          <p className="text-[10px] font-medium uppercase tracking-prestige text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors">Ma Story</p>
         </button>
 
         {statuses.map((status) => {
@@ -442,7 +442,7 @@ const StoriesPage: React.FC = () => {
               type="button"
               key={status.id}
               onClick={() => setSelectedStatusId(status.id)}
-              className="relative aspect-[9/16] rounded-[2rem] overflow-hidden bg-slate-900 shadow-xl cursor-pointer group hover:scale-[1.02] transition-all border-4 border-white text-left"
+              className="relative aspect-[9/16] rounded-[2rem] overflow-hidden bg-slate-900 shadow-xl cursor-pointer group hover:scale-[1.02] transition-all border-4 border-white dark:border-slate-800 text-left"
             >
               {status.message_type === 'VIDEO' ? (
                 <div className="w-full h-full relative bg-slate-900">

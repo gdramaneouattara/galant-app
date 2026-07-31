@@ -123,7 +123,7 @@ const GuidePage: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center py-40">
         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-slate-400 font-medium uppercase tracking-prestige text-[10px]">Sélection des meilleures adresses...</p>
+        <p className="text-slate-400 dark:text-slate-500 font-medium uppercase tracking-prestige text-[10px]">Sélection des meilleures adresses...</p>
       </div>
     );
   }
@@ -131,7 +131,7 @@ const GuidePage: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto pb-20 px-4 space-y-12">
       {/* Hero Header Ultra Premium */}
-      <div className="relative rounded-[4rem] overflow-hidden shadow-2xl bg-slate-950 min-h-[450px] flex items-center group">
+      <div className="relative rounded-[4rem] overflow-hidden shadow-2xl bg-slate-950 dark:bg-black min-h-[450px] flex items-center group">
         <div className="absolute inset-0">
           <img
             src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200"
@@ -155,7 +155,7 @@ const GuidePage: React.FC = () => {
             Le Guide <span className="text-primary not-italic">Privilège</span>
           </h2>
 
-          <p className="text-slate-400 text-lg md:text-xl font-medium leading-relaxed">
+          <p className="text-slate-400 dark:text-slate-500 text-lg md:text-xl font-medium leading-relaxed">
             Découvrez notre sélection exclusive de lieux d'exception pour des rendez-vous inoubliables.
           </p>
 
@@ -173,19 +173,19 @@ const GuidePage: React.FC = () => {
       </div>
 
       {/* Barre de Recherche et Filtres */}
-      <div className="flex flex-col md:flex-row gap-6 items-center justify-between sticky top-24 z-40 bg-slate-50/80 backdrop-blur-lg p-6 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50">
+      <div className="flex flex-col md:flex-row gap-6 items-center justify-between sticky top-24 z-40 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-lg p-6 rounded-[2.5rem] border border-slate-200 dark:border-white/10 shadow-xl shadow-slate-200/50 dark:shadow-none">
         <div className="relative flex-1 w-full group">
-          <Search size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
+          <Search size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-primary transition-colors" />
           <input
             type="text"
             placeholder="Rechercher un lieu, une ville..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white border border-slate-100 rounded-2xl py-4 pl-14 pr-6 text-slate-700 font-bold focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all shadow-sm"
+            className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-white/5 rounded-2xl py-4 pl-14 pr-6 text-slate-700 dark:text-slate-200 font-bold focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all shadow-sm"
           />
         </div>
 
-        <div className="flex gap-2 p-1 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-x-auto no-scrollbar w-full md:w-auto">
+        <div className="flex gap-2 p-1 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-white/5 shadow-sm overflow-x-auto no-scrollbar w-full md:w-auto">
           {[
             { id: 'ALL', label: 'Tous', icon: Globe },
             { id: 'RESTAURANT', label: 'Restaurants', icon: Utensils },
@@ -196,7 +196,7 @@ const GuidePage: React.FC = () => {
               key={cat.id}
               onClick={() => setActiveCategory(cat.id as any)}
               className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-[10px] uppercase tracking-prestige transition-all ${
-                activeCategory === cat.id ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'
+                activeCategory === cat.id ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg' : 'text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5'
               }`}
             >
               <cat.icon size={14} />
@@ -209,7 +209,7 @@ const GuidePage: React.FC = () => {
       {/* Grid des Lieux - Design Magazine */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
         {filteredVenues.map((venue) => (
-          <div key={venue.id} className="group bg-white rounded-[3.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.08)] border border-slate-100 overflow-hidden hover:scale-[1.02] transition-all duration-500 flex flex-col">
+          <div key={venue.id} className="group bg-white dark:bg-slate-900 rounded-[3.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.08)] dark:shadow-none border border-slate-100 dark:border-white/10 overflow-hidden hover:scale-[1.02] transition-all duration-500 flex flex-col">
             <div className="relative h-72 overflow-hidden">
               <img
                 src={venue.photo_url}
@@ -223,7 +223,7 @@ const GuidePage: React.FC = () => {
 
               <div className="absolute top-6 left-6 flex flex-col gap-2">
                 <div className={`px-5 py-2 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] shadow-2xl flex items-center gap-2 border border-white/20 backdrop-blur-md ${
-                  venue.is_editorial ? 'bg-slate-950/80 text-white' : 'bg-primary text-white'
+                  venue.is_editorial ? 'bg-slate-950/80 dark:bg-black/80 text-white' : 'bg-primary text-white'
                 }`}>
                   {venue.is_editorial ? <Sparkles size={12} className="text-amber-400" /> : <Trophy size={12} className="text-amber-400" />}
                   {venue.is_editorial ? 'Conseil Galant' : 'Élite Certifié'}
@@ -240,15 +240,15 @@ const GuidePage: React.FC = () => {
             </div>
 
             <div className="p-8 space-y-8 flex-1 flex flex-col">
-              <p className="text-slate-500 font-medium text-base leading-relaxed line-clamp-3">
+              <p className="text-slate-500 dark:text-slate-400 font-medium text-base leading-relaxed line-clamp-3">
                 {venue.description}
               </p>
 
               {venue.benefit_description && (
-                <div className="bg-gradient-to-br from-rose-50 to-rose-100/30 p-5 rounded-[2rem] border border-rose-100 flex items-start gap-4 shadow-inner">
-                  <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-xl">🎁</div>
+                <div className="bg-gradient-to-br from-rose-50 to-rose-100/30 dark:from-rose-900/10 dark:to-rose-900/5 p-5 rounded-[2rem] border border-rose-100 dark:border-rose-900/20 flex items-start gap-4 shadow-inner">
+                  <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-xl shadow-sm flex items-center justify-center text-xl">🎁</div>
                   <div>
-                    <p className="text-[8px] font-medium text-rose-300 uppercase tracking-prestige mb-1">Privilège Membre</p>
+                    <p className="text-[8px] font-medium text-rose-300 dark:text-rose-700 uppercase tracking-prestige mb-1">Privilège Membre</p>
                     <p className="text-xs font-black text-primary uppercase tracking-tight leading-tight">
                       {venue.benefit_description}
                     </p>
@@ -260,14 +260,14 @@ const GuidePage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => { setSelectedVenue(venue); setIsModalOpen(true); }}
-                    className="py-4 rounded-2xl bg-slate-900 text-white font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-2 hover:bg-black transition-all shadow-xl shadow-slate-900/10 active:scale-95 group/btn"
+                    className="py-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-2 hover:bg-black dark:hover:bg-slate-100 transition-all shadow-xl shadow-slate-900/10 dark:shadow-none active:scale-95 group/btn"
                   >
                     <Send size={14} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
                     Proposer
                   </button>
                   <button
                     onClick={() => handleYangoRide(venue)}
-                    className="py-4 rounded-2xl bg-white border-2 border-slate-100 text-slate-400 font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-2 hover:bg-slate-50 hover:text-slate-900 transition-all active:scale-95"
+                    className="py-4 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-white/10 text-slate-400 dark:text-slate-500 font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-all active:scale-95"
                   >
                     <Car size={16} />
                     Yango
@@ -276,7 +276,7 @@ const GuidePage: React.FC = () => {
 
                 <button
                   onClick={() => handleContactVenue(venue)}
-                  className="w-full py-5 rounded-2xl bg-rose-50 border border-rose-100 text-primary font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-3 hover:bg-primary hover:text-white transition-all group/chat active:scale-95 shadow-lg shadow-rose-500/5"
+                  className="w-full py-5 rounded-2xl bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/20 text-primary font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-3 hover:bg-primary dark:hover:bg-rose-500 hover:text-white transition-all group/chat active:scale-95 shadow-lg shadow-rose-500/5 dark:shadow-none"
                 >
                   <MessageCircle size={18} fill="currentColor" className="opacity-20 group-hover/chat:opacity-100 transition-opacity" />
                   Accès Conciergerie

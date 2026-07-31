@@ -90,14 +90,14 @@ const LocationSetupPage: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto py-10 px-4">
-      <div className="bg-white rounded-[3rem] shadow-2xl border border-slate-100 p-10 text-center space-y-8">
-        <div className="w-20 h-20 bg-rose-50 text-primary rounded-[2rem] flex items-center justify-center mx-auto shadow-lg animate-pulse">
+      <div className="bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl dark:shadow-none border border-slate-100 dark:border-white/5 p-10 text-center space-y-8 transition-colors">
+        <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-primary rounded-[2rem] flex items-center justify-center mx-auto shadow-lg animate-pulse transition-colors">
           <MapPin size={40} />
         </div>
 
         <div className="space-y-2">
-          <h2 className="text-3xl font-black italic tracking-tighter">Où êtes-vous ?</h2>
-          <p className="text-slate-500 font-medium leading-relaxed">
+          <h2 className="text-3xl font-black italic tracking-tighter text-slate-900 dark:text-white transition-colors">Où êtes-vous ?</h2>
+          <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed transition-colors">
             Galant utilise votre position pour vous proposer les profils les plus proches et les meilleurs lieux de rendez-vous.
           </p>
         </div>
@@ -106,16 +106,16 @@ const LocationSetupPage: React.FC = () => {
           <button
             onClick={handleGeoLocation}
             disabled={loading}
-            className="w-full bg-primary text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-red-100 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+            className="w-full bg-primary text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-red-100 dark:shadow-none hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
           >
             {loading ? <Loader2 className="animate-spin" /> : <Navigation size={20} />}
             Autoriser le GPS
           </button>
 
           <div className="flex items-center gap-4 py-2">
-            <div className="h-px bg-slate-100 flex-1"></div>
-            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">OU</span>
-            <div className="h-px bg-slate-100 flex-1"></div>
+            <div className="h-px bg-slate-100 dark:bg-white/5 flex-1 transition-colors"></div>
+            <span className="text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest transition-colors">OU</span>
+            <div className="h-px bg-slate-100 dark:bg-white/5 flex-1 transition-colors"></div>
           </div>
 
           <form onSubmit={handleManualSubmit} className="space-y-4">
@@ -125,13 +125,13 @@ const LocationSetupPage: React.FC = () => {
                 value={manualCity}
                 onChange={(e) => setManualCity(e.target.value)}
                 placeholder="Saisir votre ville manuellement"
-                className="w-full bg-slate-50 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 font-medium text-sm text-center"
+                className="w-full bg-slate-50 dark:bg-slate-800 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 font-medium text-sm text-center text-slate-900 dark:text-white transition-colors"
               />
             </div>
             <button
               type="submit"
               disabled={loading || !manualCity.trim()}
-              className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black transition-all disabled:opacity-30"
+              className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black dark:hover:bg-slate-100 transition-all disabled:opacity-30"
             >
               <Globe size={16} />
               Valider la ville
@@ -139,7 +139,7 @@ const LocationSetupPage: React.FC = () => {
           </form>
         </div>
 
-        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter pt-4">
+        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter pt-4 transition-colors">
           Vous pourrez changer de ville plus tard avec le Mode Voyage 💎
         </p>
       </div>

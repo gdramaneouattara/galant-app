@@ -133,14 +133,14 @@ const LikesInboxPage: React.FC = () => {
       </div>
 
       {likes.length === 0 ? (
-        <div className="text-center py-24 bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
-          <Heart size={48} className="mx-auto text-slate-200 mb-4" />
-          <p className="text-slate-400 font-bold">Aucun like reçu pour le moment. Soyez plus actif !</p>
+        <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-[3rem] border-2 border-dashed border-slate-100 dark:border-white/5 transition-colors">
+          <Heart size={48} className="mx-auto text-slate-200 dark:text-slate-800 mb-4 transition-colors" />
+          <p className="text-slate-400 dark:text-slate-500 font-bold transition-colors">Aucun like reçu pour le moment. Soyez plus actif !</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {likes.map((row) => (
-            <div key={row.liker_id} className="bg-white p-4 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-50 flex gap-4 items-center">
+            <div key={row.liker_id} className="bg-white dark:bg-slate-900 p-4 rounded-[2.5rem] shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-50 dark:border-white/5 flex gap-4 items-center transition-colors">
               <div className="relative w-24 h-32 flex-shrink-0 rounded-2xl overflow-hidden shadow-md">
                 <img src={row.user.photos?.[0]} className="w-full h-full object-cover" alt="" />
                 {row.user.is_premium && (
@@ -152,10 +152,10 @@ const LikesInboxPage: React.FC = () => {
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-black text-slate-900 text-lg truncate">{row.user.name}, {row.user.age}</span>
+                  <span className="font-black text-slate-900 dark:text-white text-lg truncate transition-colors">{row.user.name}, {row.user.age}</span>
                   {row.user.is_verified && <ShieldCheck size={16} className="text-blue-500" />}
                 </div>
-                <div className="flex items-center gap-1 text-slate-400 text-xs font-bold uppercase mb-3">
+                <div className="flex items-center gap-1 text-slate-400 dark:text-slate-500 text-xs font-bold uppercase mb-3 transition-colors">
                   <MapPin size={12} />
                   <span>{row.user.city || t('city_not_set')}</span>
                 </div>
@@ -164,7 +164,7 @@ const LikesInboxPage: React.FC = () => {
                   {row.is_matched ? (
                     <button
                       onClick={() => navigate('/matches')}
-                      className="flex-1 bg-blue-50 text-blue-600 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-2"
+                      className="flex-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 transition-colors"
                     >
                       <MessageCircle size={14} />
                       Discuter
@@ -175,8 +175,8 @@ const LikesInboxPage: React.FC = () => {
                       disabled={likingId === row.user.id || row.liked_back}
                       className={`flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
                         row.liked_back
-                          ? 'bg-slate-100 text-slate-400 cursor-default'
-                          : 'bg-primary text-white shadow-lg shadow-red-100 hover:scale-105 active:scale-95'
+                          ? 'bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-slate-600 cursor-default'
+                          : 'bg-primary text-white shadow-lg shadow-red-100 dark:shadow-none hover:scale-105 active:scale-95'
                       }`}
                     >
                       {likingId === row.user.id ? (
@@ -191,7 +191,7 @@ const LikesInboxPage: React.FC = () => {
                   )}
                   <button
                     onClick={() => navigate(`/profile/${row.user.id}`, { state: { profile: row.user } })}
-                    className="p-2.5 bg-slate-50 text-slate-400 rounded-xl hover:bg-slate-100"
+                    className="p-2.5 bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-slate-500 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
                   >
                     <ChevronRight size={18} />
                   </button>

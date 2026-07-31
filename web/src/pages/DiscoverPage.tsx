@@ -457,21 +457,21 @@ const DiscoverPage: React.FC = () => {
           <div className="flex justify-center items-center gap-6 py-4 px-4">
             <button
               onClick={() => onSwipe('LEFT')}
-              className="w-16 h-16 rounded-2xl bg-white shadow-xl shadow-slate-200/50 flex items-center justify-center text-slate-300 hover:text-red-500 hover:border-red-500/20 hover:bg-red-50 hover:scale-110 active:scale-95 transition-all border border-slate-100"
+              className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center text-slate-300 dark:text-slate-700 hover:text-red-500 hover:border-red-500/20 hover:bg-red-50 dark:hover:bg-red-900/20 hover:scale-110 active:scale-95 transition-all border border-slate-100 dark:border-white/5"
             >
               <X size={28} strokeWidth={3} />
             </button>
 
             <button
               onClick={handleDirectMessage}
-              className="w-16 h-16 rounded-2xl bg-white shadow-xl shadow-slate-200/50 flex items-center justify-center text-blue-500 hover:scale-110 active:scale-95 transition-all border border-slate-100"
+              className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center text-blue-500 hover:scale-110 active:scale-95 transition-all border border-slate-100 dark:border-white/5"
             >
               <MessageCircle size={28} fill="currentColor" className="opacity-20" />
             </button>
 
             <button
               onClick={handleSuperLike}
-              className="w-16 h-16 rounded-2xl bg-white shadow-xl shadow-slate-200/50 flex items-center justify-center hover:scale-110 active:scale-95 transition-all border border-slate-100 group"
+              className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center hover:scale-110 active:scale-95 transition-all border border-slate-100 dark:border-white/5 group"
             >
               <span className="text-2xl group-hover:rotate-12 transition-transform">🌹</span>
             </button>
@@ -485,13 +485,13 @@ const DiscoverPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="text-center py-24 bg-white rounded-[3.5rem] border-2 border-dashed border-slate-200 p-12 space-y-8 animate-in fade-in duration-700">
-          <div className="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto text-slate-200">
+        <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-[3.5rem] border-2 border-dashed border-slate-200 dark:border-white/10 p-12 space-y-8 animate-in fade-in duration-700 transition-colors">
+          <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-[2rem] flex items-center justify-center mx-auto text-slate-200 dark:text-slate-700 transition-colors">
             <RefreshCw size={48} />
           </div>
           <div>
-            <p className="text-2xl font-black text-slate-900 mb-2">{t('no_more_profiles') || "Fin de la découverte"}</p>
-            <p className="text-slate-400 font-medium">Revenez plus tard pour de nouvelles étincelles.</p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white mb-2 transition-colors">{t('no_more_profiles') || "Fin de la découverte"}</p>
+            <p className="text-slate-400 dark:text-slate-500 font-medium transition-colors">Revenez plus tard pour de nouvelles étincelles.</p>
           </div>
           <button
             onClick={() => loadSuggestions()}

@@ -298,9 +298,9 @@ const AuthPage: React.FC = () => {
           {mode !== 'verify' && (
             <>
             <div className="mt-8 flex items-center gap-4">
-              <div className="h-px bg-slate-100 dark:bg-white/5 flex-1 transition-colors"></div>
+              <div className="h-px bg-slate-100 dark:bg-white/10 flex-1 transition-colors"></div>
               <span className="text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest transition-colors">OU</span>
-              <div className="h-px bg-slate-100 dark:bg-white/5 flex-1 transition-colors"></div>
+              <div className="h-px bg-slate-100 dark:bg-white/10 flex-1 transition-colors"></div>
             </div>
 
             <div className="mt-8 grid grid-cols-2 gap-4">

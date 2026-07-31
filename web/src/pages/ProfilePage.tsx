@@ -98,12 +98,12 @@ const ProfilePage: React.FC = () => {
   if (!user || !profile) {
     return (
       <div className="max-w-md mx-auto py-20 text-center px-6">
-        <div className="bg-white p-10 rounded-[3rem] shadow-2xl shadow-slate-200 border border-slate-100">
-          <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
+        <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] shadow-2xl shadow-slate-200 dark:shadow-none border border-slate-100 dark:border-white/10 transition-colors">
+          <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300 dark:text-slate-700">
             <User size={40} />
           </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-2">Profil non trouvé</h2>
-          <p className="text-slate-500 font-medium mb-8">Veuillez vous connecter pour accéder à votre espace Galant.</p>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Profil non trouvé</h2>
+          <p className="text-slate-500 dark:text-slate-400 font-medium mb-8">Veuillez vous connecter pour accéder à votre espace Galant.</p>
           <button
             onClick={() => navigate('/auth')}
             className="w-full bg-primary text-white py-4 rounded-2xl font-black shadow-xl shadow-primary/20 hover:scale-105 transition-transform"
@@ -402,7 +402,7 @@ const ProfilePage: React.FC = () => {
               </div>
               <div className="text-left">
                 <p className="text-lg font-serif italic uppercase tracking-tighter leading-none mb-1">Inviter un Ami 🌹</p>
-                <p className="text-sm font-bold text-slate-400">Gagnez des Roses a consommer gratuitement</p>
+                <p className="text-sm font-bold text-slate-400 dark:text-slate-500">Gagnez des Roses a consommer gratuitement</p>
               </div>
             </div>
             <div className="bg-white/10 p-3 rounded-full group-hover:bg-primary transition-colors">

@@ -102,7 +102,7 @@ const AppsPage: React.FC = () => {
 
       <Link
         to="/partner-signup"
-        className="flex items-center gap-4 rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-5 hover:bg-primary/10 transition-all"
+        className="flex items-center gap-4 rounded-2xl border border-dashed border-primary/30 dark:border-primary/20 bg-primary/5 dark:bg-primary/10 p-5 hover:bg-primary/10 transition-all"
       >
         <div className="w-12 h-12 rounded-2xl bg-primary text-white flex items-center justify-center">
           <Sparkles size={22} />

@@ -148,17 +148,17 @@ const RosesInboxPage: React.FC = () => {
   const renderRows = () => {
     if (loading) {
       return (
-        <div className="flex flex-col items-center justify-center py-24 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-white/5">
+        <div className="flex flex-col items-center justify-center py-24 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-white/5 transition-colors">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
-          <p className="mt-4 text-slate-400 font-bold uppercase tracking-widest text-[10px]">Ouverture de la boite...</p>
+          <p className="mt-4 text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest text-[10px] transition-colors">Ouverture de la boite...</p>
         </div>
       );
     }
 
     if (error) {
       return (
-        <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-[2rem] border border-red-100 dark:border-red-900/30">
-          <p className="text-red-600 font-black">{error}</p>
+        <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-[2rem] border border-red-100 dark:border-red-900/30 transition-colors">
+          <p className="text-red-600 dark:text-red-400 font-black transition-colors">{error}</p>
           <button onClick={() => void fetchSuperLikes()} className="mt-4 text-primary font-black text-xs uppercase tracking-widest">
             Reessayer
           </button>
@@ -168,13 +168,13 @@ const RosesInboxPage: React.FC = () => {
 
     if (displayedRows.length === 0) {
       return (
-        <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-[2rem] border-2 border-dashed border-slate-100 dark:border-white/5 px-6">
-          <Star size={48} className="mx-auto text-slate-200 dark:text-slate-800 mb-4" />
-          <p className="text-slate-400 font-bold">
+        <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-[2rem] border-2 border-dashed border-slate-100 dark:border-white/5 px-6 transition-colors">
+          <Star size={48} className="mx-auto text-slate-200 dark:text-slate-800 mb-4 transition-colors" />
+          <p className="text-slate-400 dark:text-slate-500 font-bold transition-colors">
             {activeTab === 'PENDING' ? 'Aucune rose a traiter pour le moment.' : 'Aucune rose dans l historique.'}
           </p>
           {unavailableHint && (
-            <p className="text-slate-500 text-xs mt-3 max-w-md mx-auto">
+            <p className="text-slate-500 dark:text-slate-600 text-xs mt-3 max-w-md mx-auto transition-colors">
               Certaines roses comptabilisees ne sont plus disponibles car le profil expediteur est incomplet, suspendu ou supprime.
             </p>
           )}
@@ -187,7 +187,7 @@ const RosesInboxPage: React.FC = () => {
         {displayedRows.map((row) => (
           <div
             key={row.id}
-            className={`bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border-2 transition-all overflow-hidden ${
+            className={`bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl dark:shadow-none border-2 transition-all overflow-hidden ${
               row.status === 'ACCEPTED'
                 ? 'border-emerald-500/20'
                 : row.status === 'IGNORED'
@@ -212,16 +212,16 @@ const RosesInboxPage: React.FC = () => {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-black text-slate-900 dark:text-white text-lg truncate">
+                    <span className="font-black text-slate-900 dark:text-white text-lg truncate transition-colors">
                       {row.user.name}{typeof row.user.age === 'number' ? `, ${row.user.age}` : ''}
                     </span>
                     {row.user.is_verified && <ShieldCheck size={16} className="text-blue-500 flex-shrink-0" />}
                   </div>
-                  <div className="flex items-center gap-1 text-slate-400 text-xs font-bold uppercase mb-3">
+                  <div className="flex items-center gap-1 text-slate-400 dark:text-slate-500 text-xs font-bold uppercase mb-3 transition-colors">
                     <MapPin size={12} />
                     <span className="truncate">{row.user.city || 'Ville non renseignee'}</span>
                   </div>
-                  <div className="flex items-center gap-2 bg-rose-50 dark:bg-rose-900/20 px-3 py-1.5 rounded-xl w-fit">
+                  <div className="flex items-center gap-2 bg-rose-50 dark:bg-rose-900/20 px-3 py-1.5 rounded-xl w-fit transition-colors">
                     <Star size={12} className="text-primary" fill="currentColor" />
                     <span className="text-[10px] font-[1000] text-primary uppercase tracking-tighter">Rose recue</span>
                   </div>
@@ -229,19 +229,19 @@ const RosesInboxPage: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[11px] font-black uppercase tracking-widest">
+                <span className="text-[11px] font-black uppercase tracking-widest transition-colors">
                   {renderStatus(row)}
                 </span>
-                <span className="text-[10px] font-bold text-slate-400">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 transition-colors">
                   {row.created_at ? new Date(row.created_at).toLocaleString('fr-FR') : ''}
                 </span>
               </div>
 
-              <div className="bg-slate-50 dark:bg-white/5 rounded-2xl p-4 relative">
+              <div className="bg-slate-50 dark:bg-white/5 rounded-2xl p-4 relative transition-colors">
                 <div className="absolute -top-3 left-4 bg-primary text-white text-[8px] font-black px-2 py-1 rounded-md uppercase tracking-[0.2em]">
                   Note
                 </div>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300 italic leading-relaxed">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300 italic leading-relaxed transition-colors">
                   "{row.note || 'A envoye une rose sans message.'}"
                 </p>
               </div>
@@ -249,7 +249,7 @@ const RosesInboxPage: React.FC = () => {
               <div className="flex gap-3 flex-wrap">
                 <button
                   onClick={() => setSelectedRose(row)}
-                  className="px-4 py-3 rounded-2xl bg-white dark:bg-white/5 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 font-black text-[10px] uppercase tracking-widest"
+                  className="px-4 py-3 rounded-2xl bg-white dark:bg-white/5 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 font-black text-[10px] uppercase tracking-widest transition-all"
                 >
                   Fiche
                 </button>
@@ -270,7 +270,7 @@ const RosesInboxPage: React.FC = () => {
                     <button
                       onClick={() => void handleRespond(row, 'IGNORE')}
                       disabled={!!respondingId}
-                      className="flex-1 min-w-[96px] bg-slate-100 dark:bg-white/5 text-slate-500 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-50 hover:text-red-600 transition-all disabled:opacity-60"
+                      className="flex-1 min-w-[96px] bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 transition-all disabled:opacity-60"
                     >
                       <X size={14} className="inline mr-1" />
                       Ignorer
