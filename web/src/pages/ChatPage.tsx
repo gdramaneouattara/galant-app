@@ -8,6 +8,7 @@ import { apiRequest } from '@shared/lib/api';
 import { Send, ChevronLeft, ShieldCheck, Gem, Sparkles, Languages, Loader2, MapPin, Calendar, Image as ImageIcon, Video, Paperclip } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { compressImageWeb } from '../lib/imageCompression';
+import { CHAT_VIDEO_MAX_DURATION_SECONDS, compressVideoWeb, validateVideoFileWeb, VIDEO_UPLOAD_MAX_BYTES } from '../lib/videoOptimization';
 import { ref as storageRef, uploadBytes, getDownloadURL as getStorageUrl } from 'firebase/storage';
 
 const ChatPage: React.FC = () => {
@@ -207,14 +208,51 @@ const ChatPage: React.FC = () => {
 
     setUploading(true);
     try {
-      let finalFile: Blob | File = file;
-      if (type === 'IMAGE') {
-        finalFile = await compressImageWeb(file);
-      }
+      let mediaUrl = '';
+      let metadata: Record<string, any> = {};
 
-      const sRef = storageRef(fbStorage, `chats/${venueChatId || matchId}/${Date.now()}_${file.name}`);
-      await uploadBytes(sRef, finalFile, { contentType: file.type });
-      const mediaUrl = await getStorageUrl(sRef);
+      if (type === 'IMAGE') {
+        const finalFile = await compressImageWeb(file);
+        const sRef = storageRef(fbStorage, `chats/${venueChatId || matchId}/${Date.now()}_${file.name}`);
+        await uploadBytes(sRef, finalFile, { contentType: 'image/webp' });
+        mediaUrl = await getStorageUrl(sRef);
+      } else {
+        try {
+          await validateVideoFileWeb(file, CHAT_VIDEO_MAX_DURATION_SECONDS);
+        } catch (error: any) {
+          if (error?.message === 'video_too_large') {
+            showAlert('Video trop lourde', "La video doit peser moins de 30 Mo avant envoi.");
+          } else if (error?.message === 'video_too_long') {
+            showAlert('Video trop longue', "Les videos chat sont limitees a 30 secondes.");
+          } else {
+            showAlert('Erreur', "Impossible de lire cette video.");
+          }
+          return;
+        }
+
+        const optimizedVideo = await compressVideoWeb(file, {
+          kind: 'CHAT',
+          maxDurationSeconds: CHAT_VIDEO_MAX_DURATION_SECONDS,
+        });
+        if (optimizedVideo.size > VIDEO_UPLOAD_MAX_BYTES) {
+          showAlert('Video trop lourde', "La video reste trop lourde apres optimisation. Essayez une video plus courte.");
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('type', 'CHAT');
+        formData.append('video', optimizedVideo, optimizedVideo.name || 'chat.webm');
+        const res = await apiRequest<{ mediaUrl: string; thumbnailUrl?: string }>('/api/media/upload-video', {
+          method: 'POST',
+          requireAuth: true,
+          body: formData,
+        });
+        const videoRef = storageRef(fbStorage, `chat-media/${res.mediaUrl}`);
+        mediaUrl = await getStorageUrl(videoRef);
+        if (res.thumbnailUrl) {
+          metadata.thumbnail_url = await getStorageUrl(storageRef(fbStorage, `chat-media/${res.thumbnailUrl}`));
+        }
+      }
 
       await apiRequest('/api/messages/send', {
         method: 'POST',
@@ -224,6 +262,7 @@ const ChatPage: React.FC = () => {
           venueChatId: venueChatId || undefined,
           messageType: type,
           mediaPath: mediaUrl,
+          metadata,
           recipientId: targetUser.isVenue ? undefined : targetUser.id
         })
       });
@@ -297,6 +336,8 @@ const ChatPage: React.FC = () => {
                     <video
                       src={msg.media_url}
                       controls
+                      preload="none"
+                      poster={typeof msg.metadata?.thumbnail_url === 'string' ? msg.metadata.thumbnail_url : undefined}
                       className="max-w-full rounded-2xl mb-2 bg-black"
                     />
                   )}

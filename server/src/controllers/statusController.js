@@ -1,4 +1,4 @@
-const { db } = require('../config/firebase');
+const { db, bucket } = require('../config/firebase');
 const { hasStandardAccess, hasInvisiblePremiumAccessForPlan, isHiddenByInvisibleMode } = require('../services/accessService');
 const { getDailyUsage, incrementUsage, consumeStoryPurchase, hasUnusedStoryPurchase } = require('../services/usageService');
 const { createStoryLikeNotificationIfNeeded } = require('../services/notificationService');
@@ -102,7 +102,7 @@ const getStatuses = async (req, res) => {
 };
 
 const createStatus = async (req, res) => {
-  const { mediaUrl, type, content } = req.body;
+  const { mediaUrl, thumbnailUrl, type, content } = req.body;
   const me = req.user;
 
   // 1. Check for Subscription/Trial
@@ -120,7 +120,15 @@ const createStatus = async (req, res) => {
 
   const expiresAt = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
   try {
-    const data = { user_id: me.id, media_url: mediaUrl, message_type: type, content: content || '', expires_at: expiresAt, created_at: new Date().toISOString() };
+    const data = {
+      user_id: me.id,
+      media_url: mediaUrl,
+      thumbnail_url: thumbnailUrl || null,
+      message_type: type,
+      content: content || '',
+      expires_at: expiresAt,
+      created_at: new Date().toISOString()
+    };
     const ref = await db.collection('statuses').add(data);
     res.json({ id: ref.id, ...data });
   } catch (error) { res.status(500).json({ error: error.message }); }
@@ -146,7 +154,18 @@ const deleteStatus = async (req, res) => {
     const statusRef = db.collection('statuses').doc(statusId);
     const statusDoc = await statusRef.get();
     if (!statusDoc.exists) return res.status(404).json({ error: 'status_not_found' });
-    if (statusDoc.data().user_id !== me.id) return res.status(403).json({ error: 'unauthorized' });
+    const status = statusDoc.data();
+    if (status.user_id !== me.id) return res.status(403).json({ error: 'unauthorized' });
+
+    for (const mediaPath of [status.media_url, status.thumbnail_url].filter(Boolean)) {
+      try {
+        const file = bucket.file(`statuses/${mediaPath}`);
+        const [exists] = await file.exists();
+        if (exists) await file.delete();
+      } catch (storageErr) {
+        console.error(`[STATUS] Error deleting media for ${statusId}:`, storageErr.message);
+      }
+    }
 
     const likesSnap = await db.collection('status_likes').where('status_id', '==', statusId).get();
     const batch = db.batch();

@@ -47,7 +47,9 @@ export const apiRequest = async <T>(path: string, options: ApiOptions = {}): Pro
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  if (!headers.has('Content-Type') && options.body) {
+  const isFormDataBody = typeof FormData !== 'undefined' && options.body instanceof FormData;
+
+  if (!headers.has('Content-Type') && options.body && !isFormDataBody) {
     headers.set('Content-Type', 'application/json');
   }
 

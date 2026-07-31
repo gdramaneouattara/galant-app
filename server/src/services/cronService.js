@@ -28,12 +28,12 @@ const cleanupExpiredStatuses = async () => {
     for (const doc of expiredSnap.docs) {
       const data = doc.data();
 
-      // 2. Delete media from Storage if it exists
-      if (data.media_url) {
+      // 2. Delete media and lightweight thumbnail from Storage if they exist
+      for (const mediaPath of [data.media_url, data.thumbnail_url].filter(Boolean)) {
         try {
           // Path format in storage is "statuses/userId/filename" or just "filename" depending on upload source
           // Our controllers use "userId/filename" stored in media_url
-          const filePath = `statuses/${data.media_url}`;
+          const filePath = `statuses/${mediaPath}`;
           const file = bucket.file(filePath);
           const [exists] = await file.exists();
 
@@ -77,7 +77,9 @@ const cleanupExpiredChatMedia = async () => {
   let deletedCount = 0;
 
   try {
-    const [files] = await bucket.getFiles({ prefix: 'chats/' });
+    const [legacyFiles] = await bucket.getFiles({ prefix: 'chats/' });
+    const [compressedFiles] = await bucket.getFiles({ prefix: 'chat-media/' });
+    const files = [...legacyFiles, ...compressedFiles];
 
     for (const file of files) {
       const [metadata] = await file.getMetadata();

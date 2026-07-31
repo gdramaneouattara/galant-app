@@ -40,6 +40,7 @@ interface Status {
   user_id: string;
   content: string;
   media_url: string;
+  thumbnail_url?: string | null;
   message_type: 'TEXT' | 'IMAGE' | 'VIDEO';
   created_at: string;
   likes_count?: number;
@@ -74,6 +75,8 @@ import { useSubscription } from '../../hooks/useSubscription';
 
 const SUPER_LIKE_SKU = String(process.env.EXPO_PUBLIC_SUPER_LIKE_SKU || 'super_like').trim();
 const DIRECT_MESSAGE_SKU = String(process.env.EXPO_PUBLIC_DIRECT_MESSAGE_SKU || 'direct_message_1').trim();
+const STORY_VIDEO_MAX_DURATION_MS = 16 * 1000;
+const VIDEO_UPLOAD_MAX_BYTES = 30 * 1024 * 1024;
 
 const StatusScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -108,10 +111,12 @@ const StatusScreen: React.FC = () => {
       setLocked(false);
 
       for (const s of (data || [])) {
-        if (s.media_url && !resolvedUrls[s.media_url]) {
+        for (const mediaPath of [s.media_url, s.thumbnail_url].filter(Boolean)) {
+          const path = String(mediaPath);
+          if (resolvedUrls[path]) continue;
           try {
-            const url = await fbStorage.ref(`statuses/${s.media_url}`).getDownloadURL();
-            setResolvedUrls(prev => ({ ...prev, [s.media_url]: url }));
+            const url = await fbStorage.ref(`statuses/${path}`).getDownloadURL();
+            setResolvedUrls(prev => ({ ...prev, [path]: url }));
           } catch (e) {}
         }
       }
@@ -128,6 +133,7 @@ const StatusScreen: React.FC = () => {
     const buildVideoPreviews = async () => {
       for (const item of statuses) {
         if (item.message_type !== 'VIDEO' || videoPreviewUrls[item.media_url]) continue;
+        if (item.thumbnail_url && resolvedUrls[item.thumbnail_url]) continue;
         const sourceUrl = resolvedUrls[item.media_url];
         if (!sourceUrl) continue;
         try {
@@ -176,13 +182,26 @@ const StatusScreen: React.FC = () => {
       aspect: [9, 16],
       quality: 0.8,
       videoMaxDuration: 15, // LIMITE À 15 SECONDES CÔTÉ CLIENT
+      videoExportPreset: ImagePicker.VideoExportPreset.H264_960x540,
+      videoQuality: ImagePicker.UIImagePickerControllerQualityType.Medium,
     });
     if (!result.canceled && result.assets[0].uri) {
       const asset = result.assets[0];
       const type = asset.type === 'video' ? 'VIDEO' : 'IMAGE';
+      if (type === 'VIDEO') {
+        if (typeof asset.duration === 'number' && asset.duration > STORY_VIDEO_MAX_DURATION_MS) {
+          Alert.alert('Video trop longue', "Les stories sont limitees a 15 secondes.");
+          return;
+        }
+        if (typeof asset.fileSize === 'number' && asset.fileSize > VIDEO_UPLOAD_MAX_BYTES) {
+          Alert.alert('Video trop lourde', "La video doit peser moins de 30 Mo avant envoi.");
+          return;
+        }
+      }
       setUploading(true);
       try {
         let path = '';
+        let thumbnailPath: string | null = null;
 
         if (type === 'VIDEO') {
           // Utilisation du serveur pour compresser la vidéo
@@ -193,15 +212,13 @@ const StatusScreen: React.FC = () => {
             type: asset.mimeType || 'video/mp4',
           } as any);
 
-          const res = await apiRequest<{ mediaUrl: string }>('/api/media/upload-video', {
+          const res = await apiRequest<{ mediaUrl: string; thumbnailUrl?: string }>('/api/media/upload-video', {
             method: 'POST',
             requireAuth: true,
             body: formData,
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
           });
           path = res.mediaUrl;
+          thumbnailPath = res.thumbnailUrl || null;
         } else {
           // Pour les images, on garde l'upload direct avec compression locale WebP
           path = `${currentUser?.id}/${Date.now()}.webp`;
@@ -216,7 +233,7 @@ const StatusScreen: React.FC = () => {
         await apiRequest('/api/statuses', {
           method: 'POST',
           requireAuth: true,
-          body: JSON.stringify({ mediaUrl: path, type, content: '' })
+          body: JSON.stringify({ mediaUrl: path, thumbnailUrl: thumbnailPath, type, content: '' })
         });
         setStoryUploadUnlocked(false);
         void fetchStatuses();
@@ -377,7 +394,7 @@ const StatusScreen: React.FC = () => {
             likeLoading={!!likeLoadingByStatusId[item.id]}
             isCurrentUser={String(item.user_id) === String(currentUser?.id)}
             resolvedUrl={resolvedUrls[item.media_url]}
-            videoPreviewUrl={videoPreviewUrls[item.media_url]}
+            videoPreviewUrl={(item.thumbnail_url && resolvedUrls[item.thumbnail_url]) || videoPreviewUrls[item.media_url]}
             formattedDate={formatPublishedAt(item.created_at)}
           />
         )}

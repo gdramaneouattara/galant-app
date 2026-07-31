@@ -1,6 +1,6 @@
 import React, { memo, useState } from 'react';
-import { View, Text, Image, Pressable, ActivityIndicator, StyleSheet, Alert } from 'react-native';
-import { Music, Play, Languages, MapPin, Calendar, Trash2, Film } from 'lucide-react-native';
+import { Modal, View, Text, Image, Pressable, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import { Music, Play, Languages, MapPin, Calendar, Trash2, Film, X } from 'lucide-react-native';
 import { Audio, Video, ResizeMode } from 'expo-av';
 import { apiRequest } from '../../../lib/api';
 import { COLORS } from '../../../data/mock';
@@ -41,6 +41,7 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
   const isEvent = (item.message_type as any) === 'EVENT_SUGGESTION';
   const isSerenade = !!item.metadata?.is_serenade;
   const isExpired = isSerenade && !!item.metadata?.played_at && !isMine;
+  const thumbnailUrl = typeof item.metadata?.thumbnail_url === 'string' ? item.metadata.thumbnail_url : null;
   const targetLang = String(language || 'fr').toLowerCase().split('-')[0];
   const cachedTranslation = item.metadata?.translations?.[targetLang];
 
@@ -49,6 +50,7 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
+  const [videoOpen, setVideoOpen] = useState(false);
 
   const translateMessage = async () => {
     if (!is_premium) {
@@ -183,15 +185,18 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
         {hasImage && <Image source={{ uri: mediaUrl! }} style={[styles.imageContent, (hasText || isVenue) && styles.mediaAfterText]} />}
 
         {isVideo && (
-          <View style={[styles.videoContainer, (hasText || isVenue) && styles.mediaAfterText]}>
-            <Video
-              source={{ uri: mediaUrl! }}
-              style={styles.videoContent}
-              useNativeControls
-              resizeMode={ResizeMode.CONTAIN}
-              isLooping={false}
-            />
-          </View>
+          <Pressable style={[styles.videoContainer, (hasText || isVenue) && styles.mediaAfterText]} onPress={() => setVideoOpen(true)}>
+            {thumbnailUrl ? (
+              <Image source={{ uri: thumbnailUrl }} style={styles.videoContent} />
+            ) : (
+              <View style={[styles.videoContent, styles.videoFallback]}>
+                <Film size={30} color="rgba(255,255,255,0.55)" />
+              </View>
+            )}
+            <View style={styles.videoPlayOverlay}>
+              <Play size={24} color="#fff" fill="#fff" />
+            </View>
+          </Pressable>
         )}
 
         <Text style={[styles.messageMeta, isMine && styles.myMessageMeta]}>
@@ -199,6 +204,21 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
           {isSerenade && !isMine && !isExpired && ` • ${t('one_listen_only')}`}
         </Text>
       </View>
+      <Modal visible={videoOpen} transparent animationType="fade" onRequestClose={() => setVideoOpen(false)}>
+        <View style={styles.videoModal}>
+          <Pressable style={styles.videoModalClose} onPress={() => setVideoOpen(false)}>
+            <X size={28} color="#fff" />
+          </Pressable>
+          <Video
+            source={{ uri: mediaUrl! }}
+            style={styles.videoModalPlayer}
+            useNativeControls
+            resizeMode={ResizeMode.CONTAIN}
+            isLooping={false}
+            shouldPlay
+          />
+        </View>
+      </Modal>
     </View>
   );
 });
@@ -232,6 +252,20 @@ const styles = StyleSheet.create({
   imageContent: { width: 200, height: 200, borderRadius: 12 },
   videoContainer: { width: 220, height: 160, borderRadius: 12, overflow: 'hidden', backgroundColor: '#000' },
   videoContent: { width: '100%', height: '100%' },
+  videoFallback: { alignItems: 'center', justifyContent: 'center' },
+  videoPlayOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.22)'
+  },
+  videoModal: { flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
+  videoModalClose: { position: 'absolute', top: 44, right: 18, zIndex: 2 },
+  videoModalPlayer: { width: '100%', height: '78%' },
   mediaAfterText: { marginTop: 10 },
   voiceExpired: { opacity: 0.5 },
 });
