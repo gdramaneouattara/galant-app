@@ -480,7 +480,12 @@ const StoriesPage: React.FC = () => {
 
               <div className="absolute top-4 left-4 right-4 flex items-center gap-2 z-20">
                 <div className={`w-10 h-10 rounded-2xl border-2 p-0.5 ${status.profiles.is_premium ? 'border-amber-400' : 'border-primary'}`}>
-                  <img src={status.profiles.photos?.[0] || 'https://placehold.co/100x100'} className="w-full h-full object-cover rounded-[0.8rem]" alt="" />
+                  <img
+                    src={status.profiles.photos?.[0] || 'https://placehold.co/100x100'}
+                    className="w-full h-full object-cover rounded-[0.8rem]"
+                    alt=""
+                    loading="lazy"
+                  />
                 </div>
               </div>
 
