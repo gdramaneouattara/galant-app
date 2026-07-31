@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useRef, useState } from 'react';
 import { Modal, View, Text, Pressable, ActivityIndicator, StyleSheet, Alert } from 'react-native';
 import { Music, Play, Languages, MapPin, Calendar, Trash2, Film, X } from 'lucide-react-native';
 import { Audio, Video, ResizeMode } from 'expo-av';
@@ -52,6 +52,7 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
   const [isTranslating, setIsTranslating] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
   const [videoOpen, setVideoOpen] = useState(false);
+  const playedMarkRef = useRef(false);
 
   const translateMessage = async () => {
     if (!is_premium) {
@@ -93,16 +94,31 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
   const playVoice = async () => {
     if (isExpired) return;
     try {
+      const markSerenadePlayed = async () => {
+        if (!isSerenade || isMine || item.metadata?.played_at || playedMarkRef.current) return;
+        playedMarkRef.current = true;
+        try {
+          await apiRequest(`/api/messages/${item.id}/played`, {
+            method: 'POST',
+            requireAuth: true,
+            body: JSON.stringify({ matchId, venueChatId }),
+          });
+        } catch {
+          playedMarkRef.current = false;
+        }
+      };
+
       const { sound: newSound } = await Audio.Sound.createAsync({ uri: mediaUrl! }, { shouldPlay: true });
       setSound(newSound);
       setPlaying(true);
       newSound.setOnPlaybackStatusUpdate(async (status) => {
+        if (status.isLoaded && status.positionMillis >= 1000) {
+          await markSerenadePlayed();
+        }
         if (status.isLoaded && status.didJustFinish) {
           setPlaying(false);
           await newSound.unloadAsync();
-          if (isSerenade && !isMine && !item.metadata?.played_at) {
-            await apiRequest(`/api/messages/${item.id}/played`, { method: 'POST', requireAuth: true });
-          }
+          await markSerenadePlayed();
         }
       });
     } catch (e) {

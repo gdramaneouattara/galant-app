@@ -62,6 +62,26 @@ test('video uploads are bounded, compressed, and use persisted thumbnails', asyn
   assert.match(storageRules, /match \/chat-media\/\{userId\}/);
 });
 
+test('vocal serenade supports one-listen playback across web and mobile', async () => {
+  const messageController = await read('server/src/controllers/messageController.js');
+  const webChat = await read('web/src/pages/ChatPage.tsx');
+  const webVoicePlayer = await read('web/src/components/VoicePlayer.tsx');
+  const nativeChat = await read('src/screens/messages/ChatScreen.tsx');
+  const nativeInput = await read('src/screens/messages/components/ChatInput.tsx');
+  const nativeMessage = await read('src/screens/messages/components/ChatMessageItem.tsx');
+
+  assert.match(messageController, /venueChatId/);
+  assert.match(messageController, /venue_messages\/\$\{venueChatId\}/);
+  assert.match(messageController, /metadata\/played_at/);
+  assert.match(webChat, /VOICE_MAX_DURATION_SECONDS\s*=\s*30/);
+  assert.match(webChat, /VOICE_UPLOAD_MAX_BYTES\s*=\s*2\s*\*\s*1024\s*\*\s*1024/);
+  assert.match(webVoicePlayer, /body:\s*JSON\.stringify\(\{\s*matchId,\s*venueChatId\s*\}\)/s);
+  assert.match(nativeChat, /Audio\.Recording\.createAsync/);
+  assert.match(nativeChat, /messageType:\s*'VOICE'/);
+  assert.match(nativeInput, /onToggleVoice/);
+  assert.match(nativeMessage, /body:\s*JSON\.stringify\(\{\s*matchId,\s*venueChatId\s*\}\)/s);
+});
+
 test('media v2 uses optimized rendering and browser caching on high traffic surfaces', async () => {
   const webOptimizedImage = await read('web/src/components/OptimizedImage.tsx');
   const nativeOptimizedImage = await read('src/components/OptimizedImage.tsx');

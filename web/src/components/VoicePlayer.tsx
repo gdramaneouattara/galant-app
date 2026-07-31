@@ -4,6 +4,8 @@ import { apiRequest } from '@shared/lib/api';
 
 interface VoicePlayerProps {
   messageId: string;
+  matchId?: string | null;
+  venueChatId?: string | null;
   url: string;
   isSerenade?: boolean;
   isMine?: boolean;
@@ -11,13 +13,30 @@ interface VoicePlayerProps {
   onPlayed?: () => void;
 }
 
-const VoicePlayer: React.FC<VoicePlayerProps> = ({ messageId, url, isSerenade, isMine, playedAt, onPlayed }) => {
+const VoicePlayer: React.FC<VoicePlayerProps> = ({ messageId, matchId, venueChatId, url, isSerenade, isMine, playedAt, onPlayed }) => {
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playedMarkRef = useRef(false);
 
-  const isExpired = isSerenade && !!playedAt && !isMine;
+  const isExpired = isSerenade && !!playedAt && !isMine && !playing;
+
+  const markPlayed = async () => {
+    if (!isSerenade || isMine || playedAt || playedMarkRef.current) return;
+    playedMarkRef.current = true;
+    try {
+      await apiRequest(`/api/messages/${messageId}/played`, {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({ matchId, venueChatId })
+      });
+      onPlayed?.();
+    } catch (e) {
+      playedMarkRef.current = false;
+      console.error('Error marking serenade as played', e);
+    }
+  };
 
   const togglePlay = () => {
     if (isExpired) return;
@@ -34,6 +53,7 @@ const VoicePlayer: React.FC<VoicePlayerProps> = ({ messageId, url, isSerenade, i
 
     const onTimeUpdate = () => {
       setProgress((audio.currentTime / audio.duration) * 100);
+      if (audio.currentTime >= 1) void markPlayed();
     };
 
     const onLoadedMetadata = () => {
@@ -44,18 +64,7 @@ const VoicePlayer: React.FC<VoicePlayerProps> = ({ messageId, url, isSerenade, i
       setPlaying(false);
       setProgress(100);
 
-      // If it's a serenade and not mine, mark as played on server
-      if (isSerenade && !isMine && !playedAt) {
-        try {
-          await apiRequest(`/api/messages/${messageId}/played`, {
-            method: 'POST',
-            requireAuth: true
-          });
-          onPlayed?.();
-        } catch (e) {
-          console.error('Error marking serenade as played', e);
-        }
-      }
+      void markPlayed();
     };
 
     audio.addEventListener('timeupdate', onTimeUpdate);
@@ -69,7 +78,7 @@ const VoicePlayer: React.FC<VoicePlayerProps> = ({ messageId, url, isSerenade, i
       audio.removeEventListener('loadedmetadata', onLoadedMetadata);
       audio.removeEventListener('ended', onEnded);
     };
-  }, [isSerenade, isMine, playedAt, messageId, onPlayed]);
+  }, [isSerenade, isMine, playedAt, messageId, matchId, venueChatId, onPlayed]);
 
   if (isExpired) {
     return (

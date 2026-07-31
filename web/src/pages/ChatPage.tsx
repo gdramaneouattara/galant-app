@@ -40,6 +40,8 @@ const ChatPage: React.FC = () => {
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const timerRef = useRef<any>(null);
+  const VOICE_MAX_DURATION_SECONDS = 30;
+  const VOICE_UPLOAD_MAX_BYTES = 2 * 1024 * 1024;
 
   useEffect(() => {
     if (isRecording) {
@@ -329,12 +331,32 @@ const ChatPage: React.FC = () => {
     if (!recorder || !audioStream) return;
     setIsRecording(false);
     const blob = await stopRecording(recorder, audioStream);
+    if (blob.size > VOICE_UPLOAD_MAX_BYTES) {
+      showAlert('Sérénade trop lourde', 'La sérénade vocale est limitée à 2 Mo. Essayez un message plus court.');
+      setRecorder(null);
+      setAudioStream(null);
+      return;
+    }
     if (blob.size > 1000) { // Minimum size to avoid empty rec
       await handleFileUpload(blob, 'VOICE');
     }
     setRecorder(null);
     setAudioStream(null);
   };
+
+  const handleCancelRec = () => {
+    setIsRecording(false);
+    if (recorder?.state !== 'inactive') recorder?.stop();
+    audioStream?.getTracks().forEach(track => track.stop());
+    setRecorder(null);
+    setAudioStream(null);
+  };
+
+  useEffect(() => {
+    if (isRecording && recordingDuration >= VOICE_MAX_DURATION_SECONDS) {
+      void handleStopRec();
+    }
+  }, [isRecording, recordingDuration]);
 
   if (!targetUser) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
 
@@ -407,6 +429,8 @@ const ChatPage: React.FC = () => {
                   {msg.message_type === 'VOICE' && msg.media_url && (
                     <VoicePlayer
                       messageId={msg.id}
+                      matchId={matchId || null}
+                      venueChatId={venueChatId || null}
                       url={msg.media_url}
                       isSerenade={msg.metadata?.is_serenade}
                       isMine={isMine}
@@ -477,7 +501,7 @@ const ChatPage: React.FC = () => {
             </div>
             <div className="flex gap-4">
               <button
-                onClick={() => { setIsRecording(false); recorder?.stop(); setRecorder(null); setAudioStream(null); }}
+                onClick={handleCancelRec}
                 className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-400 flex items-center justify-center hover:text-red-500 transition-colors"
               >
                 <Trash2 size={20} />
