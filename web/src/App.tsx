@@ -16,6 +16,7 @@ import ProfileDetailPage from './pages/ProfileDetailPage';
 import PremiumPage from './pages/PremiumPage';
 import VerifyPage from './pages/VerifyPage';
 import PartnerDashboard from './pages/PartnerDashboard';
+import PartnerPremiumPage from './pages/PartnerPremiumPage';
 import PartnerChatsPage from './pages/PartnerChatsPage';
 import CreateEventPage from './pages/CreateEventPage';
 import TermsPage from './pages/TermsPage';
@@ -25,6 +26,7 @@ import GuidePage from './pages/GuidePage';
 import ExperiencesPage from './pages/ExperiencesPage';
 import StoriesPage from './pages/StoriesPage';
 import MarketPage from './pages/MarketPage';
+import VenueDetailPage from './pages/VenueDetailPage';
 import SentinelPage from './pages/SentinelPage';
 import AppsPage from './pages/AppsPage';
 import LikesInboxPage from './pages/LikesInboxPage';
@@ -53,6 +55,9 @@ import AdminPricing from './pages/admin/AdminPricing';
 import logoImg from './assets/galant-logo.png';
 import AdminSupport from './pages/admin/AdminSupport';
 import AdminKyc from './pages/admin/AdminKyc';
+import AdminMessaging from './pages/admin/AdminMessaging';
+import AdminVenues from './pages/admin/AdminVenues';
+import AdminAuditLogs from './pages/admin/AdminAuditLogs';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminFinances from './pages/admin/AdminFinances';
 import AdminReports from './pages/admin/AdminReports';
@@ -247,6 +252,7 @@ const AppContent: React.FC = () => {
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/partner-signup" element={<PartnerSignupPage />} />
           <Route path="/market" element={<MarketPage />} />
+          <Route path="/venue/:id" element={<VenueDetailPage />} />
           <Route path="/sentinel" element={<SentinelPage />} />
           <Route path="/stories" element={<StoriesPage />} />
           <Route path="/apps" element={<AppsPage />} />
@@ -263,6 +269,7 @@ const AppContent: React.FC = () => {
           <Route path="/experiences" element={<ExperiencesPage />} />
           <Route path="/verify" element={<VerifyPage />} />
           <Route path="/partner" element={<PartnerDashboard />} />
+          <Route path="/partner-premium" element={<PartnerPremiumPage />} />
           <Route path="/partner/chats" element={<PartnerChatsPage />} />
           <Route path="/partner/create-event" element={<CreateEventPage />} />
 
@@ -270,10 +277,13 @@ const AppContent: React.FC = () => {
             <Route index element={<AdminDashboard />} />
             <Route path="support" element={<AdminSupport />} />
             <Route path="kyc" element={<AdminKyc />} />
+            <Route path="venues" element={<AdminVenues />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="pricing" element={<AdminPricing />} />
+            <Route path="messaging" element={<AdminMessaging />} />
             <Route path="finances" element={<AdminFinances />} />
             <Route path="reports" element={<AdminReports />} />
+            <Route path="audit" element={<AdminAuditLogs />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
