@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
-import { fbAuth, db, rtdb, COLLECTIONS } from '../firebase';
+import { fbAuth, db, rtdb, COLLECTIONS, fbMessaging } from '../firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, onSnapshot, setDoc } from 'firebase/firestore';
 import { ref, onValue } from 'firebase/database';
+import { getToken, onMessage } from 'firebase/messaging';
 import { TRANSLATIONS } from '@shared/translations';
 import { apiRequest } from '@shared/lib/api';
 
@@ -105,6 +106,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return str;
   };
 
+  const registerWebPushToken = async (userId: string) => {
+    try {
+      if (!fbMessaging) return;
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return;
+      const token = await getToken(fbMessaging, {
+        vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
+      });
+      if (token) {
+        await setDoc(doc(db, 'push_tokens', `${userId}_web`), {
+          user_id: userId, token, platform: 'web', is_active: true, updated_at: new Date().toISOString()
+        });
+        console.log('✅ Web Push Token registered');
+      }
+    } catch (e) { console.error('❌ Web Push error:', e); }
+  };
+
   // Auth & Profile
   useEffect(() => {
     // Si fbAuth n'est pas correctement initialisé (fallback {}), on arrête tout de suite
@@ -119,6 +137,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let unsubProfile: (() => void) | null = null;
 
       if (firebaseUser) {
+        void registerWebPushToken(firebaseUser.uid);
+        if (fbMessaging) onMessage(fbMessaging, (p) => console.log('Push received:', p));
+
         // Listen to Profile changes in real-time
         unsubProfile = onSnapshot(doc(db, COLLECTIONS.PROFILES, firebaseUser.uid), (profileDoc) => {
           if (profileDoc.exists()) {
