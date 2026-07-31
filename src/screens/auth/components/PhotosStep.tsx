@@ -21,16 +21,14 @@ interface PhotosStepProps {
 
 const buildSelectedPhoto = (asset: ImagePicker.ImagePickerAsset | null | undefined): SelectedPhoto | null => {
   if (!asset) return null;
-  const mimeType = asset.base64 ? 'image/jpeg' : (asset.mimeType || 'image/jpeg');
-  const normalizedExtension = mimeType === 'image/png' ? 'png' : 'jpg';
-  const dataUri = asset.base64 ? `data:${mimeType};base64,${asset.base64}` : null;
-  const previewUri = asset.uri || dataUri;
+  const mimeType = asset.mimeType || 'image/jpeg';
+  const previewUri = asset.uri;
   if (!previewUri) return null;
   return {
     previewUri,
-    uploadUri: dataUri || previewUri,
+    uploadUri: previewUri,
     contentType: mimeType,
-    fileExtension: normalizedExtension,
+    fileExtension: 'webp',
   };
 };
 
@@ -47,7 +45,7 @@ const PhotosStep: React.FC<PhotosStepProps> = ({ form, setForm, onNext }) => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: 'images',
       allowsMultipleSelection: false,
-      base64: true,
+      base64: false,
       quality: 0.8,
     });
 

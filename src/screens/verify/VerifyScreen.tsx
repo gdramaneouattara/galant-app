@@ -122,7 +122,7 @@ const VerifyScreen: React.FC = () => {
       bucket: 'kyc-docs',
       path,
       uri,
-      contentType: 'image/jpeg'
+      contentType: 'image/webp'
     });
   };
 
@@ -141,9 +141,9 @@ const VerifyScreen: React.FC = () => {
     setSubmitting(true);
     try {
       const folder = `${currentUser.id}/${Date.now()}`;
-      const frontPath = `${folder}/front.jpg`;
-      const selfiePath = `${folder}/selfie.jpg`;
-      const backPath = documentBackUri ? `${folder}/back.jpg` : null;
+      const frontPath = `${folder}/front.webp`;
+      const selfiePath = `${folder}/selfie.webp`;
+      const backPath = documentBackUri ? `${folder}/back.webp` : null;
 
       await uploadToStorage(documentFrontUri!, frontPath);
       await uploadToStorage(selfieUri!, selfiePath);

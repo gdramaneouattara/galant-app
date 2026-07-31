@@ -1,17 +1,32 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, ActivityIndicator, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, TextInput } from 'react-native';
+import { Alert, ActivityIndicator, FlatList, Image, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Rocket, Star, Search, SlidersHorizontal } from 'lucide-react-native';
+import { Rocket, Search, Star } from 'lucide-react-native';
 import { useApp } from '../../state/AppContext';
 import { COLORS } from '../../data/mock';
 import { apiRequest } from '../../lib/api';
 import ProfileBadges from '../../components/ProfileBadges';
 import type { RootStackParamList } from '../../navigation/MainNavigator';
 
-type DiscoverSuggestion = { id: string; name: string; age: number; photos: string[]; city: string | null; score: number; is_verified: boolean; is_premium: boolean; super_liked_me: boolean; boosted_until: string | null; distance_km: number | null; current_user?: boolean; };
+type DiscoverSuggestion = {
+  id: string;
+  name: string;
+  age: number;
+  photos: string[];
+  city: string | null;
+  score: number;
+  is_verified: boolean;
+  is_premium: boolean;
+  super_liked_me: boolean;
+  boosted_until: string | null;
+  distance_km: number | null;
+  current_user?: boolean;
+};
+
 type DiscoverResponse = { suggestions: DiscoverSuggestion[]; current_user_rank?: number | null; };
 type Nav = NativeStackNavigationProp<RootStackParamList>;
+
 const MATCHMAKING_LIMIT = 80;
 
 const DiscoverGridScreen: React.FC = () => {
@@ -33,17 +48,52 @@ const DiscoverGridScreen: React.FC = () => {
       const res = await apiRequest<DiscoverResponse>(`/api/matchmaking/suggestions?limit=${MATCHMAKING_LIMIT}${includeSelfParam}${searchParam}`, { requireAuth: true });
       setProfiles(res.suggestions || []);
       setCurrentUserRank(res.current_user_rank ?? null);
-    } catch { setProfiles([]); setCurrentUserRank(null); } finally { setLoading(false); }
+    } catch {
+      setProfiles([]);
+      setCurrentUserRank(null);
+    } finally {
+      setLoading(false);
+    }
   }, [includeSelf, searchQuery]);
 
-  useFocusEffect(useCallback(() => { if (currentUser) void fetchGridSuggestions(); }, [currentUser, fetchGridSuggestions, appResumeVersion]));
+  useFocusEffect(useCallback(() => {
+    if (currentUser) void fetchGridSuggestions();
+  }, [currentUser, fetchGridSuggestions, appResumeVersion]));
+
+  const renderProfile = useCallback(({ item: profile }: { item: DiscoverSuggestion }) => (
+    <Pressable
+      style={[styles.card, { backgroundColor: colors.card }, profile.current_user && styles.myCard]}
+      onPress={() => profile.current_user ? Alert.alert(t('your_position'), t('boost_grid_desc')) : navigation.navigate('ProfileDetail', { profile })}
+    >
+      <Image
+        source={{ uri: profile.photos?.[0] || 'https://placehold.co/300x400' }}
+        style={styles.photo}
+        resizeMode="cover"
+        resizeMethod="resize"
+      />
+      <View style={styles.badgesOverlay}><ProfileBadges user={profile as any} /></View>
+      {profile.super_liked_me && <View style={styles.superLikeBadge}><Star size={12} color="#fff" fill="#fff" /></View>}
+      {profile.boosted_until && new Date(profile.boosted_until) > new Date() && <View style={styles.boostIcon}><Rocket size={12} color="#fff" /></View>}
+      {profile.current_user && <View style={styles.meBadge}><Text style={styles.meBadgeText}>{t('you')}</Text></View>}
+      <View style={styles.metaOverlay}>
+        <Text style={styles.name} numberOfLines={1}>{profile.name}, {profile.age}</Text>
+        <Text style={styles.metaText} numberOfLines={1}>
+          {profile.city || t('city_not_set')}{typeof profile.distance_km === 'number' ? ` - ${profile.distance_km.toFixed(1)} km` : ''}
+        </Text>
+        <Text style={styles.scoreText}>{profile.current_user ? t('boosted_position') : `${t('score')} ${Math.round(profile.score)}`}</Text>
+      </View>
+    </Pressable>
+  ), [colors.card, navigation, t]);
+
   if (!currentUser) return null;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
       <View style={[styles.header, { backgroundColor: colors.header, borderBottomColor: colors.border }]}>
         <Text style={[styles.title, { color: colors.text }]}>{t('discover_grid')}</Text>
-        <Text style={[styles.subtitle, { color: colors.textMuted }]}>{includeSelf && currentUserRank ? t('boost_rank', { rank: currentUserRank }) : t('profiles_visible', { count: profiles.length })}</Text>
+        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+          {includeSelf && currentUserRank ? t('boost_rank', { rank: currentUserRank }) : t('profiles_visible', { count: profiles.length })}
+        </Text>
       </View>
 
       <View style={styles.searchContainer}>
@@ -62,26 +112,31 @@ const DiscoverGridScreen: React.FC = () => {
       </View>
 
       {loading ? (
-        <View style={styles.loadingCard}><ActivityIndicator size="small" color={COLORS.primary} /><Text style={styles.loadingText}>{t('loading_suggestions')}</Text></View>
+        <View style={styles.loadingCard}>
+          <ActivityIndicator size="small" color={COLORS.primary} />
+          <Text style={styles.loadingText}>{t('loading_suggestions')}</Text>
+        </View>
       ) : profiles.length === 0 ? (
-        <View style={styles.loadingCard}><Text style={[styles.loadingText, { color: colors.textMuted }]}>{t('no_profiles_to_show')}</Text><Pressable style={styles.reloadButton} onPress={() => void fetchGridSuggestions()}><Text style={styles.reloadButtonText}>{t('reload')}</Text></Pressable></View>
+        <View style={styles.loadingCard}>
+          <Text style={[styles.loadingText, { color: colors.textMuted }]}>{t('no_profiles_to_show')}</Text>
+          <Pressable style={styles.reloadButton} onPress={() => void fetchGridSuggestions()}>
+            <Text style={styles.reloadButtonText}>{t('reload')}</Text>
+          </Pressable>
+        </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.grid}>
-          {profiles.map((profile) => (
-            <Pressable key={profile.id} style={[styles.card, { backgroundColor: colors.card }, profile.current_user && styles.myCard]} onPress={() => profile.current_user ? Alert.alert(t('your_position'), t('boost_grid_desc')) : navigation.navigate('ProfileDetail', { profile })}>
-              <Image source={{ uri: profile.photos?.[0] || 'https://placehold.co/300x400' }} style={styles.photo} />
-              <View style={styles.badgesOverlay}><ProfileBadges user={profile as any} /></View>
-              {profile.super_liked_me && <View style={styles.superLikeBadge}><Star size={12} color="#fff" fill="#fff" /></View>}
-              {profile.boosted_until && new Date(profile.boosted_until) > new Date() && <View style={styles.boostIcon}><Rocket size={12} color="#fff" /></View>}
-              {profile.current_user && <View style={styles.meBadge}><Text style={styles.meBadgeText}>{t('you')}</Text></View>}
-              <View style={styles.metaOverlay}>
-                <Text style={styles.name} numberOfLines={1}>{profile.name}, {profile.age}</Text>
-                <Text style={styles.metaText} numberOfLines={1}>{profile.city || t('city_not_set')}{typeof profile.distance_km === 'number' ? ` • ${profile.distance_km.toFixed(1)} km` : ''}</Text>
-                <Text style={styles.scoreText}>{profile.current_user ? t('boosted_position') : `${t('score')} ${Math.round(profile.score)}`}</Text>
-              </View>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <FlatList
+          data={profiles}
+          renderItem={renderProfile}
+          keyExtractor={(profile) => profile.id}
+          numColumns={2}
+          contentContainerStyle={styles.grid}
+          columnWrapperStyle={styles.gridRow}
+          initialNumToRender={8}
+          maxToRenderPerBatch={6}
+          updateCellsBatchingPeriod={60}
+          windowSize={5}
+          removeClippedSubviews
+        />
       )}
     </SafeAreaView>
   );
@@ -99,8 +154,9 @@ const styles = StyleSheet.create({
   loadingText: { fontWeight: '700', textAlign: 'center' },
   reloadButton: { marginTop: 8, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, backgroundColor: COLORS.primary },
   reloadButtonText: { color: '#fff', fontWeight: '800' },
-  grid: { flexDirection: 'column', padding: 10, gap: 10 },
-  card: { width: '100%', aspectRatio: 3 / 4, borderRadius: 24, overflow: 'hidden', borderWidth: 2, borderColor: 'transparent' },
+  grid: { padding: 10, paddingBottom: 24 },
+  gridRow: { gap: 10, marginBottom: 10 },
+  card: { flex: 1, aspectRatio: 3 / 4, borderRadius: 24, overflow: 'hidden', borderWidth: 2, borderColor: 'transparent' },
   myCard: { borderColor: '#8b5cf6' },
   photo: { width: '100%', height: '100%' },
   badgesOverlay: { position: 'absolute', top: 8, left: 8, zIndex: 2 },
@@ -115,4 +171,3 @@ const styles = StyleSheet.create({
 });
 
 export default DiscoverGridScreen;
-
