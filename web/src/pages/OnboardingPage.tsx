@@ -33,7 +33,7 @@ const BIO_PROMPTS = [
 ];
 
 const OnboardingPage: React.FC = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, registerWebPushToken } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -173,8 +173,8 @@ const OnboardingPage: React.FC = () => {
 
       showAlert('Dossier Transmis 🌹', 'Bienvenue dans le Cercle Galant. Votre profil est en cours de revue par notre Conciergerie pour garantir l\'excellence de notre communauté.');
 
-      // On recharge la page pour forcer le rafraîchissement complet du profil dans l'AuthContext
-      window.location.href = '/';
+      // Instead of redirecting, move to activation step
+      setStep(6);
     } catch (error: any) {
       showAlert('Erreur', error.message || 'Échec de la création du profil.');
     } finally {
@@ -515,6 +515,52 @@ const OnboardingPage: React.FC = () => {
                  J'ADHÈRE AUX VALEURS
                </button>
             </div>
+          </div>
+        );
+
+      case 6: // Service Activation
+        return (
+          <div className="space-y-10 animate-in fade-in zoom-in-95 duration-700 py-4 text-center">
+            <div className="space-y-3">
+               <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/20 rounded-[2.5rem] flex items-center justify-center mx-auto text-blue-500 mb-6 shadow-xl shadow-blue-500/10">
+                  <ShieldCheck size={40} />
+               </div>
+               <h3 className="text-4xl font-serif italic tracking-tighter text-slate-900 dark:text-white">Expérience Activée</h3>
+               <p className="text-slate-500 dark:text-slate-400 font-medium px-4">
+                 Votre dossier a été transmis. Pour assurer votre sécurité et ne manquer aucun match, nous activons maintenant vos services.
+               </p>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-white/5 p-8 rounded-[2.5rem] border border-slate-100 dark:border-white/5 space-y-6">
+               <div className="flex items-center gap-4 text-left">
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary shrink-0">
+                     <Bell size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Alertes de Match</h4>
+                    <p className="text-[10px] font-medium text-slate-400">Soyez informé instantanément dès qu'une rose vous est offerte.</p>
+                  </div>
+               </div>
+               <div className="flex items-center gap-4 text-left">
+                  <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500 shrink-0">
+                     <Lock size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">La Sentinelle</h4>
+                    <p className="text-[10px] font-medium text-slate-400">Garantissez votre sécurité lors de vos rendez-vous réels.</p>
+                  </div>
+               </div>
+            </div>
+
+            <button
+              onClick={async () => {
+                if (user) await registerWebPushToken(user.uid);
+                window.location.href = '/';
+              }}
+              className="w-full bg-primary text-white py-6 rounded-3xl font-black text-xs uppercase tracking-prestige shadow-2xl shadow-red-500/30 hover:scale-[1.02] active:scale-95 transition-all"
+            >
+              ACTIVER MON EXPÉRIENCE
+            </button>
           </div>
         );
 

@@ -1,48 +1,36 @@
-# Activation des Notifications Push sur le Web
+# Lancement des Services de Prestige (Web Push)
 
-Ce plan vise à doter la version Web de Galant de la capacité d'envoyer des notifications push en temps réel, garantissant que les membres ne manquent aucune interaction importante (Match, Message, Alerte de Sécurité).
-
-## État des Lieux
-- **Mobile** : Les notifications sont déjà opérationnelles via FCM et Expo.
-- **Web** : Actuellement, la version web est "silencieuse". Si l'utilisateur ferme son navigateur, il ne reçoit plus aucune information.
+Ce plan vise à intégrer la demande de permission des notifications de manière naturelle et prestigieuse à la fin du parcours d'inscription, évitant ainsi l'interruption technique brutale du navigateur.
 
 ## Proposed Changes
 
-### [Web] Infrastructure de Messagerie
+### [Web Mobile] Parcours d'Onboarding
 
-#### [MODIFY] [firebase.ts](file:///C:/Users/UTILISATEUR/galant-app/web/src/firebase.ts)
-- Importer `getMessaging` et `getToken` depuis Firebase.
-- Exporter l'instance `messaging` pour l'utiliser dans l'application.
-
-#### [NEW] [firebase-messaging-sw.js](file:///C:/Users/UTILISATEUR/galant-app/web/public/firebase-messaging-sw.js)
-- Création du Service Worker obligatoire pour Firebase Cloud Messaging.
-- Ce fichier permet au navigateur de recevoir et d'afficher des notifications même lorsque le site Galant n'est pas ouvert.
-
-### [Web] Enregistrement des Tokens
+#### [MODIFY] [OnboardingPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/OnboardingPage.tsx)
+- **Nouvelle Étape (Step 6)** : "Activation des Services".
+- Cette étape sera affichée immédiatement après la soumission du dossier (Step 5).
+- **Contenu** : Un message de félicitations haut de gamme :
+    - *"Dossier validé. Votre expérience Galant commence maintenant."*
+    - *"Nous activons votre protection La Sentinelle et vos alertes de rencontres pour une réactivité maximale."*
+- **Bouton d'action** : "ACTIVER MON EXPÉRIENCE".
+- **Logique** :
+    - Le clic sur ce bouton appellera `registerWebPushToken()` (qui déclenchera la demande de permission du navigateur).
+    - Une fois l'action terminée (acceptée ou non), l'utilisateur sera redirigé vers la page d'accueil.
 
 #### [MODIFY] [AuthContext.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/context/AuthContext.tsx)
-- Implémenter la fonction `registerWebPushToken(userId)` :
-    - Demander la permission à l'utilisateur via le navigateur.
-    - Récupérer le token FCM unique du navigateur.
-    - Enregistrer ce token dans la collection Firestore `push_tokens` (la même que le mobile) pour que le serveur sache où envoyer les alertes.
-- Appeler cette fonction automatiquement après chaque connexion réussie.
-
-### [Server] Compatibilité Web
-
-#### [MODIFY] [notificationService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/notificationService.js)
-- S'assurer que le serveur traite les tokens Web comme des tokens FCM standards.
-- (Optionnel) Ajouter une icône spécifique "Web" dans les métadonnées de notification.
+- Retirer l'appel automatique à `registerWebPushToken` lors de la connexion initiale pour ne pas harceler l'utilisateur s'il n'est pas encore passé par l'étape d'activation.
 
 ## User Review Required
 
-> [!IMPORTANT]
-> **Consentement de l'utilisateur** : Le navigateur affichera une fenêtre demandant "Voulez-vous autoriser galant.app à vous envoyer des notifications ?". L'utilisateur doit accepter pour que cela fonctionne. C'est un gage de sérieux et de prestige.
+> [!NOTE]
+> Cette approche transforme une contrainte technique (le pop-up de permission) en une **validation de service de luxe**. L'utilisateur a le sentiment d'activer sa protection plutôt que de subir un réglage informatique.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Se connecter sur la version Web.
-2.  Accepter la demande de notification du navigateur.
-3.  Vérifier dans la console Firebase (ou Firestore) qu'un nouveau token avec la plateforme `web` a été créé.
-4.  Depuis un autre compte, envoyer un message.
-5.  Vérifier que la notification apparaît sur le bureau ou l'écran de verrouillage du téléphone (même si l'onglet Galant est fermé).
+1.  Créer un nouveau compte sur la version Web.
+2.  Parcourir toutes les étapes de l'inscription.
+3.  Vérifier qu'après avoir accepté le manifeste, la nouvelle page d'activation apparaît.
+4.  Cliquer sur "ACTIVER MON EXPÉRIENCE".
+5.  Vérifier que la demande de permission du navigateur apparaît à ce moment précis.
+6.  Vérifier que la redirection vers l'accueil se fait correctement après le clic.
