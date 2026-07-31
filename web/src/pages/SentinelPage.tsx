@@ -52,6 +52,9 @@ const SentinelPage: React.FC = () => {
 
   // Fake Call State
   const [isFakeCallRinging, setIsFakeCallRinging] = useState(false);
+  const [fakeCallDelay, setFakeCallDelay] = useState(0);
+  const [isFakeCallScheduled, setIsFakeCallScheduled] = useState(false);
+  const [scheduledSecondsLeft, setScheduledSecondsLeft] = useState<number | null>(null);
   const [callerName, setCallerName] = useState('Bureau');
   const [callerPhoto, setCallerPhoto] = useState<string | null>(null);
   const [callDuration, setCallDuration] = useState(0);
@@ -86,6 +89,33 @@ const SentinelPage: React.FC = () => {
     }
     return () => clearInterval(interval);
   }, [isFakeCallActive, isFakeCallRinging]);
+
+  // Scheduled fake call timer
+  useEffect(() => {
+    let interval: any;
+    if (isFakeCallScheduled && scheduledSecondsLeft !== null && scheduledSecondsLeft > 0) {
+      interval = setInterval(() => {
+        setScheduledSecondsLeft(prev => {
+          if (prev === null) return null;
+          const next = prev - 1;
+
+          // Vibrate 5 seconds before call to warn user discrretly in pocket
+          if (next === 5) {
+            if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
+          }
+
+          if (next <= 0) {
+            clearInterval(interval);
+            setIsFakeCallScheduled(false);
+            triggerFakeCall();
+            return null;
+          }
+          return next;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isFakeCallScheduled, scheduledSecondsLeft]);
 
   const formatDuration = (s: number) => {
     const mins = Math.floor(s / 60);
@@ -542,7 +572,27 @@ const SentinelPage: React.FC = () => {
         </div>
 
         <div className="space-y-6 relative z-10">
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Delay Selector */}
+            <div className="space-y-3">
+              <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest ml-2">Quand sonner ?</label>
+              <div className="flex gap-2">
+                {[0, 1, 2, 5].map((val) => (
+                  <button
+                    key={val}
+                    onClick={() => setFakeCallDelay(val)}
+                    className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-all ${
+                      fakeCallDelay === val
+                        ? 'bg-primary text-white shadow-lg'
+                        : 'bg-slate-800 text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    {val === 0 ? 'IMMÉDIAT' : `${val} MIN`}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div>
               <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest ml-2">Qui vous appelle ?</label>
               <div className="flex gap-3 mt-1">
@@ -564,12 +614,34 @@ const SentinelPage: React.FC = () => {
             </div>
           </div>
 
-          <button
-            onClick={triggerFakeCall}
-            className="w-full bg-white text-slate-900 py-5 rounded-2xl font-medium text-xs uppercase tracking-prestige shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
-          >
-            Lancer la Simulation
-          </button>
+          {!isFakeCallScheduled ? (
+            <button
+              onClick={() => {
+                if (fakeCallDelay === 0) {
+                  triggerFakeCall();
+                } else {
+                  setScheduledSecondsLeft(fakeCallDelay * 60);
+                  setIsFakeCallScheduled(true);
+                }
+              }}
+              className="w-full bg-white text-slate-900 py-5 rounded-2xl font-medium text-xs uppercase tracking-prestige shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
+            >
+              {fakeCallDelay === 0 ? 'Lancer la Simulation' : 'Programmer l\'appel'}
+            </button>
+          ) : (
+            <div className="space-y-4">
+               <div className="bg-primary/20 border border-primary/30 p-5 rounded-[2rem] text-center animate-in zoom-in duration-300">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary animate-pulse mb-1">Appel programmé</p>
+                  <p className="text-3xl font-black text-white">{formatDuration(scheduledSecondsLeft || 0)}</p>
+               </div>
+               <button
+                onClick={() => { setIsFakeCallScheduled(false); setScheduledSecondsLeft(null); }}
+                className="w-full py-4 border-2 border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all"
+               >
+                 Annuler la programmation
+               </button>
+            </div>
+          )}
         </div>
       </div>
 

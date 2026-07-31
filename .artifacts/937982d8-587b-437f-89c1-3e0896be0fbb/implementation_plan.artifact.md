@@ -1,41 +1,33 @@
-# Implémentation de la Sérénade Vocale (Web)
+# Planification de l'Appel Fantôme (La Sentinelle)
 
-Ce plan vise à porter la fonctionnalité "Sérénade Vocale" (Voice Messages à écoute unique) sur la version Web, en garantissant une parité totale avec l'expérience mobile native.
+Ce plan vise à permettre aux utilisateurs de programmer le déclenchement de l'Appel Fantôme après un délai défini, pour une simulation de sortie de secours plus naturelle.
 
 ## Proposed Changes
 
-### [Web Mobile] Infrastructure Audio
+### [Web Mobile] Interface de Sécurité
 
-#### [NEW] [audioRecording.ts](file:///C:/Users/UTILISATEUR/galant-app/web/src/lib/audioRecording.ts)
-- Utilisation de l'API `MediaRecorder` du navigateur.
-- Logique d'enregistrement, de pause et de conversion en Blob audio (format `audio/webm` ou `audio/mp4` selon compatibilité).
-
-#### [NEW] [VoicePlayer.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/VoicePlayer.tsx)
-- Composant de lecture audio élégant.
-- Gestion de l'état "Écoute unique" : appel au serveur pour marquer la sérénade comme lue dès la fin de la lecture.
-- Design Prestige (Playfair Display).
-
-### [Web Mobile] Interface de Chat
-
-#### [MODIFY] [ChatPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ChatPage.tsx)
-- **Zone de saisie** : Ajouter le bouton Micro (icône `Mic`).
-- **Mode Enregistrement** : Afficher un état visuel pulsant lors de la capture vocale.
-- **Affichage des messages** : Intégrer le `VoicePlayer` pour les messages de type `VOICE`.
-- **Support des métadonnées** : Gérer le flag `is_serenade` et l'état `played_at` pour le verrouillage visuel.
-
-### [Server] Service de Médias
-
-#### [MODIFY] [mediaController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/mediaController.js)
-- S'assurer que l'upload supporte les formats audio web.
+#### [MODIFY] [SentinelPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/SentinelPage.tsx)
+- **Sélecteur de Temps** :
+    - Ajouter une section "Quand sonner ?" dans la carte Appel Fantôme.
+    - Proposer des options : `0 (Immédiat)`, `1 min`, `2 min`, `5 min`.
+- **Logique de Temporisation** :
+    - Créer un état `scheduledCallTime` pour stocker le moment du futur appel.
+    - Implémenter un compte à rebours visuel discret pendant la phase d'attente.
+    - Déclencher l'overlay d'appel et la sonnerie automatiquement à l'échéance.
+- **Vibration de Prévention** :
+    - Utiliser l'API `navigator.vibrate` pour émettre une brève vibration 5 secondes avant le début de la sonnerie, afin d'avertir l'utilisateur discrètement.
 
 ## User Review Required
 
-> [!IMPORTANT]
-> **Expérience Utilisateur** : Sur Web, le navigateur demandera l'autorisation d'accéder au micro lors du premier clic. Nous utiliserons une approche similaire au Web Push pour rendre cette demande "naturelle".
+> [!TIP]
+> **Scénario d'usage** : Vous sentez que le rendez-vous devient inconfortable. Vous prétextez d'aller aux toilettes ou de regarder l'heure, vous réglez l'appel sur "2 minutes". Vous rangez votre téléphone. 2 minutes plus tard, "Bureau" vous appelle alors que vous êtes à table, vous offrant le prétexte parfait pour partir.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  **Mobile -> Web** : Envoyer une sérénade depuis un téléphone et l'écouter sur Web. Vérifier qu'elle expire bien après lecture.
-2.  **Web -> Mobile** : Enregistrer une sérénade sur Web et l'écouter sur téléphone.
-3.  **Qualité Audio** : Vérifier que le son est clair et que le fichier est optimisé (léger).
+1.  Ouvrir **La Sentinelle**.
+2.  Régler l'appel fantôme sur "1 minute".
+3.  Cliquer sur "Lancer la programmation".
+4.  Vérifier qu'un compte à rebours s'affiche et que l'interface reste réactive.
+5.  Attendre 1 minute : vérifier que la sonnerie se déclenche et que l'interface Galant disparaît (Immersion totale).
+6.  Tester l'annulation d'un appel programmé.
