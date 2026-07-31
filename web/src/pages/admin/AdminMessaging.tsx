@@ -7,7 +7,9 @@ import {
   CheckCircle2,
   AlertCircle,
   History,
-  Info
+  Info,
+  Star,
+  Heart
 } from 'lucide-react';
 import { apiRequest } from '@shared/lib/api';
 import { showAlert } from '@shared/lib/ui-bridge';
@@ -141,7 +143,7 @@ const AdminMessaging: React.FC = () => {
 
 // Internal icon fallbacks to avoid complex imports in this block
 const UserIcon = (props: any) => <Users {...props} />;
-const HeartIcon = (props: any) => <AlertCircle {...props} />;
+const HeartIcon = (props: any) => <Heart {...props} />;
 const Gem = (props: any) => <Star {...props} />;
 
 export default AdminMessaging;

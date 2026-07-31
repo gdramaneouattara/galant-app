@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { apiRequest } from '@shared/lib/api';
-import { Save, RefreshCcw, DollarSign, Gem, Rocket, MessageSquare, Heart, Film, Sparkles, LayoutGrid, Users } from 'lucide-react';
+import { Save, RefreshCw, DollarSign, Gem, Rocket, MessageSquare, Heart, Film, Sparkles, LayoutGrid, Users } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 
 const AdminPricing: React.FC = () => {
@@ -65,7 +65,7 @@ const AdminPricing: React.FC = () => {
     }));
   };
 
-  if (loading) return <div className="p-10 text-center"><RefreshCcw className="animate-spin mx-auto" /></div>;
+  if (loading) return <div className="p-10 text-center"><RefreshCw className="animate-spin mx-auto" /></div>;
 
   return (
     <div className="space-y-6 lg:space-y-10 max-w-4xl mx-auto">
@@ -79,7 +79,7 @@ const AdminPricing: React.FC = () => {
           disabled={saving}
           className="w-full sm:w-auto bg-primary text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-red-500/20 flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
         >
-          {saving ? <RefreshCcw className="animate-spin" size={16} /> : <Save size={16} />}
+          {saving ? <RefreshCw className="animate-spin" size={16} /> : <Save size={16} />}
           Enregistrer
         </button>
       </div>
