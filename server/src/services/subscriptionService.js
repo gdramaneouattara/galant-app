@@ -222,6 +222,11 @@ const applyPurchasedEntitlement = async ({
     await db.collection('profiles').doc(userId).update({
       likes_unlocked_until: expiresAt
     });
+  } else if (normalizedType === 'DISCOVER_GRID_UNLOCK') {
+    await db.collection('profiles').doc(userId).update({
+      is_grid_unlocked: true,
+      updated_at: new Date().toISOString()
+    });
   }
 
   return { success: true };
