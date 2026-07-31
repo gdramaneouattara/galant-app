@@ -60,8 +60,66 @@ const SentinelPage: React.FC = () => {
   const [callDuration, setCallDuration] = useState(0);
 
   const [loading, setLoading] = useState(false);
-  const ringtoneRef = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const ringtoneTimerRef = useRef<number | null>(null);
+  const activeOscillatorsRef = useRef<OscillatorNode[]>([]);
   const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const stopRingtone = () => {
+    if (ringtoneTimerRef.current !== null) {
+      window.clearInterval(ringtoneTimerRef.current);
+      ringtoneTimerRef.current = null;
+    }
+
+    activeOscillatorsRef.current.forEach((oscillator) => {
+      try {
+        oscillator.stop();
+      } catch {
+        // Already stopped.
+      }
+    });
+    activeOscillatorsRef.current = [];
+  };
+
+  const playRingtonePulse = () => {
+    try {
+      const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextCtor) return;
+
+      const audioContext = audioContextRef.current || new AudioContextCtor();
+      audioContextRef.current = audioContext;
+      if (audioContext.state === 'suspended') {
+        void audioContext.resume();
+      }
+
+      const gain = audioContext.createGain();
+      gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.18, audioContext.currentTime + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.75);
+      gain.connect(audioContext.destination);
+
+      [660, 880].forEach((frequency, index) => {
+        const oscillator = audioContext.createOscillator();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime + index * 0.12);
+        oscillator.connect(gain);
+        oscillator.start(audioContext.currentTime + index * 0.12);
+        oscillator.stop(audioContext.currentTime + 0.8);
+        activeOscillatorsRef.current.push(oscillator);
+        oscillator.onended = () => {
+          activeOscillatorsRef.current = activeOscillatorsRef.current.filter((item) => item !== oscillator);
+        };
+      });
+    } catch {
+      // Browsers can block audio in some contexts; the visual call screen remains usable.
+    }
+  };
+
+  const startRingtone = () => {
+    stopRingtone();
+    playRingtonePulse();
+    ringtoneTimerRef.current = window.setInterval(playRingtonePulse, 1600);
+  };
 
   // Time remaining calculator
   useEffect(() => {
@@ -117,6 +175,13 @@ const SentinelPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [isFakeCallScheduled, scheduledSecondsLeft]);
 
+  useEffect(() => {
+    return () => {
+      stopRingtone();
+      setIsFakeCallActive(false);
+    };
+  }, [setIsFakeCallActive]);
+
   const formatDuration = (s: number) => {
     const mins = Math.floor(s / 60);
     const secs = s % 60;
@@ -126,28 +191,19 @@ const SentinelPage: React.FC = () => {
   const triggerFakeCall = () => {
     setIsFakeCallRinging(true);
     setIsFakeCallActive(true);
-    if (ringtoneRef.current) {
-       ringtoneRef.current.loop = true;
-       ringtoneRef.current.play().catch(() => {});
-    }
+    startRingtone();
   };
 
   const acceptCall = () => {
     setIsFakeCallRinging(false);
-    if (ringtoneRef.current) {
-        ringtoneRef.current.pause();
-        ringtoneRef.current.currentTime = 0;
-    }
+    stopRingtone();
   };
 
   const endCall = () => {
     setIsFakeCallActive(false);
     setIsFakeCallRinging(false);
     setCallDuration(0);
-    if (ringtoneRef.current) {
-        ringtoneRef.current.pause();
-        ringtoneRef.current.currentTime = 0;
-    }
+    stopRingtone();
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -347,8 +403,6 @@ const SentinelPage: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto pb-24 px-4 space-y-10 relative">
-      <audio ref={ringtoneRef} src="https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3" />
-
       {/* Header */}
       <div className="flex items-center gap-4">
         <button

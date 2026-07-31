@@ -50,6 +50,22 @@ test('Rules: Stories move into discovery and Apps replaces the stories tab', asy
   assert.match(webDiscover, /initialStatusId/);
 });
 
+test('Rules: Sentinel fake call is wired on web and mobile', async () => {
+  const nativeApps = await read('src/screens/apps/AppsScreen.tsx');
+  const nativeNavigator = await read('src/navigation/MainNavigator.tsx');
+  const nativeSentinel = await read('src/screens/apps/SentinelScreen.tsx');
+  const webSentinel = await read('web/src/pages/SentinelPage.tsx');
+
+  assert.match(nativeApps, /La Sentinelle/);
+  assert.match(nativeApps, /Sentinel/);
+  assert.match(nativeNavigator, /SentinelScreen/);
+  assert.match(nativeSentinel, /triggerFakeCall/);
+  assert.match(nativeSentinel, /Vibration/);
+  assert.match(nativeSentinel, /Appel fantome/);
+  assert.match(webSentinel, /playRingtonePulse/);
+  assert.match(webSentinel, /isFakeCallActive/);
+});
+
 test('Rules: ProfileScreen manages internationalization', async () => {
   const code = await read('src/screens/profile/ProfileScreen.tsx');
   assert.match(code, /language/);

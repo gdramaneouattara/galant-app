@@ -12,6 +12,7 @@ import ChatScreen from '../screens/messages/ChatScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import GuideScreen from '../screens/guide/GuideScreen';
 import AppsScreen from '../screens/apps/AppsScreen';
+import SentinelScreen from '../screens/apps/SentinelScreen';
 import VenueDetailScreen from '../screens/guide/VenueDetailScreen';
 import AgendaScreen from '../screens/agenda/AgendaScreen';
 import PremiumScreen from '../screens/premium/PremiumScreen';
@@ -56,6 +57,7 @@ export type RootStackParamList = {
   PartnerPremium: undefined;
   Status: { initialStatusId?: string; openComposer?: boolean } | undefined;
   Guide: undefined;
+  Sentinel: undefined;
 };
 
 export type ProfileDetailParam = {
@@ -210,6 +212,7 @@ const MainNavigator: React.FC = () => {
             <RootStack.Screen name="VenueDetail" component={VenueDetailScreen} />
             <RootStack.Screen name="Status" component={StatusScreen} />
             <RootStack.Screen name="Guide" component={GuideScreen} />
+            <RootStack.Screen name="Sentinel" component={SentinelScreen} />
           </>
         ) : isPartner ? (
           <>
@@ -232,6 +235,7 @@ const MainNavigator: React.FC = () => {
             <RootStack.Screen name="VenueDetail" component={VenueDetailScreen} />
             <RootStack.Screen name="Status" component={StatusScreen} />
             <RootStack.Screen name="Guide" component={GuideScreen} />
+            <RootStack.Screen name="Sentinel" component={SentinelScreen} />
           </>
         )}
       </RootStack.Navigator>
