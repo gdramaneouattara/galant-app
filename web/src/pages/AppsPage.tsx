@@ -1,57 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Crown, Gem, MapPin, Rocket, ShieldCheck, Sparkles, ShoppingCart, Shield } from 'lucide-react';
+import { Sparkles, ShoppingCart, Shield } from 'lucide-react';
 import FeatureHighlight from '../components/FeatureHighlight';
 
 const APPS = [
-  {
-    title: 'Sorties',
-    subtitle: 'Agenda, lieux et idees de rendez-vous.',
-    href: '/experiences',
-    icon: Calendar,
-    color: 'text-sky-500',
-    bg: 'bg-sky-50 dark:bg-sky-500/10',
-  },
-  {
-    title: 'Guide Galant',
-    subtitle: 'Les meilleures adresses pour vos rencontres.',
-    href: '/guide',
-    icon: MapPin,
-    color: 'text-primary',
-    bg: 'bg-rose-50 dark:bg-rose-500/10',
-  },
-  {
-    title: 'Premium',
-    subtitle: 'IA, mode invisible et avantages exclusifs.',
-    href: '/premium',
-    icon: Crown,
-    color: 'text-amber-500',
-    bg: 'bg-amber-50 dark:bg-amber-500/10',
-  },
-  {
-    title: 'Boost',
-    subtitle: 'Gagnez plus de visibilite dans Decouverte.',
-    href: '/boost',
-    icon: Rocket,
-    color: 'text-violet-500',
-    bg: 'bg-violet-50 dark:bg-violet-500/10',
-  },
-  {
-    title: 'Certification',
-    subtitle: 'Verifiez votre identite et inspirez confiance.',
-    href: '/verify',
-    icon: ShieldCheck,
-    color: 'text-blue-500',
-    bg: 'bg-blue-50 dark:bg-blue-500/10',
-  },
-  {
-    title: 'Roses',
-    subtitle: 'Roses recues, solde et historique.',
-    href: '/roses',
-    icon: Gem,
-    color: 'text-pink-600',
-    bg: 'bg-pink-50 dark:bg-pink-500/10',
-  },
   {
     title: 'Le Marché',
     subtitle: 'Comparez les prix et optimisez vos achats.',
@@ -82,7 +34,7 @@ const AppsPage: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {APPS.map((app) => {
           const Icon = app.icon;
           const isNew = app.href === '/market' || app.href === '/sentinel';
