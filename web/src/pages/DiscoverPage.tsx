@@ -265,17 +265,27 @@ const DiscoverPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Pilule de filtre alignée à droite */}
-        <button
-          onClick={() => setIsFilterOpen(true)}
-          className={`w-10 h-10 rounded-full backdrop-blur-xl flex items-center justify-center transition-all active:scale-95 border group ${
-            isFilterActive
-              ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.15)] text-amber-500'
-              : 'bg-white/10 dark:bg-slate-900/40 border-white/20 dark:border-white/5 text-slate-400 hover:text-white shadow-lg'
-          }`}
-        >
-          <SlidersHorizontal size={16} className={isFilterActive ? 'animate-pulse' : 'group-hover:rotate-12 transition-transform'} />
-        </button>
+        {/* Boutons de vue & filtre alignés à droite */}
+        <div className="flex gap-3">
+          <button
+            onClick={() => navigate('/discover-grid')}
+            className="w-10 h-10 rounded-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 shadow-lg flex items-center justify-center text-slate-400 hover:text-primary transition-all active:scale-95"
+            title="Vue Grille"
+          >
+            <LayoutGrid size={18} />
+          </button>
+
+          <button
+            onClick={() => setIsFilterOpen(true)}
+            className={`w-10 h-10 rounded-full backdrop-blur-xl flex items-center justify-center transition-all active:scale-95 border group ${
+              isFilterActive
+                ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.15)] text-amber-500'
+                : 'bg-white/10 dark:bg-slate-900/40 border-white/20 dark:border-white/5 text-slate-400 hover:text-white shadow-lg'
+            }`}
+          >
+            <SlidersHorizontal size={16} className={isFilterActive ? 'animate-pulse' : 'group-hover:rotate-12 transition-transform'} />
+          </button>
+        </div>
       </div>
 
       <section className="mb-8">

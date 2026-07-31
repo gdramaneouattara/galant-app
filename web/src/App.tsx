@@ -5,6 +5,7 @@ import './index.css';
 
 // Pages
 import DiscoverPage from './pages/DiscoverPage';
+import DiscoverGridPage from './pages/DiscoverGridPage';
 import AuthPage from './pages/AuthPage';
 import PartnerSignupPage from './pages/PartnerSignupPage';
 import OnboardingPage from './pages/OnboardingPage';
@@ -239,6 +240,7 @@ const AppContent: React.FC = () => {
       <main className={`relative z-10 flex-1 w-full ${(isAuthPage || isWelcomePage || isAdminRoute || isFakeCallActive) ? '' : 'max-w-6xl mx-auto p-4 md:p-8 mb-20 md:mb-0'}`}>
         <Routes>
           <Route path="/" element={<DiscoverPage />} />
+          <Route path="/discover-grid" element={<DiscoverGridPage />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/cgu" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
