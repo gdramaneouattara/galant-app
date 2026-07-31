@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle, ChevronRight, Clock, ShieldCheck } from 'lucide-react';
 import { apiRequest } from '@shared/lib/api';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 const PartnerChatsPage: React.FC = () => {
   const { profile } = useAuth();
@@ -63,7 +64,7 @@ const PartnerChatsPage: React.FC = () => {
                   state: {
                     venueChatId: chat.id,
                     venueName: chat.client?.name || 'Client Galant',
-                    venuePhoto: chat.client?.photos?.[0] || 'https://placehold.co/100',
+                    venuePhoto: optimizedPhotoUrl(chat.client?.photos?.[0], chat.client?.photo_variants, 'thumb') || 'https://placehold.co/100',
                     presenceLabel: 'Client Galant'
                   }
                 })}
@@ -72,7 +73,7 @@ const PartnerChatsPage: React.FC = () => {
                 <div className="flex items-center gap-6">
                   <div className="relative">
                     <div className="w-16 h-16 rounded-[1.5rem] overflow-hidden border-2 border-slate-100 dark:border-white/10 shadow-md">
-                      <img src={chat.client?.photos?.[0] || 'https://placehold.co/100'} className="w-full h-full object-cover" alt="" />
+                      <img src={optimizedPhotoUrl(chat.client?.photos?.[0], chat.client?.photo_variants, 'thumb') || 'https://placehold.co/100'} className="w-full h-full object-cover" alt="" />
                     </div>
                     {chat.client?.is_verified && (
                       <div className="absolute -top-2 -right-2 bg-blue-500 text-white p-1 rounded-full border-4 border-white dark:border-slate-900 shadow-sm">

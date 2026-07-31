@@ -6,12 +6,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ProposeVenueModal from '../components/ProposeVenueModal';
 import { showAlert } from '@shared/lib/ui-bridge';
+import OptimizedImage from '../components/OptimizedImage';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 interface Venue {
   id: string;
   name: string;
   description: string;
   photo_url: string;
+  photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
   venue_type: 'RESTAURANT' | 'LOUNGE' | 'HOTEL';
   city: string;
   benefit_description?: string;
@@ -133,10 +136,11 @@ const GuidePage: React.FC = () => {
       {/* Hero Header Ultra Premium */}
       <div className="relative rounded-[4rem] overflow-hidden shadow-2xl bg-slate-950 dark:bg-black min-h-[450px] flex items-center group">
         <div className="absolute inset-0">
-          <img
+          <OptimizedImage
             src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200"
             className="w-full h-full object-cover opacity-40 group-hover:scale-110 transition-transform duration-[5000ms]"
             alt="Hero"
+            eager
           />
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent"></div>
         </div>
@@ -215,11 +219,10 @@ const GuidePage: React.FC = () => {
             className="group bg-white dark:bg-slate-900 rounded-[3.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.08)] dark:shadow-none border border-slate-100 dark:border-white/10 overflow-hidden hover:scale-[1.02] transition-all duration-500 flex flex-col cursor-pointer"
           >
             <div className="relative h-72 overflow-hidden">
-              <img
-                src={venue.photo_url}
+              <OptimizedImage
+                src={optimizedPhotoUrl(venue.photo_url, venue.photo_variants, 'medium')}
                 className="w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-110"
                 alt={venue.name}
-                loading="lazy"
               />
 
               {/* Overlay Gradient App-Style */}

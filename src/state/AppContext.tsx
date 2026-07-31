@@ -198,6 +198,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       age: Number(profile.age) || 18,
       gender: (profile.gender || Gender.OTHER) as Gender,
       photos: profile.photos || [],
+      photo_variants: profile.photo_variants || {},
       bio: profile.bio || '',
       interests: profile.interests || [],
       phone: profile.phone ?? null,
@@ -514,6 +515,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (updates.bio) payload.bio = updates.bio;
     if (updates.age) payload.age = updates.age;
     if (updates.photos) payload.photos = updates.photos;
+    if (updates.photo_variants) payload.photo_variants = updates.photo_variants;
     if (updates.interests) payload.interests = updates.interests;
     if (updates.location?.city) payload.city = updates.location.city;
     if (updates.location?.lat) payload.latitude = updates.location.lat;

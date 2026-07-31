@@ -9,6 +9,7 @@ const toPublicProfile = (p) => {
     age: p.age,
     bio: p.bio,
     photos: p.photos,
+    photo_variants: p.photo_variants || {},
     city: p.city,
     gender: p.gender,
     is_verified: p.is_verified,
@@ -112,7 +113,7 @@ const unattendEvent = async (req, res) => {
 };
 
 const createPartnerEvent = async (req, res) => {
-  const { title, description, photoUrl, eventType, startsAt, expiresAt } = req.body;
+  const { title, description, photoUrl, photoVariants, eventType, startsAt, expiresAt } = req.body;
   try {
     const venueSnap = await db.collection('venues').where('owner_id', '==', req.user.id).limit(1).get();
     if (venueSnap.empty) return res.status(403).json({ error: 'not_a_partner' });
@@ -127,7 +128,17 @@ const createPartnerEvent = async (req, res) => {
       if (activeEvents.size >= 1) return res.status(403).json({ error: 'trial_limit_reached' });
     }
 
-    const eventData = { venue_id: venue.id, title, description, photo_url: photoUrl, event_type: eventType, starts_at: startsAt, expires_at: expiresAt, created_at: new Date().toISOString() };
+    const eventData = {
+      venue_id: venue.id,
+      title,
+      description,
+      photo_url: photoUrl,
+      photo_variants: photoUrl && photoVariants?.[photoUrl] ? { [photoUrl]: photoVariants[photoUrl] } : {},
+      event_type: eventType,
+      starts_at: startsAt,
+      expires_at: expiresAt,
+      created_at: new Date().toISOString()
+    };
     const ref = await db.collection('venue_events').add(eventData);
     res.json({ success: true, event: { id: ref.id, ...eventData } });
   } catch (error) { res.status(500).json({ error: error.message }); }
@@ -208,13 +219,26 @@ const updateVenue = async (req, res) => {
 };
 
 const updateVenuePhotos = async (req, res) => {
-  const { venueId, photos } = req.body;
+  const { venueId, photos, photo_variants } = req.body;
   try {
     const ref = db.collection('venues').doc(venueId);
     const doc = await ref.get();
     if (!doc.exists || doc.data().owner_id !== req.user.id) return res.status(403).json({ error: 'unauthorized' });
 
-    await ref.update({ photos, photo_url: photos[0] || null });
+    const nextPhotos = Array.isArray(photos) ? photos.slice(0, 6) : [];
+    const nextVariants = nextPhotos.reduce((acc, photoUrl) => {
+      const variants = photo_variants?.[photoUrl];
+      if (variants && typeof variants === 'object') {
+        acc[photoUrl] = {
+          full: variants.full || photoUrl,
+          medium: variants.medium || photoUrl,
+          thumb: variants.thumb || variants.medium || photoUrl,
+        };
+      }
+      return acc;
+    }, {});
+
+    await ref.update({ photos: nextPhotos, photo_url: nextPhotos[0] || null, photo_variants: nextVariants });
     res.json({ success: true });
   } catch (error) { res.status(500).json({ error: error.message }); }
 };

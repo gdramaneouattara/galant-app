@@ -16,6 +16,8 @@ import {
 import { apiRequest } from '@shared/lib/api';
 import { useAuth } from '../context/AuthContext';
 import { showAlert } from '@shared/lib/ui-bridge';
+import OptimizedImage from '../components/OptimizedImage';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 const VenueDetailPage: React.FC = () => {
   const { id } = useParams();
@@ -106,7 +108,7 @@ const VenueDetailPage: React.FC = () => {
       {/* Gallery */}
       <div className="px-4">
         <div className="aspect-video w-full rounded-[2.5rem] overflow-hidden shadow-2xl relative bg-slate-100 dark:bg-slate-800">
-          <img src={photos[0]} className="w-full h-full object-cover" alt={venue.name} />
+          <OptimizedImage src={optimizedPhotoUrl(photos[0], venue.photo_variants, 'medium')} className="w-full h-full object-cover" alt={venue.name} eager />
           <div className="absolute top-6 left-6 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20 shadow-xl">
              <div className="flex items-center gap-1.5 text-amber-500">
                <Star size={14} fill="currentColor" />

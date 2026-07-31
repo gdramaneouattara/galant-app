@@ -59,7 +59,7 @@ const LikesReceivedScreen: React.FC = () => {
       const payload = await apiRequest<any[]>('/api/super-likes/received', { requireAuth: true });
       const data = (payload || []).map(item => ({
         ...item,
-        user: item.profiles ? { ...item.user, name: item.profiles.name, photos: item.profiles.photos, age: item.profiles.age, bio: item.profiles.bio } : item.user
+        user: item.profiles ? { ...item.user, ...item.profiles } : item.user
       })).sort((left, right) => {
         const delta = STATUS_PRIORITY[left.status as SuperLikeStatus] - STATUS_PRIORITY[right.status as SuperLikeStatus];
         return delta !== 0 ? delta : new Date(right.created_at).getTime() - new Date(left.created_at).getTime();

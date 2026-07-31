@@ -1,19 +1,21 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ref, getDownloadURL, uploadBytes } from 'firebase/storage';
+import { ref, getDownloadURL } from 'firebase/storage';
 import { Plus, Heart, X, Play, Film, Lock, Share2, Users, Crown, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '@shared/lib/api';
 import { fbStorage } from '../firebase';
 import { showAlert } from '@shared/lib/ui-bridge';
-import { compressImageWeb } from '../lib/imageCompression';
 import { compressVideoWeb, STORY_VIDEO_MAX_DURATION_SECONDS, validateVideoFileWeb, VIDEO_UPLOAD_MAX_BYTES } from '../lib/videoOptimization';
+import { uploadImageVariantsWeb } from '../lib/imageUploadVariants';
 import StatusLikersModal from '../components/StatusLikersModal';
 import StoryPurchaseModal from '../components/StoryPurchaseModal';
 import LikerProfileModal, { type StatusLiker } from '../components/LikerProfileModal';
 import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
 import { useMatchmaking } from '@shared/hooks/useMatchmaking';
 import { useSubscription } from '@shared/hooks/useSubscription';
+import OptimizedImage from '../components/OptimizedImage';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 interface Status {
   id: string;
@@ -29,6 +31,7 @@ interface Status {
     id?: string;
     name: string;
     photos: string[];
+    photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
     is_premium?: boolean;
   };
 }
@@ -201,11 +204,10 @@ const StoriesPage: React.FC = () => {
         mediaUrl = res.mediaUrl;
         thumbnailUrl = res.thumbnailUrl || null;
       } else {
-        const compressedBlob = await compressImageWeb(file);
         const path = `${user.uid}/${Date.now()}.webp`;
-        const storageRef = ref(fbStorage, `statuses/${path}`);
-        await uploadBytes(storageRef, compressedBlob, { contentType: 'image/webp' });
+        const uploaded = await uploadImageVariantsWeb(file, `statuses/${path}`);
         mediaUrl = path;
+        thumbnailUrl = uploaded.paths.thumb.replace(/^statuses\//, '');
       }
 
       await apiRequest('/api/statuses', {
@@ -453,11 +455,10 @@ const StoriesPage: React.FC = () => {
               {status.message_type === 'VIDEO' ? (
                 <div className="w-full h-full relative bg-slate-900">
                   {thumbnailUrl ? (
-                    <img
+                    <OptimizedImage
                       src={thumbnailUrl}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
                       alt=""
-                      loading="lazy"
                     />
                   ) : (
                     <div className="w-full h-full bg-slate-800 flex items-center justify-center">
@@ -468,12 +469,11 @@ const StoriesPage: React.FC = () => {
                     <Play className="text-white opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all" size={40} fill="white" />
                   </div>
                 </div>
-              ) : mediaUrl ? (
-                <img
-                  src={mediaUrl}
+              ) : (thumbnailUrl || mediaUrl) ? (
+                <OptimizedImage
+                  src={thumbnailUrl || mediaUrl}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[3000ms]"
                   alt=""
-                  loading="lazy"
                 />
               ) : (
                 <div className="w-full h-full bg-slate-800 flex items-center justify-center">
@@ -485,11 +485,10 @@ const StoriesPage: React.FC = () => {
 
               <div className="absolute top-4 left-4 right-4 flex items-center gap-2 z-20">
                 <div className={`w-10 h-10 rounded-2xl border-2 p-0.5 ${status.profiles.is_premium ? 'border-amber-400' : 'border-primary'}`}>
-                  <img
-                    src={status.profiles.photos?.[0] || 'https://placehold.co/100x100'}
+                  <OptimizedImage
+                    src={optimizedPhotoUrl(status.profiles.photos?.[0], status.profiles.photo_variants, 'thumb') || 'https://placehold.co/100x100'}
                     className="w-full h-full object-cover rounded-[0.8rem]"
                     alt=""
-                    loading="lazy"
                   />
                 </div>
               </div>
@@ -531,7 +530,7 @@ const StoriesPage: React.FC = () => {
                 controls={false}
               />
             ) : (
-              <img src={resolvedUrls[selectedStatus.media_url]} className="w-full h-full object-cover" alt="" />
+              <OptimizedImage src={resolvedUrls[selectedStatus.media_url]} className="w-full h-full object-cover" alt="" eager />
             )}
 
             <div className="absolute top-6 left-8 right-8 flex gap-1.5 z-50">
@@ -547,7 +546,7 @@ const StoriesPage: React.FC = () => {
             <div className="absolute top-12 left-6 right-6 sm:left-10 sm:right-10 flex justify-between items-center gap-3 z-50">
               <div className="flex items-center gap-3 min-w-0">
                 <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border-2 p-0.5 flex-shrink-0 ${selectedStatus.profiles.is_premium ? 'border-amber-400' : 'border-primary shadow-lg shadow-red-500/20'}`}>
-                  <img src={selectedStatus.profiles.photos?.[0] || 'https://placehold.co/100x100'} className="w-full h-full object-cover rounded-xl" alt="" />
+                  <OptimizedImage src={optimizedPhotoUrl(selectedStatus.profiles.photos?.[0], selectedStatus.profiles.photo_variants, 'thumb') || 'https://placehold.co/100x100'} className="w-full h-full object-cover rounded-xl" alt="" eager />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">

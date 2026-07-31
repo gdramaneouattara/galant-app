@@ -6,6 +6,8 @@ import PrimaryButton from '../../../components/PrimaryButton';
 import { COLORS } from '../../../data/mock';
 import { useApp } from '../../../state/AppContext';
 
+const FREE_PROFILE_PHOTO_LIMIT = 3;
+
 interface SelectedPhoto {
   previewUri: string;
   uploadUri: string;
@@ -55,8 +57,8 @@ const PhotosStep: React.FC<PhotosStepProps> = ({ form, setForm, onNext }) => {
         setForm((prev: any) => {
           const nextPhotos = [...prev.photos];
           if (slot < nextPhotos.length) nextPhotos[slot] = selectedPhoto;
-          else if (nextPhotos.length < 6) nextPhotos.push(selectedPhoto);
-          return { ...prev, photos: nextPhotos.slice(0, 6) };
+          else if (nextPhotos.length < FREE_PROFILE_PHOTO_LIMIT) nextPhotos.push(selectedPhoto);
+          return { ...prev, photos: nextPhotos.slice(0, FREE_PROFILE_PHOTO_LIMIT) };
         });
       }
     }
@@ -72,9 +74,9 @@ const PhotosStep: React.FC<PhotosStepProps> = ({ form, setForm, onNext }) => {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={[styles.title, { color: colors.text }]}>Ajoute tes plus belles photos</Text>
-      <Text style={[styles.caption, { color: colors.textMuted }]}>Ajoute entre 3 et 6 photos pour activer ton profil.</Text>
+      <Text style={[styles.caption, { color: colors.textMuted }]}>Ajoute 3 photos pour activer ton profil. Premium permet jusqu'a 6 photos.</Text>
       <View style={styles.photoGrid}>
-        {[0, 1, 2, 3, 4, 5].map((slot) => {
+        {[0, 1, 2].map((slot) => {
           const photo = form.photos[slot];
           return (
             <Pressable
@@ -95,7 +97,7 @@ const PhotosStep: React.FC<PhotosStepProps> = ({ form, setForm, onNext }) => {
           );
         })}
       </View>
-      <Text style={[styles.caption, { color: colors.textMuted, marginTop: 10 }]}>Photos: {form.photos.length}/6 (minimum 3)</Text>
+      <Text style={[styles.caption, { color: colors.textMuted, marginTop: 10 }]}>Photos: {form.photos.length}/{FREE_PROFILE_PHOTO_LIMIT} (minimum 3)</Text>
       <PrimaryButton label="Continuer" onPress={onNext} disabled={form.photos.length < 3} />
     </ScrollView>
   );

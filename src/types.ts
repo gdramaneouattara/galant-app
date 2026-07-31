@@ -22,6 +22,7 @@ export interface User {
   gender: Gender;
   bio: string;
   photos: string[];
+  photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
   interests: string[];
   city?: string | null;
   country?: string | null;

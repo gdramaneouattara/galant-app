@@ -1,7 +1,9 @@
 import React from 'react';
-import { View, Text, Modal, Pressable, ScrollView, Image, StyleSheet } from 'react-native';
+import { View, Text, Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { X, Heart } from 'lucide-react-native';
 import { COLORS } from '../../../data/mock';
+import OptimizedImage from '../../../components/OptimizedImage';
+import { optimizedPhotoUrl } from '../../../lib/mediaVariants';
 
 interface StatusLiker {
   user_id: string;
@@ -17,6 +19,7 @@ interface StatusLiker {
     country?: string | null;
     bio?: string;
     photos: string[];
+    photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
     interests?: string[];
   };
 }
@@ -52,7 +55,7 @@ const LikerProfileModal: React.FC<LikerProfileModalProps> = ({
           <ScrollView showsVerticalScrollIndicator={false}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.likerPhotosRow}>
               {(liker.profile.photos?.length ? liker.profile.photos : ['https://placehold.co/800x1000']).map((uri, idx) => (
-                <Image key={`${liker.user_id}-${idx}`} source={{ uri }} style={styles.likerPhotoLarge} />
+                <OptimizedImage key={`${liker.user_id}-${idx}`} uri={optimizedPhotoUrl(uri, liker.profile.photo_variants, 'medium')} style={styles.likerPhotoLarge} />
               ))}
             </ScrollView>
             <Text style={styles.likerProfileName}>

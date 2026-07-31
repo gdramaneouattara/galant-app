@@ -46,6 +46,8 @@ const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [reconciling, setReconciling] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
+  const [mediaBackfilling, setMediaBackfilling] = useState(false);
+  const [orphanScanning, setOrphanScanning] = useState(false);
 
   const fetchStats = async () => {
     try {
@@ -136,6 +138,58 @@ const AdminDashboard: React.FC = () => {
       showAlert('Erreur', e.message);
     } finally {
       setBackfilling(false);
+    }
+  };
+
+  const handleBackfillMedia = async () => {
+    if (!window.confirm('Cette action va creer les variantes image et optimiser les anciennes videos referencees. Continuer ?')) return;
+
+    setMediaBackfilling(true);
+    try {
+      const res = await apiRequest<any>('/api/admin/media/backfill-variants', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({ limit: 250 })
+      });
+      showAlert('Succes', `Backfill media termine. Images: ${res.images?.variantsCreated || 0} variantes, ${res.images?.updated || 0} documents. Videos: ${res.videos?.updated || 0} references optimisees.`);
+    } catch (e: any) {
+      showAlert('Erreur', e.message);
+    } finally {
+      setMediaBackfilling(false);
+    }
+  };
+
+  const handleScanOrphans = async () => {
+    setOrphanScanning(true);
+    try {
+      const res = await apiRequest<any>('/api/admin/media/cleanup-orphans', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({ dryRun: true, limit: 500 })
+      });
+      showAlert('Scan termine', `${res.orphanCount} fichiers orphelins detectes sur ${res.scanned} fichiers scannes. Aucune suppression effectuee.`);
+    } catch (e: any) {
+      showAlert('Erreur', e.message);
+    } finally {
+      setOrphanScanning(false);
+    }
+  };
+
+  const handleDeleteOrphans = async () => {
+    if (!window.confirm('Suppression definitive des medias orphelins detectes dans Storage. Lancez un scan avant et continuez seulement si le resultat est coherent. Supprimer maintenant ?')) return;
+
+    setOrphanScanning(true);
+    try {
+      const res = await apiRequest<any>('/api/admin/media/cleanup-orphans', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({ dryRun: false, limit: 500 })
+      });
+      showAlert('Nettoyage termine', `${res.deleted} fichiers orphelins supprimes sur ${res.scanned} fichiers scannes.`);
+    } catch (e: any) {
+      showAlert('Erreur', e.message);
+    } finally {
+      setOrphanScanning(false);
     }
   };
 
@@ -247,6 +301,33 @@ const AdminDashboard: React.FC = () => {
             >
               {backfilling ? <RefreshCw className="animate-spin" size={16} /> : <UserCheck size={16} />}
               Backfill geohash
+            </button>
+
+            <button
+              onClick={handleBackfillMedia}
+              disabled={mediaBackfilling}
+              className="flex items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-6 py-4 text-xs font-black uppercase tracking-widest text-white transition-all disabled:opacity-50"
+            >
+              {mediaBackfilling ? <RefreshCw className="animate-spin" size={16} /> : <RefreshCw size={16} />}
+              Backfill medias V2
+            </button>
+
+            <button
+              onClick={handleScanOrphans}
+              disabled={orphanScanning}
+              className="flex items-center justify-center gap-3 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950 px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-200 transition-all disabled:opacity-50"
+            >
+              {orphanScanning ? <RefreshCw className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
+              Scanner orphelins
+            </button>
+
+            <button
+              onClick={handleDeleteOrphans}
+              disabled={orphanScanning}
+              className="flex items-center justify-center gap-3 rounded-2xl bg-red-600 px-6 py-4 text-xs font-black uppercase tracking-widest text-white transition-all disabled:opacity-50"
+            >
+              {orphanScanning ? <RefreshCw className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
+              Supprimer orphelins
             </button>
           </div>
 

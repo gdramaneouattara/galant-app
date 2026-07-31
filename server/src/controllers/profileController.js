@@ -1,23 +1,40 @@
 const { db } = require('../config/firebase');
 const { isTrialActive } = require('../services/accessService');
 const { getDailyUsage, incrementUsage } = require('../services/usageService');
-const { QUOTAS, BOOST_SCORES } = require('../config/constants');
+const { QUOTAS, BOOST_SCORES, PHOTO_LIMITS } = require('../config/constants');
 const { buildProfileGeohashUpdate } = require('../utils/geohash');
 
 const updateProfile = async (req, res) => {
   const {
-    bio, interests, relationship_goal, photos,
+    bio, interests, relationship_goal, photos, photo_variants,
     city, country, latitude, longitude,
     passport_city, passport_country, passport_latitude, passport_longitude, is_passport_active,
     radiance_score, onboarding_completed, emergency_contacts
   } = req.body;
   const userId = req.user.id;
+  const maxPhotos = (req.user.is_premium || req.user.is_vip) ? PHOTO_LIMITS.PREMIUM : PHOTO_LIMITS.FREE;
 
   const updates = {};
   if (bio !== undefined) updates.bio = bio;
   if (interests !== undefined) updates.interests = interests;
   if (relationship_goal !== undefined) updates.relationship_goal = relationship_goal;
-  if (photos !== undefined) updates.photos = Array.isArray(photos) ? photos.slice(0, 6) : [];
+  if (photos !== undefined) {
+    const limitedPhotos = Array.isArray(photos) ? photos.slice(0, maxPhotos) : [];
+    updates.photos = limitedPhotos;
+    if (photo_variants !== undefined) {
+      updates.photo_variants = limitedPhotos.reduce((acc, photoUrl) => {
+        const variants = photo_variants?.[photoUrl];
+        if (variants && typeof variants === 'object') {
+          acc[photoUrl] = {
+            full: variants.full || photoUrl,
+            medium: variants.medium || photoUrl,
+            thumb: variants.thumb || variants.medium || photoUrl,
+          };
+        }
+        return acc;
+      }, {});
+    }
+  }
   if (city !== undefined) updates.city = city;
   if (country !== undefined) updates.country = country;
   if (latitude !== undefined) updates.latitude = latitude;
@@ -171,11 +188,26 @@ const createProfile = async (req, res) => {
 const completeOnboarding = async (req, res) => {
   const {
     name, age, gender, bio, interests, relationship_goal,
-    city, country, latitude, longitude, photos, radiance_score
+    city, country, latitude, longitude, photos, photo_variants, radiance_score
   } = req.body;
   const userId = req.authUser.uid;
 
   try {
+    const existingProfile = await db.collection('profiles').doc(userId).get();
+    const existingData = existingProfile.exists ? existingProfile.data() : {};
+    const maxPhotos = (existingData?.is_premium || existingData?.is_vip) ? PHOTO_LIMITS.PREMIUM : PHOTO_LIMITS.FREE;
+    const limitedPhotos = Array.isArray(photos) ? photos.slice(0, maxPhotos) : [];
+    const limitedPhotoVariants = limitedPhotos.reduce((acc, photoUrl) => {
+      const variants = photo_variants?.[photoUrl];
+      if (variants && typeof variants === 'object') {
+        acc[photoUrl] = {
+          full: variants.full || photoUrl,
+          medium: variants.medium || photoUrl,
+          thumb: variants.thumb || variants.medium || photoUrl,
+        };
+      }
+      return acc;
+    }, {});
     const profileRef = db.collection('profiles').doc(userId);
     const updates = {
       name,
@@ -189,7 +221,8 @@ const completeOnboarding = async (req, res) => {
       latitude,
       longitude,
       ...buildProfileGeohashUpdate(latitude, longitude),
-      photos,
+      photos: limitedPhotos,
+      photo_variants: limitedPhotoVariants,
       radiance_score,
       onboarding_completed: true,
       updated_at: new Date().toISOString()

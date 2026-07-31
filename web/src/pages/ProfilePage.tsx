@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { db, COLLECTIONS, fbStorage } from '../firebase';
+import { db, COLLECTIONS } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   Camera, ShieldCheck, MapPin, Edit3, Save, LogOut,
   Sparkles, Plane, Globe, ChevronRight, Share2,
@@ -15,8 +14,10 @@ import { useNavigate } from 'react-router-dom';
 import PassportModal from '../components/PassportModal';
 import SettingsModal from '../components/SettingsModal';
 import GoalModal, { RELATIONSHIP_GOALS } from '../components/GoalModal';
-import { compressImageWeb } from '../lib/imageCompression';
 import { hasAdminProfileAccess } from '../lib/adminAccess';
+import OptimizedImage from '../components/OptimizedImage';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
+import { uploadImageVariantsWeb } from '../lib/imageUploadVariants';
 
 const ProfilePage: React.FC = () => {
   const { user, profile, logout, t } = useAuth();
@@ -35,6 +36,7 @@ const ProfilePage: React.FC = () => {
   const [isTogglingInvisible, setIsTogglingInvisible] = useState(false);
   const [hasAdminAccess, setHasAdminAccess] = useState(false);
   const [rosesInboxCount, setRosesInboxCount] = useState(0);
+  const maxProfilePhotos = profile?.is_premium || profile?.is_vip ? 6 : 3;
 
   useEffect(() => {
     let cancelled = false;
@@ -233,10 +235,11 @@ const ProfilePage: React.FC = () => {
 
     setUploading(true);
     try {
-      const compressedBlob = await compressImageWeb(file);
-      const storageRef = ref(fbStorage, `profiles/${user.uid}/${Date.now()}.webp`);
-      await uploadBytes(storageRef, compressedBlob, { contentType: 'image/webp' });
-      const url = await getDownloadURL(storageRef);
+      if ((profile.photos?.length || 0) >= maxProfilePhotos) {
+        showAlert('Limite atteinte', profile?.is_premium || profile?.is_vip ? 'Vous pouvez ajouter jusqu\'a 6 photos.' : 'Le profil gratuit accepte 3 photos. Passez Premium pour aller jusqu\'a 6.');
+        return;
+      }
+      const { fullUrl: url, variants } = await uploadImageVariantsWeb(file, `profiles/${user.uid}/${Date.now()}.webp`);
 
       const moderation = await apiRequest<{ status?: string }>('/api/moderation/photos/check', {
         method: 'POST',
@@ -248,9 +251,16 @@ const ProfilePage: React.FC = () => {
         return;
       }
 
-      const userRef = doc(db, COLLECTIONS.PROFILES, user.uid);
-      const newPhotos = [url, ...(profile.photos || [])];
-      await updateDoc(userRef, { photos: newPhotos });
+      const newPhotos = [url, ...(profile.photos || [])].slice(0, maxProfilePhotos);
+      const newPhotoVariants = {
+        ...(profile.photo_variants || {}),
+        [url]: variants,
+      };
+      await apiRequest('/api/profiles/update', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({ photos: newPhotos, photo_variants: newPhotoVariants }),
+      });
 
       showAlert('Photo ajoutée', 'Votre nouvelle photo a été enregistrée.');
     } catch (error: any) {
@@ -265,10 +275,11 @@ const ProfilePage: React.FC = () => {
       {/* Header Profile - Premium Style */}
       <div className="relative mb-12 transition-colors">
         <div className="h-64 rounded-[3rem] overflow-hidden shadow-2xl border-4 border-white dark:border-slate-800 transition-colors">
-          <img
-            src={profile.photos?.[0] || 'https://placehold.co/1200x400?text=Ajouter+une+photo'}
+          <OptimizedImage
+            src={optimizedPhotoUrl(profile.photos?.[0], profile.photo_variants, 'medium') || 'https://placehold.co/1200x400?text=Ajouter+une+photo'}
             className="w-full h-full object-cover"
             alt=""
+            eager
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
 

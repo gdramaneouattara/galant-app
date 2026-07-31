@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
+import OptimizedImage from '../components/OptimizedImage';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 const GENDER_LABELS: Record<string, string> = {
   MALE: 'Homme',
@@ -136,7 +138,7 @@ const ProfileDetailPage: React.FC = () => {
         {/* Colonne Gauche: Photos */}
         <div className="w-full md:w-1/2 space-y-4">
           <div className="relative aspect-[3/4] rounded-[3rem] overflow-hidden shadow-2xl dark:shadow-none border-4 border-white dark:border-slate-800 transition-colors">
-            <img src={coverPhoto} className="w-full h-full object-cover" alt="" />
+            <OptimizedImage src={optimizedPhotoUrl(coverPhoto, profile.photo_variants, 'medium')} className="w-full h-full object-cover" alt="" eager />
             <button
               onClick={() => navigate(-1)}
               className="absolute top-6 left-6 p-3 bg-black/20 hover:bg-black/40 backdrop-blur-md text-white rounded-2xl transition-all"
@@ -161,7 +163,7 @@ const ProfileDetailPage: React.FC = () => {
                   onClick={() => setSelectedPhoto(photo)}
                   className={`flex-shrink-0 w-20 h-24 rounded-2xl overflow-hidden border-2 transition-all ${selectedPhoto === photo || (!selectedPhoto && idx === 0) ? 'border-primary scale-105' : 'border-transparent opacity-60'}`}
                 >
-                  <img src={photo} className="w-full h-full object-cover" alt="" />
+                  <OptimizedImage src={optimizedPhotoUrl(photo, profile.photo_variants, 'thumb')} className="w-full h-full object-cover" alt="" />
                 </button>
               ))}
             </div>

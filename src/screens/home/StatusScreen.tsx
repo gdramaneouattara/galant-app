@@ -22,7 +22,7 @@ import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 import { fbStorage } from '../../lib/firebase';
-import { uploadArrayBufferToBucket } from '../../lib/storageUpload';
+import { uploadImageVariantsToBucket } from '../../lib/storageUpload';
 import { IAP_EXPO_GO_MESSAGE, isExpoGo } from '../../lib/iapRuntime';
 import type { RootStackParamList } from '../../navigation/MainNavigator';
 
@@ -220,14 +220,13 @@ const StatusScreen: React.FC = () => {
           path = res.mediaUrl;
           thumbnailPath = res.thumbnailUrl || null;
         } else {
-          // Pour les images, on garde l'upload direct avec compression locale WebP
           path = `${currentUser?.id}/${Date.now()}.webp`;
-          await uploadArrayBufferToBucket({
+          const uploaded = await uploadImageVariantsToBucket({
             bucket: 'statuses',
             path,
             uri: asset.uri,
-            contentType: 'image/webp'
           });
+          thumbnailPath = uploaded.paths.thumb.replace(/^statuses\//, '');
         }
 
         await apiRequest('/api/statuses', {
@@ -393,7 +392,7 @@ const StatusScreen: React.FC = () => {
             onToggleLike={handleToggleLike}
             likeLoading={!!likeLoadingByStatusId[item.id]}
             isCurrentUser={String(item.user_id) === String(currentUser?.id)}
-            resolvedUrl={resolvedUrls[item.media_url]}
+            resolvedUrl={(item.thumbnail_url && resolvedUrls[item.thumbnail_url]) || resolvedUrls[item.media_url]}
             videoPreviewUrl={(item.thumbnail_url && resolvedUrls[item.thumbnail_url]) || videoPreviewUrls[item.media_url]}
             formattedDate={formatPublishedAt(item.created_at)}
           />

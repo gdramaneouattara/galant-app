@@ -1,7 +1,9 @@
 import React from 'react';
-import { View, Text, Modal, Pressable, ScrollView, Image, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Modal, Pressable, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
 import { X, Heart } from 'lucide-react-native';
 import { COLORS } from '../../../data/mock';
+import OptimizedImage from '../../../components/OptimizedImage';
+import { optimizedPhotoUrl } from '../../../lib/mediaVariants';
 
 interface StatusLiker {
   user_id: string;
@@ -12,6 +14,7 @@ interface StatusLiker {
     id: string;
     name: string;
     photos: string[];
+    photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
     interests?: string[];
     age?: number | null;
   };
@@ -66,7 +69,7 @@ const StatusLikersModal: React.FC<StatusLikersModalProps> = ({
               ) : (
                 likers.map((entry) => (
                   <View key={`${entry.user_id}-${entry.created_at}`} style={styles.likerRow}>
-                    <Image source={{ uri: entry.profile.photos?.[0] || 'https://placehold.co/80x80' }} style={styles.likerAvatar} />
+                    <OptimizedImage uri={optimizedPhotoUrl(entry.profile.photos?.[0], entry.profile.photo_variants, 'thumb') || 'https://placehold.co/80x80'} style={styles.likerAvatar} />
                     <View style={styles.likerTextBlock}>
                       <Text style={styles.likerName}>{entry.profile.name}</Text>
                       <Text style={styles.likerDate}>{formatDate(entry.created_at)}</Text>

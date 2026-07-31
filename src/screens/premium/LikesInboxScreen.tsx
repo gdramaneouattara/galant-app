@@ -2,7 +2,6 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Modal,
   Pressable,
   SafeAreaView,
@@ -17,6 +16,8 @@ import { apiRequest } from '../../lib/api';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { useSubscription } from '../../hooks/useSubscription';
+import OptimizedImage from '../../components/OptimizedImage';
+import { optimizedPhotoUrl } from '../../lib/mediaVariants';
 
 type LikeInboxRow = {
   liker_id: string;
@@ -32,6 +33,7 @@ type LikeInboxRow = {
     country: string | null;
     bio: string;
     photos: string[];
+    photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
     interests: string[];
     is_verified: boolean;
     is_premium: boolean;
@@ -236,12 +238,8 @@ const LikesInboxScreen: React.FC = () => {
           <View style={styles.list}>
             {likes.map((row) => (
               <View key={`${row.liker_id}-${row.created_at}`} style={styles.card}>
-                <Image
-                  source={{
-                    uri:
-                      row.user.photos?.[0]
-                      || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=640&auto=format&fit=crop',
-                  }}
+                <OptimizedImage
+                  uri={optimizedPhotoUrl(row.user.photos?.[0], row.user.photo_variants, 'thumb') || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=640&auto=format&fit=crop'}
                   style={styles.photo}
                 />
                 <View style={styles.info}>
@@ -291,12 +289,8 @@ const LikesInboxScreen: React.FC = () => {
             </Pressable>
             {selectedLike ? (
               <>
-                <Image
-                  source={{
-                    uri:
-                      selectedLike.user.photos?.[0]
-                      || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=640&auto=format&fit=crop',
-                  }}
+                <OptimizedImage
+                  uri={optimizedPhotoUrl(selectedLike.user.photos?.[0], selectedLike.user.photo_variants, 'medium') || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=640&auto=format&fit=crop'}
                   style={styles.modalPhoto}
                 />
                 <View style={styles.modalHeader}>

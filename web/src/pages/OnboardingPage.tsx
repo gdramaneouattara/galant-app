@@ -1,9 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { db, COLLECTIONS, fbStorage } from '../firebase';
-import { doc, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   User as UserIcon, MapPin, Heart, Sparkles, Image as ImageIcon,
   CheckCircle2, ChevronRight, ChevronLeft, Loader2,
@@ -11,7 +8,22 @@ import {
 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { apiRequest } from '@shared/lib/api';
-import { compressImageWeb } from '../lib/imageCompression';
+import { uploadImageVariantsWeb } from '../lib/imageUploadVariants';
+
+const FREE_PROFILE_PHOTO_LIMIT = 3;
+
+const LocalPreviewImage: React.FC<{ file: File; className?: string }> = ({ file, className }) => {
+  const [previewUrl, setPreviewUrl] = useState('');
+
+  useEffect(() => {
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
+
+  if (!previewUrl) return null;
+  return <img src={previewUrl} className={className} alt="Preview" loading="lazy" decoding="async" />;
+};
 
 const INTERESTS_OPTIONS = [
   'Voyage', 'Gastronomie', 'Vin', 'Art', 'Mode', 'Fitness',
@@ -94,8 +106,8 @@ const OnboardingPage: React.FC = () => {
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (files.length + photoFiles.length > 6) {
-      showAlert('Limite atteinte', 'Vous pouvez ajouter jusqu\'à 6 photos.');
+    if (files.length + photoFiles.length > FREE_PROFILE_PHOTO_LIMIT) {
+      showAlert('Limite atteinte', 'Le profil gratuit accepte 3 photos. Premium permet jusqu\'a 6 photos.');
       return;
     }
     setPhotoFiles(prev => [...prev, ...files]);
@@ -135,21 +147,20 @@ const OnboardingPage: React.FC = () => {
 
   const handleFinalSubmit = async () => {
     if (!user) return;
-    if (photoFiles.length === 0) {
-      showAlert('Photo requise', 'Veuillez ajouter au moins une photo pour continuer.');
+    if (photoFiles.length < FREE_PROFILE_PHOTO_LIMIT) {
+      showAlert('Photos requises', 'Veuillez ajouter 3 photos pour continuer.');
       return;
     }
 
     setLoading(true);
     try {
       const uploadedUrls: string[] = [];
+      const photoVariants: Record<string, { full: string; medium: string; thumb: string }> = {};
       for (const file of photoFiles) {
-        // COMPRESSION: Reduce size before upload to save storage & bandwidth
-        const compressedBlob = await compressImageWeb(file);
-        const storageRef = ref(fbStorage, `profiles/${user.uid}/${Date.now()}_${file.name}`);
-        const snapshot = await uploadBytes(storageRef, compressedBlob);
-        const url = await getDownloadURL(snapshot.ref);
-        uploadedUrls.push(url);
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\.[^.]+$/, '.webp');
+        const { fullUrl, variants } = await uploadImageVariantsWeb(file, `profiles/${user.uid}/${Date.now()}_${safeName}`);
+        uploadedUrls.push(fullUrl);
+        photoVariants[fullUrl] = variants;
       }
 
       const token = await user.getIdToken();
@@ -170,6 +181,7 @@ const OnboardingPage: React.FC = () => {
           latitude: formData.latitude,
           longitude: formData.longitude,
           photos: uploadedUrls,
+          photo_variants: photoVariants,
           radiance_score: calculateRadiance(),
           has_seen_vernissage: false
         })
@@ -392,13 +404,13 @@ const OnboardingPage: React.FC = () => {
                   <Camera size={32} />
                </div>
                <h3 className="text-3xl font-serif italic tracking-tighter dark:text-white">Votre Galerie</h3>
-               <p className="text-slate-500 dark:text-slate-400 font-medium">L'élégance en image (1 photo minimum).</p>
+               <p className="text-slate-500 dark:text-slate-400 font-medium">Profil gratuit: 3 photos maximum. Premium permet jusqu'a 6.</p>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
                {photoFiles.map((file, idx) => (
                  <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden group border border-slate-100 dark:border-white/5">
-                    <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="Preview" />
+                    <LocalPreviewImage file={file} className="w-full h-full object-cover" />
                     <button
                       onClick={() => removePhoto(idx)}
                       className="absolute top-1 right-1 w-6 h-6 bg-black/50 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -407,7 +419,7 @@ const OnboardingPage: React.FC = () => {
                     </button>
                  </div>
                ))}
-               {photoFiles.length < 6 && (
+               {photoFiles.length < FREE_PROFILE_PHOTO_LIMIT && (
                  <button
                    onClick={() => fileInputRef.current?.click()}
                    className="aspect-square rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
@@ -453,7 +465,7 @@ const OnboardingPage: React.FC = () => {
               </button>
               <button
                 onClick={nextStep}
-                disabled={loading || photoFiles.length === 0}
+                disabled={loading || photoFiles.length < FREE_PROFILE_PHOTO_LIMIT}
                 className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-medium text-xs uppercase tracking-prestige flex items-center justify-center gap-3 hover:bg-black dark:hover:bg-slate-200 transition-all disabled:opacity-30"
               >
                 Signer le Manifeste <ChevronRight size={16} />

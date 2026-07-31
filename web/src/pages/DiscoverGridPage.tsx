@@ -15,12 +15,15 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '@shared/lib/api';
 import { showAlert } from '@shared/lib/ui-bridge';
+import OptimizedImage from '../components/OptimizedImage';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 type DiscoverSuggestion = {
   id: string;
   name: string;
   age: number;
   photos: string[];
+  photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
   city: string | null;
   score: number;
   is_verified: boolean;
@@ -155,11 +158,10 @@ const DiscoverGridPage: React.FC = () => {
               onClick={() => navigate(`/profile/${profile.id}`, { state: { profile } })}
               className="group relative aspect-[3/4] rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer hover:-translate-y-1 bg-slate-100 dark:bg-slate-800"
             >
-              <img
-                src={profile.photos?.[0] || 'https://placehold.co/300x400'}
+              <OptimizedImage
+                src={optimizedPhotoUrl(profile.photos?.[0], profile.photo_variants, 'thumb') || 'https://placehold.co/300x400'}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                 alt={profile.name}
-                loading="lazy"
               />
 
               {/* Badges */}

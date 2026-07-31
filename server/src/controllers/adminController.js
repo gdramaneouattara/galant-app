@@ -3,6 +3,7 @@ const { buildUserSegmentFilter, appendAdminAuditLog } = require('../services/acc
 const { sendPushNotification } = require('../services/notificationService');
 const { processUserAction } = require('../services/conciergeService');
 const { reconcileAllCounters, backfillProfileGeohashes } = require('../services/maintenanceService');
+const { backfillImageVariants, backfillVideoMedia, cleanupOrphanMedia } = require('../services/mediaMaintenanceService');
 const pricingDefaults = require('../config/constants');
 
 const mergeRosePacks = (overrides = {}) => {
@@ -460,10 +461,48 @@ const backfillGeohashes = async (req, res) => {
   }
 };
 
+const backfillMediaVariants = async (req, res) => {
+  try {
+    const limit = Math.max(1, Math.min(1000, parseInt(req.body?.limit || req.query?.limit || '250', 10)));
+    const images = await backfillImageVariants({ limit });
+    const videos = await backfillVideoMedia({ limit: Math.min(limit, 100) });
+    const result = { images, videos };
+
+    await appendAdminAuditLog({
+      adminId: req.user.id,
+      action: 'BACKFILL_MEDIA_VARIANTS',
+      metadata: result
+    });
+
+    res.json({ success: true, ...result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const cleanupMediaOrphans = async (req, res) => {
+  try {
+    const dryRun = req.body?.dryRun !== false;
+    const limit = Math.max(1, Math.min(2000, parseInt(req.body?.limit || req.query?.limit || '500', 10)));
+    const result = await cleanupOrphanMedia({ dryRun, limit });
+
+    await appendAdminAuditLog({
+      adminId: req.user.id,
+      action: dryRun ? 'DRY_RUN_CLEANUP_ORPHAN_MEDIA' : 'CLEANUP_ORPHAN_MEDIA',
+      metadata: result
+    });
+
+    res.json({ success: true, ...result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   getStats, getPendingVenues, approveVenue, rejectVenue, reconcileProfiles,
   getPrivacyRequests, resolvePrivacyRequest, getPhotoReviews, reviewPhoto,
   getKycRequests, reviewKyc, getBroadcastAudience, broadcastMessage, getCampaignHistory,
   getReports, resolveReport,
-  getUsers, toggleUserStatus, getPricing, updatePricing, reconcileCounters, backfillGeohashes
+  getUsers, toggleUserStatus, getPricing, updatePricing, reconcileCounters, backfillGeohashes,
+  backfillMediaVariants, cleanupMediaOrphans
 };

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Platform,
   Pressable,
   SafeAreaView,
@@ -23,6 +22,8 @@ import { IAP_EXPO_GO_MESSAGE, isExpoGo } from '../../lib/iapRuntime';
 import ProfileBadges from '../../components/ProfileBadges';
 import SuperLikePurchaseModal from '../../components/SuperLikePurchaseModal';
 import DirectMessagePurchaseModal from '../../components/DirectMessagePurchaseModal';
+import OptimizedImage from '../../components/OptimizedImage';
+import { optimizedPhotoUrl } from '../../lib/mediaVariants';
 import type { ProfileDetailParam, RootStackParamList } from '../../navigation/MainNavigator';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -292,7 +293,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.hero}>
-          <Image source={{ uri: coverPhoto }} style={styles.heroImage} />
+          <OptimizedImage uri={optimizedPhotoUrl(coverPhoto, profile.photo_variants, 'medium')} style={styles.heroImage} />
           <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
             <ChevronLeft color="#fff" size={24} />
           </Pressable>
@@ -336,7 +337,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
                     style={[styles.thumbnailWrap, active && styles.thumbnailWrapActive]}
                     onPress={() => setSelectedPhoto(photo)}
                   >
-                    <Image source={{ uri: photo }} style={styles.thumbnail} />
+                    <OptimizedImage uri={optimizedPhotoUrl(photo, profile.photo_variants, 'thumb')} style={styles.thumbnail} />
                   </Pressable>
                 );
               })}

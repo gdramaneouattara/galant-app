@@ -53,6 +53,11 @@ const QUOTAS = {
   TRIAL_BOOST_SECONDS: 3600
 };
 
+const PHOTO_LIMITS = {
+  FREE: 3,
+  PREMIUM: 6
+};
+
 const BOOST_SCORES = {
   '1D': 500,
   '3D': 700,
@@ -85,6 +90,7 @@ module.exports = {
   PARTNER_PLAN_AMOUNTS,
   ROSE_PACKS,
   QUOTAS,
+  PHOTO_LIMITS,
   BOOST_SCORES,
   PLAN_DURATIONS,
   ALLOWED_REPORT_REASONS,

@@ -1,7 +1,9 @@
 import React from 'react';
-import { View, Text, Image, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { Heart, Lock } from 'lucide-react-native';
 import { COLORS } from '../../../data/mock';
+import OptimizedImage from '../../../components/OptimizedImage';
+import { optimizedPhotoUrl } from '../../../lib/mediaVariants';
 
 type SuperLikeStatus = 'PENDING' | 'ACCEPTED' | 'IGNORED';
 
@@ -17,6 +19,7 @@ interface SuperLikeRow {
     name: string;
     age: number;
     photos: string[];
+    photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
     city: string | null;
   };
   price_amount?: number;
@@ -67,10 +70,8 @@ const SuperLikeCard: React.FC<SuperLikeCardProps> = ({
   return (
     <View style={styles.card}>
       <View style={styles.photoContainer}>
-        <Image
-          source={{
-            uri: row.user.photos?.[0] || 'https://placehold.co/400x600',
-          }}
+        <OptimizedImage
+          uri={optimizedPhotoUrl(row.user.photos?.[0], row.user.photo_variants, 'thumb') || 'https://placehold.co/400x600'}
           style={styles.photo}
         />
       </View>

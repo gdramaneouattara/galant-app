@@ -1,8 +1,10 @@
 import React from 'react';
-import { View, Text, Image, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { Camera, ShieldCheck, Sparkles, Crown, Rocket } from 'lucide-react-native';
 import ProfileBadges from '../../../components/ProfileBadges';
 import { COLORS } from '../../../data/mock';
+import OptimizedImage from '../../../components/OptimizedImage';
+import { optimizedPhotoUrl } from '../../../lib/mediaVariants';
 
 interface ProfileHeaderProps {
   currentUser: any;
@@ -36,7 +38,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         onPress={onChangePhoto}
         disabled={updatingProfilePhoto}
       >
-        <Image source={{ uri: currentUser.photos[0] }} style={styles.photo} />
+        <OptimizedImage uri={optimizedPhotoUrl(currentUser.photos?.[0], currentUser.photo_variants, 'medium')} style={styles.photo} />
         <View style={styles.photoEditBtn}>
           {updatingProfilePhoto ? (
             <ActivityIndicator size="small" color="#fff" />

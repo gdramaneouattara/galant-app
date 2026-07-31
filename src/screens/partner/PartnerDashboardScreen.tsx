@@ -7,7 +7,7 @@ import { COLORS } from '../../data/mock';
 import { apiRequest } from '../../lib/api';
 import { db, COLLECTIONS } from '../../lib/firebase';
 import * as ImagePicker from 'expo-image-picker';
-import { uploadArrayBufferToBucket, getPublicUrl } from '../../lib/storageUpload';
+import { uploadImageVariantsToBucket } from '../../lib/storageUpload';
 
 // Components
 import PartnerHeader from './components/PartnerHeader';
@@ -29,6 +29,7 @@ interface VenueData {
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   photo_url?: string;
   photos?: string[];
+  photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
 }
 
 const PartnerDashboardScreen: React.FC = () => {
@@ -120,11 +121,11 @@ const PartnerDashboardScreen: React.FC = () => {
       setUploadingPhoto(true);
       const asset = res.assets[0];
       const path = `venues/${venue.id}/gallery-${Date.now()}.webp`;
-      await uploadArrayBufferToBucket({ bucket: 'photos', path, uri: asset.uri, contentType: 'image/webp' });
-      const publicUrl = await getPublicUrl('photos', path);
+      const { fullUrl: publicUrl, variants } = await uploadImageVariantsToBucket({ bucket: 'photos', path, uri: asset.uri });
 
       const nextPhotos = [...(venue.photos || []), publicUrl];
-      await apiRequest('/api/venues/partner/venue/photos', { method: 'POST', requireAuth: true, body: JSON.stringify({ venueId: venue.id, photos: nextPhotos }) });
+      const nextVariants = { ...(venue.photo_variants || {}), [publicUrl]: variants };
+      await apiRequest('/api/venues/partner/venue/photos', { method: 'POST', requireAuth: true, body: JSON.stringify({ venueId: venue.id, photos: nextPhotos, photo_variants: nextVariants }) });
       void fetchData();
     } catch (e: any) { Alert.alert('Erreur', e.message); }
     finally { setUploadingPhoto(false); }
@@ -134,7 +135,9 @@ const PartnerDashboardScreen: React.FC = () => {
     if (!venue) return;
     try {
       const nextPhotos = (venue.photos || []).filter(p => p !== url);
-      await apiRequest('/api/venues/partner/venue/photos', { method: 'POST', requireAuth: true, body: JSON.stringify({ venueId: venue.id, photos: nextPhotos }) });
+      const nextVariants = { ...(venue.photo_variants || {}) };
+      delete nextVariants[url];
+      await apiRequest('/api/venues/partner/venue/photos', { method: 'POST', requireAuth: true, body: JSON.stringify({ venueId: venue.id, photos: nextPhotos, photo_variants: nextVariants }) });
       void fetchData();
     } catch (e: any) { Alert.alert('Erreur', e.message); }
   };
@@ -185,6 +188,7 @@ const PartnerDashboardScreen: React.FC = () => {
 
         <VenueGallery
           photos={venue?.photos || []}
+          photoVariants={venue?.photo_variants || {}}
           onAddPhoto={handleAddPhoto}
           onRemovePhoto={handleRemovePhoto}
           uploading={uploadingPhoto}

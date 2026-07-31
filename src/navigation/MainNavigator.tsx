@@ -67,6 +67,7 @@ export type ProfileDetailParam = {
   city?: string | null;
   country?: string | null;
   photos?: string[] | null;
+  photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }> | null;
   interests?: string[] | null;
   is_verified?: boolean;
   is_premium?: boolean;

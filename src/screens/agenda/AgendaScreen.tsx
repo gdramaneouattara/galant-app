@@ -6,7 +6,6 @@ import {
   SafeAreaView,
   ScrollView,
   Pressable,
-  Image,
   ActivityIndicator,
   Alert,
   FlatList,
@@ -31,6 +30,8 @@ import {
 import { COLORS } from '../../data/mock';
 import { apiRequest } from '../../lib/api';
 import { useApp } from '../../state/AppContext';
+import OptimizedImage from '../../components/OptimizedImage';
+import { optimizedPhotoUrl } from '../../lib/mediaVariants';
 
 const AMBIANCES = [
   { id: 'ALL', labelKey: 'all' as const, icon: Sparkles },
@@ -47,6 +48,7 @@ interface VenueEvent {
   title: string;
   description: string;
   photo_url: string;
+  photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
   event_type: string;
   starts_at: string;
   expires_at: string;
@@ -55,6 +57,7 @@ interface VenueEvent {
     city: string;
     address: string;
     photo_url: string;
+    photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
     venue_type: string;
     benefit_description: string;
   };
@@ -155,7 +158,7 @@ const AgendaScreen: React.FC = () => {
 
   const renderFlashOffer = (item: VenueEvent) => (
     <Pressable key={item.id} style={[styles.flashCard, { backgroundColor: activeTheme === 'dark' ? '#1e293b' : '#000' }]} onPress={() => Alert.alert(item.title, item.description)}>
-      <Image source={{ uri: item.photo_url || item.venues.photo_url }} style={styles.flashImage} />
+      <OptimizedImage uri={optimizedPhotoUrl(item.photo_url || item.venues.photo_url, item.photo_variants || item.venues.photo_variants, 'thumb')} style={styles.flashImage} />
       <View style={styles.flashContent}>
         <View style={styles.flashBadge}>
           <Zap size={10} color="#fff" fill="#fff" />
@@ -169,7 +172,7 @@ const AgendaScreen: React.FC = () => {
 
   const renderEventItem = (item: VenueEvent) => (
     <View key={item.id} style={[styles.eventItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <Image source={{ uri: item.photo_url || item.venues.photo_url }} style={styles.eventImage} />
+      <OptimizedImage uri={optimizedPhotoUrl(item.photo_url || item.venues.photo_url, item.photo_variants || item.venues.photo_variants, 'thumb')} style={styles.eventImage} />
       <View style={styles.eventBody}>
         <View style={styles.eventVenueRow}>
           <Text style={[styles.eventVenueName, { color: colors.textMuted }]}>{item.venues.name}</Text>
@@ -273,7 +276,7 @@ const AgendaScreen: React.FC = () => {
                   onPress={() => selectedEvent && handleShareToMatch(item.matchId, selectedEvent)}
                   disabled={sharing}
                 >
-                  <Image source={{ uri: item.user?.photos[0] }} style={styles.matchAvatar} />
+                  <OptimizedImage uri={optimizedPhotoUrl(item.user?.photos?.[0], item.user?.photo_variants, 'thumb')} style={styles.matchAvatar} />
                   <Text style={[styles.matchName, { color: colors.text }]}>{item.user?.name}</Text>
                   <ChevronRight size={20} color={colors.textMuted} />
                 </Pressable>

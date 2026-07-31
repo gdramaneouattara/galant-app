@@ -2,9 +2,11 @@ import React from 'react';
 import { View, Text, ScrollView, Image, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { Camera, Trash2 } from 'lucide-react-native';
 import { COLORS } from '../../../data/mock';
+import { optimizedPhotoUrl } from '../../../lib/mediaVariants';
 
 interface VenueGalleryProps {
   photos: string[];
+  photoVariants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
   onAddPhoto: () => void;
   onRemovePhoto: (photo: string) => void;
   uploading: boolean;
@@ -13,6 +15,7 @@ interface VenueGalleryProps {
 
 const VenueGallery: React.FC<VenueGalleryProps> = ({
   photos,
+  photoVariants,
   onAddPhoto,
   onRemovePhoto,
   uploading,
@@ -26,7 +29,7 @@ const VenueGallery: React.FC<VenueGalleryProps> = ({
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryRow}>
         {photos.map((photo, idx) => (
           <View key={idx} style={styles.galleryItem}>
-            <Image source={{ uri: photo }} style={styles.galleryImage} />
+            <Image source={{ uri: optimizedPhotoUrl(photo, photoVariants, 'thumb') }} style={styles.galleryImage} />
             <Pressable style={styles.removePhotoBtn} onPress={() => onRemovePhoto(photo)}>
               <Trash2 size={14} color="#fff" />
             </Pressable>

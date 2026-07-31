@@ -1,38 +1,41 @@
-# Optimisation de la Performance & Réduction des Coûts (Prêt pour 1000+)
+# Implémentation de la Sérénade Vocale (Web)
 
-Ce plan vise à préparer l'application Galant pour une montée en charge à plus de 1000 utilisateurs en optimisant la consommation de bande passante et le stockage via une compression d'image systématique et du chargement différé (Lazy Loading).
+Ce plan vise à porter la fonctionnalité "Sérénade Vocale" (Voice Messages à écoute unique) sur la version Web, en garantissant une parité totale avec l'expérience mobile native.
 
 ## Proposed Changes
 
-### [Web Mobile] Optimisation des Images
+### [Web Mobile] Infrastructure Audio
 
-#### [MODIFY] [OnboardingPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/OnboardingPage.tsx)
-- **Compression au premier contact** : Intégrer la fonction `compressImageWeb` lors de l'inscription.
-- **Impact** : Réduction immédiate de ~70% de la taille des photos de profil stockées, passant de plusieurs Mo à environ 150-200 Ko par image.
+#### [NEW] [audioRecording.ts](file:///C:/Users/UTILISATEUR/galant-app/web/src/lib/audioRecording.ts)
+- Utilisation de l'API `MediaRecorder` du navigateur.
+- Logique d'enregistrement, de pause et de conversion en Blob audio (format `audio/webm` ou `audio/mp4` selon compatibilité).
 
-#### [MODIFY] [DiscoverGridPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/DiscoverGridPage.tsx)
-- **Chargement Différé (Lazy Loading)** : Ajouter l'attribut `loading="lazy"` aux miniatures de la grille.
-- **Impact** : Le navigateur ne téléchargera que les photos visibles à l'écran, économisant ainsi des dizaines de Mo de bande passante lors du défilement d'une grande galerie.
+#### [NEW] [VoicePlayer.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/VoicePlayer.tsx)
+- Composant de lecture audio élégant.
+- Gestion de l'état "Écoute unique" : appel au serveur pour marquer la sérénade comme lue dès la fin de la lecture.
+- Design Prestige (Playfair Display).
 
-#### [MODIFY] [StoriesPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/StoriesPage.tsx)
-- Appliquer `loading="lazy"` aux vignettes de prévisualisation des stories.
+### [Web Mobile] Interface de Chat
 
-### [Shared] Raffinement de la Compression
+#### [MODIFY] [ChatPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ChatPage.tsx)
+- **Zone de saisie** : Ajouter le bouton Micro (icône `Mic`).
+- **Mode Enregistrement** : Afficher un état visuel pulsant lors de la capture vocale.
+- **Affichage des messages** : Intégrer le `VoicePlayer` pour les messages de type `VOICE`.
+- **Support des métadonnées** : Gérer le flag `is_serenade` et l'état `played_at` pour le verrouillage visuel.
 
-#### [MODIFY] [imageCompression.ts](file:///C:/Users/UTILISATEUR/galant-app/web/src/lib/imageCompression.ts)
-- Vérifier et stabiliser les réglages par défaut (`1080px`, `70% de qualité`) pour garantir un rendu "Prestige" tout en étant ultra-léger.
+### [Server] Service de Médias
+
+#### [MODIFY] [mediaController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/mediaController.js)
+- S'assurer que l'upload supporte les formats audio web.
 
 ## User Review Required
 
-> [!TIP]
-> **Économies de Cloud** : Ces mesures combinées permettront à votre budget Google Cloud de durer beaucoup plus longtemps. Vous payez moins pour le stockage et presque rien pour le transfert de données inutiles.
+> [!IMPORTANT]
+> **Expérience Utilisateur** : Sur Web, le navigateur demandera l'autorisation d'accéder au micro lors du premier clic. Nous utiliserons une approche similaire au Web Push pour rendre cette demande "naturelle".
 
 ## Verification Plan
 
-### Automated Tests
-- Relancer `npm run test:quality` pour s'assurer que le flux d'inscription n'est pas ralenti par la compression.
-
 ### Manual Verification
-1.  **Inscription** : Uploader une photo de 5 Mo et vérifier qu'elle est compressée avant l'envoi (vérifier la taille dans la console Firebase).
-2.  **La Galerie** : Faire défiler la grille rapidement et vérifier que les images se chargent au fur et à mesure (Lazy Loading).
-3.  **Qualité Visuelle** : S'assurer que les photos restent nettes et dignes du standing Galant après compression.
+1.  **Mobile -> Web** : Envoyer une sérénade depuis un téléphone et l'écouter sur Web. Vérifier qu'elle expire bien après lecture.
+2.  **Web -> Mobile** : Enregistrer une sérénade sur Web et l'écouter sur téléphone.
+3.  **Qualité Audio** : Vérifier que le son est clair et que le fichier est optimisé (léger).
