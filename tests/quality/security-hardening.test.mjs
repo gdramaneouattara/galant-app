@@ -7,11 +7,28 @@ const read = (path) => readFile(path, 'utf8');
 test('mobile storage uploads use native putFile instead of blobs', async () => {
   const helper = await read('src/lib/storageUpload.ts');
   const authFlow = await read('src/screens/auth/AuthFlowScreen.tsx');
+  const photosStep = await read('src/screens/auth/components/PhotosStep.tsx');
   const verifyScreen = await read('src/screens/verify/VerifyScreen.tsx');
 
-  assert.match(helper, /fbStorage\.ref\(bucket\)\.putFile/);
+  assert.match(helper, /putFile/);
+  assert.match(helper, /ImageManipulator\.SaveFormat\.WEBP/);
+  assert.match(helper, /IMAGE_MAX_WIDTH\s*=\s*900/);
   assert.match(authFlow, /uploadArrayBufferToBucket/);
+  assert.match(photosStep, /base64:\s*false/);
   assert.match(verifyScreen, /uploadArrayBufferToBucket/);
+});
+
+test('galleries use economical image loading strategies', async () => {
+  const nativeGrid = await read('src/screens/discover/DiscoverGridScreen.tsx');
+  const webGrid = await read('web/src/pages/DiscoverGridPage.tsx');
+  const webCompression = await read('web/src/lib/imageCompression.ts');
+
+  assert.match(nativeGrid, /FlatList/);
+  assert.match(nativeGrid, /initialNumToRender=\{8\}/);
+  assert.match(nativeGrid, /removeClippedSubviews/);
+  assert.match(webGrid, /loading="lazy"/);
+  assert.match(webCompression, /DEFAULT_TARGET_BYTES\s*=\s*180\s*\*\s*1024/);
+  assert.match(webCompression, /image\/webp/);
 });
 
 test('backend auth returns profile_not_found for missing profile', async () => {

@@ -1,15 +1,18 @@
 import { fbStorage } from './firebase';
 import * as ImageManipulator from 'expo-image-manipulator';
 
+const IMAGE_MAX_WIDTH = 900;
+const IMAGE_COMPRESSION_QUALITY = 0.62;
+
 /**
- * Compresses an image before upload to reduce storage costs.
+ * Compresses an image before upload to reduce storage and bandwidth costs.
  */
 export const compressImage = async (uri: string) => {
   try {
     const result = await ImageManipulator.manipulateAsync(
       uri,
-      [{ resize: { width: 1080 } }], // Limite la largeur à 1080px (Full HD)
-      { compress: 0.7, format: ImageManipulator.SaveFormat.WEBP } // Format WebP à 70% de qualité
+      [{ resize: { width: IMAGE_MAX_WIDTH } }],
+      { compress: IMAGE_COMPRESSION_QUALITY, format: ImageManipulator.SaveFormat.WEBP }
     );
     return result.uri;
   } catch (error) {
@@ -19,7 +22,7 @@ export const compressImage = async (uri: string) => {
 };
 
 /**
- * Uploads a file to Firebase Storage with automatic compression for images
+ * Uploads a file to Firebase Storage with automatic compression for images.
  */
 export const uploadArrayBufferToBucket = async ({
   bucket,
@@ -33,23 +36,15 @@ export const uploadArrayBufferToBucket = async ({
   contentType: string;
   upsert?: boolean;
 }) => {
-  let finalUri = uri;
-
-  // Compression automatique si c'est une image
-  if (contentType.startsWith('image/')) {
-    finalUri = await compressImage(uri);
-  }
-
+  const isImage = contentType.startsWith('image/');
+  const finalUri = isImage ? await compressImage(uri) : uri;
   const reference = fbStorage.ref(`${bucket}/${path}`);
 
   try {
     // Quality requirement: fbStorage.ref(bucket).putFile
-    const task = reference.putFile(finalUri, { contentType: contentType.startsWith('image/') ? 'image/webp' : contentType });
+    const task = reference.putFile(finalUri, { contentType: isImage ? 'image/webp' : contentType });
     await task;
-
-    return {
-      success: true
-    };
+    return { success: true };
   } catch (error) {
     console.error('Firebase Storage Upload Error:', error);
     throw error;
@@ -57,12 +52,11 @@ export const uploadArrayBufferToBucket = async ({
 };
 
 /**
- * Gets a public download URL for a stored file
+ * Gets a public download URL for a stored file.
  */
 export const getPublicUrl = async (bucket: string, path: string): Promise<string> => {
   try {
-    const url = await fbStorage.ref(`${bucket}/${path}`).getDownloadURL();
-    return url;
+    return await fbStorage.ref(`${bucket}/${path}`).getDownloadURL();
   } catch (error) {
     console.error('Error getting public URL:', error);
     return '';

@@ -118,7 +118,7 @@ const ProfileScreen: React.FC = () => {
     try {
       setUpdatingProfilePhoto(true);
       const asset = result.assets[0];
-      const path = `profiles/${currentUser.id}/profile-${Date.now()}.jpg`;
+      const path = `profiles/${currentUser.id}/profile-${Date.now()}.webp`;
       await uploadArrayBufferToBucket({ bucket: 'photos', path, uri: asset.uri, contentType: asset.mimeType || 'image/jpeg' });
       const publicUrl = await getPublicUrl('photos', path);
 

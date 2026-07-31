@@ -119,8 +119,8 @@ const PartnerDashboardScreen: React.FC = () => {
     try {
       setUploadingPhoto(true);
       const asset = res.assets[0];
-      const path = `venues/${venue.id}/gallery-${Date.now()}.jpg`;
-      await uploadArrayBufferToBucket({ bucket: 'photos', path, uri: asset.uri, contentType: 'image/jpeg' });
+      const path = `venues/${venue.id}/gallery-${Date.now()}.webp`;
+      await uploadArrayBufferToBucket({ bucket: 'photos', path, uri: asset.uri, contentType: 'image/webp' });
       const publicUrl = await getPublicUrl('photos', path);
 
       const nextPhotos = [...(venue.photos || []), publicUrl];
