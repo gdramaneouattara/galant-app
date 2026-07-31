@@ -25,6 +25,7 @@ interface AuthContextType {
   isFakeCallActive: boolean;
   setIsFakeCallActive: (active: boolean) => void;
   registerWebPushToken: (userId: string) => Promise<void>;
+  completeVernissage: () => Promise<void>;
   t: (key: keyof typeof TRANSLATIONS.fr, params?: Record<string, any>) => string;
   logout: () => Promise<void>;
   reloadUser: () => Promise<void>;
@@ -122,6 +123,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('✅ Web Push Token registered');
       }
     } catch (e) { console.error('❌ Web Push error:', e); }
+  };
+
+  const completeVernissage = async () => {
+    if (!user) return;
+    try {
+      await apiRequest('/api/profiles/update', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({ has_seen_vernissage: true })
+      });
+    } catch (e) {
+      console.error('Error completing vernissage:', e);
+    }
   };
 
   // Auth & Profile
@@ -271,6 +285,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isFakeCallActive,
     setIsFakeCallActive,
     registerWebPushToken,
+    completeVernissage,
     t,
     logout,
     reloadUser

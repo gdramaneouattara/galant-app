@@ -1,36 +1,42 @@
-# Lancement des Services de Prestige (Web Push)
+# Guidage Immersif : Le Vernissage et les Indices de Lumière
 
-Ce plan vise à intégrer la demande de permission des notifications de manière naturelle et prestigieuse à la fin du parcours d'inscription, évitant ainsi l'interruption technique brutale du navigateur.
+Ce plan vise à orienter les utilisateurs dans l'application sans utiliser d'IA intrusive, en privilégiant une narration visuelle (Vernissage) et des micro-interactions subtiles (Indices de Lumière).
 
 ## Proposed Changes
 
-### [Web Mobile] Parcours d'Onboarding
+### [Web] Composants de Guidage
+
+#### [NEW] [WelcomeVernissage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/WelcomeVernissage.tsx)
+- Un overlay plein écran affiché à la première connexion après l'inscription.
+- **Storytelling** : 3 écrans immersifs avec fonds floutés et typographie Playfair Display.
+    - Écran 1 : "Bienvenue dans l'Élite" (L'univers Galant).
+    - Écran 2 : "La Galerie & Le Marché" (Découverte et Efficacité).
+    - Écran 3 : "La Sentinelle" (Votre ange gardien).
+- Un bouton final "Commencer l'expérience" qui met à jour le profil de l'utilisateur.
+
+#### [NEW] [FeatureHighlight.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/FeatureHighlight.tsx)
+- Un composant "Wrapper" qui entoure un bouton ou une carte.
+- **Effet Visuel** : Une lueur (halo) rose ou dorée qui pulse très doucement autour de l'élément.
+- **Persistance** : Utilise le `localStorage` pour disparaître une fois que l'utilisateur a cliqué sur l'élément pour la première fois.
+
+### [Web] Intégration dans les Pages
+
+#### [MODIFY] [DiscoverPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/DiscoverPage.tsx)
+- Entourer le bouton de bascule vers la **Grille** avec un `FeatureHighlight`.
+
+#### [MODIFY] [AppsPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/AppsPage.tsx)
+- Appliquer un `FeatureHighlight` sur les nouvelles cartes **"Le Marché"** et **"La Sentinelle"**.
+
+#### [MODIFY] [App.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/App.tsx)
+- Ajouter une logique pour afficher le `WelcomeVernissage` si le profil contient le champ `has_seen_vernissage: false`.
 
 #### [MODIFY] [OnboardingPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/OnboardingPage.tsx)
-- **Nouvelle Étape (Step 6)** : "Activation des Services".
-- Cette étape sera affichée immédiatement après la soumission du dossier (Step 5).
-- **Contenu** : Un message de félicitations haut de gamme :
-    - *"Dossier validé. Votre expérience Galant commence maintenant."*
-    - *"Nous activons votre protection La Sentinelle et vos alertes de rencontres pour une réactivité maximale."*
-- **Bouton d'action** : "ACTIVER MON EXPÉRIENCE".
-- **Logique** :
-    - Le clic sur ce bouton appellera `registerWebPushToken()` (qui déclenchera la demande de permission du navigateur).
-    - Une fois l'action terminée (acceptée ou non), l'utilisateur sera redirigé vers la page d'accueil.
-
-#### [MODIFY] [AuthContext.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/context/AuthContext.tsx)
-- Retirer l'appel automatique à `registerWebPushToken` lors de la connexion initiale pour ne pas harceler l'utilisateur s'il n'est pas encore passé par l'étape d'activation.
-
-## User Review Required
-
-> [!NOTE]
-> Cette approche transforme une contrainte technique (le pop-up de permission) en une **validation de service de luxe**. L'utilisateur a le sentiment d'activer sa protection plutôt que de subir un réglage informatique.
+- Initialiser `has_seen_vernissage: false` lors de la création du profil (Step 6).
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Créer un nouveau compte sur la version Web.
-2.  Parcourir toutes les étapes de l'inscription.
-3.  Vérifier qu'après avoir accepté le manifeste, la nouvelle page d'activation apparaît.
-4.  Cliquer sur "ACTIVER MON EXPÉRIENCE".
-5.  Vérifier que la demande de permission du navigateur apparaît à ce moment précis.
-6.  Vérifier que la redirection vers l'accueil se fait correctement après le clic.
+1.  Créer un nouveau compte : vérifier que le **Vernissage** s'affiche juste après l'activation des services.
+2.  Parcourir le Vernissage et cliquer sur "Commencer" : vérifier que l'on arrive sur la page Découverte.
+3.  Sur la page Découverte : vérifier que le bouton Grille "pulse" doucement. Cliquer dessus et vérifier que la lueur disparaît.
+4.  Aller dans l'onglet **Apps** : vérifier que le Marché et la Sentinelle brillent. Cliquer sur l'un d'eux et vérifier la disparition du halo.

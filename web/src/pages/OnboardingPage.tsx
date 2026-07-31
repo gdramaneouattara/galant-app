@@ -167,7 +167,8 @@ const OnboardingPage: React.FC = () => {
           latitude: formData.latitude,
           longitude: formData.longitude,
           photos: uploadedUrls,
-          radiance_score: calculateRadiance()
+          radiance_score: calculateRadiance(),
+          has_seen_vernissage: false
         })
       });
 
