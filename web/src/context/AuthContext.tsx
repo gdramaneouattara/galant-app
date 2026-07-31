@@ -24,6 +24,7 @@ interface AuthContextType {
   setThemePreference: (theme: ThemePreference) => void;
   isFakeCallActive: boolean;
   setIsFakeCallActive: (active: boolean) => void;
+  registerWebPushToken: (userId: string) => Promise<void>;
   t: (key: keyof typeof TRANSLATIONS.fr, params?: Record<string, any>) => string;
   logout: () => Promise<void>;
   reloadUser: () => Promise<void>;
@@ -137,9 +138,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let unsubProfile: (() => void) | null = null;
 
       if (firebaseUser) {
-        void registerWebPushToken(firebaseUser.uid);
-        if (fbMessaging) onMessage(fbMessaging, (p) => console.log('Push received:', p));
-
         // Listen to Profile changes in real-time
         unsubProfile = onSnapshot(doc(db, COLLECTIONS.PROFILES, firebaseUser.uid), (profileDoc) => {
           if (profileDoc.exists()) {
@@ -272,6 +270,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setThemePreference,
     isFakeCallActive,
     setIsFakeCallActive,
+    registerWebPushToken,
     t,
     logout,
     reloadUser
