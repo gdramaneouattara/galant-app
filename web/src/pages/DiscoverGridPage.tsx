@@ -38,6 +38,12 @@ const DiscoverGridPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
+  useEffect(() => {
+    if (myProfile && !myProfile.is_premium && !myProfile.is_grid_unlocked) {
+      navigate('/');
+    }
+  }, [myProfile, navigate]);
+
   const fetchSuggestions = useCallback(async (q = '') => {
     if (!user || authLoading) return;
     try {

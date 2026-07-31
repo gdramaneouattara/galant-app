@@ -11,7 +11,8 @@ const PRICES = {
   GOLDEN_ROSE: parseInt(process.env.GOLDEN_ROSE_AMOUNT || '2500'),
   ROSE_NOTE_UNLOCK: parseInt(process.env.ROSE_NOTE_UNLOCK_AMOUNT || '500'),
   STORY_UPLOAD: parseInt(process.env.STORY_UPLOAD_AMOUNT || '500'),
-  LIKES_INBOX_2H: parseInt(process.env.LIKES_INBOX_2H_AMOUNT || '1000')
+  LIKES_INBOX_2H: parseInt(process.env.LIKES_INBOX_2H_AMOUNT || '1000'),
+  DISCOVER_GRID_UNLOCK: parseInt(process.env.DISCOVER_GRID_UNLOCK_AMOUNT || '1000')
 };
 
 const ROSE_PACKS = {

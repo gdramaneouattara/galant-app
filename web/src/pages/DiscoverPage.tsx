@@ -190,6 +190,15 @@ const DiscoverPage: React.FC = () => {
     navigate(`/profile/${profile.id}`, { state: { profile } });
   };
 
+  const handleGridTransition = () => {
+    const hasAccess = myProfile?.is_premium || myProfile?.is_grid_unlocked;
+    if (hasAccess) {
+      navigate('/discover-grid');
+    } else {
+      setPurchaseModal({ isOpen: true, type: 'DISCOVER_GRID_UNLOCK', userName: 'Accès Galerie', targetId: 'grid_unlock' });
+    }
+  };
+
   if (authLoading || (loading && suggestions.length === 0)) {
     return (
       <div className="flex flex-col items-center justify-center py-40">
@@ -270,7 +279,7 @@ const DiscoverPage: React.FC = () => {
         <div className="flex gap-3">
           <FeatureHighlight id="discover_grid" type="GOLD">
             <button
-              onClick={() => navigate('/discover-grid')}
+              onClick={handleGridTransition}
               className="w-10 h-10 rounded-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 shadow-lg flex items-center justify-center text-slate-400 hover:text-primary transition-all active:scale-95"
               title="Vue Grille"
             >
