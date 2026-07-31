@@ -191,7 +191,7 @@ const DiscoverPage: React.FC = () => {
   };
 
   const handleGridTransition = () => {
-    const hasAccess = myProfile?.is_premium || myProfile?.is_grid_unlocked;
+    const hasAccess = myProfile?.is_premium || (myProfile?.grid_consultations_remaining || 0) > 0;
     if (hasAccess) {
       navigate('/discover-grid');
     } else {

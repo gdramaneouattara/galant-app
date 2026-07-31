@@ -102,7 +102,8 @@ const AdminPricing: React.FC = () => {
               { id: 'GOLDEN_ROSE', label: 'Rose d Or visibilite (3h)', icon: Gem },
               { id: 'STORY_UPLOAD', label: 'Publication Story', icon: Film },
               { id: 'LIKES_INBOX_2H', label: 'Déblocage Likes (2h)', icon: Heart },
-              { id: 'DISCOVER_GRID_UNLOCK', label: 'Déblocage Galerie', icon: LayoutGrid }
+              { id: 'DISCOVER_GRID_UNLOCK', label: 'Déblocage Galerie (Prix)', icon: LayoutGrid },
+              { id: 'GRID_QUOTA', label: 'Galerie : Nombre de profils', icon: Users }
             ].map(item => (
               <div key={item.id} className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors">{item.label}</label>

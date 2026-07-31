@@ -153,9 +153,11 @@ const getSuggestions = async (req, res) => {
     search = '',
     premiumOnly = 'false',
     verifiedOnly = 'false',
-    minScore = 0
+    minScore = 0,
+    isGrid = 'false'
   } = req.query;
 
+  const isGridMode = String(isGrid).toLowerCase() === 'true';
   const includeSelf = String(req.query.includeSelf || '').toLowerCase() === 'true';
   const meGender = String(me?.gender || '').toUpperCase();
   const meGoal = String(me?.relationship_goal || '').toUpperCase();
@@ -164,6 +166,14 @@ const getSuggestions = async (req, res) => {
   const myLon = Number(me.passport_longitude || me.longitude);
   const myCity = normalizeCity(me.passport_city || me.city);
   const myCountry = normalizeText(me.passport_country || me.country);
+
+  // 0. Quota check for Grid
+  if (isGridMode && !me.is_premium) {
+    const remaining = me.grid_consultations_remaining || 0;
+    if (remaining <= 0) {
+      return res.status(403).json({ error: 'grid_quota_exceeded', message: "Votre quota d'exploration est épuisé. Repassez au Swipe ou débloquez un pack." });
+    }
+  }
 
   // Logic: Serious goals see opposite gender only. Casual/Friendship see all.
   const isStrictGoal = meGoal === 'SERIOUS' || meGoal === 'MARRIAGE';
@@ -360,9 +370,18 @@ const getSuggestions = async (req, res) => {
     }
 
     const rankedSuggestions = suggestions.sort((a, b) => b.score - a.score);
-    const selfRank = rankedSuggestions.findIndex((profile) => profile?.id === me.id) + 1;
+    const sliced = rankedSuggestions.slice(0, safeLimit);
+
+    // Decrement Quota if non-premium
+    if (isGridMode && !me.is_premium && sliced.length > 0) {
+      await db.collection('profiles').doc(me.id).update({
+        grid_consultations_remaining: FieldValue.increment(-sliced.length)
+      });
+    }
+
+    const selfRank = sliced.findIndex((profile) => profile?.id === me.id) + 1;
     res.json({
-      suggestions: rankedSuggestions.slice(0, safeLimit),
+      suggestions: sliced,
       current_user_rank: selfRank > 0 ? selfRank : null
     });
 

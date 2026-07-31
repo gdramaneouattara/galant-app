@@ -39,7 +39,7 @@ const DiscoverGridPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    if (myProfile && !myProfile.is_premium && !myProfile.is_grid_unlocked) {
+    if (myProfile && !myProfile.is_premium && (myProfile.grid_consultations_remaining || 0) <= 0) {
       navigate('/');
     }
   }, [myProfile, navigate]);
@@ -51,17 +51,21 @@ const DiscoverGridPage: React.FC = () => {
       const safeQ = q.trim();
       const searchParam = safeQ ? `&search=${encodeURIComponent(safeQ)}` : '';
       const res = await apiRequest<{ suggestions: DiscoverSuggestion[] }>(
-        `/api/matchmaking/suggestions?limit=80${searchParam}`,
+        `/api/matchmaking/suggestions?limit=80&isGrid=true${searchParam}`,
         { requireAuth: true }
       );
       setProfiles(res.suggestions || []);
     } catch (e: any) {
       console.error('Error fetching grid suggestions', e);
+      if (e.message?.includes('quota_exceeded')) {
+        showAlert('Quota épuisé', "Votre quota d'exploration Galerie est terminé.");
+        navigate('/');
+      }
       setProfiles([]);
     } finally {
       setLoading(false);
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     void fetchSuggestions();
@@ -89,9 +93,19 @@ const DiscoverGridPage: React.FC = () => {
           <h2 className="text-4xl font-serif italic tracking-tighter text-slate-900 dark:text-white leading-none">
             La Galerie
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 font-medium mt-2 text-[10px] uppercase tracking-prestige">
-            Parcourez les profils avec efficacité
-          </p>
+          <div className="flex items-center gap-3 mt-2">
+            <p className="text-slate-500 dark:text-slate-400 font-medium text-[10px] uppercase tracking-prestige">
+              Parcourez les profils avec efficacité
+            </p>
+            {!myProfile?.is_premium && myProfile?.grid_consultations_remaining !== undefined && (
+              <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2">
+                <Sparkles size={10} className="text-amber-500" />
+                <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">
+                  {Math.max(0, myProfile.grid_consultations_remaining)} profils restants
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex gap-3">
