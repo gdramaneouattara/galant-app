@@ -2,12 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const {
-  getVenues, getVenueRecommendations, getPartnerDiscoveryAccess, discoverGooglePartners,
+  getVenues, getVenueRecommendations, getVenuePhoto, getPartnerDiscoveryAccess, discoverGooglePartners,
   getAgendaEvents, createPartnerEvent, deletePartnerEvent,
   createVenueChatThread, getPartnerChats, getUserVenueChats, getMyVenue, updateVenue,
   updateVenuePhotos, getVenueStats, logVenueView, attendEvent, unattendEvent
 } = require('../controllers/venueController');
 
+router.get('/:id/photo', getVenuePhoto);
 router.get('/', requireAuth, getVenues);
 router.get('/recommendations', requireAuth, getVenueRecommendations);
 router.get('/partner-discovery/access', requireAuth, getPartnerDiscoveryAccess);

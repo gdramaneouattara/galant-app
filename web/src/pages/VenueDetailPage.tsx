@@ -98,6 +98,9 @@ const VenueDetailPage: React.FC = () => {
   }
 
   const photos = Array.isArray(venue.photos) && venue.photos.length > 0 ? venue.photos : [venue.photo_url || 'https://placehold.co/600x400?text=Venue'];
+  const googleAttributions = Array.isArray(venue.google_photo_attributions)
+    ? venue.google_photo_attributions.filter((item: any) => item?.display_name)
+    : [];
 
   return (
     <div className="max-w-2xl mx-auto pb-24 space-y-8 animate-in fade-in duration-500">
@@ -140,6 +143,11 @@ const VenueDetailPage: React.FC = () => {
             </div>
           )}
         </div>
+        {googleAttributions.length > 0 && (
+          <p className="mt-3 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+            Photo Google Places : {googleAttributions.map((item: any) => item.display_name).join(', ')}
+          </p>
+        )}
       </div>
 
       {/* Content */}

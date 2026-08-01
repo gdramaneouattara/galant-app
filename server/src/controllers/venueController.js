@@ -2,9 +2,53 @@ const { db } = require('../config/firebase');
 const { FieldValue } = require('firebase-admin/firestore');
 const { getLatestActiveSubscriptionForUser } = require('../services/subscriptionService');
 const { hasDirectMessagePurchase } = require('../services/usageService');
-const { searchUserPartnerDiscovery } = require('../services/googleMapsService');
+const {
+  searchUserPartnerDiscovery,
+  buildGooglePhotoMediaUrl,
+  extractGooglePhotoNameFromUrl,
+  GOOGLE_VENUE_PLACEHOLDER
+} = require('../services/googleMapsService');
 
 const PARTNER_DISCOVERY_PRICE = 500;
+
+const googlePhotoNameForVenue = (venue = {}) => (
+  venue.google_photo_name || extractGooglePhotoNameFromUrl(venue.photo_url)
+);
+
+const publicBaseUrl = (req) => {
+  const proto = req.get('x-forwarded-proto') || req.protocol || 'https';
+  const host = req.get('host');
+  return `${proto}://${host}`;
+};
+
+const venuePhotoEndpoint = (req, venueId, size) => (
+  `${publicBaseUrl(req)}/api/venues/${encodeURIComponent(venueId)}/photo?size=${size}`
+);
+
+const decorateVenueMedia = (req, venue, preferred = 'thumb') => {
+  const googlePhotoName = googlePhotoNameForVenue(venue);
+  const isGoogleVenue = String(venue.source || '').startsWith('GOOGLE_PLACES') || !!venue.google_place_id;
+
+  if (!isGoogleVenue || !googlePhotoName || !venue.id) {
+    return venue;
+  }
+
+  const thumb = venuePhotoEndpoint(req, venue.id, 'thumb');
+  const medium = venuePhotoEndpoint(req, venue.id, 'medium');
+  const full = venuePhotoEndpoint(req, venue.id, 'full');
+  const primary = preferred === 'medium' ? medium : preferred === 'full' ? full : thumb;
+
+  return {
+    ...venue,
+    image_source: venue.image_source || 'google_places',
+    google_photo_name: googlePhotoName,
+    photo_url: primary,
+    photo_variants: {
+      ...(venue.photo_variants || {}),
+      [primary]: { thumb, medium, full },
+    },
+  };
+};
 
 const toPublicProfile = (p) => {
   if (!p) return null;
@@ -32,7 +76,7 @@ const getVenues = async (req, res) => {
     if (type) query = query.where('venue_type', '==', type);
 
     const snapshot = await query.get();
-    let venues = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let venues = snapshot.docs.map(doc => decorateVenueMedia(req, { id: doc.id, ...doc.data() }, 'thumb'));
 
     if (city) {
       const searchCity = city.toLowerCase();
@@ -48,7 +92,7 @@ const getVenueRecommendations = async (req, res) => {
   const interests = me.interests || [];
   try {
     const snapshot = await db.collection('venues').where('status', '==', 'APPROVED').limit(20).get();
-    let venues = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let venues = snapshot.docs.map(doc => decorateVenueMedia(req, { id: doc.id, ...doc.data() }, 'thumb'));
 
     if (interests.length > 0) {
       venues.sort((a, b) => {
@@ -60,6 +104,27 @@ const getVenueRecommendations = async (req, res) => {
 
     res.json({ venues: venues.slice(0, 5) });
   } catch (error) { res.status(500).json({ error: error.message }); }
+};
+
+const getVenuePhoto = async (req, res) => {
+  const { id } = req.params;
+  const size = ['thumb', 'medium', 'full'].includes(String(req.query.size || '')) ? req.query.size : 'medium';
+
+  try {
+    const doc = await db.collection('venues').doc(id).get();
+    if (!doc.exists) return res.redirect(GOOGLE_VENUE_PLACEHOLDER);
+
+    const venue = doc.data();
+    if (venue.status && venue.status !== 'APPROVED') return res.redirect(GOOGLE_VENUE_PLACEHOLDER);
+
+    const googlePhotoName = googlePhotoNameForVenue(venue);
+    const url = googlePhotoName ? buildGooglePhotoMediaUrl(googlePhotoName, size) : (venue.photo_url || GOOGLE_VENUE_PLACEHOLDER);
+
+    res.set('Cache-Control', 'public, max-age=21600, stale-while-revalidate=86400');
+    return res.redirect(302, url);
+  } catch (error) {
+    return res.redirect(GOOGLE_VENUE_PLACEHOLDER);
+  }
 };
 
 const canUsePartnerDiscovery = (profile = {}) => (
@@ -142,7 +207,7 @@ const getAgendaEvents = async (req, res) => {
 
     const results = await Promise.all(events.map(async ev => {
       const venueDoc = await db.collection('venues').doc(ev.venue_id).get();
-      const venueData = venueDoc.exists ? venueDoc.data() : null;
+      const venueData = venueDoc.exists ? decorateVenueMedia(req, { id: venueDoc.id, ...venueDoc.data() }, 'thumb') : null;
       if (!venueData) return null;
       if (city && !String(venueData.city || '').toLowerCase().includes(String(city).toLowerCase())) return null;
 
@@ -314,7 +379,7 @@ const getUserVenueChats = async (req, res) => {
     const chats = await Promise.all(snapshot.docs.map(async doc => {
       const data = doc.data();
       const venueDoc = await db.collection('venues').doc(data.venue_id).get();
-      return { id: doc.id, ...data, venues: venueDoc.exists ? venueDoc.data() : null };
+      return { id: doc.id, ...data, venues: venueDoc.exists ? decorateVenueMedia(req, { id: venueDoc.id, ...venueDoc.data() }, 'thumb') : null };
     }));
     res.json({ chats });
   } catch (error) { res.status(500).json({ error: error.message }); }
@@ -381,7 +446,7 @@ const logVenueView = async (req, res) => {
 };
 
 module.exports = {
-  getVenues, getVenueRecommendations, getPartnerDiscoveryAccess, discoverGooglePartners,
+  getVenues, getVenueRecommendations, getVenuePhoto, getPartnerDiscoveryAccess, discoverGooglePartners,
   getAgendaEvents, createPartnerEvent, deletePartnerEvent,
   createVenueChatThread, getPartnerChats, getUserVenueChats, getMyVenue, updateVenue,
   updateVenuePhotos, getVenueStats, logVenueView, attendEvent, unattendEvent

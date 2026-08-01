@@ -480,6 +480,7 @@ const seedVenuesFromGoogle = async (req, res) => {
     const venues = await searchVenuesInCity(city, googleTypes);
     let createdCount = 0;
     let skippedCount = 0;
+    let updatedCount = 0;
     let editorialCount = 0;
 
     for (const v of venues) {
@@ -494,6 +495,35 @@ const seedVenuesFromGoogle = async (req, res) => {
         createdCount++;
         if (v.is_editorial) editorialCount++;
       } else {
+        const existingDoc = existing.docs[0];
+        const existingData = existingDoc.data();
+        const proposedUpdates = {
+          rating: v.rating,
+          user_ratings_total: v.user_ratings_total,
+          google_types: v.google_types,
+          google_maps_uri: v.google_maps_uri,
+          website_url: v.website_url,
+          phone_number: v.phone_number,
+          google_photo_name: v.google_photo_name || existingData.google_photo_name || null,
+          google_photo_width_px: v.google_photo_width_px || existingData.google_photo_width_px || null,
+          google_photo_height_px: v.google_photo_height_px || existingData.google_photo_height_px || null,
+          google_photo_attributions: v.google_photo_attributions || existingData.google_photo_attributions || [],
+          image_source: v.image_source || existingData.image_source || 'google_places',
+          updated_at: new Date().toISOString()
+        };
+        if (existingData.source === 'GOOGLE_PLACES' && String(existingData.photo_url || '').includes('places.googleapis.com')) {
+          proposedUpdates.photo_url = null;
+        }
+        const updates = Object.entries(proposedUpdates).reduce((acc, [key, value]) => {
+          if (key === 'updated_at') return acc;
+          if (JSON.stringify(existingData[key] ?? null) !== JSON.stringify(value ?? null)) acc[key] = value;
+          return acc;
+        }, {});
+        if (Object.keys(updates).length) {
+          updates.updated_at = proposedUpdates.updated_at;
+          await existingDoc.ref.update(updates);
+          updatedCount++;
+        }
         skippedCount++;
       }
     }
@@ -507,6 +537,7 @@ const seedVenuesFromGoogle = async (req, res) => {
         googleTypes,
         candidateCount: venues.length,
         createdCount,
+        updatedCount,
         skippedCount,
         editorialCount
       }
@@ -518,6 +549,7 @@ const seedVenuesFromGoogle = async (req, res) => {
       googleTypes,
       candidateCount: venues.length,
       createdCount,
+      updatedCount,
       skippedCount,
       editorialCount
     });
