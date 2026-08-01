@@ -470,6 +470,7 @@ const seedVenuesFromGoogle = async (req, res) => {
     const venues = await searchVenuesInCity(city);
     let createdCount = 0;
     let skippedCount = 0;
+    let editorialCount = 0;
 
     for (const v of venues) {
       // Check for duplicates
@@ -481,6 +482,7 @@ const seedVenuesFromGoogle = async (req, res) => {
       if (existing.empty) {
         await db.collection('venues').add(v);
         createdCount++;
+        if (v.is_editorial) editorialCount++;
       } else {
         skippedCount++;
       }
@@ -489,10 +491,16 @@ const seedVenuesFromGoogle = async (req, res) => {
     await appendAdminAuditLog({
       adminId: req.user.id,
       action: 'SEED_VENUES_GOOGLE',
-      metadata: { city, createdCount, skippedCount }
+      metadata: { city, candidateCount: venues.length, createdCount, skippedCount, editorialCount }
     });
 
-    res.json({ success: true, createdCount, skippedCount });
+    res.json({
+      success: true,
+      candidateCount: venues.length,
+      createdCount,
+      skippedCount,
+      editorialCount
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
