@@ -141,6 +141,18 @@ test('backend applies baseline transport and browser security controls', async (
   assert.match(server, /cors/);
 });
 
+test('web recovers from stale dynamic chunks after deployments', async () => {
+  const main = await read('web/src/main.tsx');
+  const recovery = await read('web/src/lib/chunkRecovery.ts');
+
+  assert.match(main, /installChunkRecovery\(\)/);
+  assert.match(main, /onNeedRefresh/);
+  assert.match(recovery, /vite:preloadError/);
+  assert.match(recovery, /Failed to fetch dynamically imported module/i);
+  assert.match(recovery, /window\.location\.reload\(\)/);
+  assert.match(recovery, /galant-media-cache/);
+});
+
 test('backend exposes internal KYC endpoints for user submission', async () => {
   const code = await read('server/src/routes/kycRoutes.js');
   assert.match(code, /\/requests/);
