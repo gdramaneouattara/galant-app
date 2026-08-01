@@ -52,6 +52,8 @@ export interface User {
   photo_review_status?: string | null;
   is_vip?: boolean;
   is_partner?: boolean;
+  partner_discovery_unlocked?: boolean;
+  partner_discovery_unlocked_at?: string | null;
   trial_started_at?: string | null;
   passport_city?: string | null;
   passport_country?: string | null;

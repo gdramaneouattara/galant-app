@@ -225,6 +225,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       photo_review_status: profile.photo_review_status ?? 'APPROVED',
       is_vip: !!profile.is_vip,
       is_partner: !!profile.is_partner,
+      partner_discovery_unlocked: !!profile.partner_discovery_unlocked,
+      partner_discovery_unlocked_at: profile.partner_discovery_unlocked_at ?? null,
       trial_started_at: profile.trial_started_at ?? null,
       subscription_plan_id: options?.subscription_plan_id ?? null,
       invisible_mode_eligible: invisibleModeEligible,
