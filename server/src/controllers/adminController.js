@@ -502,7 +502,12 @@ const seedVenuesFromGoogle = async (req, res) => {
       editorialCount
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    const payload = { error: error.message };
+    if (error.details) payload.details = error.details;
+    if (error.googleStatus) payload.googleStatus = error.googleStatus;
+    if (error.googleCode) payload.googleCode = error.googleCode;
+    if (error.categoryErrors) payload.categoryErrors = error.categoryErrors;
+    res.status(500).json(payload);
   }
 };
 

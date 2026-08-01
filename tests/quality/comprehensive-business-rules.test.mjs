@@ -115,12 +115,16 @@ test('Rules: Admin Guide Seeder imports prestigious Google Places editorial venu
   assert.match(googleMapsService, /restaurant/);
   assert.match(googleMapsService, /night_club/);
   assert.match(googleMapsService, /bar/);
-  assert.match(googleMapsService, /lodging/);
+  assert.match(googleMapsService, /hotel/);
+  assert.match(googleMapsService, /Promise\.allSettled/);
+  assert.match(googleMapsService, /categoryErrors/);
   assert.match(googleMapsService, /maxWidthPx=1200/);
   assert.match(googleMapsService, /is_editorial:\s*true/);
   assert.match(googleMapsService, /status:\s*'APPROVED'/);
   assert.match(adminController, /seedVenuesFromGoogle/);
   assert.match(adminController, /candidateCount/);
+  assert.match(adminController, /googleStatus/);
+  assert.match(adminController, /details/);
   assert.match(adminRoutes, /\/venues\/seed/);
   assert.match(adminSeeder, /Peupler le Guide/);
   assert.match(adminSeeder, /progress/);
