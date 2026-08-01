@@ -1,4 +1,5 @@
 const { db, rtdb } = require('../config/firebase');
+const { FieldValue } = require('firebase-admin/firestore');
 const { analyzeMessageWithAI } = require('../services/aiService');
 const { hasDirectMessagePurchase } = require('../services/usageService');
 const { sendPushNotification } = require('../services/notificationService');
@@ -75,6 +76,14 @@ const sendMessage = async (req, res) => {
     } else if (venueChatId) {
       const vChat = await db.collection('venue_chats').doc(venueChatId).get();
       if (!vChat.exists) return res.status(404).json({ error: 'chat_not_found' });
+      const venueChat = vChat.data();
+      const venueDoc = await db.collection('venues').doc(venueChat.venue_id).get();
+      const venue = venueDoc.exists ? venueDoc.data() : null;
+      const isUserParticipant = venueChat.user_id === me.id;
+      const isPartnerParticipant = venue?.owner_id === me.id;
+      if (!isUserParticipant && !isPartnerParticipant) {
+        return res.status(403).json({ error: 'chat_not_authorized' });
+      }
     } else {
       return res.status(400).json({ error: 'missing_chat_context' });
     }
@@ -242,6 +251,8 @@ const createVenueThread = async (req, res) => {
     const venueDoc = await db.collection('venues').doc(venueId).get();
     if (!venueDoc.exists) return res.status(404).json({ error: 'venue_not_found' });
     const venue = venueDoc.data();
+    if (venue.status && venue.status !== 'APPROVED') return res.status(403).json({ error: 'venue_not_available' });
+    if (venue.owner_id === me.id) return res.status(400).json({ error: 'cannot_chat_own_venue' });
 
     const venueChatId = `vchat_${me.id}_${venueId}`;
     const chatRef = db.collection('venue_chats').doc(venueChatId);
@@ -253,41 +264,71 @@ const createVenueThread = async (req, res) => {
     }
 
     // 2. Vérification des droits pour un NOUVEAU chat
-    const isEligible = !!me.is_premium || !!me.is_vip;
+    const profileRef = db.collection('profiles').doc(me.id);
+    const profileSnap = await profileRef.get();
+    const profile = profileSnap.exists ? profileSnap.data() : {};
+    const isEligible = !!(me.is_premium || me.is_vip || profile?.is_premium || profile?.is_vip);
+    const purchased = await hasDirectMessagePurchase(me.id, venueId);
+    const currentRoses = Number(profile?.rose_balance || 0);
 
-    if (!isEligible) {
+    if (!isEligible && !purchased) {
       // Si pas premium, on vérifie s'il a au moins 1 Rose d'Or
-      const profileRef = db.collection('profiles').doc(me.id);
-      const profileSnap = await profileRef.get();
-      const currentRoses = profileSnap.data().rose_balance || 0;
-
       if (currentRoses < 1) {
         return res.status(403).json({
-          error: 'insufficient_roses',
-          message: "L'accès direct aux établissements est réservé aux membres Premium ou nécessite 1 Rose d'Or."
+          error: 'payment_required',
+          message: 'partner_contact_requires_payment'
         });
       }
 
       // Débit de 1 Rose d'Or
-      await profileRef.update({
-        rose_balance: currentRoses - 1,
-        updated_at: new Date().toISOString()
+      const now = new Date().toISOString();
+      await db.runTransaction(async (tx) => {
+        const existingChat = await tx.get(chatRef);
+        if (existingChat.exists) return;
+
+        const freshProfileSnap = await tx.get(profileRef);
+        const freshRoseBalance = Number(freshProfileSnap.data()?.rose_balance || 0);
+        if (freshRoseBalance < 1) {
+          const error = new Error('partner_contact_requires_payment');
+          error.code = 'payment_required';
+          throw error;
+        }
+
+        tx.update(profileRef, {
+          rose_balance: FieldValue.increment(-1),
+          updated_at: now
+        });
+        tx.set(chatRef, {
+          user_id: me.id,
+          venue_id: venueId,
+          partner_id: venue.owner_id,
+          venue_name: venue.name,
+          unlocked_with_rose: true,
+          last_message_at: now,
+          created_at: now
+        });
       });
+      return res.json({ venueChatId, venueName: venue.name });
     }
 
     // 3. Création du canal de discussion
+    const now = new Date().toISOString();
     await chatRef.set({
       user_id: me.id,
       venue_id: venueId,
       partner_id: venue.owner_id,
       venue_name: venue.name,
-      unlocked_with_rose: !me.is_premium,
-      last_message_at: new Date().toISOString(),
-      created_at: new Date().toISOString()
+      unlocked_with_purchase: purchased,
+      unlocked_with_premium: isEligible,
+      last_message_at: now,
+      created_at: now
     });
 
     res.json({ venueChatId, venueName: venue.name });
   } catch (error) {
+    if (error?.code === 'payment_required') {
+      return res.status(403).json({ error: 'payment_required', message: 'partner_contact_requires_payment' });
+    }
     res.status(500).json({ error: error.message });
   }
 };

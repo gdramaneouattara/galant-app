@@ -68,7 +68,7 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
                 ? "Accedez a l'integralite de vos likes recus pendant 2 heures et trouvez votre match immediatement."
                 : isGridUnlock
                 ? "Basculez sur la vue en grille pour parcourir tous les profils avec une efficacité maximale et sans limite."
-                : <>Attirez immediatement l'attention de <span className="text-slate-900 dark:text-white font-bold">{userName}</span> avec cette attention d'exception.</>
+                : <>Debloquez une discussion directe avec <span className="text-slate-900 dark:text-white font-bold">{userName}</span>.</>
               }
             </p>
           </div>
