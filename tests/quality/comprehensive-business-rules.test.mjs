@@ -74,6 +74,7 @@ test('Rules: Apps, Sentinel and Chat use shared bilingual copy', async () => {
     'src/screens/messages/components/ChatMessageItem.tsx',
     'web/src/App.tsx',
     'web/src/pages/AppsPage.tsx',
+    'web/src/pages/PartnerDiscoveryPage.tsx',
     'web/src/pages/ChatPage.tsx',
     'web/src/pages/SentinelPage.tsx',
   ];
@@ -147,8 +148,12 @@ test('Rules: Apps exposes paid user partner discovery with direct Google import'
   const constants = await read('server/src/config/constants.js');
   const paymentHelpers = await read('server/src/utils/paymentHelpers.js');
   const subscriptionService = await read('server/src/services/subscriptionService.js');
+  const webApp = await read('web/src/App.tsx');
   const webApps = await read('web/src/pages/AppsPage.tsx');
+  const webPartnerDiscovery = await read('web/src/pages/PartnerDiscoveryPage.tsx');
   const nativeApps = await read('src/screens/apps/AppsScreen.tsx');
+  const nativePartnerDiscovery = await read('src/screens/apps/PartnerDiscoveryScreen.tsx');
+  const nativeNavigator = await read('src/navigation/MainNavigator.tsx');
   const purchaseHook = await read('src/hooks/useSubscription.ts');
 
   assert.match(googleMapsService, /searchUserPartnerDiscovery/);
@@ -168,20 +173,30 @@ test('Rules: Apps exposes paid user partner discovery with direct Google import'
   assert.match(constants, /PARTNER_DISCOVERY_UNLOCK:\s*parseInt\(process\.env\.PARTNER_DISCOVERY_UNLOCK_AMOUNT \|\| '500'\)/);
   assert.match(paymentHelpers, /PARTNER_DISCOVERY_UNLOCK/);
   assert.match(subscriptionService, /partner_discovery_unlocked:\s*true/);
-  assert.match(webApps, /PARTNER_DISCOVERY_UNLOCK/);
-  assert.match(webApps, /\/api\/venues\/partner-discovery\/google/);
-  assert.match(webApps, /DISCOVERY_CATEGORIES/);
-  assert.match(webApps, /category/);
-  assert.match(webApps, /Spa & Beaute/);
-  assert.match(webApps, /Fleurs & Cadeaux/);
-  assert.match(webApps, /Culture & Loisirs/);
-  assert.match(nativeApps, /PARTNER_DISCOVERY_UNLOCK/);
-  assert.match(nativeApps, /\/api\/venues\/partner-discovery\/google/);
-  assert.match(nativeApps, /DISCOVERY_CATEGORIES/);
-  assert.match(nativeApps, /CAFE/);
-  assert.match(nativeApps, /BEAUTY/);
-  assert.match(nativeApps, /GIFTS/);
-  assert.match(nativeApps, /CULTURE/);
+  assert.match(webApp, /\/partner-discovery/);
+  assert.match(webApps, /\/partner-discovery/);
+  assert.doesNotMatch(webApps, /PARTNER_DISCOVERY_UNLOCK/);
+  assert.doesNotMatch(webApps, /\/api\/venues\/partner-discovery\/google/);
+  assert.match(webPartnerDiscovery, /PARTNER_DISCOVERY_UNLOCK/);
+  assert.match(webPartnerDiscovery, /window\.confirm/);
+  assert.match(webPartnerDiscovery, /\/api\/venues\/partner-discovery\/google/);
+  assert.match(webPartnerDiscovery, /DISCOVERY_CATEGORIES/);
+  assert.match(webPartnerDiscovery, /category/);
+  assert.match(webPartnerDiscovery, /Spa & Beaute/);
+  assert.match(webPartnerDiscovery, /Fleurs & Cadeaux/);
+  assert.match(webPartnerDiscovery, /Culture & Loisirs/);
+  assert.match(nativeNavigator, /PartnerDiscoveryScreen/);
+  assert.match(nativeApps, /PartnerDiscovery/);
+  assert.doesNotMatch(nativeApps, /PARTNER_DISCOVERY_UNLOCK/);
+  assert.doesNotMatch(nativeApps, /\/api\/venues\/partner-discovery\/google/);
+  assert.match(nativePartnerDiscovery, /PARTNER_DISCOVERY_UNLOCK/);
+  assert.match(nativePartnerDiscovery, /Alert\.alert\(labels\.payTitle/);
+  assert.match(nativePartnerDiscovery, /\/api\/venues\/partner-discovery\/google/);
+  assert.match(nativePartnerDiscovery, /DISCOVERY_CATEGORIES/);
+  assert.match(nativePartnerDiscovery, /CAFE/);
+  assert.match(nativePartnerDiscovery, /BEAUTY/);
+  assert.match(nativePartnerDiscovery, /GIFTS/);
+  assert.match(nativePartnerDiscovery, /CULTURE/);
   assert.match(purchaseHook, /PARTNER_DISCOVERY_UNLOCK/);
 });
 

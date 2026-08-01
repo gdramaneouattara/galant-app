@@ -48,6 +48,7 @@ const GuidePage = lazy(() => import('./pages/GuidePage'));
 const ExperiencesPage = lazy(() => import('./pages/ExperiencesPage'));
 const StoriesPage = lazy(() => import('./pages/StoriesPage'));
 const MarketPage = lazy(() => import('./pages/MarketPage'));
+const PartnerDiscoveryPage = lazy(() => import('./pages/PartnerDiscoveryPage'));
 const VenueDetailPage = lazy(() => import('./pages/VenueDetailPage'));
 const SentinelPage = lazy(() => import('./pages/SentinelPage'));
 const AppsPage = lazy(() => import('./pages/AppsPage'));
@@ -267,6 +268,7 @@ const AppContent: React.FC = () => {
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/partner-signup" element={<PartnerSignupPage />} />
             <Route path="/market" element={<MarketPage />} />
+            <Route path="/partner-discovery" element={<PartnerDiscoveryPage />} />
             <Route path="/venue/:id" element={<VenueDetailPage />} />
             <Route path="/sentinel" element={<SentinelPage />} />
             <Route path="/stories" element={<StoriesPage />} />
