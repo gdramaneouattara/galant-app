@@ -1,72 +1,113 @@
 const axios = require('axios');
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+const GOOGLE_TEXT_SEARCH_URL = 'https://places.googleapis.com/v1/places:searchText';
+const MIN_PRESTIGE_RATING = 4.0;
+const DEFAULT_LIMIT = 20;
 
-/**
- * Searches for high-end venues in a specific city using Google Places API (New).
- * @param {string} city - The city name (e.g., "Douala").
- * @param {string[]} types - Array of place types (e.g., ["restaurant", "night_club"]).
- * @returns {Promise<Array>} - List of formatted venues.
- */
-const searchVenuesInCity = async (city, types = ['restaurant', 'night_club', 'bar', 'lodging']) => {
-  if (!GOOGLE_MAPS_API_KEY) {
-    throw new Error('missing_google_maps_api_key');
-  }
+const CATEGORY_QUERIES = [
+  { googleType: 'restaurant', venueType: 'RESTAURANT', label: 'restaurants gastronomiques' },
+  { googleType: 'night_club', venueType: 'LOUNGE', label: 'lounges premium' },
+  { googleType: 'bar', venueType: 'LOUNGE', label: 'bars lounge premium' },
+  { googleType: 'lodging', venueType: 'HOTEL', label: 'hotels de luxe' }
+];
 
-  const url = 'https://places.googleapis.com/v1/places:searchText';
+const FIELD_MASK = [
+  'places.id',
+  'places.displayName',
+  'places.formattedAddress',
+  'places.location',
+  'places.rating',
+  'places.userRatingCount',
+  'places.types',
+  'places.photos'
+].join(',');
 
-  // We construct a query like "best restaurants and lounges in Douala"
-  const textQuery = `best ${types.join(' and ')} in ${city}`;
+const normalizePlaceName = (place) => String(place?.displayName?.text || '').trim();
+
+const buildPhotoUrl = (place) => {
+  const photoName = place?.photos?.[0]?.name;
+  if (!photoName) return 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=800';
+  return `https://places.googleapis.com/v1/${photoName}/media?key=${GOOGLE_MAPS_API_KEY}&maxWidthPx=1200`;
+};
+
+const toVenue = (place, city, category) => {
+  const now = new Date().toISOString();
+  return {
+    google_place_id: place.id,
+    name: normalizePlaceName(place),
+    address: place.formattedAddress || city,
+    city,
+    latitude: place.location?.latitude || null,
+    longitude: place.location?.longitude || null,
+    rating: Number(place.rating),
+    user_ratings_total: Number(place.userRatingCount || 0),
+    google_types: place.types || [],
+    venue_type: category.venueType,
+    photo_url: buildPhotoUrl(place),
+    description: `Une adresse d'exception selectionnee par la Conciergerie Galant a ${city}.`,
+    status: 'APPROVED',
+    is_editorial: true,
+    source: 'GOOGLE_PLACES',
+    created_at: now,
+    updated_at: now
+  };
+};
+
+const searchCategory = async (city, category) => {
+  const response = await axios.post(GOOGLE_TEXT_SEARCH_URL, {
+    textQuery: `best ${category.label} in ${city}`,
+    languageCode: 'fr',
+    includedType: category.googleType,
+    strictTypeFiltering: true,
+    minRating: MIN_PRESTIGE_RATING,
+    pageSize: 10
+  }, {
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
+      'X-Goog-FieldMask': FIELD_MASK
+    }
+  });
+
+  return (response.data.places || [])
+    .filter((place) => place?.id && normalizePlaceName(place))
+    .filter((place) => Number(place.rating || 0) > MIN_PRESTIGE_RATING)
+    .map((place) => toVenue(place, city, category));
+};
+
+const searchVenuesInCity = async (
+  city,
+  types = CATEGORY_QUERIES.map((category) => category.googleType),
+  limit = DEFAULT_LIMIT
+) => {
+  if (!GOOGLE_MAPS_API_KEY) throw new Error('missing_google_maps_api_key');
+
+  const cleanCity = String(city || '').trim();
+  if (!cleanCity) throw new Error('missing_city');
 
   try {
-    const response = await axios.post(url, {
-      textQuery,
-      languageCode: 'fr',
-      maxResultCount: 20, // Limit to 20 best results per city
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
-        // FieldMask is mandatory for the new API to control costs
-        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.types,places.photos'
-      }
-    });
+    const requestedTypes = new Set((types || []).map((type) => String(type).trim()).filter(Boolean));
+    const categories = CATEGORY_QUERIES.filter((category) => requestedTypes.has(category.googleType));
+    const batches = await Promise.all(categories.map((category) => searchCategory(cleanCity, category)));
+    const seen = new Set();
 
-    const places = response.data.places || [];
-
-    return places.map(p => {
-      // Map Google types to Galant types
-      let venue_type = 'RESTAURANT';
-      if (p.types.includes('night_club') || p.types.includes('bar')) venue_type = 'LOUNGE';
-      if (p.types.includes('lodging')) venue_type = 'HOTEL';
-
-      // Construct photo URL if available
-      // Note: In production, you might want to fetch the actual photo URL via places.getPhoto
-      // or store the photoReference to fetch it on demand in the client.
-      const photoUrl = p.photos && p.photos.length > 0
-        ? `https://places.googleapis.com/v1/${p.photos[0].name}/media?key=${GOOGLE_MAPS_API_KEY}&maxWidthProp=800`
-        : 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=800';
-
-      return {
-        google_place_id: p.id,
-        name: p.displayName.text,
-        address: p.formattedAddress,
-        city,
-        latitude: p.location.latitude,
-        longitude: p.location.longitude,
-        rating: p.rating || 4.5,
-        venue_type,
-        photo_url: photoUrl,
-        description: `Une adresse d'exception sélectionnée par la Conciergerie Galant à ${city}.`,
-        status: 'APPROVED',
-        is_editorial: true,
-        created_at: new Date().toISOString()
-      };
-    });
+    return batches.flat()
+      .filter((venue) => {
+        if (seen.has(venue.google_place_id)) return false;
+        seen.add(venue.google_place_id);
+        return true;
+      })
+      .sort((left, right) => {
+        const ratingDelta = Number(right.rating || 0) - Number(left.rating || 0);
+        if (ratingDelta !== 0) return ratingDelta;
+        return Number(right.user_ratings_total || 0) - Number(left.user_ratings_total || 0);
+      })
+      .slice(0, Math.max(1, Math.min(DEFAULT_LIMIT, Number(limit) || DEFAULT_LIMIT)));
   } catch (error) {
     console.error('Google Places API Error:', error.response?.data || error.message);
     throw new Error('google_places_failed');
   }
 };
 
-module.exports = { searchVenuesInCity };
+module.exports = { searchVenuesInCity, CATEGORY_QUERIES, MIN_PRESTIGE_RATING };

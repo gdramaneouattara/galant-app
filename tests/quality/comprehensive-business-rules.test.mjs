@@ -100,6 +100,33 @@ test('Rules: Apps, Sentinel and Chat use shared bilingual copy', async () => {
   }
 });
 
+test('Rules: Admin Guide Seeder imports prestigious Google Places editorial venues', async () => {
+  const googleMapsService = await read('server/src/services/googleMapsService.js');
+  const adminController = await read('server/src/controllers/adminController.js');
+  const adminRoutes = await read('server/src/routes/adminRoutes.js');
+  const adminSeeder = await read('web/src/pages/admin/AdminGuideSeeder.tsx');
+  const adminLayout = await read('web/src/pages/admin/AdminLayout.tsx');
+
+  assert.match(googleMapsService, /places\.googleapis\.com\/v1\/places:searchText/);
+  assert.match(googleMapsService, /includedType/);
+  assert.match(googleMapsService, /strictTypeFiltering:\s*true/);
+  assert.match(googleMapsService, /minRating:\s*MIN_PRESTIGE_RATING/);
+  assert.match(googleMapsService, /Number\(place\.rating \|\| 0\) > MIN_PRESTIGE_RATING/);
+  assert.match(googleMapsService, /restaurant/);
+  assert.match(googleMapsService, /night_club/);
+  assert.match(googleMapsService, /bar/);
+  assert.match(googleMapsService, /lodging/);
+  assert.match(googleMapsService, /maxWidthPx=1200/);
+  assert.match(googleMapsService, /is_editorial:\s*true/);
+  assert.match(googleMapsService, /status:\s*'APPROVED'/);
+  assert.match(adminController, /seedVenuesFromGoogle/);
+  assert.match(adminController, /candidateCount/);
+  assert.match(adminRoutes, /\/venues\/seed/);
+  assert.match(adminSeeder, /Peupler le Guide/);
+  assert.match(adminSeeder, /progress/);
+  assert.match(adminLayout, /\/admin\/seeder/);
+});
+
 test('Rules: ProfileScreen manages internationalization', async () => {
   const code = await read('src/screens/profile/ProfileScreen.tsx');
   assert.match(code, /language/);
