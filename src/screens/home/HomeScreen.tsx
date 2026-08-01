@@ -340,7 +340,7 @@ const HomeScreen: React.FC = () => {
         setShowDirectMessageModal(true);
         return;
       }
-      Alert.alert('Erreur', e?.message || 'Impossible d ouvrir cette discussion.');
+      Alert.alert(t('error'), e?.message || t('chat_error'));
     }
   };
 
@@ -366,7 +366,7 @@ const HomeScreen: React.FC = () => {
 
   const openBoost = () => {
     const msg = getBoostActiveMessage(currentUser?.boosted_until);
-    if (msg) Alert.alert('Boost actif', msg);
+    if (msg) Alert.alert(t('boost_active'), msg);
     else navigation.navigate('Boost');
   };
 
@@ -481,7 +481,7 @@ const HomeScreen: React.FC = () => {
             placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            onFocus={() => !currentUser?.is_premium && Alert.alert('Recherche Directe 💎', 'Devenez Premium pour cibler vos recherches.', [{ text: 'Plus tard' }, { text: 'Premium', onPress: () => navigation.navigate('Premium') }])}
+            onFocus={() => !currentUser?.is_premium && Alert.alert(t('direct_search_title'), t('direct_search_premium_body'), [{ text: t('maybe_later_short') }, { text: 'Premium', onPress: () => navigation.navigate('Premium') }])}
             editable={!!currentUser?.is_premium}
           />
           {searchQuery.length > 0 && <Pressable onPress={() => setSearchQuery('')}><X size={18} color={colors.textMuted} /></Pressable>}

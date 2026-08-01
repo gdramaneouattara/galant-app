@@ -26,7 +26,7 @@ const formatDuration = (seconds: number): string => {
 
 const SentinelScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { colors, activeTheme } = useApp();
+  const { colors, activeTheme, t } = useApp();
   const isDark = activeTheme === 'dark';
   const [callerName, setCallerName] = useState('Bureau');
   const [fakeCallDelay, setFakeCallDelay] = useState(0);
@@ -152,8 +152,8 @@ const SentinelScreen: React.FC = () => {
             <ChevronLeft size={22} color={colors.text} />
           </Pressable>
           <View style={styles.headerText}>
-            <Text style={[styles.title, { color: colors.text }]}>La Sentinelle</Text>
-            <Text style={[styles.subtitle, { color: colors.textMuted }]}>Securite discrete pour vos rendez-vous</Text>
+            <Text style={[styles.title, { color: colors.text }]}>{t('sentinel')}</Text>
+            <Text style={[styles.subtitle, { color: colors.textMuted }]}>{t('sentinel_page_subtitle')}</Text>
           </View>
         </View>
 
@@ -162,9 +162,9 @@ const SentinelScreen: React.FC = () => {
             <Shield size={28} color="#fff" />
           </View>
           <View style={styles.heroCopy}>
-            <Text style={[styles.heroTitle, { color: colors.text }]}>Appel fantome</Text>
+            <Text style={[styles.heroTitle, { color: colors.text }]}>{t('fake_call')}</Text>
             <Text style={[styles.heroSubtitle, { color: colors.textMuted }]}>
-              Lancez ou programmez un appel entrant factice pour quitter une situation avec discretion.
+              {t('fake_call_subtitle')}
             </Text>
           </View>
         </View>
@@ -172,7 +172,7 @@ const SentinelScreen: React.FC = () => {
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.sectionTitleRow}>
             <Clock size={18} color={COLORS.primary} />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Quand sonner ?</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('when_ring')}</Text>
           </View>
 
           <View style={styles.delayGrid}>
@@ -189,7 +189,7 @@ const SentinelScreen: React.FC = () => {
                   ]}
                 >
                   <Text style={[styles.delayText, { color: selected ? '#fff' : colors.text }]}>
-                    {delay === 0 ? 'Immediat' : `${delay} min`}
+                    {delay === 0 ? t('immediate') : `${delay} min`}
                   </Text>
                 </Pressable>
               );
@@ -197,11 +197,11 @@ const SentinelScreen: React.FC = () => {
           </View>
 
           <View style={styles.inputBlock}>
-            <Text style={[styles.label, { color: colors.textMuted }]}>Nom affiche</Text>
+            <Text style={[styles.label, { color: colors.textMuted }]}>{t('caller_display_name')}</Text>
             <TextInput
               value={callerName}
               onChangeText={setCallerName}
-              placeholder="Ex: Bureau, Maman..."
+              placeholder={t('caller_placeholder')}
               placeholderTextColor={colors.textMuted}
               style={[
                 styles.input,
@@ -219,16 +219,16 @@ const SentinelScreen: React.FC = () => {
             <Pressable style={styles.primaryButton} onPress={scheduleOrStartCall}>
               <PhoneIncoming size={18} color="#fff" />
               <Text style={styles.primaryButtonText}>
-                {fakeCallDelay === 0 ? 'Lancer la simulation' : "Programmer l'appel"}
+                {fakeCallDelay === 0 ? t('start_simulation') : t('schedule_call')}
               </Text>
             </Pressable>
           ) : (
             <View style={styles.scheduledBox}>
-              <Text style={styles.scheduledLabel}>Appel programme</Text>
+              <Text style={styles.scheduledLabel}>{t('scheduled_call')}</Text>
               <Text style={styles.scheduledTime}>{formatDuration(scheduledSecondsLeft || 0)}</Text>
               <Pressable style={styles.cancelButton} onPress={cancelScheduledCall}>
                 <X size={16} color="#fecaca" />
-                <Text style={styles.cancelButtonText}>Annuler</Text>
+                <Text style={styles.cancelButtonText}>{t('cancel')}</Text>
               </Pressable>
             </View>
           )}
@@ -236,7 +236,7 @@ const SentinelScreen: React.FC = () => {
 
         <View style={[styles.note, { backgroundColor: isDark ? '#111827' : '#fff7ed', borderColor: isDark ? '#374151' : '#fed7aa' }]}>
           <Text style={[styles.noteText, { color: isDark ? '#fed7aa' : '#9a3412' }]}>
-            Gardez le volume ou le vibreur actif. Sur certains telephones, le mode silencieux peut limiter la perception de l'appel.
+            {t('call_sound_note')}
           </Text>
         </View>
       </ScrollView>
@@ -249,7 +249,7 @@ const SentinelScreen: React.FC = () => {
             </View>
             <Text style={styles.callerName}>{callerName.trim() || 'Bureau'}</Text>
             <Text style={styles.callStatus}>
-              {isFakeCallRinging ? 'Appel entrant...' : formatDuration(callDuration)}
+              {isFakeCallRinging ? t('incoming_call') : formatDuration(callDuration)}
             </Text>
           </View>
 
@@ -260,13 +260,13 @@ const SentinelScreen: React.FC = () => {
                   <View style={[styles.callButton, styles.rejectButton]}>
                     <Phone size={28} color="#fff" style={styles.hangupIcon} />
                   </View>
-                  <Text style={styles.callActionLabel}>Refuser</Text>
+                  <Text style={styles.callActionLabel}>{t('decline')}</Text>
                 </Pressable>
                 <Pressable style={styles.callAction} onPress={acceptCall}>
                   <View style={[styles.callButton, styles.acceptButton]}>
                     <Phone size={28} color="#fff" />
                   </View>
-                  <Text style={styles.callActionLabel}>Accepter</Text>
+                  <Text style={styles.callActionLabel}>{t('accept')}</Text>
                 </Pressable>
               </>
             ) : (
@@ -274,7 +274,7 @@ const SentinelScreen: React.FC = () => {
                 <View style={[styles.callButton, styles.rejectButton]}>
                   <Phone size={28} color="#fff" style={styles.hangupIcon} />
                 </View>
-                <Text style={styles.callActionLabel}>Raccrocher</Text>
+                <Text style={styles.callActionLabel}>{t('hang_up')}</Text>
               </Pressable>
             )}
           </View>

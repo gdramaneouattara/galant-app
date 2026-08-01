@@ -14,9 +14,11 @@ import { Lock } from 'lucide-react-native';
 import { fbAuth } from '../../lib/firebase';
 import { COLORS } from '../../data/mock';
 import PrimaryButton from '../../components/PrimaryButton';
+import { useApp } from '../../state/AppContext';
 
 const ResetPasswordScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { t } = useApp();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -25,11 +27,11 @@ const ResetPasswordScreen: React.FC = () => {
     setLoading(true);
     try {
       await fbAuth.sendPasswordResetEmail(email.trim().toLowerCase());
-      Alert.alert('Email envoyé', 'Vérifiez votre boîte de réception pour réinitialiser votre mot de passe.', [
+      Alert.alert(t('email_sent'), t('reset_email_sent'), [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
     } catch (error: any) {
-      Alert.alert('Erreur', error.message);
+      Alert.alert(t('error'), error.message);
     } finally {
       setLoading(false);
     }
@@ -40,8 +42,8 @@ const ResetPasswordScreen: React.FC = () => {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
         <View style={styles.content}>
           <View style={styles.iconCircle}><Lock color={COLORS.primary} size={32} /></View>
-          <Text style={styles.title}>Mot de passe oublié ?</Text>
-          <Text style={styles.subtitle}>Saisissez votre email pour recevoir un lien de réinitialisation.</Text>
+          <Text style={styles.title}>{t('forgot_password')}</Text>
+          <Text style={styles.subtitle}>{t('reset_password_prompt')}</Text>
           <View style={styles.form}>
             <View style={styles.field}>
               <Text style={styles.label}>Email</Text>
@@ -55,7 +57,7 @@ const ResetPasswordScreen: React.FC = () => {
                 style={styles.input}
               />
             </View>
-            <PrimaryButton label={loading ? "Envoi..." : "Envoyer le lien"} onPress={handleReset} disabled={loading || !email} />
+            <PrimaryButton label={loading ? t('sending') : t('send_link')} onPress={handleReset} disabled={loading || !email} />
           </View>
         </View>
       </KeyboardAvoidingView>

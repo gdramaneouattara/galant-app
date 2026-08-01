@@ -66,7 +66,7 @@ import AdminReports from './pages/admin/AdminReports';
 import { hasAdminProfileAccess } from './lib/adminAccess';
 
 const AuthButton: React.FC = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, t } = useAuth();
   if (user) {
     return (
       <div className="flex items-center gap-4">
@@ -100,7 +100,7 @@ const AuthButton: React.FC = () => {
       to="/auth"
       className="bg-primary text-white px-6 py-2 rounded-full font-bold text-sm hover:bg-red-600 transition-colors shadow-lg shadow-red-200"
     >
-      Connexion
+      {t('login')}
     </Link>
   );
 };
@@ -140,14 +140,14 @@ const MobileNav: React.FC = () => {
         <div className="p-1 group-hover:text-primary transition-colors">
           <Compass size={22} />
         </div>
-        <span className="text-[9px] font-black uppercase tracking-tighter">Sorties</span>
+        <span className="text-[9px] font-black uppercase tracking-tighter">{t('agenda')}</span>
       </Link>
 
       <Link to="/apps" className="flex flex-col items-center gap-1 text-slate-400 group">
         <div className="p-1 group-hover:text-primary transition-colors">
           <LayoutGrid size={22} />
         </div>
-        <span className="text-[9px] font-black uppercase tracking-tighter">Apps</span>
+        <span className="text-[9px] font-black uppercase tracking-tighter">{t('apps')}</span>
       </Link>
 
       <Link to="/profile" className="flex flex-col items-center gap-1 text-slate-400 group">
@@ -157,7 +157,7 @@ const MobileNav: React.FC = () => {
             <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white"></div>
           )}
         </div>
-        <span className="text-[9px] font-black uppercase tracking-tighter">Moi</span>
+        <span className="text-[9px] font-black uppercase tracking-tighter">{t('me')}</span>
       </Link>
     </nav>
   );
@@ -178,8 +178,8 @@ const Header = () => {
           <nav className="hidden md:flex gap-8 font-bold text-sm text-slate-500 dark:text-slate-400">
             <Link to="/" className="hover:text-primary transition-colors">{t('discover')}</Link>
             <Link to="/matches" className="hover:text-primary transition-colors">{t('messages')}</Link>
-            <Link to="/experiences" className="hover:text-primary transition-colors">Sorties</Link>
-            <Link to="/apps" className="hover:text-primary transition-colors">Apps</Link>
+            <Link to="/experiences" className="hover:text-primary transition-colors">{t('agenda')}</Link>
+            <Link to="/apps" className="hover:text-primary transition-colors">{t('apps')}</Link>
             <Link to="/agenda" className="hover:text-primary transition-colors">{t('agenda')}</Link>
             <Link to="/guide" className="hover:text-primary transition-colors">Guide</Link>
             <Link to="/premium" className="text-amber-500 hover:text-amber-600 transition-colors flex items-center gap-1">

@@ -14,7 +14,7 @@ interface LocationStepProps {
 }
 
 const LocationStep: React.FC<LocationStepProps> = ({ form, setForm, onComplete, loading }) => {
-  const { colors } = useApp();
+  const { colors, t } = useApp();
   const [detectingLocation, setDetectingLocation] = useState(false);
 
   const detectLocation = async () => {
@@ -22,7 +22,7 @@ const LocationStep: React.FC<LocationStepProps> = ({ form, setForm, onComplete, 
       setDetectingLocation(true);
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission refusée', 'Activez la localisation pour vous proposer des profils proches de vous.');
+        Alert.alert(t('permission_denied'), t('location_permission_body'));
         return;
       }
       const loc = await Location.getCurrentPositionAsync({});
@@ -44,7 +44,7 @@ const LocationStep: React.FC<LocationStepProps> = ({ form, setForm, onComplete, 
         }));
       }
     } catch (e) {
-      Alert.alert('Erreur', 'Impossible de détecter votre position.');
+      Alert.alert(t('error'), t('detect_location_failed'));
     } finally {
       setDetectingLocation(false);
     }
@@ -52,8 +52,8 @@ const LocationStep: React.FC<LocationStepProps> = ({ form, setForm, onComplete, 
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Text style={[styles.title, { color: colors.text }]}>Localisation</Text>
-      <Text style={[styles.caption, { color: colors.textMuted }]}>L'accès à votre position est indispensable pour vous proposer des profils proches de vous avec élégance.</Text>
+      <Text style={[styles.title, { color: colors.text }]}>{t('location')}</Text>
+      <Text style={[styles.caption, { color: colors.textMuted }]}>{t('location_step_caption')}</Text>
       <Pressable
         style={[styles.locationCard, { backgroundColor: colors.card, borderColor: form.latitude ? '#22c55e' : colors.border }]}
         onPress={detectLocation}
@@ -62,10 +62,10 @@ const LocationStep: React.FC<LocationStepProps> = ({ form, setForm, onComplete, 
         <MapPin color={form.latitude ? '#22c55e' : COLORS.primary} size={24} />
         <View style={styles.locationCopy}>
           <Text style={[styles.locationTitle, { color: colors.text }]}>
-            {detectingLocation ? 'Détection en cours...' : 'Détecter ma position GPS'}
+            {detectingLocation ? t('detecting_location') : t('detect_location')}
           </Text>
           <Text style={[styles.locationSubtitle, { color: form.latitude ? '#22c55e' : colors.textMuted }]}>
-            {form.latitude ? `Position capturée : ${form.city} ✓` : 'Appuyez pour activer'}
+            {form.latitude ? `${t('position_captured', { city: form.city })} ✓` : t('tap_to_activate')}
           </Text>
         </View>
         {detectingLocation && <ActivityIndicator size="small" color={COLORS.primary} />}
@@ -73,7 +73,7 @@ const LocationStep: React.FC<LocationStepProps> = ({ form, setForm, onComplete, 
 
       <View style={{ marginTop: 20 }}>
         <PrimaryButton
-          label="Terminer"
+          label={t('finish')}
           onPress={onComplete}
           loading={loading}
           disabled={!form.latitude}

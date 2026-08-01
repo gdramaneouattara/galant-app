@@ -53,7 +53,7 @@ const BoostPage: React.FC = () => {
 
   const handleFreeBoost = async () => {
     if (boostStatus.active) {
-      showAlert('Déjà actif', 'Votre profil est déjà boosté.');
+      showAlert(t('already_active'), t('already_boosted'));
       return;
     }
     setActivatingFree(true);
@@ -70,7 +70,7 @@ const BoostPage: React.FC = () => {
 
   const handlePurchase = async (plan: any) => {
     if (boostStatus.active) {
-      showAlert('Déjà actif', 'Veuillez attendre la fin de votre boost actuel.');
+      showAlert(t('already_active'), t('wait_current_boost'));
       return;
     }
     const ok = await purchaseWithPaystack('BOOST', plan.priceAmount, undefined, { planId: plan.id });

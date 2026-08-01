@@ -83,13 +83,13 @@ const ProfileDetailPage: React.FC = () => {
         showAlert(t('match_title'), t('match_sub', { name: profile?.name }));
         navigate(`/chat/${id}`);
       } else {
-        showAlert('Succès', isSuper ? 'Rose envoyée !' : 'Like envoyé !');
+        showAlert(t('success'), isSuper ? t('rose_sent') : t('like_sent'));
       }
     } catch (error: any) {
       if (error.message.includes('premium_required')) {
         setPurchaseModal({ open: true, type: 'SUPER_LIKE' });
       } else {
-        showAlert('Erreur', error.message);
+        showAlert(t('error'), error.message);
       }
     } finally {
       setLiking(false);
@@ -110,7 +110,7 @@ const ProfileDetailPage: React.FC = () => {
       if (error.message.includes('payment_required') || error.message.includes('subscription_required')) {
         setPurchaseModal({ open: true, type: 'DIRECT_MESSAGE' });
       } else {
-        showAlert('Erreur', error.message);
+        showAlert(t('error'), error.message);
       }
     }
   };

@@ -18,10 +18,10 @@ const PremiumPage: React.FC = () => {
     try {
       const ok = await purchaseWithPaystack(type, amount, undefined, { planId: id });
       if (ok) {
-        showAlert('Succès', 'Votre achat a été activé.');
+        showAlert(t('success'), t('purchase_activated'));
       }
     } catch (error: any) {
-      showAlert('Erreur', error.message);
+      showAlert(t('error'), error.message);
     } finally {
       setLoading(null);
     }

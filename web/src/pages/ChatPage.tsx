@@ -133,7 +133,7 @@ const ChatPage: React.FC = () => {
 
   const handleAiAssist = async () => {
     if (!profile?.is_premium) {
-      showAlert('Premium Requis', t('ai_assistant_exclusive'));
+      showAlert(t('premium_required'), t('ai_assistant_exclusive'));
       navigate('/premium');
       return;
     }
@@ -192,7 +192,7 @@ const ChatPage: React.FC = () => {
       });
       setTranslations(prev => ({ ...prev, [msg.id]: res.translatedText }));
     } catch (e) {
-      showAlert('Erreur', 'Échec de la traduction.');
+      showAlert(t('error'), t('translation_failed'));
     } finally {
       setTranslatingIds(prev => {
         const next = new Set(prev);
@@ -221,7 +221,7 @@ const ChatPage: React.FC = () => {
       });
       setInputText('');
     } catch (error: any) {
-      showAlert('Erreur', error.message);
+      showAlert(t('error'), error.message);
     } finally {
       setSending(false);
     }
@@ -229,7 +229,7 @@ const ChatPage: React.FC = () => {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | Blob, type: 'IMAGE' | 'VIDEO' | 'VOICE') => {
     if (!profile?.is_premium) {
-      showAlert('Privilège Premium 💎', 'Le partage de médias est réservé aux membres Premium.');
+      showAlert(t('premium_required'), t('media_premium_only'));
       navigate('/premium');
       return;
     }
@@ -253,11 +253,11 @@ const ChatPage: React.FC = () => {
           await validateVideoFileWeb(videoFile, CHAT_VIDEO_MAX_DURATION_SECONDS);
         } catch (error: any) {
           if (error?.message === 'video_too_large') {
-            showAlert('Video trop lourde', "La video doit peser moins de 30 Mo avant envoi.");
+            showAlert(t('video_too_heavy_title'), t('video_too_heavy'));
           } else if (error?.message === 'video_too_long') {
-            showAlert('Video trop longue', "Les videos chat sont limitees a 30 secondes.");
+            showAlert(t('video_too_long_title'), t('video_too_long_chat'));
           } else {
-            showAlert('Erreur', "Impossible de lire cette video.");
+            showAlert(t('error'), t('video_unreadable'));
           }
           return;
         }
@@ -267,7 +267,7 @@ const ChatPage: React.FC = () => {
           maxDurationSeconds: CHAT_VIDEO_MAX_DURATION_SECONDS,
         });
         if (optimizedVideo.size > VIDEO_UPLOAD_MAX_BYTES) {
-          showAlert('Video trop lourde', "La video reste trop lourde apres optimisation. Essayez une video plus courte.");
+          showAlert(t('video_too_heavy_title'), t('video_still_too_heavy'));
           return;
         }
 
@@ -304,7 +304,7 @@ const ChatPage: React.FC = () => {
         })
       });
     } catch (error: any) {
-      showAlert('Erreur Upload', error.message);
+      showAlert(t('upload_error'), error.message);
     } finally {
       setUploading(false);
       if (!(e instanceof Blob)) {
@@ -322,7 +322,7 @@ const ChatPage: React.FC = () => {
       recorder.start();
     } catch (e: any) {
       if (e.message === 'micro_not_supported') {
-        showAlert('Micro non détecté', "Votre navigateur ne supporte pas l'enregistrement audio ou l'accès a été refusé.");
+        showAlert(t('microphone_required'), t('microphone_required_body'));
       }
     }
   };
@@ -332,7 +332,7 @@ const ChatPage: React.FC = () => {
     setIsRecording(false);
     const blob = await stopRecording(recorder, audioStream);
     if (blob.size > VOICE_UPLOAD_MAX_BYTES) {
-      showAlert('Sérénade trop lourde', 'La sérénade vocale est limitée à 2 Mo. Essayez un message plus court.');
+      showAlert(t('serenade_too_heavy'), t('serenade_too_heavy_body'));
       setRecorder(null);
       setAudioStream(null);
       return;
@@ -377,7 +377,7 @@ const ChatPage: React.FC = () => {
             {(targetUser.galanterie_score || 0) >= 4.5 && <Gem size={14} className="text-rose-600" />}
           </div>
           <span className={`text-[10px] font-medium uppercase tracking-prestige ${targetPresence?.state === 'online' ? 'text-green-500' : 'text-slate-400 dark:text-slate-500'}`}>
-            {targetUser.isVenue ? targetUser.presenceLabel : targetPresence?.state === 'online' ? 'En ligne' : 'Hors ligne'}
+            {targetUser.isVenue ? targetUser.presenceLabel : targetPresence?.state === 'online' ? t('online') : t('offline')}
           </span>
         </div>
       </div>
@@ -386,7 +386,7 @@ const ChatPage: React.FC = () => {
       <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30 dark:bg-slate-950/30">
         <div className="bg-slate-100/50 dark:bg-slate-800/50 p-4 rounded-3xl text-center border border-slate-200/50 dark:border-white/5 mb-4">
            <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige flex items-center justify-center gap-2">
-             <ShieldCheck size={14} /> Sécurité Galant : Les médias sont effacés tous les 15 jours
+              <ShieldCheck size={14} /> {t('media_privacy_note')}
            </p>
         </div>
 
@@ -442,7 +442,7 @@ const ChatPage: React.FC = () => {
                   {(isVenue || isEvent) && (
                     <div className="mb-2 p-2 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-white/10 text-slate-900 dark:text-white">
                       <p className="text-[10px] font-medium uppercase tracking-prestige text-slate-400 dark:text-slate-500 mb-2">
-                        {isMine ? 'Ma suggestion' : 'Proposition de sortie'}
+                        {isMine ? t('my_suggestion') : t('outing_suggestion')}
                       </p>
                       <div className="flex items-center gap-3">
                         <OptimizedImage
@@ -480,7 +480,7 @@ const ChatPage: React.FC = () => {
 
                 <div className={`text-[9px] font-bold uppercase tracking-tighter text-slate-400 dark:text-slate-500 px-2`}>
                   {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  {isMine && ` • ${msg.is_read ? 'Lu' : 'Envoyé'}`}
+                  {isMine && ` • ${msg.is_read ? t('read_receipt') : t('sent_receipt')}`}
                 </div>
               </div>
             </div>
@@ -496,7 +496,7 @@ const ChatPage: React.FC = () => {
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
               <span className="text-sm font-black font-serif italic tracking-tighter text-slate-900 dark:text-white">
-                Sérénade en cours... {formatRecDuration(recordingDuration)}
+                {t('vocal_serenade')}... {formatRecDuration(recordingDuration)}
               </span>
             </div>
             <div className="flex gap-4">

@@ -78,22 +78,22 @@ const RosesInboxPage: React.FC = () => {
       });
 
       if (action === 'IGNORE') {
-        updateRose(row.id, { status: 'IGNORED', status_label: 'Ignoree', is_countable: false });
-        showAlert('Rose ignoree', 'Cette rose a ete placee dans votre historique.');
+        updateRose(row.id, { status: 'IGNORED', status_label: t('status_ignored'), is_countable: false });
+        showAlert(t('rose_ignored'), t('rose_ignored_body'));
         if (pendingRows.length <= 1) setActiveTab('HISTORY');
       } else {
         updateRose(row.id, {
           status: 'ACCEPTED',
-          status_label: 'Acceptee',
+          status_label: t('status_accepted'),
           is_countable: false,
           is_matched: true,
           can_message: true,
           matchId: response.matchId,
         });
-        showAlert('Rose acceptee', `Vous avez accepte la rose de ${row.user.name}.`);
+        showAlert(t('rose_accepted'), t('rose_accepted_from', { name: row.user.name }));
       }
     } catch (err: any) {
-      showAlert('Erreur', err?.message || 'Impossible de traiter cette rose.');
+      showAlert(t('error'), err?.message || t('rose_process_failed'));
     } finally {
       setRespondingId(null);
     }
@@ -112,7 +112,7 @@ const RosesInboxPage: React.FC = () => {
           can_message: !!res.matched || row.can_message,
           matchId: res.matchId || row.matchId,
         });
-        showAlert(res.matched ? 'Match' : 'Succes', res.matched ? `Vous avez matche avec ${row.user.name}.` : 'Like envoye.');
+        showAlert(res.matched ? t('match_title') : t('success'), res.matched ? t('matched_with_short', { name: row.user.name }) : t('like_sent'));
       }
     } finally {
       setLikingId(null);
@@ -130,7 +130,7 @@ const RosesInboxPage: React.FC = () => {
       can_message: !!res?.matched || selectedRose.can_message,
       matchId: res?.matchId || selectedRose.matchId,
     });
-    showAlert('Succes', res?.matched ? 'Rose envoyee et match cree.' : 'Rose envoyee.');
+    showAlert(t('success'), res?.matched ? t('super_like_sent_match') : t('super_like_sent'));
   };
 
   const openChat = (row: SuperLikeRow) => {
@@ -142,9 +142,9 @@ const RosesInboxPage: React.FC = () => {
   };
 
   const renderStatus = (row: SuperLikeRow) => {
-    if (row.status === 'ACCEPTED') return <span className="text-emerald-600">Acceptee</span>;
-    if (row.status === 'IGNORED') return <span className="text-slate-500">Ignoree</span>;
-    return <span className="text-amber-600">En attente</span>;
+    if (row.status === 'ACCEPTED') return <span className="text-emerald-600">{t('status_accepted')}</span>;
+    if (row.status === 'IGNORED') return <span className="text-slate-500">{t('status_ignored')}</span>;
+    return <span className="text-amber-600">{t('status_pending')}</span>;
   };
 
   const renderRows = () => {

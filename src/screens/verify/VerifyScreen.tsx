@@ -35,22 +35,22 @@ type KycMeResponse = {
 };
 
 const DOCUMENT_TYPES = [
-  { value: 'ID_CARD', label: 'Carte nationale' },
-  { value: 'PASSPORT', label: 'Passeport' },
-  { value: 'DRIVERS_LICENSE', label: 'Permis de conduire' },
+  { value: 'ID_CARD', labelKey: 'id_card' },
+  { value: 'PASSPORT', labelKey: 'passport' },
+  { value: 'DRIVERS_LICENSE', labelKey: 'drivers_license' },
 ];
 
-const getStatusLabel = (status?: string) => {
-  if (status === 'PENDING') return 'En attente';
-  if (status === 'IN_REVIEW') return 'En revue';
-  if (status === 'APPROVED') return 'Approuvée';
-  if (status === 'REJECTED') return 'Rejetée';
-  return 'Non soumise';
+const getStatusKey = (status?: string) => {
+  if (status === 'PENDING') return 'status_pending';
+  if (status === 'IN_REVIEW') return 'status_in_review';
+  if (status === 'APPROVED') return 'status_approved';
+  if (status === 'REJECTED') return 'status_rejected';
+  return 'status_not_submitted';
 };
 
 const VerifyScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { currentUser, refreshCurrentUser } = useApp();
+  const { currentUser, refreshCurrentUser, t } = useApp();
   const [loadingState, setLoadingState] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [documentType, setDocumentType] = useState('ID_CARD');
@@ -85,7 +85,7 @@ const VerifyScreen: React.FC = () => {
   const pickImage = async (setter: (uri: string | null) => void) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission requise', "Nous avons besoin d'accéder à vos photos.");
+      Alert.alert(t('permission_required'), t('photo_permission_body'));
       return;
     }
 
@@ -102,7 +102,7 @@ const VerifyScreen: React.FC = () => {
   const captureSelfie = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission requise', "L'accès à la caméra est obligatoire pour le selfie live.");
+      Alert.alert(t('permission_required'), t('camera_permission_body'));
       return;
     }
 
@@ -162,10 +162,10 @@ const VerifyScreen: React.FC = () => {
         }),
       });
 
-      Alert.alert('Succès', 'Votre demande a été envoyée. Elle sera traitée sous 24h.');
+      Alert.alert(t('success'), t('kyc_sent_body'));
       fetchKycState();
     } catch (error: any) {
-      Alert.alert('Erreur', error.message || 'Échec de l’envoi.');
+      Alert.alert(t('error'), error.message || t('send_failed'));
     } finally {
       setSubmitting(false);
     }
@@ -176,10 +176,10 @@ const VerifyScreen: React.FC = () => {
       <SafeAreaView style={styles.safe}>
         <View style={styles.centered}>
           <CheckCircle2 color="#22c55e" size={64} />
-          <Text style={styles.title}>Profil Vérifié</Text>
-          <Text style={styles.subtitle}>Votre identité a été confirmée avec succès.</Text>
+          <Text style={styles.title}>{t('kyc_verified_title')}</Text>
+          <Text style={styles.subtitle}>{t('kyc_verified_body')}</Text>
           <Pressable style={styles.primary} onPress={() => navigation.goBack()}>
-            <Text style={styles.primaryLabel}>Retour au profil</Text>
+            <Text style={styles.primaryLabel}>{t('back_to_profile')}</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -189,11 +189,11 @@ const VerifyScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Vérification KYC</Text>
-        <Text style={styles.subtitle}>Pour garantir la sécurité de la communauté, nous devons vérifier votre identité.</Text>
+        <Text style={styles.title}>{t('kyc_title')}</Text>
+        <Text style={styles.subtitle}>{t('kyc_subtitle')}</Text>
 
         <View style={styles.statusBox}>
-          <Text style={styles.label}>Statut : <Text style={styles.statusText}>{getStatusLabel(kycData?.current?.status)}</Text></Text>
+          <Text style={styles.label}>{t('status')} : <Text style={styles.statusText}>{t(getStatusKey(kycData?.current?.status) as any)}</Text></Text>
           {kycData?.current?.rejection_reason && (
             <View style={styles.errorBox}>
               <AlertCircle size={16} color="#ef4444" />
@@ -202,24 +202,24 @@ const VerifyScreen: React.FC = () => {
           )}
         </View>
 
-        <Text style={styles.sectionTitle}>1. Type de document</Text>
+        <Text style={styles.sectionTitle}>1. {t('document_type')}</Text>
         <View style={styles.chips}>
-          {DOCUMENT_TYPES.map((t) => (
+          {DOCUMENT_TYPES.map((docType) => (
             <Pressable
-              key={t.value}
-              onPress={() => setDocumentType(t.value)}
-              style={[styles.chip, documentType === t.value && styles.chipActive]}
+              key={docType.value}
+              onPress={() => setDocumentType(docType.value)}
+              style={[styles.chip, documentType === docType.value && styles.chipActive]}
             >
-              <Text style={[styles.chipText, documentType === t.value && styles.chipTextActive]}>{t.label}</Text>
+              <Text style={[styles.chipText, documentType === docType.value && styles.chipTextActive]}>{t(docType.labelKey as any)}</Text>
             </Pressable>
           ))}
         </View>
 
-        <Text style={styles.sectionTitle}>2. Photos du document</Text>
+        <Text style={styles.sectionTitle}>2. {t('document_photos')}</Text>
         <View style={styles.row}>
           <Pressable style={[styles.photoBtn, documentFrontUri && styles.photoBtnDone]} onPress={() => pickImage(setDocumentFrontUri)}>
             <FileText size={24} color={documentFrontUri ? '#22c55e' : COLORS.muted} />
-            <Text style={styles.photoBtnLabel}>{documentFrontUri ? 'Recto OK' : 'Recto (obligatoire)'}</Text>
+            <Text style={styles.photoBtnLabel}>{documentFrontUri ? t('front_ok') : t('front_required')}</Text>
           </Pressable>
 
           <Pressable
@@ -227,23 +227,23 @@ const VerifyScreen: React.FC = () => {
             onPress={() => pickImage(setDocumentBackUri)}
           >
             <FileText size={24} color={documentBackUri ? '#22c55e' : COLORS.muted} />
-            <Text style={styles.photoBtnLabel}>{documentBackUri ? 'Verso OK' : (isBackRequired ? 'Verso (obligatoire)' : 'Verso (facultatif)')}</Text>
+            <Text style={styles.photoBtnLabel}>{documentBackUri ? t('back_ok') : (isBackRequired ? t('back_required') : t('back_optional'))}</Text>
           </Pressable>
         </View>
 
-        <Text style={styles.sectionTitle}>3. Preuve de présence</Text>
+        <Text style={styles.sectionTitle}>3. {t('presence_proof')}</Text>
         <Pressable style={[styles.photoBtn, styles.fullWidth, selfieUri && styles.photoBtnDone]} onPress={captureSelfie}>
           <Camera size={24} color={selfieUri ? '#22c55e' : COLORS.muted} />
-          <Text style={styles.photoBtnLabel}>{selfieUri ? 'Selfie live capturé' : 'Capturer un Selfie Live'}</Text>
+          <Text style={styles.photoBtnLabel}>{selfieUri ? t('selfie_captured') : t('capture_live_selfie')}</Text>
         </Pressable>
-        <Text style={styles.infoText}>⚠️ Le selfie doit être pris instantanément avec votre caméra frontale.</Text>
+        <Text style={styles.infoText}>⚠️ {t('selfie_live_warning')}</Text>
 
         <Pressable
           style={[styles.primary, !canSubmit && styles.primaryDisabled]}
           onPress={handleSubmit}
           disabled={!canSubmit}
         >
-          {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryLabel}>Soumettre le dossier</Text>}
+          {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryLabel}>{t('submit_file')}</Text>}
         </Pressable>
       </ScrollView>
     </SafeAreaView>

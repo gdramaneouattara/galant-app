@@ -105,7 +105,7 @@ const ProfilePage: React.FC = () => {
             <User size={40} />
           </div>
           <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Profil non trouvé</h2>
-          <p className="text-slate-500 dark:text-slate-400 font-medium mb-8">Veuillez vous connecter pour accéder à votre espace Galant.</p>
+          <p className="text-slate-500 dark:text-slate-400 font-medium mb-8">{t('login_required_profile')}</p>
           <button
             onClick={() => navigate('/auth')}
             className="w-full bg-primary text-white py-4 rounded-2xl font-black shadow-xl shadow-primary/20 hover:scale-105 transition-transform"
@@ -119,7 +119,7 @@ const ProfilePage: React.FC = () => {
 
   const handleToggleInvisible = async () => {
     if (!profile.is_premium || !profile.invisible_mode_eligible) {
-      showAlert('Premium Requis', 'Le mode invisible est réservé aux membres Privilège (Trimestriel).');
+      showAlert(t('premium_required'), t('invisible_premium_only'));
       navigate('/premium');
       return;
     }
@@ -129,9 +129,9 @@ const ProfilePage: React.FC = () => {
       const newValue = !profile.is_invisible;
       const userRef = doc(db, COLLECTIONS.PROFILES, user.uid);
       await updateDoc(userRef, { is_invisible: newValue });
-      showAlert('Mode Invisible', newValue ? 'Votre profil est désormais masqué.' : 'Votre profil est de nouveau visible.');
+      showAlert(t('invisible_mode'), newValue ? t('profile_now_hidden') : t('profile_now_visible'));
     } catch (e: any) {
-      showAlert('Erreur', e.message);
+      showAlert(t('error'), e.message);
     } finally {
       setIsTogglingInvisible(false);
     }
@@ -149,9 +149,9 @@ const ProfilePage: React.FC = () => {
       a.download = `galant-data-${user.uid}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      showAlert('Succès', 'Vos données ont été préparées pour le téléchargement.');
+      showAlert(t('success'), t('data_export_ready'));
     } catch (e: any) {
-      showAlert('Erreur', e.message);
+      showAlert(t('error'), e.message);
     } finally {
       setExportingData(false);
     }
@@ -164,10 +164,10 @@ const ProfilePage: React.FC = () => {
     setDeletingAccount(true);
     try {
       await apiRequest('/api/privacy/delete-account', { method: 'POST', requireAuth: true });
-      showAlert('Compte supprimé', 'Votre compte et vos données ont été effacés. Au revoir.');
+      showAlert(t('account_deleted'), t('account_deleted_body'));
       logout();
     } catch (e: any) {
-      showAlert('Erreur', e.message);
+      showAlert(t('error'), e.message);
       setDeletingAccount(false);
     }
   };
@@ -182,9 +182,9 @@ const ProfilePage: React.FC = () => {
         updated_at: new Date().toISOString()
       });
       setEditing(false);
-      showAlert('Succès', 'Profil mis à jour avec élégance.');
+      showAlert(t('success'), t('profile_updated'));
     } catch (error: any) {
-      showAlert('Erreur', error.message);
+      showAlert(t('error'), error.message);
     } finally {
       setLoading(false);
     }
@@ -197,9 +197,9 @@ const ProfilePage: React.FC = () => {
       const userRef = doc(db, COLLECTIONS.PROFILES, user.uid);
       await updateDoc(userRef, { relationship_goal: goalId });
       setIsGoalOpen(false);
-      showAlert('Mis à jour', 'Votre objectif de rencontre a été modifié.');
+      showAlert(t('updated'), t('goal_updated'));
     } catch (e: any) {
-      showAlert('Erreur', e.message);
+      showAlert(t('error'), e.message);
     } finally {
       setLoading(false);
     }
@@ -207,7 +207,7 @@ const ProfilePage: React.FC = () => {
 
   const handleAiAssist = async () => {
     if (!profile?.is_premium) {
-      showAlert('Premium Requis', t('ai_assistant_exclusive'));
+      showAlert(t('premium_required'), t('ai_assistant_exclusive'));
       navigate('/premium');
       return;
     }
@@ -236,7 +236,7 @@ const ProfilePage: React.FC = () => {
     setUploading(true);
     try {
       if ((profile.photos?.length || 0) >= maxProfilePhotos) {
-        showAlert('Limite atteinte', profile?.is_premium || profile?.is_vip ? 'Vous pouvez ajouter jusqu\'a 6 photos.' : 'Le profil gratuit accepte 3 photos. Passez Premium pour aller jusqu\'a 6.');
+        showAlert(t('limit_reached'), profile?.is_premium || profile?.is_vip ? t('premium_photo_limit') : t('free_photo_limit'));
         return;
       }
       const { fullUrl: url, variants } = await uploadImageVariantsWeb(file, `profiles/${user.uid}/${Date.now()}.webp`);
@@ -247,7 +247,7 @@ const ProfilePage: React.FC = () => {
         body: JSON.stringify({ photoUrls: [url] }),
       });
       if (String(moderation?.status).toUpperCase() === 'REJECTED') {
-        showAlert('Photo refusee', "La photo ne respecte pas les regles.");
+        showAlert(t('photo_rejected'), t('photo_rejected_body'));
         return;
       }
 
@@ -262,9 +262,9 @@ const ProfilePage: React.FC = () => {
         body: JSON.stringify({ photos: newPhotos, photo_variants: newPhotoVariants }),
       });
 
-      showAlert('Photo ajoutée', 'Votre nouvelle photo a été enregistrée.');
+      showAlert(t('photo_added'), t('photo_added_body'));
     } catch (error: any) {
-      showAlert('Erreur Upload', error.message);
+      showAlert(t('upload_error'), error.message);
     } finally {
       setUploading(false);
     }
@@ -405,7 +405,7 @@ const ProfilePage: React.FC = () => {
                onClick={() => {
                  const url = `https://galant.app/invite/${user.uid}`;
                  navigator.clipboard.writeText(url);
-                 showAlert('Lien copié !', 'Partagez ce lien avec vos amis. Une rose a consommer vous sera offerte pour chaque inscription certifiee.');
+                 showAlert(t('link_copied'), t('invite_link_copied_body'));
                }}>
             <div className="flex items-center gap-6">
               <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center text-primary group-hover:rotate-12 transition-transform">
@@ -470,7 +470,7 @@ const ProfilePage: React.FC = () => {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-serif italic tracking-tighter text-blue-900 dark:text-blue-400 uppercase">Certification</p>
-                  <p className="text-[10px] font-bold text-blue-400">Devenir Membre Certifié</p>
+                  <p className="text-[10px] font-bold text-blue-400">{t('become_certified_member')}</p>
                 </div>
                 <ChevronRight size={16} className="text-blue-200" />
               </button>
@@ -523,7 +523,7 @@ const ProfilePage: React.FC = () => {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">{t('boosts')}</p>
-                <p className="text-[10px] font-bold text-slate-400">Rayonner dans votre ville</p>
+                <p className="text-[10px] font-bold text-slate-400">{t('shine_in_city')}</p>
               </div>
               <ChevronRight size={16} className="text-slate-200 dark:text-slate-700" />
             </button>
@@ -543,10 +543,10 @@ const ProfilePage: React.FC = () => {
               </div>
               <div className="flex-1">
                 <p className={`text-sm font-serif italic tracking-tighter uppercase ${profile.is_invisible ? 'text-teal-900 dark:text-teal-400' : 'text-slate-900 dark:text-white'}`}>
-                  Mode Invisible
+                  {t('invisible_mode')}
                 </p>
                 <p className="text-[10px] font-bold text-slate-400">
-                  {profile.is_invisible ? 'Actuellement masqué' : 'Devenir discret'}
+                  {profile.is_invisible ? t('currently_hidden') : t('become_discreet')}
                 </p>
               </div>
               <div className={`w-10 h-5 rounded-full relative transition-colors ${profile.is_invisible ? 'bg-teal-500' : 'bg-slate-200 dark:bg-slate-800'}`}>
@@ -558,20 +558,20 @@ const ProfilePage: React.FC = () => {
 
             {/* General Menu Items */}
             <button
-              onClick={() => showAlert('Notifications', 'Vos notifications administrateur et messages non lus apparaissent dans l onglet Messages.')}
+              onClick={() => showAlert(t('notifications'), t('notifications_hint'))}
               className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-left group"
             >
               <div className="w-12 h-12 bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-slate-600 rounded-xl flex items-center justify-center group-hover:bg-slate-100 dark:group-hover:bg-white/10 transition-colors">
                 <Bell size={20} />
               </div>
-              <p className="flex-1 text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">Notifications</p>
+              <p className="flex-1 text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">{t('notifications')}</p>
             </button>
 
             <button onClick={() => navigate('/premium')} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-left group">
               <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-xl flex items-center justify-center group-hover:bg-amber-100 dark:group-hover:bg-amber-900/40 transition-colors">
                 <CreditCard size={20} />
               </div>
-              <p className="flex-1 text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">Abonnement</p>
+              <p className="flex-1 text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">{t('subscriptions')}</p>
             </button>
 
             <button

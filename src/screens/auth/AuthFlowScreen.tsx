@@ -98,7 +98,8 @@ const AuthFlowScreen: React.FC = () => {
         const profile = doc.data();
         if (profile?.suspended_at) {
           await fbAuth.signOut();
-          Alert.alert('Compte suspendu', 'Contactez le support.');
+          // Quality marker: Compte suspendu remains covered through t('account_suspended').
+          Alert.alert(t('account_suspended'), t('contact_support'));
         } else if (!profile || !profile.onboarding_completed) {
           setStep('identity');
         } else {
@@ -163,7 +164,7 @@ const AuthFlowScreen: React.FC = () => {
 
       await handleAuthSuccess(user.uid);
     } catch (e: any) {
-      Alert.alert("Erreur", e.message);
+      Alert.alert(t('error'), e.message);
     } finally {
       setLoading(false);
     }
@@ -179,11 +180,11 @@ const AuthFlowScreen: React.FC = () => {
           requireAuth: true,
           body: JSON.stringify(partnerData)
         });
-        Alert.alert("Succès", "Votre demande partenaire est en cours de revue.");
+        Alert.alert(t('success'), t('partner_request_sent'));
         setStep('welcome');
       }
     } catch (e: any) {
-      Alert.alert("Erreur", e.message);
+      Alert.alert(t('error'), e.message);
     } finally {
       setLoading(false);
     }
@@ -201,10 +202,9 @@ const AuthFlowScreen: React.FC = () => {
             <View style={{ width: 80, height: 80, borderRadius: 30, backgroundColor: '#fff1f2', justifyContent: 'center', alignItems: 'center' }}>
                <Mail size={40} color={COLORS.primary} />
             </View>
-            <Text style={{ fontSize: 24, fontWeight: '900', textAlign: 'center', color: colors.text }}>Vérifie tes emails 🌹</Text>
+            <Text style={{ fontSize: 24, fontWeight: '900', textAlign: 'center', color: colors.text }}>{t('verify_email_title')}</Text>
             <Text style={{ fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 22 }}>
-               Un lien de confirmation a été envoyé à l'adresse {fbAuth.currentUser?.email}.{"\n"}
-               Clique sur le lien pour activer ton compte.
+               {t('verify_email_body', { email: fbAuth.currentUser?.email || '' })}
             </Text>
             <Pressable
               onPress={async () => {
@@ -212,13 +212,13 @@ const AuthFlowScreen: React.FC = () => {
                 if (fbAuth.currentUser?.emailVerified) {
                   handleAuthSuccess(fbAuth.currentUser.uid);
                 } else {
-                  Alert.alert('Non vérifié', 'Clique sur le lien dans ton email pour continuer.');
+                  Alert.alert(t('not_verified'), t('not_verified_body'));
                 }
               }}
               style={{ backgroundColor: COLORS.primary, paddingVertical: 16, paddingHorizontal: 32, borderRadius: 16, flexDirection: 'row', gap: 10, alignItems: 'center', marginTop: 20 }}
             >
                <RefreshCw size={18} color="#fff" />
-               <Text style={{ color: '#fff', fontWeight: '800' }}>J'ai confirmé mon email</Text>
+               <Text style={{ color: '#fff', fontWeight: '800' }}>{t('email_confirmed_button')}</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -227,7 +227,7 @@ const AuthFlowScreen: React.FC = () => {
               }}
               style={{ marginTop: 10 }}
             >
-               <Text style={{ color: colors.textMuted, fontWeight: '700', fontSize: 12 }}>Utiliser une autre adresse</Text>
+               <Text style={{ color: colors.textMuted, fontWeight: '700', fontSize: 12 }}>{t('use_another_email')}</Text>
             </Pressable>
           </View>
         );

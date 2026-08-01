@@ -74,7 +74,7 @@ const LikesInboxPage: React.FC = () => {
         showAlert(t('match_title'), t('match_sub', { name: row.user.name }));
       }
     } catch (error: any) {
-      showAlert('Erreur', error.message);
+      showAlert(t('error'), error.message);
     } finally {
       setLikingId(null);
     }
@@ -90,9 +90,9 @@ const LikesInboxPage: React.FC = () => {
         </div>
 
         <div className="space-y-4">
-          <h2 className="text-3xl font-black italic dark:text-white transition-colors">Likes Reçus</h2>
+          <h2 className="text-3xl font-black italic dark:text-white transition-colors">{t('likes_received')}</h2>
           <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed transition-colors">
-            Découvrez qui a eu un coup de cœur pour vous. Cette fonctionnalité est réservée à nos membres d'exception.
+            {t('likes_received_locked_desc')}
           </p>
         </div>
 
@@ -130,8 +130,8 @@ const LikesInboxPage: React.FC = () => {
           <ChevronLeft size={24} />
         </button>
         <div>
-          <h2 className="text-3xl font-black italic dark:text-white">Likes Reçus</h2>
-          <p className="text-slate-500 font-medium">Profils qui ont manifesté leur intérêt</p>
+          <h2 className="text-3xl font-black italic dark:text-white">{t('likes_received')}</h2>
+          <p className="text-slate-500 font-medium">{t('likes_received_desc')}</p>
         </div>
       </div>
 

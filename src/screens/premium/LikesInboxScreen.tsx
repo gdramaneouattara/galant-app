@@ -45,7 +45,7 @@ const TRIAL_DAYS = 7;
 
 const LikesInboxScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { currentUser, appResumeVersion, refreshCurrentUser } = useApp();
+  const { currentUser, appResumeVersion, refreshCurrentUser, t } = useApp();
   const { purchaseWithPaystack, purchaseLoading } = useSubscription();
   const [likes, setLikes] = useState<LikeInboxRow[]>([]);
   const [selectedLike, setSelectedLike] = useState<LikeInboxRow | null>(null);
@@ -88,7 +88,7 @@ const LikesInboxScreen: React.FC = () => {
       setError(null);
     } catch (err: any) {
       setLikes([]);
-      setError(err?.message || 'Impossible de charger les likes reçus.');
+      setError(err?.message || t('error'));
     } finally {
       setLoading(false);
     }
@@ -134,12 +134,12 @@ const LikesInboxScreen: React.FC = () => {
       }
 
       if (payload?.matched) {
-        Alert.alert('Match 🎉', `Vous et ${row.user.name} vous plaisez mutuellement.`);
+        Alert.alert(t('match_title'), t('matched_with', { name: row.user.name }));
       } else {
-        Alert.alert('Like envoyé', `Votre like a été envoyé à ${row.user.name}.`);
+        Alert.alert(t('like_sent'), t('like_sent_to', { name: row.user.name }));
       }
     } catch (err: any) {
-      Alert.alert('Erreur', err?.message || 'Impossible de liker ce profil pour le moment.');
+      Alert.alert(t('error'), err?.message || t('like_failed'));
     } finally {
       setLikingId(null);
     }

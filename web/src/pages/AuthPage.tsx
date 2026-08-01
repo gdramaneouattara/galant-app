@@ -49,7 +49,7 @@ const AuthPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (mode === 'signup' && !hasAcceptedLegal) {
-      showAlert('Consentement requis', 'Veuillez accepter les CGU et la Politique de confidentialité.');
+      showAlert(t('consent_required'), t('consent_required_body'));
       return;
     }
     setLoading(true);
@@ -73,32 +73,32 @@ const AuthPage: React.FC = () => {
         setMode('verify');
       } else if (mode === 'reset') {
         await sendPasswordResetEmail(fbAuth, (email || '').trim().toLowerCase());
-        showAlert('Email envoyé', 'Vérifiez votre boîte de réception pour réinitialiser votre mot de passe.');
+        showAlert(t('email_sent'), t('reset_email_sent'));
         setMode('login');
       }
     } catch (error: any) {
       console.error('Auth Error:', error.code);
-      let friendlyMessage = "Une erreur est survenue lors de l'authentification.";
+      let friendlyMessage = t('auth_unknown_error');
 
       if (error.code === 'auth/email-already-in-use') {
-        friendlyMessage = "Cette adresse e-mail est déjà inscrite. Veuillez vous connecter à votre compte existant.";
+        friendlyMessage = t('email_already_used');
       } else if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-        friendlyMessage = "Identifiants incorrects. Veuillez vérifier votre e-mail et votre mot de passe.";
+        friendlyMessage = t('invalid_credentials');
       } else if (error.code === 'auth/invalid-email') {
-        friendlyMessage = "L'adresse e-mail saisie n'est pas valide.";
+        friendlyMessage = t('invalid_email');
       } else if (error.code === 'auth/weak-password') {
-        friendlyMessage = "Le mot de passe doit contenir au moins 6 caractères.";
+        friendlyMessage = t('weak_password');
       } else if (error.code === 'auth/user-disabled') {
-        friendlyMessage = "Ce compte a été suspendu. Veuillez contacter le support Galant pour plus d'informations.";
+        friendlyMessage = `${t('account_suspended')}. ${t('contact_support')}`;
       } else if (error.code === 'auth/too-many-requests') {
-        friendlyMessage = "Trop de tentatives échouées. Votre compte a été temporairement bloqué par sécurité. Réessayez plus tard.";
+        friendlyMessage = t('too_many_attempts');
       } else if (error.code === 'auth/network-request-failed') {
-        friendlyMessage = "Problème de connexion internet. Veuillez vérifier votre réseau et réessayer.";
+        friendlyMessage = t('network_error');
       } else if (error.code === 'auth/internal-error') {
-        friendlyMessage = "Une erreur technique est survenue. Nos équipes travaillent à sa résolution.";
+        friendlyMessage = t('technical_error');
       }
 
-      showAlert('Authentification', friendlyMessage);
+      showAlert(t('auth_title'), friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -109,9 +109,9 @@ const AuthPage: React.FC = () => {
       setLoading(true);
       try {
         await sendEmailVerification(fbAuth.currentUser);
-        showAlert('Email renvoyé', 'Un nouvel email de confirmation vous a été envoyé.');
+        showAlert(t('email_resent'), t('verification_email_resent'));
       } catch (e) {
-        showAlert('Erreur', 'Impossible de renvoyer l\'email pour le moment.');
+        showAlert(t('error'), t('resend_email_failed'));
       } finally {
         setLoading(false);
       }
@@ -125,7 +125,7 @@ const AuthPage: React.FC = () => {
       await signInWithPopup(fbAuth, provider);
       navigate('/');
     } catch (error: any) {
-      showAlert('Google Error', "Impossible de se connecter avec Google.");
+      showAlert(t('google_error'), t('google_signin_failed'));
     } finally {
       setLoading(false);
     }
@@ -140,7 +140,7 @@ const AuthPage: React.FC = () => {
       await signInWithPopup(fbAuth, provider);
       navigate('/');
     } catch (error: any) {
-      showAlert('Apple Error', "Impossible de se connecter avec Apple.");
+      showAlert(t('apple_error'), t('apple_signin_failed'));
     } finally {
       setLoading(false);
     }
@@ -167,17 +167,17 @@ const AuthPage: React.FC = () => {
                 onClick={() => setMode('login')}
                 className="mb-4 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors flex items-center gap-2 font-bold text-xs uppercase"
               >
-                <ArrowLeft size={16} /> Retour
+                <ArrowLeft size={16} /> {t('back_to_login')}
               </button>
             )}
             <h2 className="text-3xl font-black text-slate-900 dark:text-white leading-none transition-colors">
-              {mode === 'login' ? t('login') : mode === 'signup' ? t('welcome') : mode === 'reset' ? 'Réinitialisation' : 'Vérification'}
+              {mode === 'login' ? t('login') : mode === 'signup' ? t('welcome') : mode === 'reset' ? t('reset_password_title') : t('verification_title')}
             </h2>
             <p className="text-slate-500 dark:text-slate-400 mt-3 font-medium text-sm transition-colors">
-              {mode === 'login' ? 'Heureux de vous revoir parmi nous.' :
+              {mode === 'login' ? t('login_subtitle') :
                mode === 'signup' ? t('welcome_subtitle') :
-               mode === 'reset' ? 'Saisissez votre email pour recevoir un lien.' :
-               'Veuillez confirmer votre adresse e-mail.'}
+               mode === 'reset' ? t('reset_password_prompt') :
+               t('confirm_email_prompt')}
             </p>
           </div>
 
@@ -188,10 +188,10 @@ const AuthPage: React.FC = () => {
                </div>
                <div className="space-y-4">
                   <p className="text-slate-600 dark:text-slate-300 font-medium leading-relaxed transition-colors">
-                     Un email de confirmation vient d'être envoyé à <span className="font-bold text-slate-900 dark:text-white">{email}</span>.
+                     {t('confirmation_email_sent_prefix')} <span className="font-bold text-slate-900 dark:text-white">{email}</span>.
                   </p>
                   <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest leading-loose transition-colors">
-                     Cliquez sur le lien contenu dans l'email pour activer votre accès au Cercle Galant.
+                     {t('confirm_email_instruction')}
                   </p>
                </div>
 
@@ -202,19 +202,19 @@ const AuthPage: React.FC = () => {
                       if (fbAuth.currentUser?.emailVerified) {
                         navigate('/');
                       } else {
-                        showAlert('Non vérifié', 'Votre email n\'est pas encore confirmé. Vérifiez vos messages.');
+                        showAlert(t('not_verified'), t('not_verified_body'));
                       }
                     }}
                     className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black dark:hover:bg-slate-100 transition-all"
                   >
-                    <RefreshCw size={16} /> J'ai confirmé l'email
+                    <RefreshCw size={16} /> {t('email_confirmed_button')}
                   </button>
                   <button
                     onClick={handleResendVerification}
                     disabled={loading}
                     className="text-[10px] font-black text-primary uppercase tracking-[0.2em] hover:underline"
                   >
-                    Renvoyer l'email de confirmation
+                    {t('resend_confirmation_email')}
                   </button>
                </div>
             </div>

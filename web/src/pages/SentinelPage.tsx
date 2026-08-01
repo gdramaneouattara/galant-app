@@ -130,12 +130,12 @@ const SentinelPage: React.FC = () => {
         setTimeLeft(diff);
         if (diff === 0) {
            setActiveTimer(null);
-           showAlert('Alerte !', 'Votre délai de sécurité est expiré. La Sentinelle a été déclenchée.');
+           showAlert(t('safety_timer_expired_title'), t('safety_timer_expired_body'));
         }
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [activeTimer]);
+  }, [activeTimer, t]);
 
   // Fake call timer
   useEffect(() => {
@@ -293,9 +293,9 @@ const SentinelPage: React.FC = () => {
         body: JSON.stringify({ emergency_contacts: contacts })
       });
       await reloadUser();
-      showAlert('Enregistré', 'Vos contacts de confiance ont été sauvegardés de façon permanente.');
+      showAlert(t('saved'), t('trusted_contacts_saved'));
     } catch (e: any) {
-      showAlert('Erreur', e.message);
+      showAlert(t('error'), e.message);
     } finally {
       setIsSavingContacts(false);
     }
@@ -317,10 +317,10 @@ const SentinelPage: React.FC = () => {
 
   const handleSOS = async () => {
     if (contacts.length === 0) {
-      showAlert('Attention', 'Veuillez ajouter au moins un contact de confiance avant de lancer un SOS.');
+      showAlert(t('warning'), t('trusted_contact_required_sos'));
       return;
     }
-    if (!window.confirm("Voulez-vous déclencher une ALERTE SOS immédiate à vos contacts ?")) return;
+    if (!window.confirm(t('sos_confirm'))) return;
 
     setLoading(true);
     try {
@@ -338,9 +338,9 @@ const SentinelPage: React.FC = () => {
           }
         })
       });
-      showAlert('⚠️ SOS DÉCLENCHÉ', 'Votre alerte a été envoyée avec priorité absolue.');
+      showAlert(t('sos_triggered_title'), t('sos_triggered_body'));
     } catch (e: any) {
-      showAlert('Erreur', e.message);
+      showAlert(t('error'), e.message);
     } finally {
       setLoading(false);
     }
@@ -349,11 +349,11 @@ const SentinelPage: React.FC = () => {
   const handleScheduleCheckIn = async () => {
     const totalMins = hours * 60 + minutes;
     if (totalMins <= 0) {
-      showAlert('Attention', 'Veuillez définir une durée valide.');
+      showAlert(t('warning'), t('valid_duration_required'));
       return;
     }
     if (contacts.length === 0) {
-      showAlert('Attention', 'Veuillez ajouter au moins un contact de confiance.');
+      showAlert(t('warning'), t('trusted_contact_required'));
       return;
     }
 
@@ -375,9 +375,10 @@ const SentinelPage: React.FC = () => {
         })
       });
       setActiveTimer(res);
-      showAlert('La Sentinelle Active 🛡️', `Nous veillerons sur vous pendant les prochaines ${hours > 0 ? hours + 'h' : ''}${minutes}min.`);
+      const duration = `${hours > 0 ? hours + 'h' : ''}${minutes}min`;
+      showAlert(t('sentinel_active_title'), t('sentinel_active_body', { duration }));
     } catch (e: any) {
-      showAlert('Erreur', e.message);
+      showAlert(t('error'), e.message);
     } finally {
       setLoading(false);
     }
@@ -393,9 +394,9 @@ const SentinelPage: React.FC = () => {
         body: JSON.stringify({ logId: activeTimer.logId })
       });
       setActiveTimer(null);
-      showAlert('Terminé', 'Votre sécurité a été confirmée. Le timer est désactivé.');
+      showAlert(t('safety_confirmed_title'), t('safety_confirmed_body'));
     } catch (e: any) {
-      showAlert('Erreur', e.message);
+      showAlert(t('error'), e.message);
     } finally {
       setLoading(false);
     }
@@ -412,8 +413,8 @@ const SentinelPage: React.FC = () => {
           <ChevronLeft size={20} />
         </button>
         <div>
-          <h2 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white">La Sentinelle</h2>
-          <p className="text-slate-500 dark:text-slate-400 font-medium uppercase tracking-prestige text-[10px]">Sécurité & Discrétion Galante</p>
+          <h2 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white">{t('sentinel')}</h2>
+          <p className="text-slate-500 dark:text-slate-400 font-medium uppercase tracking-prestige text-[10px]">{t('security_discretion')}</p>
         </div>
       </div>
 
@@ -424,7 +425,7 @@ const SentinelPage: React.FC = () => {
             <div className="w-12 h-12 bg-blue-50 dark:bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center">
               <Shield size={24} />
             </div>
-            <h3 className="font-serif italic text-xl tracking-tighter text-slate-900 dark:text-white">Sécurité Active</h3>
+            <h3 className="font-serif italic text-xl tracking-tighter text-slate-900 dark:text-white">{t('active_security')}</h3>
           </div>
           <button
             onClick={handleSOS}
@@ -439,10 +440,10 @@ const SentinelPage: React.FC = () => {
           <div className="space-y-6">
             {/* Duration Selector */}
             <div className="space-y-3">
-              <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige ml-2">Durée de la veille</label>
+              <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige ml-2">{t('watch_duration')}</label>
               <div className="flex items-center gap-4 bg-slate-50 dark:bg-white/5 p-4 rounded-3xl">
                 <div className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">Heures</span>
+                  <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">{t('hours_label')}</span>
                   <input
                     type="number"
                     value={hours}
@@ -452,7 +453,7 @@ const SentinelPage: React.FC = () => {
                 </div>
                 <div className="text-slate-200 dark:text-white/10 font-black text-2xl">:</div>
                 <div className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">Minutes</span>
+                  <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">{t('minutes_label')}</span>
                   <input
                     type="number"
                     value={minutes}
@@ -466,7 +467,7 @@ const SentinelPage: React.FC = () => {
             {/* Contacts Section */}
             <div className="space-y-3">
               <div className="flex justify-between items-center px-2">
-                <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige">Contacts (Max 2)</label>
+                <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige">{t('contacts_max_two')}</label>
                 <div className="flex gap-4">
                    {isDirty && (
                      <button
@@ -474,7 +475,7 @@ const SentinelPage: React.FC = () => {
                        disabled={isSavingContacts}
                        className="text-[10px] font-black text-green-500 uppercase flex items-center gap-1 hover:underline disabled:opacity-50"
                      >
-                       {isSavingContacts ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Sauvegarder
+                        {isSavingContacts ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} {t('save')}
                      </button>
                    )}
                    {contacts.length < 2 && (
@@ -482,7 +483,7 @@ const SentinelPage: React.FC = () => {
                        onClick={handlePickContact}
                        className="text-[10px] font-black text-primary uppercase flex items-center gap-1 hover:underline"
                      >
-                       <Plus size={12} /> Ajouter
+                        <Plus size={12} /> {t('add')}
                      </button>
                    )}
                 </div>
@@ -491,21 +492,21 @@ const SentinelPage: React.FC = () => {
               {showManualEntry && (
                 <div className="bg-slate-50 dark:bg-white/5 p-4 rounded-2xl space-y-3 animate-in slide-in-from-top-2">
                   <input
-                    placeholder="Nom du contact"
+                    placeholder={t('contact_name_placeholder')}
                     value={manualName}
                     onChange={(e) => setManualName(e.target.value)}
                     className="w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2 text-sm font-bold outline-none text-slate-900 dark:text-white"
                   />
                   <input
-                    placeholder="Numéro (ex: +225...)"
+                    placeholder={t('phone_number_placeholder')}
                     value={manualNumber}
                     onChange={(e) => setManualNumber(e.target.value)}
                     className="w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2 text-sm font-bold outline-none text-slate-900 dark:text-white"
                   />
                   <div className="flex gap-2">
-                    <button onClick={cancelManualEntry} className="flex-1 py-2 text-xs font-bold text-slate-400 dark:text-slate-500">Annuler</button>
+                    <button onClick={cancelManualEntry} className="flex-1 py-2 text-xs font-bold text-slate-400 dark:text-slate-500">{t('cancel')}</button>
                     <button onClick={addManualContact} className="flex-1 py-2 bg-primary text-white rounded-lg text-xs font-black">
-                      {editingIndex !== null ? 'Mettre à jour' : 'Ajouter'}
+                      {editingIndex !== null ? t('update') : t('add')}
                     </button>
                   </div>
                 </div>
@@ -514,7 +515,7 @@ const SentinelPage: React.FC = () => {
               <div className="space-y-2">
                 {contacts.length === 0 ? (
                   <p className="text-[10px] text-slate-400 dark:text-slate-500 italic text-center py-4 border-2 border-dashed border-slate-100 dark:border-white/5 rounded-2xl">
-                    Aucun contact sélectionné
+                    {t('no_contact_selected')}
                   </p>
                 ) : (
                   contacts.map((c, i) => (
@@ -544,14 +545,14 @@ const SentinelPage: React.FC = () => {
 
             {/* Meeting Details Section */}
             <div className="space-y-4 pt-2">
-              <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige ml-2">Détails du rendez-vous (Optionnel)</label>
+              <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige ml-2">{t('meeting_details_optional')}</label>
               <div className="bg-slate-50 dark:bg-white/5 p-5 rounded-[2rem] space-y-4">
                 <div className="space-y-1">
                    <div className="flex items-center gap-2 text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1">
-                     <MapPin size={10} /> Lieu
+                      <MapPin size={10} /> {t('place')}
                    </div>
                    <input
-                    placeholder="Où êtes-vous ?"
+                    placeholder={t('where_are_you')}
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     className="w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2.5 text-xs font-bold outline-none text-slate-900 dark:text-white"
@@ -561,10 +562,10 @@ const SentinelPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1">
-                      <User size={10} /> Nom de la personne
+                      <User size={10} /> {t('person_name')}
                     </div>
                     <input
-                      placeholder="Rencontré(e)"
+                      placeholder={t('met_person_placeholder')}
                       value={personName}
                       onChange={(e) => setPersonName(e.target.value)}
                       className="w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2.5 text-xs font-bold outline-none text-slate-900 dark:text-white"
@@ -572,10 +573,10 @@ const SentinelPage: React.FC = () => {
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase ml-1">
-                      <Phone size={10} /> Son Contact
+                      <Phone size={10} /> {t('person_contact')}
                     </div>
                     <input
-                      placeholder="Numéro"
+                      placeholder={t('phone_number_placeholder')}
                       value={personContact}
                       onChange={(e) => setPersonContact(e.target.value)}
                       className="w-full bg-white dark:bg-slate-800 rounded-xl px-4 py-2.5 text-xs font-bold outline-none text-slate-900 dark:text-white"
@@ -590,7 +591,7 @@ const SentinelPage: React.FC = () => {
               disabled={loading || contacts.length === 0}
               className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-medium text-xs uppercase tracking-prestige shadow-xl dark:shadow-none disabled:opacity-50 transition-all hover:scale-[1.02]"
             >
-              Activer la Protection
+              {t('activate_protection')}
             </button>
           </div>
         ) : (
@@ -602,14 +603,14 @@ const SentinelPage: React.FC = () => {
               </div>
             </div>
             <div>
-              <p className="text-blue-900 dark:text-blue-300 font-black text-[10px] uppercase tracking-widest mb-1">Protection Active</p>
-              <p className="text-slate-400 dark:text-slate-500 text-[9px] font-bold uppercase">Alerte auto à {new Date(activeTimer.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+              <p className="text-blue-900 dark:text-blue-300 font-black text-[10px] uppercase tracking-widest mb-1">{t('protection_active')}</p>
+              <p className="text-slate-400 dark:text-slate-500 text-[9px] font-bold uppercase">{t('auto_alert_at', { time: new Date(activeTimer.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) })}</p>
             </div>
             <button
               onClick={handleConfirmSafety}
               className="w-full bg-blue-500 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all"
             >
-              <CheckCircle size={18} /> Je vais bien
+              <CheckCircle size={18} /> {t('i_am_safe')}
             </button>
           </div>
         )}
@@ -622,14 +623,14 @@ const SentinelPage: React.FC = () => {
           <div className="w-12 h-12 bg-white/10 text-primary rounded-2xl flex items-center justify-center">
             <PhoneIncoming size={24} />
           </div>
-          <h3 className="font-serif italic text-xl tracking-tighter">Appel Fantôme</h3>
+          <h3 className="font-serif italic text-xl tracking-tighter">{t('fake_call')}</h3>
         </div>
 
         <div className="space-y-6 relative z-10">
           <div className="space-y-6">
             {/* Delay Selector */}
             <div className="space-y-3">
-              <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest ml-2">Quand sonner ?</label>
+              <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest ml-2">{t('when_ring')}</label>
               <div className="flex gap-2">
                 {[0, 1, 2, 5].map((val) => (
                   <button
@@ -641,14 +642,14 @@ const SentinelPage: React.FC = () => {
                         : 'bg-slate-800 text-slate-500 hover:text-slate-300'
                     }`}
                   >
-                    {val === 0 ? 'IMMÉDIAT' : `${val} MIN`}
+                    {val === 0 ? t('immediate') : `${val} MIN`}
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest ml-2">Qui vous appelle ?</label>
+              <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest ml-2">{t('caller_label')}</label>
               <div className="flex gap-3 mt-1">
                 <div
                   onClick={() => photoInputRef.current?.click()}
@@ -661,7 +662,7 @@ const SentinelPage: React.FC = () => {
                   type="text"
                   value={callerName}
                   onChange={(e) => setCallerName(e.target.value)}
-                  placeholder="Ex: Bureau, Maman..."
+                  placeholder={t('caller_placeholder')}
                   className="flex-1 bg-slate-800 border-none rounded-xl px-4 py-2 text-sm font-bold focus:ring-1 focus:ring-primary/50 outline-none text-white"
                 />
               </div>
@@ -680,19 +681,19 @@ const SentinelPage: React.FC = () => {
               }}
               className="w-full bg-white text-slate-900 py-5 rounded-2xl font-medium text-xs uppercase tracking-prestige shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
             >
-              {fakeCallDelay === 0 ? 'Lancer la Simulation' : 'Programmer l\'appel'}
+              {fakeCallDelay === 0 ? t('start_simulation') : t('schedule_call')}
             </button>
           ) : (
             <div className="space-y-4">
                <div className="bg-primary/20 border border-primary/30 p-5 rounded-[2rem] text-center animate-in zoom-in duration-300">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-primary animate-pulse mb-1">Appel programmé</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary animate-pulse mb-1">{t('scheduled_call')}</p>
                   <p className="text-3xl font-black text-white">{formatDuration(scheduledSecondsLeft || 0)}</p>
                </div>
                <button
                 onClick={() => { setIsFakeCallScheduled(false); setScheduledSecondsLeft(null); }}
                 className="w-full py-4 border-2 border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all"
                >
-                 Annuler la programmation
+                 {t('cancel_schedule')}
                </button>
             </div>
           )}
@@ -702,7 +703,7 @@ const SentinelPage: React.FC = () => {
       <div className="flex items-center gap-3 p-6 bg-amber-50 dark:bg-amber-900/10 rounded-3xl border border-amber-100 dark:border-amber-500/10 text-amber-600 dark:text-amber-500">
         <AlertTriangle size={20} className="flex-shrink-0" />
         <p className="text-[10px] font-bold uppercase tracking-tight leading-relaxed">
-          Pour une efficacité maximale, assurez-vous que le son de votre téléphone est activé avant de lancer l'appel.
+          {t('fake_call_sound_note_web')}
         </p>
       </div>
 
@@ -716,7 +717,7 @@ const SentinelPage: React.FC = () => {
             <div className="text-center">
               <h4 className="text-3xl font-medium mb-2">{callerName}</h4>
               <p className="text-slate-400 font-medium tracking-wide">
-                {isFakeCallRinging ? 'Appel entrant...' : formatDuration(callDuration)}
+                {isFakeCallRinging ? t('incoming_call') : formatDuration(callDuration)}
               </p>
             </div>
           </div>
@@ -731,7 +732,7 @@ const SentinelPage: React.FC = () => {
                   <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center shadow-lg group-active:scale-90 transition-transform">
                     <Phone className="rotate-[135deg]" size={28} />
                   </div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Refuser</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('decline')}</span>
                 </button>
                 <button
                   onClick={acceptCall}
@@ -740,7 +741,7 @@ const SentinelPage: React.FC = () => {
                   <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center shadow-lg group-active:scale-90 transition-transform">
                     <Phone size={28} />
                   </div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Accepter</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('accept')}</span>
                 </button>
               </>
             ) : (
@@ -751,7 +752,7 @@ const SentinelPage: React.FC = () => {
                 <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center shadow-lg group-active:scale-90 transition-transform">
                   <Phone className="rotate-[135deg]" size={28} />
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Raccrocher</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t('hang_up')}</span>
               </button>
             )}
           </div>

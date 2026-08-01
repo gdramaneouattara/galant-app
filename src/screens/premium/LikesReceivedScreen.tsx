@@ -39,7 +39,7 @@ const SUPER_LIKE_SKU = String(process.env.EXPO_PUBLIC_SUPER_LIKE_SKU || 'super_l
 const LikesReceivedScreen: React.FC = () => {
   // Quality test requirement: Boîte de Roses legacy marker, Roses recues, /api/payments/initialize
   const navigation = useNavigation<any>();
-  const { appResumeVersion, currentUser } = useApp();
+  const { appResumeVersion, currentUser, t } = useApp();
   const { handleSwipe } = useMatchmaking();
   const { purchaseLoading, purchaseWithPaystack, purchaseWithStore, initIAP, endIAP } = useSubscription();
 
@@ -67,7 +67,7 @@ const LikesReceivedScreen: React.FC = () => {
       setSuperLikes(data);
       setError(null);
     } catch (err: any) {
-      setError(err?.message || 'Erreur lors du chargement.');
+      setError(err?.message || t('error'));
     } finally { setLoading(false); }
   }, []);
 
@@ -88,9 +88,9 @@ const LikesReceivedScreen: React.FC = () => {
         if (selectedSuperLike?.id === row.id) setSelectedSuperLike(null);
       } else {
         void fetchSuperLikes();
-        Alert.alert('Succès', 'Rose acceptée.');
+        Alert.alert(t('success'), t('rose_accepted'));
       }
-    } catch (err: any) { Alert.alert('Erreur', err?.message); }
+    } catch (err: any) { Alert.alert(t('error'), err?.message); }
     finally { setRespondingId(null); }
   };
 
@@ -102,7 +102,7 @@ const LikesReceivedScreen: React.FC = () => {
       if (res) {
         setLikedUserIds(prev => new Set(prev).add(row.user.id));
         if (res.matched) {
-          Alert.alert('Match 🎉', `Vous avez matché avec ${row.user.name} !`, [{ text: 'Chat', onPress: () => navigation.navigate('Chat', { userId: row.user.id, matchId: res.matchId }) }, { text: 'Plus tard' }]);
+          Alert.alert(t('match_title'), t('matched_with_short', { name: row.user.name }), [{ text: 'Chat', onPress: () => navigation.navigate('Chat', { userId: row.user.id, matchId: res.matchId }) }, { text: t('maybe_later_short') }]);
         }
       }
     } finally { setLikingId(null); }
@@ -116,7 +116,7 @@ const LikesReceivedScreen: React.FC = () => {
 
     if (ok) {
       setSuperLikedUserIds(prev => new Set(prev).add(selectedSuperLike.user.id));
-      Alert.alert('Succès', 'Super Like envoyé !');
+      Alert.alert(t('success'), t('super_like_sent'));
       setShowSuperLikePurchaseModal(false);
     }
   };

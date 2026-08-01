@@ -153,7 +153,7 @@ const ChatScreen: React.FC = () => {
       });
       setInputText('');
     } catch (e: any) {
-      Alert.alert('Erreur', e.message);
+      Alert.alert(t('error'), e.message);
     } finally {
       setSending(false);
     }
@@ -163,7 +163,7 @@ const ChatScreen: React.FC = () => {
     if (!currentUser?.is_premium) {
       Alert.alert(
         t('premium_join'),
-        "Le partage de photos et vidéos est un privilège réservé aux membres Premium. ✨",
+        t('media_premium_only'),
         [
           { text: t('maybe_later'), style: 'cancel' },
           { text: t('become_premium'), onPress: () => navigation.navigate('Premium') }
@@ -187,11 +187,11 @@ const ChatScreen: React.FC = () => {
     const asset = result.assets[0];
     if (type === 'VIDEO') {
       if (typeof asset.duration === 'number' && asset.duration > CHAT_VIDEO_MAX_DURATION_MS) {
-        Alert.alert('Video trop longue', "Les videos chat sont limitees a 30 secondes.");
+        Alert.alert(t('video_too_long_title'), t('video_too_long_chat'));
         return;
       }
       if (typeof asset.fileSize === 'number' && asset.fileSize > VIDEO_UPLOAD_MAX_BYTES) {
-        Alert.alert('Video trop lourde', "La video doit peser moins de 30 Mo avant envoi.");
+        Alert.alert(t('video_too_heavy_title'), t('video_too_heavy'));
         return;
       }
     }
@@ -244,7 +244,7 @@ const ChatScreen: React.FC = () => {
       });
 
     } catch (e: any) {
-      Alert.alert('Erreur Upload', e.message);
+      Alert.alert(t('upload_error'), e.message);
     } finally {
       setUploading(false);
     }
@@ -254,7 +254,7 @@ const ChatScreen: React.FC = () => {
     if (!currentUser?.is_premium) {
       Alert.alert(
         t('premium_join'),
-        "La sérénade vocale est réservée aux membres Premium.",
+        t('serenade_premium_only'),
         [
           { text: t('maybe_later'), style: 'cancel' },
           { text: t('become_premium'), onPress: () => navigation.navigate('Premium') }
@@ -266,7 +266,7 @@ const ChatScreen: React.FC = () => {
     try {
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status !== 'granted') {
-        Alert.alert('Micro requis', "Autorisez l'accès au micro pour envoyer une sérénade vocale.");
+        Alert.alert(t('microphone_required'), t('microphone_required_body'));
         return;
       }
 
@@ -277,7 +277,7 @@ const ChatScreen: React.FC = () => {
       const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       setVoiceRecording(recording);
     } catch (e: any) {
-      Alert.alert('Erreur', e.message || "Impossible de démarrer l'enregistrement.");
+      Alert.alert(t('error'), e.message || t('recording_start_failed'));
     }
   };
 
@@ -298,7 +298,7 @@ const ChatScreen: React.FC = () => {
       setUploading(true);
       const info = await FileSystem.getInfoAsync(uri);
       if (info.exists && typeof info.size === 'number' && info.size > VOICE_UPLOAD_MAX_BYTES) {
-        Alert.alert('Sérénade trop lourde', 'La sérénade vocale est limitée à 2 Mo. Essayez un message plus court.');
+        Alert.alert(t('serenade_too_heavy'), t('serenade_too_heavy_body'));
         return;
       }
 
@@ -322,7 +322,7 @@ const ChatScreen: React.FC = () => {
         })
       });
     } catch (e: any) {
-      Alert.alert('Erreur Upload', e.message);
+      Alert.alert(t('upload_error'), e.message);
     } finally {
       setUploading(false);
     }
@@ -374,7 +374,7 @@ const ChatScreen: React.FC = () => {
         ListHeaderComponent={
           <View style={styles.privacyNotice}>
             <Text style={styles.privacyNoticeText}>
-              🛡️ Par mesure de confidentialité, les médias partagés sont effacés après 15 jours.
+              {t('media_privacy_note')}
             </Text>
           </View>
         }
