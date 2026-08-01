@@ -1,37 +1,9 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import './index.css';
 
 // Pages
-import DiscoverPage from './pages/DiscoverPage';
-import DiscoverGridPage from './pages/DiscoverGridPage';
-import AuthPage from './pages/AuthPage';
-import PartnerSignupPage from './pages/PartnerSignupPage';
-import OnboardingPage from './pages/OnboardingPage';
-import MatchesPage from './pages/MatchesPage';
-import ChatPage from './pages/ChatPage';
-import ProfilePage from './pages/ProfilePage';
-import ProfileDetailPage from './pages/ProfileDetailPage';
-import PremiumPage from './pages/PremiumPage';
-import VerifyPage from './pages/VerifyPage';
-import PartnerDashboard from './pages/PartnerDashboard';
-import PartnerPremiumPage from './pages/PartnerPremiumPage';
-import PartnerChatsPage from './pages/PartnerChatsPage';
-import CreateEventPage from './pages/CreateEventPage';
-import TermsPage from './pages/TermsPage';
-import PrivacyPage from './pages/PrivacyPage';
-import AgendaPage from './pages/AgendaPage';
-import GuidePage from './pages/GuidePage';
-import ExperiencesPage from './pages/ExperiencesPage';
-import StoriesPage from './pages/StoriesPage';
-import MarketPage from './pages/MarketPage';
-import VenueDetailPage from './pages/VenueDetailPage';
-import SentinelPage from './pages/SentinelPage';
-import AppsPage from './pages/AppsPage';
-import LikesInboxPage from './pages/LikesInboxPage';
-import RosesInboxPage from './pages/RosesInboxPage';
-import BoostPage from './pages/BoostPage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 import {
   Crown,
@@ -51,19 +23,54 @@ import PWAInstallPrompt from './components/PWAInstallPrompt';
 import WelcomeVernissage from './components/WelcomeVernissage';
 
 // Admin
-import AdminLayout from './pages/admin/AdminLayout';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminPricing from './pages/admin/AdminPricing';
-import logoImg from './assets/galant-logo.png';
-import AdminSupport from './pages/admin/AdminSupport';
-import AdminKyc from './pages/admin/AdminKyc';
-import AdminMessaging from './pages/admin/AdminMessaging';
-import AdminVenues from './pages/admin/AdminVenues';
-import AdminAuditLogs from './pages/admin/AdminAuditLogs';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminFinances from './pages/admin/AdminFinances';
-import AdminReports from './pages/admin/AdminReports';
+import logoImg from './assets/galant-logo-web.png';
 import { hasAdminProfileAccess } from './lib/adminAccess';
+
+const DiscoverPage = lazy(() => import('./pages/DiscoverPage'));
+const DiscoverGridPage = lazy(() => import('./pages/DiscoverGridPage'));
+const AuthPage = lazy(() => import('./pages/AuthPage'));
+const PartnerSignupPage = lazy(() => import('./pages/PartnerSignupPage'));
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
+const MatchesPage = lazy(() => import('./pages/MatchesPage'));
+const ChatPage = lazy(() => import('./pages/ChatPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const ProfileDetailPage = lazy(() => import('./pages/ProfileDetailPage'));
+const PremiumPage = lazy(() => import('./pages/PremiumPage'));
+const VerifyPage = lazy(() => import('./pages/VerifyPage'));
+const PartnerDashboard = lazy(() => import('./pages/PartnerDashboard'));
+const PartnerPremiumPage = lazy(() => import('./pages/PartnerPremiumPage'));
+const PartnerChatsPage = lazy(() => import('./pages/PartnerChatsPage'));
+const CreateEventPage = lazy(() => import('./pages/CreateEventPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
+const AgendaPage = lazy(() => import('./pages/AgendaPage'));
+const GuidePage = lazy(() => import('./pages/GuidePage'));
+const ExperiencesPage = lazy(() => import('./pages/ExperiencesPage'));
+const StoriesPage = lazy(() => import('./pages/StoriesPage'));
+const MarketPage = lazy(() => import('./pages/MarketPage'));
+const VenueDetailPage = lazy(() => import('./pages/VenueDetailPage'));
+const SentinelPage = lazy(() => import('./pages/SentinelPage'));
+const AppsPage = lazy(() => import('./pages/AppsPage'));
+const LikesInboxPage = lazy(() => import('./pages/LikesInboxPage'));
+const RosesInboxPage = lazy(() => import('./pages/RosesInboxPage'));
+const BoostPage = lazy(() => import('./pages/BoostPage'));
+const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminPricing = lazy(() => import('./pages/admin/AdminPricing'));
+const AdminSupport = lazy(() => import('./pages/admin/AdminSupport'));
+const AdminKyc = lazy(() => import('./pages/admin/AdminKyc'));
+const AdminMessaging = lazy(() => import('./pages/admin/AdminMessaging'));
+const AdminVenues = lazy(() => import('./pages/admin/AdminVenues'));
+const AdminAuditLogs = lazy(() => import('./pages/admin/AdminAuditLogs'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminFinances = lazy(() => import('./pages/admin/AdminFinances'));
+const AdminReports = lazy(() => import('./pages/admin/AdminReports'));
+
+const PageLoader: React.FC = () => (
+  <div className="flex min-h-[50vh] items-center justify-center">
+    <div className="h-10 w-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+  </div>
+);
 
 const AuthButton: React.FC = () => {
   const { user, profile, t } = useAuth();
@@ -249,51 +256,53 @@ const AppContent: React.FC = () => {
       )}
 
       <main className={`relative z-10 flex-1 w-full ${(isAuthPage || isWelcomePage || isAdminRoute || isFakeCallActive) ? '' : 'max-w-6xl mx-auto p-4 md:p-8 mb-20 md:mb-0'}`}>
-        <Routes>
-          <Route path="/" element={<DiscoverPage />} />
-          <Route path="/discover-grid" element={<DiscoverGridPage />} />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/cgu" element={<TermsPage />} />
-          <Route path="/privacy" element={<PrivacyPage />} />
-          <Route path="/onboarding" element={<OnboardingPage />} />
-          <Route path="/partner-signup" element={<PartnerSignupPage />} />
-          <Route path="/market" element={<MarketPage />} />
-          <Route path="/venue/:id" element={<VenueDetailPage />} />
-          <Route path="/sentinel" element={<SentinelPage />} />
-          <Route path="/stories" element={<StoriesPage />} />
-          <Route path="/apps" element={<AppsPage />} />
-          <Route path="/matches" element={<MatchesPage />} />
-          <Route path="/likes" element={<LikesInboxPage />} />
-          <Route path="/roses" element={<RosesInboxPage />} />
-          <Route path="/boost" element={<BoostPage />} />
-          <Route path="/chat/:matchId" element={<ChatPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/profile/:id" element={<ProfileDetailPage />} />
-          <Route path="/premium" element={<PremiumPage />} />
-          <Route path="/agenda" element={<AgendaPage />} />
-          <Route path="/guide" element={<GuidePage />} />
-          <Route path="/experiences" element={<ExperiencesPage />} />
-          <Route path="/verify" element={<VerifyPage />} />
-          <Route path="/partner" element={<PartnerDashboard />} />
-          <Route path="/partner-premium" element={<PartnerPremiumPage />} />
-          <Route path="/partner/chats" element={<PartnerChatsPage />} />
-          <Route path="/partner/create-event" element={<CreateEventPage />} />
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<DiscoverPage />} />
+            <Route path="/discover-grid" element={<DiscoverGridPage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/cgu" element={<TermsPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/onboarding" element={<OnboardingPage />} />
+            <Route path="/partner-signup" element={<PartnerSignupPage />} />
+            <Route path="/market" element={<MarketPage />} />
+            <Route path="/venue/:id" element={<VenueDetailPage />} />
+            <Route path="/sentinel" element={<SentinelPage />} />
+            <Route path="/stories" element={<StoriesPage />} />
+            <Route path="/apps" element={<AppsPage />} />
+            <Route path="/matches" element={<MatchesPage />} />
+            <Route path="/likes" element={<LikesInboxPage />} />
+            <Route path="/roses" element={<RosesInboxPage />} />
+            <Route path="/boost" element={<BoostPage />} />
+            <Route path="/chat/:matchId" element={<ChatPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/profile/:id" element={<ProfileDetailPage />} />
+            <Route path="/premium" element={<PremiumPage />} />
+            <Route path="/agenda" element={<AgendaPage />} />
+            <Route path="/guide" element={<GuidePage />} />
+            <Route path="/experiences" element={<ExperiencesPage />} />
+            <Route path="/verify" element={<VerifyPage />} />
+            <Route path="/partner" element={<PartnerDashboard />} />
+            <Route path="/partner-premium" element={<PartnerPremiumPage />} />
+            <Route path="/partner/chats" element={<PartnerChatsPage />} />
+            <Route path="/partner/create-event" element={<CreateEventPage />} />
 
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="support" element={<AdminSupport />} />
-            <Route path="kyc" element={<AdminKyc />} />
-            <Route path="venues" element={<AdminVenues />} />
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="pricing" element={<AdminPricing />} />
-            <Route path="messaging" element={<AdminMessaging />} />
-            <Route path="finances" element={<AdminFinances />} />
-            <Route path="reports" element={<AdminReports />} />
-            <Route path="audit" element={<AdminAuditLogs />} />
-          </Route>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="support" element={<AdminSupport />} />
+              <Route path="kyc" element={<AdminKyc />} />
+              <Route path="venues" element={<AdminVenues />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="pricing" element={<AdminPricing />} />
+              <Route path="messaging" element={<AdminMessaging />} />
+              <Route path="finances" element={<AdminFinances />} />
+              <Route path="reports" element={<AdminReports />} />
+              <Route path="audit" element={<AdminAuditLogs />} />
+            </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </main>
       {(!isAuthPage && !isAdminRoute && !isFakeCallActive) && <MobileNav />}
       <PWAInstallPrompt />

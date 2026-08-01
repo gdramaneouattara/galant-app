@@ -88,6 +88,32 @@ export default defineConfig(({ mode }) => {
     'global': 'window',
     'process.env': {},
   },
+  build: {
+    rollupOptions: {
+      output: {
+        onlyExplicitManualChunks: true,
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          const moduleId = id.replace(/\\/g, '/');
+          if (moduleId.includes('/firebase/auth')) return 'vendor-firebase-auth';
+          if (moduleId.includes('/firebase/firestore')) return 'vendor-firebase-firestore';
+          if (moduleId.includes('/firebase/storage')) return 'vendor-firebase-storage';
+          if (moduleId.includes('/firebase/database')) return 'vendor-firebase-database';
+          if (moduleId.includes('/firebase/app')) return 'vendor-firebase-core';
+          if (moduleId.includes('/@firebase/firestore')) return 'vendor-firebase-firestore';
+          if (moduleId.includes('/@firebase/auth')) return 'vendor-firebase-auth';
+          if (moduleId.includes('/@firebase/storage')) return 'vendor-firebase-storage';
+          if (moduleId.includes('/@firebase/database')) return 'vendor-firebase-database';
+          if (moduleId.includes('/@firebase/app') || moduleId.includes('/@firebase/component') || moduleId.includes('/@firebase/logger') || moduleId.includes('/@firebase/util')) return 'vendor-firebase-core';
+          if (moduleId.includes('/firebase/') || moduleId.includes('/@firebase/')) return 'vendor-firebase-core';
+          if (moduleId.includes('react-router')) return 'vendor-router';
+          if (moduleId.includes('lucide-react')) return 'vendor-icons';
+          if (moduleId.includes('react') || moduleId.includes('scheduler')) return 'vendor-react';
+          return 'vendor';
+        },
+      },
+    },
+  },
   server: {
     port: 3000,
     proxy: {

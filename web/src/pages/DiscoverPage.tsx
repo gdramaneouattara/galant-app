@@ -7,7 +7,7 @@ import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-mo
 import FilterModal from '../components/FilterModal';
 import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
 import { apiRequest } from '@shared/lib/api';
-import logoImg from '../assets/galant-logo.png';
+import logoImg from '../assets/galant-logo-web.png';
 import FeatureHighlight from '../components/FeatureHighlight';
 import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
