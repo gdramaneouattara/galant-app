@@ -23,6 +23,9 @@ const VenueDetailScreen: React.FC = () => {
   const [showDirectMessagePurchaseModal, setShowDirectMessagePurchaseModal] = useState(false);
 
   const photos = Array.isArray(venue.photos) && venue.photos.length > 0 ? venue.photos : [venue.photo_url];
+  const googleAttributions = Array.isArray(venue.google_photo_attributions)
+    ? venue.google_photo_attributions.filter((item: any) => item?.display_name)
+    : [];
 
   useEffect(() => {
     void initIAP([DIRECT_MESSAGE_SKU]);
@@ -98,6 +101,11 @@ const VenueDetailScreen: React.FC = () => {
             <OptimizedImage key={index} uri={optimizedPhotoUrl(photo, venue.photo_variants, 'medium')} style={styles.galleryImage} />
           ))}
         </ScrollView>
+        {googleAttributions.length > 0 && (
+          <Text style={[styles.photoAttribution, { color: colors.textMuted }]}>
+            Photo Google Places : {googleAttributions.map((item: any) => item.display_name).join(', ')}
+          </Text>
+        )}
 
         <View style={styles.content}>
           <View style={styles.titleRow}>
@@ -162,6 +170,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 18, fontFamily: 'PlayfairBlack', flex: 1, textAlign: 'center' },
   gallery: { height: 250 },
   galleryImage: { width: width, height: 250, backgroundColor: '#f1f5f9' },
+  photoAttribution: { paddingHorizontal: 20, paddingTop: 8, fontSize: 10, fontFamily: 'InterBold', textTransform: 'uppercase', letterSpacing: 0 },
   content: { padding: 20, gap: 24 },
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
   name: { fontSize: 24, fontFamily: 'PlayfairBlack' },

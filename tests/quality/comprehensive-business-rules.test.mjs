@@ -120,7 +120,10 @@ test('Rules: Admin Guide Seeder imports prestigious Google Places editorial venu
   assert.match(googleMapsService, /Promise\.allSettled/);
   assert.match(googleMapsService, /categoryErrors/);
   assert.match(googleMapsService, /ADMIN_SEEDER_CATEGORY_TYPES/);
-  assert.match(googleMapsService, /maxWidthPx=1200/);
+  assert.match(googleMapsService, /GOOGLE_PHOTO_WIDTHS/);
+  assert.match(googleMapsService, /google_photo_name/);
+  assert.match(googleMapsService, /google_photo_attributions/);
+  assert.match(googleMapsService, /image_source:\s*photo \? 'google_places'/);
   assert.match(googleMapsService, /is_editorial:\s*true/);
   assert.match(googleMapsService, /status:\s*'APPROVED'/);
   assert.match(adminController, /seedVenuesFromGoogle/);
@@ -139,6 +142,34 @@ test('Rules: Admin Guide Seeder imports prestigious Google Places editorial venu
   assert.match(adminSeeder, /Culture & Loisirs/);
   assert.match(adminSeeder, /progress/);
   assert.match(adminLayout, /\/admin\/seeder/);
+});
+
+test('Rules: Guide Google photos are referenced, sized and attributed without Storage backfill', async () => {
+  const googleMapsService = await read('server/src/services/googleMapsService.js');
+  const venueController = await read('server/src/controllers/venueController.js');
+  const venueRoutes = await read('server/src/routes/venueRoutes.js');
+  const webGuide = await read('web/src/pages/GuidePage.tsx');
+  const webVenueDetail = await read('web/src/pages/VenueDetailPage.tsx');
+  const nativeGuide = await read('src/screens/guide/GuideScreen.tsx');
+  const nativeVenueDetail = await read('src/screens/guide/VenueDetailScreen.tsx');
+
+  assert.match(googleMapsService, /GOOGLE_PHOTO_WIDTHS/);
+  assert.match(googleMapsService, /thumb:\s*320/);
+  assert.match(googleMapsService, /medium:\s*800/);
+  assert.match(googleMapsService, /full:\s*1200/);
+  assert.match(googleMapsService, /extractGooglePhotoNameFromUrl/);
+  assert.match(googleMapsService, /photo_url:\s*photo \? null/);
+  assert.doesNotMatch(googleMapsService, /photo_url:\s*buildGooglePhotoMediaUrl\(place/);
+  assert.match(venueController, /getVenuePhoto/);
+  assert.match(venueController, /Cache-Control/);
+  assert.match(venueController, /decorateVenueMedia/);
+  assert.match(venueRoutes, /\/:id\/photo/);
+  assert.match(webGuide, /optimizedPhotoUrl\(venue\.photo_url,\s*venue\.photo_variants,\s*'thumb'\)/);
+  assert.match(webVenueDetail, /google_photo_attributions/);
+  assert.match(webVenueDetail, /Photo Google Places/);
+  assert.match(nativeGuide, /optimizedPhotoUrl\(item\.photo_url,\s*item\.photo_variants,\s*'thumb'\)/);
+  assert.match(nativeVenueDetail, /google_photo_attributions/);
+  assert.match(nativeVenueDetail, /Photo Google Places/);
 });
 
 test('Rules: Apps exposes paid user partner discovery with direct Google import', async () => {

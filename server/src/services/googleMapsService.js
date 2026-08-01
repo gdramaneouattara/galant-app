@@ -4,6 +4,12 @@ const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 const GOOGLE_TEXT_SEARCH_URL = 'https://places.googleapis.com/v1/places:searchText';
 const MIN_PRESTIGE_RATING = 4.0;
 const DEFAULT_LIMIT = 20;
+const GOOGLE_PHOTO_WIDTHS = {
+  thumb: 320,
+  medium: 800,
+  full: 1200
+};
+const GOOGLE_VENUE_PLACEHOLDER = 'https://placehold.co/800x600?text=Galant';
 
 const CATEGORY_QUERIES = [
   { googleType: 'restaurant', venueType: 'RESTAURANT', label: 'restaurants gastronomiques' },
@@ -66,14 +72,51 @@ const getGoogleErrorInfo = (error) => {
   };
 };
 
-const buildPhotoUrl = (place) => {
-  const photoName = place?.photos?.[0]?.name;
-  if (!photoName) return 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=800';
-  return `https://places.googleapis.com/v1/${photoName}/media?key=${GOOGLE_MAPS_API_KEY}&maxWidthPx=1200`;
+const normalizePhotoSize = (size = 'medium') => (
+  GOOGLE_PHOTO_WIDTHS[size] ? size : 'medium'
+);
+
+const buildGooglePhotoMediaUrl = (photoName, size = 'medium') => {
+  if (!photoName || !GOOGLE_MAPS_API_KEY) return GOOGLE_VENUE_PLACEHOLDER;
+  const normalizedSize = normalizePhotoSize(size);
+  return `https://places.googleapis.com/v1/${photoName}/media?key=${encodeURIComponent(GOOGLE_MAPS_API_KEY)}&maxWidthPx=${GOOGLE_PHOTO_WIDTHS[normalizedSize]}`;
 };
+
+const extractGooglePhotoNameFromUrl = (value) => {
+  if (typeof value !== 'string' || !value.includes('places.googleapis.com/v1/')) return null;
+  const match = value.match(/places\.googleapis\.com\/v1\/(.+?)\/media(?:\?|$)/);
+  if (!match?.[1]) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+};
+
+const normalizePhotoMetadata = (place) => {
+  const photo = place?.photos?.[0];
+  if (!photo?.name) return null;
+  return {
+    name: photo.name,
+    width_px: photo.widthPx || null,
+    height_px: photo.heightPx || null,
+    author_attributions: Array.isArray(photo.authorAttributions)
+      ? photo.authorAttributions.map((attribution) => ({
+        display_name: attribution.displayName || null,
+        uri: attribution.uri || null,
+        photo_uri: attribution.photoUri || null,
+      }))
+      : [],
+  };
+};
+
+const buildDirectPhotoUrl = (venue, size = 'medium') => (
+  buildGooglePhotoMediaUrl(venue?.google_photo_name, size)
+);
 
 const toVenue = (place, city, category) => {
   const now = new Date().toISOString();
+  const photo = normalizePhotoMetadata(place);
   return {
     google_place_id: place.id,
     name: normalizePlaceName(place),
@@ -88,7 +131,12 @@ const toVenue = (place, city, category) => {
     website_url: place.websiteUri || null,
     phone_number: place.internationalPhoneNumber || null,
     venue_type: category.venueType,
-    photo_url: buildPhotoUrl(place),
+    photo_url: photo ? null : GOOGLE_VENUE_PLACEHOLDER,
+    google_photo_name: photo?.name || null,
+    google_photo_width_px: photo?.width_px || null,
+    google_photo_height_px: photo?.height_px || null,
+    google_photo_attributions: photo?.author_attributions || [],
+    image_source: photo ? 'google_places' : 'galant_placeholder',
     description: `Une adresse d'exception selectionnee par la Conciergerie Galant a ${city}.`,
     status: 'APPROVED',
     is_editorial: true,
@@ -250,17 +298,32 @@ const searchUserPartnerDiscovery = async ({
     radiusKm
   });
 
-  return venues.map((venue) => ({
-    ...venue,
-    id: `google_${venue.google_place_id}`,
-    source: 'GOOGLE_PLACES_DIRECT',
-    is_user_discovery: true
-  }));
+  return venues.map((venue) => {
+    const thumb = buildDirectPhotoUrl(venue, 'thumb');
+    return {
+      ...venue,
+      id: `google_${venue.google_place_id}`,
+      photo_url: thumb,
+      photo_variants: {
+        [thumb]: {
+          thumb,
+          medium: buildDirectPhotoUrl(venue, 'medium'),
+          full: buildDirectPhotoUrl(venue, 'full'),
+        }
+      },
+      source: 'GOOGLE_PLACES_DIRECT',
+      is_user_discovery: true
+    };
+  });
 };
 
 module.exports = {
   searchVenuesInCity,
   searchUserPartnerDiscovery,
+  buildGooglePhotoMediaUrl,
+  extractGooglePhotoNameFromUrl,
+  GOOGLE_PHOTO_WIDTHS,
+  GOOGLE_VENUE_PLACEHOLDER,
   CATEGORY_QUERIES,
   USER_DISCOVERY_CATEGORY_TYPES,
   ADMIN_SEEDER_CATEGORY_TYPES,

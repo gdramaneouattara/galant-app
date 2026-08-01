@@ -19,6 +19,8 @@ interface Venue {
   city: string;
   benefit_description?: string;
   is_editorial?: boolean;
+  image_source?: 'google_places' | 'galant_storage' | 'partner_upload' | 'galant_placeholder';
+  google_photo_attributions?: { display_name?: string | null; uri?: string | null }[];
 }
 
 const GuidePage: React.FC = () => {
@@ -223,7 +225,7 @@ const GuidePage: React.FC = () => {
           >
             <div className="relative h-72 overflow-hidden">
               <OptimizedImage
-                src={optimizedPhotoUrl(venue.photo_url, venue.photo_variants, 'medium')}
+                src={optimizedPhotoUrl(venue.photo_url, venue.photo_variants, 'thumb')}
                 className="w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-110"
                 alt={venue.name}
               />

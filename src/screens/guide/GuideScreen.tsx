@@ -39,6 +39,8 @@ interface Venue {
   photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
   description: string;
   photos?: string[];
+  image_source?: string;
+  google_photo_attributions?: { display_name?: string | null; uri?: string | null }[];
 }
 
 const GuideScreen: React.FC = () => {
