@@ -4,7 +4,7 @@ const { sendPushNotification } = require('../services/notificationService');
 const { processUserAction } = require('../services/conciergeService');
 const { reconcileAllCounters, backfillProfileGeohashes } = require('../services/maintenanceService');
 const { backfillImageVariants, backfillVideoMedia, cleanupOrphanMedia } = require('../services/mediaMaintenanceService');
-const { searchVenuesInCity } = require('../services/googleMapsService');
+const { searchVenuesInCity, ADMIN_SEEDER_CATEGORY_TYPES } = require('../services/googleMapsService');
 const pricingDefaults = require('../config/constants');
 
 const mergeRosePacks = (overrides = {}) => {
@@ -463,11 +463,21 @@ const backfillGeohashes = async (req, res) => {
 };
 
 const seedVenuesFromGoogle = async (req, res) => {
-  const { city } = req.body;
+  const { city, categories } = req.body;
   if (!city) return res.status(400).json({ error: 'missing_city' });
 
   try {
-    const venues = await searchVenuesInCity(city);
+    const requestedCategories = Array.isArray(categories) && categories.length
+      ? categories.map((category) => String(category || '').trim().toUpperCase()).filter(Boolean)
+      : ['ALL'];
+    const normalizedCategories = requestedCategories.includes('ALL') ? ['ALL'] : [...new Set(requestedCategories)];
+    const googleTypes = normalizedCategories.includes('ALL')
+      ? ADMIN_SEEDER_CATEGORY_TYPES.ALL
+      : [...new Set(normalizedCategories.flatMap((category) => ADMIN_SEEDER_CATEGORY_TYPES[category] || []))];
+
+    if (!googleTypes.length) return res.status(400).json({ error: 'invalid_seed_categories' });
+
+    const venues = await searchVenuesInCity(city, googleTypes);
     let createdCount = 0;
     let skippedCount = 0;
     let editorialCount = 0;
@@ -491,11 +501,21 @@ const seedVenuesFromGoogle = async (req, res) => {
     await appendAdminAuditLog({
       adminId: req.user.id,
       action: 'SEED_VENUES_GOOGLE',
-      metadata: { city, candidateCount: venues.length, createdCount, skippedCount, editorialCount }
+      metadata: {
+        city,
+        categories: normalizedCategories,
+        googleTypes,
+        candidateCount: venues.length,
+        createdCount,
+        skippedCount,
+        editorialCount
+      }
     });
 
     res.json({
       success: true,
+      categories: normalizedCategories,
+      googleTypes,
       candidateCount: venues.length,
       createdCount,
       skippedCount,

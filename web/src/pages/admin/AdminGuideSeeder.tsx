@@ -6,7 +6,15 @@ import {
   CheckCircle2,
   AlertCircle,
   Info,
-  Loader2
+  Loader2,
+  Coffee,
+  Flower2,
+  Gift,
+  Hotel,
+  Martini,
+  Palette,
+  Sparkles,
+  Utensils
 } from 'lucide-react';
 import { apiRequest } from '@shared/lib/api';
 import { showAlert } from '@shared/lib/ui-bridge';
@@ -16,20 +24,56 @@ type SeedResult = {
   created: number;
   skipped: number;
   editorial: number;
+  categories: string[];
 };
+
+type SeederCategory = 'ALL' | 'RESTAURANT' | 'LOUNGE' | 'HOTEL' | 'CAFE' | 'BEAUTY' | 'GIFTS' | 'CULTURE';
+
+const SEEDER_CATEGORIES: Array<{
+  id: SeederCategory;
+  label: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+}> = [
+  { id: 'ALL', label: 'Tous', icon: Sparkles },
+  { id: 'RESTAURANT', label: 'Restaurants', icon: Utensils },
+  { id: 'LOUNGE', label: 'Lounges', icon: Martini },
+  { id: 'HOTEL', label: 'Hotels', icon: Hotel },
+  { id: 'CAFE', label: 'Cafes', icon: Coffee },
+  { id: 'BEAUTY', label: 'Spa & Beaute', icon: Flower2 },
+  { id: 'GIFTS', label: 'Fleurs & Cadeaux', icon: Gift },
+  { id: 'CULTURE', label: 'Culture & Loisirs', icon: Palette }
+];
 
 const AdminGuideSeeder: React.FC = () => {
   const [city, setCity] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState<SeederCategory[]>(['ALL']);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<SeedResult | null>(null);
+
+  const toggleCategory = (category: SeederCategory) => {
+    setSelectedCategories((current) => {
+      if (category === 'ALL') return ['ALL'];
+
+      const withoutAll = current.filter((item) => item !== 'ALL');
+      if (withoutAll.includes(category)) {
+        const next = withoutAll.filter((item) => item !== category);
+        return next.length ? next : ['ALL'];
+      }
+      return [...withoutAll, category];
+    });
+  };
 
   const handleSeed = async (event: React.FormEvent) => {
     event.preventDefault();
     const cleanCity = city.trim();
     if (!cleanCity) return;
 
-    if (!window.confirm(`Peupler le Guide avec les 20 meilleurs lieux a ${cleanCity} via Google Maps ?`)) return;
+    const categoryLabels = selectedCategories.includes('ALL')
+      ? 'toutes les categories'
+      : selectedCategories.map((id) => SEEDER_CATEGORIES.find((cat) => cat.id === id)?.label || id).join(', ');
+
+    if (!window.confirm(`Peupler le Guide avec ${categoryLabels} a ${cleanCity} via Google Maps ?`)) return;
 
     setLoading(true);
     setProgress(12);
@@ -46,10 +90,11 @@ const AdminGuideSeeder: React.FC = () => {
         createdCount: number;
         skippedCount: number;
         editorialCount: number;
+        categories?: string[];
       }>('/api/admin/venues/seed', {
         method: 'POST',
         requireAuth: true,
-        body: JSON.stringify({ city: cleanCity })
+        body: JSON.stringify({ city: cleanCity, categories: selectedCategories })
       });
 
       setProgress(100);
@@ -57,7 +102,8 @@ const AdminGuideSeeder: React.FC = () => {
         candidates: response.candidateCount || 0,
         created: response.createdCount || 0,
         skipped: response.skippedCount || 0,
-        editorial: response.editorialCount || 0
+        editorial: response.editorialCount || 0,
+        categories: response.categories || selectedCategories
       });
       showAlert('Succes', `Processus termine : ${response.createdCount || 0} lieux ajoutes.`);
     } catch (error: any) {
@@ -113,6 +159,33 @@ const AdminGuideSeeder: React.FC = () => {
                 </div>
               </div>
 
+              <div className="space-y-3">
+                <label className="ml-2 text-xs font-black uppercase tracking-prestige text-slate-400">
+                  Categories a importer
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {SEEDER_CATEGORIES.map((category) => {
+                    const Icon = category.icon;
+                    const active = selectedCategories.includes(category.id);
+                    return (
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() => toggleCategory(category.id)}
+                        className={`inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all ${
+                          active
+                            ? 'bg-slate-900 text-white shadow-lg dark:bg-white dark:text-slate-900'
+                            : 'border border-slate-100 bg-slate-50 text-slate-400 hover:border-primary/20 hover:text-primary dark:border-white/5 dark:bg-white/5 dark:text-slate-500'
+                        }`}
+                      >
+                        <Icon size={14} />
+                        {category.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <button
                 type="submit"
                 disabled={loading || !city.trim()}
@@ -152,6 +225,9 @@ const AdminGuideSeeder: React.FC = () => {
                   <p className="mt-1 text-xs font-medium text-emerald-600 dark:text-emerald-500/60">
                     {result.candidates} lieux qualifies, {result.editorial} recommandations editoriales.
                   </p>
+                  <p className="mt-2 text-[10px] font-black uppercase tracking-widest text-emerald-600/70 dark:text-emerald-400/70">
+                    Categories : {result.categories.join(', ')}
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 text-right">
@@ -176,7 +252,7 @@ const AdminGuideSeeder: React.FC = () => {
               <h3 className="text-xs font-black uppercase tracking-widest text-primary">Comment ca marche ?</h3>
             </div>
             <ul className="space-y-4 text-xs font-medium leading-relaxed text-slate-400">
-              <li>Restaurants, night clubs, bars et hotels sont cherches separement.</li>
+              <li>Chaque categorie selectionnee est cherchee separement dans Google Places.</li>
               <li>Seuls les lieux avec une note strictement superieure a 4.0 sont importes.</li>
               <li>Les doublons Google Places sont automatiquement ignores.</li>
               <li>Les lieux sont marques Conseil Galant avec le flag editorial.</li>

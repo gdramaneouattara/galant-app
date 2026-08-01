@@ -32,6 +32,8 @@ const USER_DISCOVERY_CATEGORY_TYPES = {
   CULTURE: ['museum', 'art_gallery', 'movie_theater', 'park']
 };
 
+const ADMIN_SEEDER_CATEGORY_TYPES = { ...USER_DISCOVERY_CATEGORY_TYPES };
+
 const FIELD_MASK = [
   'places.id',
   'places.displayName',
@@ -261,5 +263,6 @@ module.exports = {
   searchUserPartnerDiscovery,
   CATEGORY_QUERIES,
   USER_DISCOVERY_CATEGORY_TYPES,
+  ADMIN_SEEDER_CATEGORY_TYPES,
   MIN_PRESTIGE_RATING
 };
