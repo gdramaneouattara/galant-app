@@ -12,7 +12,8 @@ import {
   CreditCard,
   Building2,
   Send,
-  History
+  History,
+  Database
 } from 'lucide-react';
 import { hasAdminProfileAccess } from '../../lib/adminAccess';
 
@@ -38,6 +39,7 @@ const AdminLayout: React.FC = () => {
     { path: '/admin/finances', icon: CreditCard, label: 'Finances' },
     { path: '/admin/reports', icon: AlertCircle, label: 'Alertes' },
     { path: '/admin/audit', icon: History, label: 'Audit' },
+    { path: '/admin/seeder', icon: Database, label: 'Seeder' },
   ];
 
   return (

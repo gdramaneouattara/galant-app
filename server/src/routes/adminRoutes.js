@@ -6,6 +6,7 @@ const {
   getPrivacyRequests, resolvePrivacyRequest, getPhotoReviews, reviewPhoto,
   getKycRequests, reviewKyc, getBroadcastAudience, broadcastMessage, getCampaignHistory,
   getReports, resolveReport, getUsers, toggleUserStatus, getPricing, updatePricing, reconcileCounters, backfillGeohashes,
+  seedVenuesFromGoogle,
   backfillMediaVariants, cleanupMediaOrphans
 } = require('../controllers/adminController');
 
@@ -14,6 +15,7 @@ router.use(requireAdmin);
 
 router.get('/stats', getStats);
 router.get('/venues/pending', getPendingVenues);
+router.post('/venues/seed', seedVenuesFromGoogle);
 router.post('/venues/:id/approve', approveVenue);
 router.post('/venues/:id/reject', rejectVenue);
 router.post('/users/reconcile-profiles', reconcileProfiles);

@@ -4,6 +4,7 @@ const { sendPushNotification } = require('../services/notificationService');
 const { processUserAction } = require('../services/conciergeService');
 const { reconcileAllCounters, backfillProfileGeohashes } = require('../services/maintenanceService');
 const { backfillImageVariants, backfillVideoMedia, cleanupOrphanMedia } = require('../services/mediaMaintenanceService');
+const { searchVenuesInCity } = require('../services/googleMapsService');
 const pricingDefaults = require('../config/constants');
 
 const mergeRosePacks = (overrides = {}) => {
@@ -461,6 +462,42 @@ const backfillGeohashes = async (req, res) => {
   }
 };
 
+const seedVenuesFromGoogle = async (req, res) => {
+  const { city } = req.body;
+  if (!city) return res.status(400).json({ error: 'missing_city' });
+
+  try {
+    const venues = await searchVenuesInCity(city);
+    let createdCount = 0;
+    let skippedCount = 0;
+
+    for (const v of venues) {
+      // Check for duplicates
+      const existing = await db.collection('venues')
+        .where('google_place_id', '==', v.google_place_id)
+        .limit(1)
+        .get();
+
+      if (existing.empty) {
+        await db.collection('venues').add(v);
+        createdCount++;
+      } else {
+        skippedCount++;
+      }
+    }
+
+    await appendAdminAuditLog({
+      adminId: req.user.id,
+      action: 'SEED_VENUES_GOOGLE',
+      metadata: { city, createdCount, skippedCount }
+    });
+
+    res.json({ success: true, createdCount, skippedCount });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const backfillMediaVariants = async (req, res) => {
   try {
     const limit = Math.max(1, Math.min(1000, parseInt(req.body?.limit || req.query?.limit || '250', 10)));
@@ -504,5 +541,6 @@ module.exports = {
   getKycRequests, reviewKyc, getBroadcastAudience, broadcastMessage, getCampaignHistory,
   getReports, resolveReport,
   getUsers, toggleUserStatus, getPricing, updatePricing, reconcileCounters, backfillGeohashes,
+  seedVenuesFromGoogle,
   backfillMediaVariants, cleanupMediaOrphans
 };
