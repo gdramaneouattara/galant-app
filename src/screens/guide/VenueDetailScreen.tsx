@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, Pressable, Dimensions, Alert, Platform } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { ChevronLeft, MapPin, MessageCircle, Star, Sparkles, Navigation as NavigationIcon } from 'lucide-react-native';
@@ -8,26 +8,64 @@ import { apiRequest } from '../../lib/api';
 import * as Linking from 'expo-linking';
 import OptimizedImage from '../../components/OptimizedImage';
 import { optimizedPhotoUrl } from '../../lib/mediaVariants';
+import DirectMessagePurchaseModal from '../../components/DirectMessagePurchaseModal';
+import { useSubscription } from '../../hooks/useSubscription';
 
 const { width } = Dimensions.get('window');
+const DIRECT_MESSAGE_SKU = String(process.env.EXPO_PUBLIC_DIRECT_MESSAGE_SKU || 'direct_message_1').trim();
 
 const VenueDetailScreen: React.FC = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { colors, activeTheme, t } = useApp();
+  const { purchaseLoading, purchaseWithPaystack, purchaseWithStore, initIAP, endIAP } = useSubscription();
   const { venue } = route.params;
+  const [showDirectMessagePurchaseModal, setShowDirectMessagePurchaseModal] = useState(false);
 
   const photos = Array.isArray(venue.photos) && venue.photos.length > 0 ? venue.photos : [venue.photo_url];
 
+  useEffect(() => {
+    void initIAP([DIRECT_MESSAGE_SKU]);
+    return () => { void endIAP(); };
+  }, [initIAP, endIAP]);
+
+  const openVenueChat = async () => {
+    const res = await apiRequest<{ venueChatId: string }>(`/api/venues/${venue.id}/chat-thread`, {
+      method: 'POST',
+      requireAuth: true
+    });
+    navigation.navigate('Chat', { venueChatId: res.venueChatId, venueName: venue.name, venuePhoto: venue.photo_url });
+  };
+
   const startVenueChat = async () => {
     try {
-      const res = await apiRequest<{ venueChatId: string }>(`/api/venues/${venue.id}/chat-thread`, {
-        method: 'POST',
-        requireAuth: true
-      });
-      navigation.navigate('Chat', { venueChatId: res.venueChatId, venueName: venue.name, venuePhoto: venue.photo_url });
+      await openVenueChat();
     } catch (e: any) {
+      const message = String(e?.message || '');
+      if (message.includes('payment_required') || message.includes('partner_contact_requires_payment')) {
+        setShowDirectMessagePurchaseModal(true);
+        return;
+      }
       Alert.alert(t('error'), t('chat_error'));
+    }
+  };
+
+  const handleDirectMessagePaystack = async () => {
+    const ok = await purchaseWithPaystack('DIRECT_MESSAGE', 500, venue.id, {
+      targetName: venue.name,
+      targetType: 'VENUE'
+    });
+    if (ok) {
+      setShowDirectMessagePurchaseModal(false);
+      await openVenueChat();
+    }
+  };
+
+  const handleDirectMessageGoogle = async () => {
+    const ok = await purchaseWithStore(DIRECT_MESSAGE_SKU, 'DIRECT_MESSAGE', venue.id);
+    if (ok) {
+      setShowDirectMessagePurchaseModal(false);
+      await openVenueChat();
     }
   };
 
@@ -105,6 +143,14 @@ const VenueDetailScreen: React.FC = () => {
           <Text style={styles.chatBtnText}>{t('chat_host')}</Text>
         </Pressable>
       </View>
+      <DirectMessagePurchaseModal
+        visible={showDirectMessagePurchaseModal}
+        onClose={() => setShowDirectMessagePurchaseModal(false)}
+        onPurchasePaystack={handleDirectMessagePaystack}
+        onPurchaseGoogle={handleDirectMessageGoogle}
+        loading={purchaseLoading}
+        userName={venue.name}
+      />
     </SafeAreaView>
   );
 };

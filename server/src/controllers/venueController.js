@@ -1,5 +1,7 @@
 const { db } = require('../config/firebase');
+const { FieldValue } = require('firebase-admin/firestore');
 const { getLatestActiveSubscriptionForUser } = require('../services/subscriptionService');
+const { hasDirectMessagePurchase } = require('../services/usageService');
 
 const toPublicProfile = (p) => {
   if (!p) return null;
@@ -163,12 +165,62 @@ const createVenueChatThread = async (req, res) => {
   const { id } = req.params;
   const meId = req.user.id;
   try {
+    const venueDoc = await db.collection('venues').doc(id).get();
+    if (!venueDoc.exists) return res.status(404).json({ error: 'venue_not_found' });
+
+    const venue = venueDoc.data();
+    if (venue.status && venue.status !== 'APPROVED') return res.status(403).json({ error: 'venue_not_available' });
+    if (venue.owner_id === meId) return res.status(400).json({ error: 'cannot_chat_own_venue' });
+
     const chatSnap = await db.collection('venue_chats').where('user_id', '==', meId).where('venue_id', '==', id).limit(1).get();
     if (!chatSnap.empty) return res.json({ venueChatId: chatSnap.docs[0].id });
 
-    const ref = await db.collection('venue_chats').add({ user_id: meId, venue_id: id, created_at: new Date().toISOString() });
-    res.json({ venueChatId: ref.id });
-  } catch (error) { res.status(500).json({ error: error.message }); }
+    const profileRef = db.collection('profiles').doc(meId);
+    const profileSnap = await profileRef.get();
+    const profile = profileSnap.exists ? profileSnap.data() : {};
+    const hasPremiumAccess = !!(profile?.is_premium || profile?.is_vip || req.user?.is_premium || req.user?.is_vip);
+    const purchased = await hasDirectMessagePurchase(meId, id);
+    const roseBalance = Number(profile?.rose_balance || 0);
+    const now = new Date().toISOString();
+    const chatRef = db.collection('venue_chats').doc(`vchat_${meId}_${id}`);
+
+    if (!hasPremiumAccess && !purchased && roseBalance < 1) {
+      return res.status(403).json({
+        error: 'payment_required',
+        message: 'partner_contact_requires_payment'
+      });
+    }
+
+    if (!hasPremiumAccess && !purchased) {
+      await db.runTransaction(async (tx) => {
+        const existingChat = await tx.get(chatRef);
+        if (existingChat.exists) return;
+
+        const freshProfileSnap = await tx.get(profileRef);
+        const freshRoseBalance = Number(freshProfileSnap.data()?.rose_balance || 0);
+        if (freshRoseBalance < 1) {
+          const error = new Error('partner_contact_requires_payment');
+          error.code = 'payment_required';
+          throw error;
+        }
+
+        tx.update(profileRef, {
+          rose_balance: FieldValue.increment(-1),
+          updated_at: now
+        });
+        tx.set(chatRef, { user_id: meId, venue_id: id, created_at: now, unlocked_with_rose: true });
+      });
+      return res.json({ venueChatId: chatRef.id });
+    }
+
+    await chatRef.set({ user_id: meId, venue_id: id, created_at: now, unlocked_with_purchase: purchased, unlocked_with_premium: hasPremiumAccess });
+    res.json({ venueChatId: chatRef.id });
+  } catch (error) {
+    if (error?.code === 'payment_required') {
+      return res.status(403).json({ error: 'payment_required', message: 'partner_contact_requires_payment' });
+    }
+    res.status(500).json({ error: error.message });
+  }
 };
 
 const getPartnerChats = async (req, res) => {

@@ -82,6 +82,27 @@ test('vocal serenade supports one-listen playback across web and mobile', async 
   assert.match(nativeMessage, /body:\s*JSON\.stringify\(\{\s*matchId,\s*venueChatId\s*\}\)/s);
 });
 
+test('partner direct access is paid and consistent across web and mobile', async () => {
+  const venueController = await read('server/src/controllers/venueController.js');
+  const messageController = await read('server/src/controllers/messageController.js');
+  const webGuide = await read('web/src/pages/GuidePage.tsx');
+  const webVenueDetail = await read('web/src/pages/VenueDetailPage.tsx');
+  const nativeVenueDetail = await read('src/screens/guide/VenueDetailScreen.tsx');
+
+  assert.match(venueController, /hasDirectMessagePurchase\(meId,\s*id\)/);
+  assert.match(venueController, /payment_required/);
+  assert.match(venueController, /FieldValue\.increment\(-1\)/);
+  assert.match(venueController, /runTransaction/);
+  assert.match(messageController, /hasDirectMessagePurchase\(me\.id,\s*venueId\)/);
+  assert.match(messageController, /chat_not_authorized/);
+  assert.match(webGuide, /InteractionPurchaseModal/);
+  assert.match(webGuide, /event\.stopPropagation\(\)/);
+  assert.match(webVenueDetail, /venueChatId:\s*res\.venueChatId/);
+  assert.match(webVenueDetail, /InteractionPurchaseModal/);
+  assert.match(nativeVenueDetail, /DirectMessagePurchaseModal/);
+  assert.match(nativeVenueDetail, /purchaseWithPaystack\('DIRECT_MESSAGE',\s*500,\s*venue\.id/);
+});
+
 test('media v2 uses optimized rendering and browser caching on high traffic surfaces', async () => {
   const webOptimizedImage = await read('web/src/components/OptimizedImage.tsx');
   const nativeOptimizedImage = await read('src/components/OptimizedImage.tsx');

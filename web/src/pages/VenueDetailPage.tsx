@@ -14,17 +14,17 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { apiRequest } from '@shared/lib/api';
-import { useAuth } from '../context/AuthContext';
 import { showAlert } from '@shared/lib/ui-bridge';
 import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
+import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
 
 const VenueDetailPage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { t } = useAuth();
   const [venue, setVenue] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [purchaseOpen, setPurchaseOpen] = useState(false);
 
   useEffect(() => {
     const fetchVenue = async () => {
@@ -49,14 +49,33 @@ const VenueDetailPage: React.FC = () => {
     fetchVenue();
   }, [id, navigate]);
 
-  const startVenueChat = async () => {
+  const openVenueChat = async () => {
     try {
       const res = await apiRequest<{ venueChatId: string }>(`/api/venues/${id}/chat-thread`, {
         method: 'POST',
         requireAuth: true
       });
-      navigate(`/chat/${res.venueChatId}`, { state: { venueName: venue.name } });
+      navigate(`/chat/${res.venueChatId}`, {
+        state: {
+          venueChatId: res.venueChatId,
+          venueName: venue.name,
+          venuePhoto: venue.photo_url
+        }
+      });
     } catch (e: any) {
+      throw e;
+    }
+  };
+
+  const startVenueChat = async () => {
+    try {
+      await openVenueChat();
+    } catch (e: any) {
+      const message = String(e?.message || '');
+      if (message.includes('payment_required') || message.includes('partner_contact_requires_payment')) {
+        setPurchaseOpen(true);
+        return;
+      }
       showAlert('Erreur', 'Impossible d\'ouvrir la discussion.');
     }
   };
@@ -192,6 +211,17 @@ const VenueDetailPage: React.FC = () => {
           </button>
         </div>
       </div>
+      <InteractionPurchaseModal
+        isOpen={purchaseOpen}
+        onClose={() => setPurchaseOpen(false)}
+        type="DIRECT_MESSAGE"
+        targetId={id}
+        userName={venue.name || 'ce partenaire'}
+        onSuccess={() => {
+          setPurchaseOpen(false);
+          void openVenueChat();
+        }}
+      />
     </div>
   );
 };

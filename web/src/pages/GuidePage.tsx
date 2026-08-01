@@ -3,8 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { apiRequest } from '@shared/lib/api';
 import { MapPin, Star, Utensils, GlassWater, Sparkles, ChevronRight, Info, Send, MessageCircle, Car, Compass, Search, Heart, Trophy, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import ProposeVenueModal from '../components/ProposeVenueModal';
+import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
 import { showAlert } from '@shared/lib/ui-bridge';
 import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
@@ -22,12 +22,12 @@ interface Venue {
 }
 
 const GuidePage: React.FC = () => {
-  const { profile, t } = useAuth();
   const navigate = useNavigate();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pendingVenueContact, setPendingVenueContact] = useState<Venue | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<'ALL' | 'RESTAURANT' | 'LOUNGE' | 'HOTEL'>('ALL');
 
@@ -88,31 +88,34 @@ const GuidePage: React.FC = () => {
     return matchesSearch && matchesCategory;
   });
 
+  const openVenueChat = async (venue: Venue) => {
+    const res = await apiRequest<{ venueChatId: string }>(`/api/venues/${venue.id}/chat-thread`, {
+      method: 'POST',
+      requireAuth: true
+    });
+    navigate(`/chat/${res.venueChatId}`, {
+      state: {
+        venueChatId: res.venueChatId,
+        venueName: venue.name,
+        venuePhoto: venue.photo_url
+      }
+    });
+  };
+
   const handleContactVenue = async (venue: Venue) => {
     if (venue.is_editorial) {
       showAlert('Guide Galant', 'Ce lieu est une recommandation editoriale. Vous pouvez le proposer a un match ou lancer un trajet.');
       return;
     }
 
-    if (!profile?.is_premium && !profile?.is_vip && (profile?.rose_balance || 0) < 1) {
-      showAlert('Acces Conciergerie', 'Le chat direct avec les etablissements est un privilege Premium.');
-      navigate('/premium');
-      return;
-    }
-
     try {
-      const res = await apiRequest<{ venueChatId: string }>(`/api/venues/${venue.id}/chat-thread`, {
-        method: 'POST',
-        requireAuth: true
-      });
-      navigate(`/chat/${res.venueChatId}`, {
-        state: {
-          venueChatId: res.venueChatId,
-          venueName: venue.name,
-          venuePhoto: venue.photo_url
-        }
-      });
+      await openVenueChat(venue);
     } catch (error: any) {
+      const message = String(error?.message || '');
+      if (message.includes('payment_required') || message.includes('partner_contact_requires_payment')) {
+        setPendingVenueContact(venue);
+        return;
+      }
       showAlert('Erreur', error.message || 'Impossible d ouvrir la discussion.');
     }
   };
@@ -266,14 +269,14 @@ const GuidePage: React.FC = () => {
               <div className="mt-auto space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <button
-                    onClick={() => { setSelectedVenue(venue); setIsModalOpen(true); }}
+                    onClick={(event) => { event.stopPropagation(); setSelectedVenue(venue); setIsModalOpen(true); }}
                     className="py-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-2 hover:bg-black dark:hover:bg-slate-100 transition-all shadow-xl shadow-slate-900/10 dark:shadow-none active:scale-95 group/btn"
                   >
                     <Send size={14} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
                     Proposer
                   </button>
                   <button
-                    onClick={() => handleYangoRide(venue)}
+                    onClick={(event) => { event.stopPropagation(); handleYangoRide(venue); }}
                     className="py-4 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-white/10 text-slate-400 dark:text-slate-500 font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-all active:scale-95"
                   >
                     <Car size={16} />
@@ -282,7 +285,7 @@ const GuidePage: React.FC = () => {
                 </div>
 
                 <button
-                  onClick={() => handleContactVenue(venue)}
+                  onClick={(event) => { event.stopPropagation(); handleContactVenue(venue); }}
                   className="w-full py-5 rounded-2xl bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/20 text-primary font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-3 hover:bg-primary dark:hover:bg-rose-500 hover:text-white transition-all group/chat active:scale-95 shadow-lg shadow-rose-500/5 dark:shadow-none"
                 >
                   <MessageCircle size={18} fill="currentColor" className="opacity-20 group-hover/chat:opacity-100 transition-opacity" />
@@ -315,6 +318,18 @@ const GuidePage: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         venue={selectedVenue}
+      />
+      <InteractionPurchaseModal
+        isOpen={!!pendingVenueContact}
+        onClose={() => setPendingVenueContact(null)}
+        type="DIRECT_MESSAGE"
+        targetId={pendingVenueContact?.id}
+        userName={pendingVenueContact?.name || 'ce partenaire'}
+        onSuccess={() => {
+          const venue = pendingVenueContact;
+          setPendingVenueContact(null);
+          if (venue) void openVenueChat(venue);
+        }}
       />
     </div>
   );
