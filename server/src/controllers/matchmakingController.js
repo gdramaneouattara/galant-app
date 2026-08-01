@@ -352,11 +352,6 @@ const getSuggestions = async (req, res) => {
         super_liked_me: incomingSuperLikesByCandidate.has(c.id),
         has_golden_rose: goldenRoseUserIds.has(c.id),
       };
-        distance_km: Number.isFinite(distanceKm) ? parseFloat(distanceKm.toFixed(1)) : null,
-        discovery_tier: discoveryTier,
-        super_liked_me: incomingSuperLikesByCandidate.has(c.id),
-        has_golden_rose: goldenRoseUserIds.has(c.id),
-      };
     }).filter(Boolean);
 
     const suggestions = searchQuery
