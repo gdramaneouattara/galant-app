@@ -62,6 +62,7 @@ const AdminKyc = lazy(() => import('./pages/admin/AdminKyc'));
 const AdminMessaging = lazy(() => import('./pages/admin/AdminMessaging'));
 const AdminVenues = lazy(() => import('./pages/admin/AdminVenues'));
 const AdminAuditLogs = lazy(() => import('./pages/admin/AdminAuditLogs'));
+const AdminGuideSeeder = lazy(() => import('./pages/admin/AdminGuideSeeder'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminFinances = lazy(() => import('./pages/admin/AdminFinances'));
 const AdminReports = lazy(() => import('./pages/admin/AdminReports'));
@@ -298,6 +299,7 @@ const AppContent: React.FC = () => {
               <Route path="finances" element={<AdminFinances />} />
               <Route path="reports" element={<AdminReports />} />
               <Route path="audit" element={<AdminAuditLogs />} />
+              <Route path="seeder" element={<AdminGuideSeeder />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

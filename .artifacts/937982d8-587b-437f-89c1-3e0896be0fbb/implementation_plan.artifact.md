@@ -1,33 +1,39 @@
-# Planification de l'Appel Fantôme (La Sentinelle)
+# Remplissage Automatique du Guide (Google Maps Integration)
 
-Ce plan vise à permettre aux utilisateurs de programmer le déclenchement de l'Appel Fantôme après un délai défini, pour une simulation de sortie de secours plus naturelle.
+Ce plan vise à doter l'administrateur d'un outil permettant de peupler instantanément le guide Galant avec les établissements les plus prestigieux d'une ville, en utilisant les données de Google Places.
 
 ## Proposed Changes
 
-### [Web Mobile] Interface de Sécurité
+### [Server] Service d'Intégration Google
 
-#### [MODIFY] [SentinelPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/SentinelPage.tsx)
-- **Sélecteur de Temps** :
-    - Ajouter une section "Quand sonner ?" dans la carte Appel Fantôme.
-    - Proposer des options : `0 (Immédiat)`, `1 min`, `2 min`, `5 min`.
-- **Logique de Temporisation** :
-    - Créer un état `scheduledCallTime` pour stocker le moment du futur appel.
-    - Implémenter un compte à rebours visuel discret pendant la phase d'attente.
-    - Déclencher l'overlay d'appel et la sonnerie automatiquement à l'échéance.
-- **Vibration de Prévention** :
-    - Utiliser l'API `navigator.vibrate` pour émettre une brève vibration 5 secondes avant le début de la sonnerie, afin d'avertir l'utilisateur discrètement.
+#### [NEW] [googleMapsService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/googleMapsService.js)
+- Implémentation de la recherche de lieux via `https://places.googleapis.com/v1/places:searchText`.
+- Filtrage par catégories : `restaurant`, `night_club`, `bar`, `lodging`.
+- Extraction des données : Nom, adresse, coordonnées GPS, note, et URL des photos.
+
+#### [MODIFY] [adminController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/adminController.js)
+- Ajouter une fonction `seedVenuesFromGoogle` qui reçoit une ville, appelle le service Google, et enregistre les résultats dans Firestore sous le statut `EDITORIAL` ou `APPROVED`.
+
+### [Web Mobile] Outil d'Administration
+
+#### [NEW] [AdminGuideSeeder.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminGuideSeeder.tsx)
+- Une nouvelle page dans l'espace Admin.
+- Un champ de saisie pour la ville (ex: "Abidjan").
+- Un bouton "Peupler le Guide" avec barre de progression.
+
+### [Shared] Modèle de Données
+
+- Ajouter un flag `is_editorial: boolean` sur les établissements pour distinguer les lieux "Partenaires" (qui ont un compte admin) des lieux "Suggérés" (récupérés sur Google).
 
 ## User Review Required
 
-> [!TIP]
-> **Scénario d'usage** : Vous sentez que le rendez-vous devient inconfortable. Vous prétextez d'aller aux toilettes ou de regarder l'heure, vous réglez l'appel sur "2 minutes". Vous rangez votre téléphone. 2 minutes plus tard, "Bureau" vous appelle alors que vous êtes à table, vous offrant le prétexte parfait pour partir.
+> [!CAUTION]
+> **Clé API Google Maps** : Vous devrez fournir une clé API valide avec "Places API" activé dans votre console Google Cloud. Sans cette clé, l'outil ne pourra pas fonctionner.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Ouvrir **La Sentinelle**.
-2.  Régler l'appel fantôme sur "1 minute".
-3.  Cliquer sur "Lancer la programmation".
-4.  Vérifier qu'un compte à rebours s'affiche et que l'interface reste réactive.
-5.  Attendre 1 minute : vérifier que la sonnerie se déclenche et que l'interface Galant disparaît (Immersion totale).
-6.  Tester l'annulation d'un appel programmé.
+1.  Aller dans **Admin > Audit > Outils (Seeder)**.
+2.  Taper "Douala" et lancer le processus.
+3.  Vérifier dans l'onglet **Sorties (Guide)** que 20 nouvelles adresses sont apparues avec leurs photos et notes Google.
+4.  Vérifier qu'elles sont bien marquées comme "Conseil Galant" ou "Recommandation".
