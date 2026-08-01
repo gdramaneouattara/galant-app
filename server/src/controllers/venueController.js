@@ -2,6 +2,9 @@ const { db } = require('../config/firebase');
 const { FieldValue } = require('firebase-admin/firestore');
 const { getLatestActiveSubscriptionForUser } = require('../services/subscriptionService');
 const { hasDirectMessagePurchase } = require('../services/usageService');
+const { searchUserPartnerDiscovery } = require('../services/googleMapsService');
+
+const PARTNER_DISCOVERY_PRICE = 500;
 
 const toPublicProfile = (p) => {
   if (!p) return null;
@@ -57,6 +60,72 @@ const getVenueRecommendations = async (req, res) => {
 
     res.json({ venues: venues.slice(0, 5) });
   } catch (error) { res.status(500).json({ error: error.message }); }
+};
+
+const canUsePartnerDiscovery = (profile = {}) => (
+  !!profile.is_premium ||
+  !!profile.is_vip ||
+  !!profile.partner_discovery_unlocked
+);
+
+const getPartnerDiscoveryAccess = async (req, res) => {
+  res.json({
+    hasAccess: canUsePartnerDiscovery(req.user),
+    requiresPayment: !canUsePartnerDiscovery(req.user),
+    priceAmount: PARTNER_DISCOVERY_PRICE,
+    purchaseType: 'PARTNER_DISCOVERY_UNLOCK'
+  });
+};
+
+const discoverGooglePartners = async (req, res) => {
+  if (!canUsePartnerDiscovery(req.user)) {
+    return res.status(403).json({
+      error: 'payment_required',
+      message: 'partner_discovery_requires_payment',
+      priceAmount: PARTNER_DISCOVERY_PRICE,
+      purchaseType: 'PARTNER_DISCOVERY_UNLOCK'
+    });
+  }
+
+  const city = String(req.query.city || req.user.city || '').trim();
+  const latitude = req.query.latitude ?? req.user.latitude;
+  const longitude = req.query.longitude ?? req.user.longitude;
+  const radiusKm = Math.max(1, Math.min(50, Number(req.query.radiusKm || 15)));
+  const category = String(req.query.category || 'ALL').trim().toUpperCase();
+
+  if (!city && (!Number.isFinite(Number(latitude)) || !Number.isFinite(Number(longitude)))) {
+    return res.status(400).json({ error: 'missing_city_or_location' });
+  }
+
+  try {
+    const venues = await searchUserPartnerDiscovery({
+      city,
+      latitude,
+      longitude,
+      radiusKm,
+      limit: 20,
+      category
+    });
+
+    res.json({
+      venues,
+      source: 'GOOGLE_PLACES_DIRECT',
+      city: city || null,
+      category,
+      radiusKm,
+      access: {
+        includedWithPremium: !!(req.user.is_premium || req.user.is_vip),
+        unlocked: !!req.user.partner_discovery_unlocked
+      }
+    });
+  } catch (error) {
+    const payload = { error: error.message };
+    if (error.details) payload.details = error.details;
+    if (error.googleStatus) payload.googleStatus = error.googleStatus;
+    if (error.googleCode) payload.googleCode = error.googleCode;
+    if (error.categoryErrors) payload.categoryErrors = error.categoryErrors;
+    res.status(500).json(payload);
+  }
 };
 
 const getAgendaEvents = async (req, res) => {
@@ -312,7 +381,8 @@ const logVenueView = async (req, res) => {
 };
 
 module.exports = {
-  getVenues, getVenueRecommendations, getAgendaEvents, createPartnerEvent, deletePartnerEvent,
+  getVenues, getVenueRecommendations, getPartnerDiscoveryAccess, discoverGooglePartners,
+  getAgendaEvents, createPartnerEvent, deletePartnerEvent,
   createVenueChatThread, getPartnerChats, getUserVenueChats, getMyVenue, updateVenue,
   updateVenuePhotos, getVenueStats, logVenueView, attendEvent, unattendEvent
 };

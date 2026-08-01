@@ -131,6 +131,51 @@ test('Rules: Admin Guide Seeder imports prestigious Google Places editorial venu
   assert.match(adminLayout, /\/admin\/seeder/);
 });
 
+test('Rules: Apps exposes paid user partner discovery with direct Google import', async () => {
+  const googleMapsService = await read('server/src/services/googleMapsService.js');
+  const venueController = await read('server/src/controllers/venueController.js');
+  const venueRoutes = await read('server/src/routes/venueRoutes.js');
+  const constants = await read('server/src/config/constants.js');
+  const paymentHelpers = await read('server/src/utils/paymentHelpers.js');
+  const subscriptionService = await read('server/src/services/subscriptionService.js');
+  const webApps = await read('web/src/pages/AppsPage.tsx');
+  const nativeApps = await read('src/screens/apps/AppsScreen.tsx');
+  const purchaseHook = await read('src/hooks/useSubscription.ts');
+
+  assert.match(googleMapsService, /searchUserPartnerDiscovery/);
+  assert.match(googleMapsService, /GOOGLE_PLACES_DIRECT/);
+  assert.match(googleMapsService, /locationBias/);
+  assert.match(googleMapsService, /USER_DISCOVERY_CATEGORY_TYPES/);
+  assert.match(googleMapsService, /CAFE:\s*\['cafe'\]/);
+  assert.match(googleMapsService, /BEAUTY:\s*\['spa',\s*'beauty_salon'\]/);
+  assert.match(googleMapsService, /GIFTS:\s*\['florist',\s*'gift_shop'\]/);
+  assert.match(googleMapsService, /CULTURE:\s*\['museum',\s*'art_gallery',\s*'movie_theater',\s*'park'\]/);
+  assert.match(venueController, /discoverGooglePartners/);
+  assert.match(venueController, /req\.query\.category/);
+  assert.match(venueController, /partner_discovery_unlocked/);
+  assert.match(venueController, /partner_discovery_requires_payment/);
+  assert.match(venueRoutes, /\/partner-discovery\/google/);
+  assert.match(venueRoutes, /\/partner-discovery\/access/);
+  assert.match(constants, /PARTNER_DISCOVERY_UNLOCK:\s*parseInt\(process\.env\.PARTNER_DISCOVERY_UNLOCK_AMOUNT \|\| '500'\)/);
+  assert.match(paymentHelpers, /PARTNER_DISCOVERY_UNLOCK/);
+  assert.match(subscriptionService, /partner_discovery_unlocked:\s*true/);
+  assert.match(webApps, /PARTNER_DISCOVERY_UNLOCK/);
+  assert.match(webApps, /\/api\/venues\/partner-discovery\/google/);
+  assert.match(webApps, /DISCOVERY_CATEGORIES/);
+  assert.match(webApps, /category/);
+  assert.match(webApps, /Spa & Beaute/);
+  assert.match(webApps, /Fleurs & Cadeaux/);
+  assert.match(webApps, /Culture & Loisirs/);
+  assert.match(nativeApps, /PARTNER_DISCOVERY_UNLOCK/);
+  assert.match(nativeApps, /\/api\/venues\/partner-discovery\/google/);
+  assert.match(nativeApps, /DISCOVERY_CATEGORIES/);
+  assert.match(nativeApps, /CAFE/);
+  assert.match(nativeApps, /BEAUTY/);
+  assert.match(nativeApps, /GIFTS/);
+  assert.match(nativeApps, /CULTURE/);
+  assert.match(purchaseHook, /PARTNER_DISCOVERY_UNLOCK/);
+});
+
 test('Rules: ProfileScreen manages internationalization', async () => {
   const code = await read('src/screens/profile/ProfileScreen.tsx');
   assert.match(code, /language/);

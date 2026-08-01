@@ -231,6 +231,22 @@ const applyPurchasedEntitlement = async ({
       is_grid_unlocked: true, // Legacy flag if needed
       updated_at: new Date().toISOString()
     });
+  } else if (normalizedType === 'PARTNER_DISCOVERY_UNLOCK') {
+    const pricing = await getCurrentPricing();
+    await db.collection('purchased_interactions').add({
+      user_id: userId,
+      interaction_type: 'PARTNER_DISCOVERY_UNLOCK',
+      reference,
+      price_amount: pricing.PRICES.PARTNER_DISCOVERY_UNLOCK,
+      provider: paymentMethod,
+      created_at: new Date().toISOString()
+    });
+
+    await db.collection('profiles').doc(userId).update({
+      partner_discovery_unlocked: true,
+      partner_discovery_unlocked_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    });
   }
 
   return { success: true };

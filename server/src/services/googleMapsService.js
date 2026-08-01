@@ -9,8 +9,28 @@ const CATEGORY_QUERIES = [
   { googleType: 'restaurant', venueType: 'RESTAURANT', label: 'restaurants gastronomiques' },
   { googleType: 'night_club', venueType: 'LOUNGE', label: 'lounges premium' },
   { googleType: 'bar', venueType: 'LOUNGE', label: 'bars lounge premium' },
-  { googleType: 'hotel', venueType: 'HOTEL', label: 'hotels de luxe' }
+  { googleType: 'hotel', venueType: 'HOTEL', label: 'hotels de luxe' },
+  { googleType: 'cafe', venueType: 'CAFE', label: 'cafes elegants' },
+  { googleType: 'spa', venueType: 'BEAUTY', label: 'spas premium' },
+  { googleType: 'beauty_salon', venueType: 'BEAUTY', label: 'instituts de beaute haut standing' },
+  { googleType: 'florist', venueType: 'GIFTS', label: 'fleuristes elegants' },
+  { googleType: 'gift_shop', venueType: 'GIFTS', label: 'boutiques cadeaux romantiques' },
+  { googleType: 'museum', venueType: 'CULTURE', label: 'musees et lieux culturels' },
+  { googleType: 'art_gallery', venueType: 'CULTURE', label: 'galeries d art' },
+  { googleType: 'movie_theater', venueType: 'CULTURE', label: 'cinemas premium' },
+  { googleType: 'park', venueType: 'CULTURE', label: 'parcs et promenades' }
 ];
+
+const USER_DISCOVERY_CATEGORY_TYPES = {
+  ALL: CATEGORY_QUERIES.map((category) => category.googleType),
+  RESTAURANT: ['restaurant'],
+  LOUNGE: ['night_club', 'bar'],
+  HOTEL: ['hotel'],
+  CAFE: ['cafe'],
+  BEAUTY: ['spa', 'beauty_salon'],
+  GIFTS: ['florist', 'gift_shop'],
+  CULTURE: ['museum', 'art_gallery', 'movie_theater', 'park']
+};
 
 const FIELD_MASK = [
   'places.id',
@@ -20,7 +40,10 @@ const FIELD_MASK = [
   'places.rating',
   'places.userRatingCount',
   'places.types',
-  'places.photos'
+  'places.photos',
+  'places.googleMapsUri',
+  'places.websiteUri',
+  'places.internationalPhoneNumber'
 ].join(',');
 
 const normalizePlaceName = (place) => String(place?.displayName?.text || '').trim();
@@ -59,6 +82,9 @@ const toVenue = (place, city, category) => {
     rating: Number(place.rating),
     user_ratings_total: Number(place.userRatingCount || 0),
     google_types: place.types || [],
+    google_maps_uri: place.googleMapsUri || null,
+    website_url: place.websiteUri || null,
+    phone_number: place.internationalPhoneNumber || null,
     venue_type: category.venueType,
     photo_url: buildPhotoUrl(place),
     description: `Une adresse d'exception selectionnee par la Conciergerie Galant a ${city}.`,
@@ -70,15 +96,45 @@ const toVenue = (place, city, category) => {
   };
 };
 
-const searchCategory = async (city, category) => {
-  const response = await axios.post(GOOGLE_TEXT_SEARCH_URL, {
-    textQuery: `best ${category.label} in ${city}`,
+const hasCoordinates = (latitude, longitude) => (
+  Number.isFinite(Number(latitude)) &&
+  Number.isFinite(Number(longitude)) &&
+  Math.abs(Number(latitude)) <= 90 &&
+  Math.abs(Number(longitude)) <= 180
+);
+
+const buildSearchBody = (city, category, options = {}) => {
+  const useLocationBias = hasCoordinates(options.latitude, options.longitude);
+  const body = {
+    textQuery: useLocationBias
+      ? `best ${category.label} nearby`
+      : `best ${category.label} in ${city}`,
     languageCode: 'fr',
     includedType: category.googleType,
     strictTypeFiltering: true,
     minRating: MIN_PRESTIGE_RATING,
     pageSize: 10
-  }, {
+  };
+
+  if (useLocationBias) {
+    const radiusMeters = Math.max(1000, Math.min(50000, Number(options.radiusKm || 15) * 1000));
+    body.locationBias = {
+      circle: {
+        center: {
+          latitude: Number(options.latitude),
+          longitude: Number(options.longitude)
+        },
+        radius: radiusMeters
+      }
+    };
+    body.rankPreference = 'DISTANCE';
+  }
+
+  return body;
+};
+
+const searchCategory = async (city, category, options = {}) => {
+  const response = await axios.post(GOOGLE_TEXT_SEARCH_URL, buildSearchBody(city, category, options), {
     headers: {
       'Content-Type': 'application/json',
       'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
@@ -92,21 +148,22 @@ const searchCategory = async (city, category) => {
     .map((place) => toVenue(place, city, category));
 };
 
-const searchVenuesInCity = async (
+const searchGoogleVenueCandidates = async (
   city,
   types = CATEGORY_QUERIES.map((category) => category.googleType),
-  limit = DEFAULT_LIMIT
+  limit = DEFAULT_LIMIT,
+  options = {}
 ) => {
   if (!GOOGLE_MAPS_API_KEY) throw new Error('missing_google_maps_api_key');
 
-  const cleanCity = String(city || '').trim();
-  if (!cleanCity) throw new Error('missing_city');
+  const cleanCity = String(city || options.city || '').trim();
+  if (!cleanCity && !hasCoordinates(options.latitude, options.longitude)) throw new Error('missing_city_or_location');
 
   try {
     const requestedTypes = new Set((types || []).map(normalizeRequestedType).filter(Boolean));
     const categories = CATEGORY_QUERIES.filter((category) => requestedTypes.has(category.googleType));
     const settled = await Promise.allSettled(
-      categories.map((category) => searchCategory(cleanCity, category))
+      categories.map((category) => searchCategory(cleanCity || 'Autour de vous', category, options))
     );
     const batches = settled
       .filter((entry) => entry.status === 'fulfilled')
@@ -168,4 +225,41 @@ const searchVenuesInCity = async (
   }
 };
 
-module.exports = { searchVenuesInCity, CATEGORY_QUERIES, MIN_PRESTIGE_RATING };
+const searchVenuesInCity = async (
+  city,
+  types = CATEGORY_QUERIES.map((category) => category.googleType),
+  limit = DEFAULT_LIMIT
+) => searchGoogleVenueCandidates(city, types, limit);
+
+const searchUserPartnerDiscovery = async ({
+  city,
+  latitude,
+  longitude,
+  radiusKm = 15,
+  limit = DEFAULT_LIMIT,
+  category = 'ALL'
+}) => {
+  const normalizedCategory = String(category || 'ALL').trim().toUpperCase();
+  const requestedTypes = USER_DISCOVERY_CATEGORY_TYPES[normalizedCategory] || USER_DISCOVERY_CATEGORY_TYPES.ALL;
+  const venues = await searchGoogleVenueCandidates(city, requestedTypes, limit, {
+    city,
+    latitude,
+    longitude,
+    radiusKm
+  });
+
+  return venues.map((venue) => ({
+    ...venue,
+    id: `google_${venue.google_place_id}`,
+    source: 'GOOGLE_PLACES_DIRECT',
+    is_user_discovery: true
+  }));
+};
+
+module.exports = {
+  searchVenuesInCity,
+  searchUserPartnerDiscovery,
+  CATEGORY_QUERIES,
+  USER_DISCOVERY_CATEGORY_TYPES,
+  MIN_PRESTIGE_RATING
+};
