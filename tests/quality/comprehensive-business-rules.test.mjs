@@ -62,6 +62,7 @@ test('Rules: Sentinel fake call is wired on web and mobile', async () => {
   assert.match(nativeSentinel, /triggerFakeCall/);
   assert.match(nativeSentinel, /Vibration/);
   assert.match(nativeSentinel, /fake_call/);
+  assert.match(webSentinel, /const \{[^}]*t[^}]*\} = useAuth\(\)/s);
   assert.match(webSentinel, /playRingtonePulse/);
   assert.match(webSentinel, /isFakeCallActive/);
 });

@@ -11,7 +11,7 @@ interface SentinelContact {
 }
 
 const SentinelPage: React.FC = () => {
-  const { profile, reloadUser, isFakeCallActive, setIsFakeCallActive } = useAuth();
+  const { profile, reloadUser, isFakeCallActive, setIsFakeCallActive, t } = useAuth();
   const navigate = useNavigate();
   const [activeTimer, setActiveTimer] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
