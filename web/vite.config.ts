@@ -21,6 +21,10 @@ export default defineConfig(({ mode }) => {
         name: 'Galant - L\'Élégance à chaque rencontre',
         short_name: 'Galant',
         description: 'La première plateforme de rencontre premium en Afrique Centrale.',
+        lang: 'fr',
+        id: './',
+        start_url: './',
+        scope: './',
         theme_color: '#ef4444',
         background_color: '#f8fafc',
         display: 'standalone', // Mode "App" sans barre d'adresse
