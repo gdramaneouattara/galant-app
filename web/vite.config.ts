@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
       react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      includeAssets: ['galant-logo-web.png', 'favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: 'Galant - L\'Élégance à chaque rencontre',
         short_name: 'Galant',
