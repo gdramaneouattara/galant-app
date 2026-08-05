@@ -196,6 +196,21 @@ test('Rules: Guide venue detail returns to the selected venue instead of agenda'
   assert.match(webVenueDetail, /scrollToVenueId:\s*routeState\.scrollToVenueId \|\| venue\?\.id/);
 });
 
+test('Rules: Web mobile PWA reinstall help and Experiences rail stay usable', async () => {
+  const pwaPrompt = await read('web/src/components/PWAInstallPrompt.tsx');
+  const experiencesPage = await read('web/src/pages/ExperiencesPage.tsx');
+
+  assert.match(pwaPrompt, /INSTALL_HELP_SEEN_KEY/);
+  assert.match(pwaPrompt, /md:hidden/);
+  assert.match(pwaPrompt, /Ouvrir Galant/);
+  assert.match(pwaPrompt, /liste des applications/);
+  assert.match(pwaPrompt, /appinstalled/);
+  assert.match(experiencesPage, /isTabRailCompact/);
+  assert.match(experiencesPage, /window\.addEventListener\('scroll'/);
+  assert.match(experiencesPage, /window\.innerWidth < 768/);
+  assert.match(experiencesPage, /-translate-y-3/);
+});
+
 test('Rules: Back navigation uses safe fallbacks across web and native surfaces', async () => {
   const navigationBack = await read('src/lib/navigationBack.ts');
   const nativeFiles = [
