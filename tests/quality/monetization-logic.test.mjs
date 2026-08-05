@@ -73,6 +73,17 @@ test('Monetization: Partner plans are present', async () => {
   assert.match(code, /PARTNER_PRESTIGE_AMOUNT/);
 });
 
+test('Monetization: all web purchase types map to backend prices', async () => {
+  const hook = await read('src/hooks/useSubscription.ts');
+  const helpers = await read('server/src/utils/paymentHelpers.js');
+
+  assert.match(hook, /DISCOVER_GRID_UNLOCK/);
+  assert.match(hook, /PARTNER_PREMIUM/);
+  assert.match(helpers, /DISCOVER_GRID_UNLOCK/);
+  assert.match(helpers, /PARTNER_DISCOVERY_UNLOCK/);
+  assert.match(helpers, /PARTNER_PLAN_AMOUNTS\[normalizedPlanId\]/);
+});
+
 test('Payments: all payment handlers are exported and routed', async () => {
   const controller = await read('server/src/controllers/paymentController.js');
   const routes = await read('server/src/routes/paymentRoutes.js');
@@ -83,4 +94,20 @@ test('Payments: all payment handlers are exported and routed', async () => {
   assert.match(routes, /router\.post\(['"]\/google-verify['"],\s*requireAuth,\s*googleVerify\)/);
   assert.match(routes, /router\.post\(['"]\/apple-verify['"],\s*requireAuth,\s*appleVerify\)/);
   assert.match(routes, /router\.post\(['"]\/webhook['"],\s*handleWebhook\)/);
+});
+
+test('Payments: web Paystack returns are verified after checkout', async () => {
+  const hook = await read('src/hooks/useSubscription.ts');
+  const app = await read('web/src/App.tsx');
+  const returnPage = await read('web/src/pages/PaymentReturnPage.tsx');
+  const controller = await read('server/src/controllers/paymentController.js');
+
+  assert.match(hook, /callbackUrl/);
+  assert.match(hook, /\/payment-return/);
+  assert.match(hook, /next=/);
+  assert.match(controller, /callbackUrl/);
+  assert.match(controller, /requestOrigin/);
+  assert.match(controller, /callback_url:\s*PAYSTACK_CALLBACK_URL/);
+  assert.match(app, /path="\/payment-return"/);
+  assert.match(returnPage, /\/api\/payments\/verify\?reference=/);
 });

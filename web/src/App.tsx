@@ -36,6 +36,7 @@ const ChatPage = lazy(() => import('./pages/ChatPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ProfileDetailPage = lazy(() => import('./pages/ProfileDetailPage'));
 const PremiumPage = lazy(() => import('./pages/PremiumPage'));
+const PaymentReturnPage = lazy(() => import('./pages/PaymentReturnPage'));
 const VerifyPage = lazy(() => import('./pages/VerifyPage'));
 const PartnerDashboard = lazy(() => import('./pages/PartnerDashboard'));
 const PartnerPremiumPage = lazy(() => import('./pages/PartnerPremiumPage'));
@@ -281,6 +282,7 @@ const AppContent: React.FC = () => {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/profile/:id" element={<ProfileDetailPage />} />
             <Route path="/premium" element={<PremiumPage />} />
+            <Route path="/payment-return" element={<PaymentReturnPage />} />
             <Route path="/agenda" element={<AgendaPage />} />
             <Route path="/guide" element={<GuidePage />} />
             <Route path="/experiences" element={<ExperiencesPage />} />

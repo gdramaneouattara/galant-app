@@ -6,7 +6,7 @@ import { openPaymentUrl } from '../lib/payment-bridge';
 // Détection Web/Mobile
 const isWeb = typeof window !== 'undefined' && !((window as any).expo);
 
-export type PurchaseType = 'SUPER_LIKE' | 'DIRECT_MESSAGE' | 'BOOST' | 'PREMIUM' | 'ROSE_NOTE_UNLOCK' | 'STORY_UPLOAD' | 'LIKES_INBOX_2H' | 'GOLDEN_ROSE' | 'ROSE_PACK' | 'PARTNER_DISCOVERY_UNLOCK';
+export type PurchaseType = 'SUPER_LIKE' | 'DIRECT_MESSAGE' | 'BOOST' | 'PREMIUM' | 'PARTNER_PREMIUM' | 'ROSE_NOTE_UNLOCK' | 'STORY_UPLOAD' | 'LIKES_INBOX_2H' | 'DISCOVER_GRID_UNLOCK' | 'GOLDEN_ROSE' | 'ROSE_PACK' | 'PARTNER_DISCOVERY_UNLOCK';
 
 export const useSubscription = () => {
   const [purchaseLoading, setPurchaseLoading] = useState(false);
@@ -35,6 +35,10 @@ export const useSubscription = () => {
   ): Promise<boolean> => {
     try {
       setPurchaseLoading(true);
+      const currentPath = isWeb ? `${window.location.pathname}${window.location.search}` : '/profile';
+      const callbackUrl = isWeb
+        ? `${window.location.origin}/payment-return?next=${encodeURIComponent(currentPath)}`
+        : undefined;
       const init = await apiRequest<{ authorization_url: string; reference: string }>(
         '/api/payments/initialize',
         {
@@ -45,6 +49,7 @@ export const useSubscription = () => {
             type,
             targetId,
             paymentMethod: 'MOBILE_MONEY',
+            callbackUrl,
             ...(metadata || {}),
             metadata
           }),

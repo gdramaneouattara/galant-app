@@ -8,7 +8,7 @@ const {
 } = require('../services/subscriptionService');
 
 const initializePayment = async (req, res) => {
-  const { planId, type, targetId, paymentMethod, note } = req.body;
+  const { planId, type, targetId, paymentMethod, note, callbackUrl } = req.body;
   const email = req.authUser?.email || `${req.user.id}@galant.app`;
   const normalizedType = String(type || '').toUpperCase();
   const normalizedPlanId = String(planId || '').toUpperCase();
@@ -17,7 +17,22 @@ const initializePayment = async (req, res) => {
   const roundedAmount = Math.round(Number(expectedAmount || 0) * 100);
 
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
-  const PAYSTACK_CALLBACK_URL = process.env.PAYSTACK_CALLBACK_URL || 'galant://payment-callback';
+  const configuredCallbackUrl = process.env.PAYSTACK_CALLBACK_URL || 'galant://payment-callback';
+  const requestedCallbackUrl = String(callbackUrl || '').trim();
+  const requestOrigin = String(req.get('origin') || '').replace(/\/$/, '');
+  let PAYSTACK_CALLBACK_URL = configuredCallbackUrl;
+
+  try {
+    const parsedCallbackUrl = new URL(requestedCallbackUrl);
+    const callbackOrigin = `${parsedCallbackUrl.protocol}//${parsedCallbackUrl.host}`;
+    const isMobileDeepLink = parsedCallbackUrl.protocol === 'galant:';
+    const isSameWebOrigin = ['http:', 'https:'].includes(parsedCallbackUrl.protocol) && requestOrigin && callbackOrigin === requestOrigin;
+    if (isMobileDeepLink || isSameWebOrigin) {
+      PAYSTACK_CALLBACK_URL = requestedCallbackUrl;
+    }
+  } catch (_) {
+    PAYSTACK_CALLBACK_URL = configuredCallbackUrl;
+  }
 
   if (!PAYSTACK_SECRET_KEY) return res.status(500).json({ error: 'paystack_not_configured' });
   if (!Number.isFinite(roundedAmount) || roundedAmount <= 0 || expectedAmount === null) {
