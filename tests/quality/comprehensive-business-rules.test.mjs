@@ -339,10 +339,13 @@ test('Rules: ProfileScreen manages internationalization', async () => {
 test('Rules: Dark appearance is the default on web and native', async () => {
   const webAuthContext = await read('web/src/context/AuthContext.tsx');
   const nativeAppContext = await read('src/state/AppContext.tsx');
+  const nativeApp = await read('App.tsx');
 
   assert.match(webAuthContext, /activeTheme:\s*'dark'/);
   assert.match(webAuthContext, /return 'dark';/);
   assert.match(nativeAppContext, /useState<AppThemePreference>\('dark'\)/);
+  assert.match(nativeApp, /activeTheme/);
+  assert.match(nativeApp, /StatusBar style=\{activeTheme === 'dark' \? 'light' : 'dark'\}/);
 });
 
 test('Rules: AppContext syncs is_vip', async () => {

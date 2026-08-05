@@ -25,11 +25,11 @@ Notifications.setNotificationHandler({
 });
 
 const AppShell: React.FC = () => {
-  const { lastError, clearError } = useApp();
+  const { activeTheme, lastError, clearError } = useApp();
   return (
     <>
       {lastError ? <ErrorBanner message={lastError} onDismiss={clearError} /> : null}
-      <StatusBar style="dark" />
+      <StatusBar style={activeTheme === 'dark' ? 'light' : 'dark'} />
       <MainNavigator />
     </>
   );
