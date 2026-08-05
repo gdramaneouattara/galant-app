@@ -167,7 +167,7 @@ const MessagesScreen: React.FC = () => {
     <SafeAreaView style={[styles.safe, { backgroundColor: activeTheme === 'dark' ? colors.bg : '#F9F9FB' }]}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: colors.text, fontFamily: 'PlayfairDisplay_900Black' }]}>
+          <Text style={[styles.headerTitle, { color: colors.text, fontFamily: 'PlayfairBlack' }]}>
             {t('messages')}
           </Text>
           <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>

@@ -150,7 +150,7 @@ const MarketPage: React.FC = () => {
               <div className="flex-1 min-w-0 space-y-2">
                 <h4 className="font-black text-slate-900 dark:text-white text-base leading-tight truncate">{item.name}</h4>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-[1000] text-primary tracking-tighter">
+                  <span className="text-2xl font-extrabold text-primary tracking-tight">
                     {item.current_price.toLocaleString()} {item.currency}
                   </span>
                 </div>

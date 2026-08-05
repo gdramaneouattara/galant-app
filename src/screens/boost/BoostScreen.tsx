@@ -177,7 +177,7 @@ const BoostScreen: React.FC = () => {
               <Text style={[styles.planDescription, plan.isBest && styles.bestPlanText]}>{plan.description}</Text>
               <View style={styles.buttonGroup}>
                 <Pressable style={[styles.payBtn, styles.paystackBtn]} onPress={() => handleBoostPaystack(plan)} disabled={!!loadingPlan}>
-                   <CreditCard size={18} color="#fff" /><Text style={styles.payBtnText}>Mobile Money</Text>
+                   <CreditCard size={18} color="#fff" /><Text style={styles.payBtnText}>Carte ou Mobile Money</Text>
                 </Pressable>
                 {Platform.OS !== 'web' && (
                   <Pressable style={[styles.payBtn, styles.googleBtn]} onPress={() => handleBoostStore(plan)} disabled={!!loadingPlan}>

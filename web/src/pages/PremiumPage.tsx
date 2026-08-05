@@ -103,7 +103,7 @@ const PremiumPage: React.FC = () => {
                 </div>
 
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-[1000] text-slate-900 dark:text-white tracking-tighter transition-colors">5 000 F</span>
+                  <span className="text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight transition-colors">5 000 F</span>
                   <span className="text-slate-400 dark:text-slate-500 font-medium text-xs uppercase tracking-prestige transition-colors">/ mois</span>
                 </div>
 
@@ -158,7 +158,7 @@ const PremiumPage: React.FC = () => {
 
                 <div className="space-y-1">
                    <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-[1000] text-white tracking-tighter">10 000 F</span>
+                    <span className="text-5xl font-extrabold text-white tracking-tight">10 000 F</span>
                     <span className="text-slate-500 font-medium text-xs uppercase tracking-prestige">/ 3 mois</span>
                   </div>
                   <p className="text-primary font-medium text-[9px] uppercase tracking-prestige italic opacity-80">Soit 3 333 F / mois seulement</p>
@@ -279,7 +279,7 @@ const PremiumPage: React.FC = () => {
                     </div>
                     <div className="text-right">
                        <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige transition-colors">Boost</p>
-                       <h4 className="text-2xl font-[1000] text-slate-950 dark:text-white tracking-tighter transition-colors">{boost.label}</h4>
+                       <h4 className="text-2xl font-extrabold text-slate-950 dark:text-white tracking-tight transition-colors">{boost.label}</h4>
                     </div>
                   </div>
 

@@ -144,7 +144,7 @@ const MatchesPage: React.FC = () => {
         >
           <div className="absolute -right-4 -bottom-4 bg-white/10 w-24 h-24 rounded-full blur-2xl group-hover:bg-white/20 transition-all"></div>
           <Heart size={24} className="mb-3 opacity-80 group-hover:scale-110 transition-transform" fill="currentColor" />
-          <p className="text-2xl font-[1000] tracking-tighter leading-none">{likesCount}</p>
+          <p className="text-2xl font-extrabold tracking-tight leading-none">{likesCount}</p>
           <p className="text-[10px] font-medium uppercase tracking-prestige mt-1 opacity-80">Likes Reçus</p>
           {likesCount > 0 && <div className="absolute top-4 right-4 w-2 h-2 bg-white rounded-full animate-ping"></div>}
         </button>
@@ -155,7 +155,7 @@ const MatchesPage: React.FC = () => {
         >
           <div className="absolute -right-4 -bottom-4 bg-white/10 w-24 h-24 rounded-full blur-2xl group-hover:bg-white/20 transition-all"></div>
           <div className="text-2xl mb-2 group-hover:rotate-12 transition-transform">🌹</div>
-          <p className="text-2xl font-[1000] tracking-tighter leading-none">{rosesInboxCount}</p>
+          <p className="text-2xl font-extrabold tracking-tight leading-none">{rosesInboxCount}</p>
           <p className="text-[10px] font-medium uppercase tracking-prestige mt-1 opacity-80">Roses a traiter</p>
           {rosesInboxCount > 0 && <div className="absolute top-4 right-4 w-2 h-2 bg-white rounded-full animate-ping"></div>}
         </button>

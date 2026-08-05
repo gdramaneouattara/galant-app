@@ -13,12 +13,13 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { apiRequest } from '@shared/lib/api';
+import { useSubscription } from '@shared/hooks/useSubscription';
 import { showAlert } from '@shared/lib/ui-bridge';
 
 const PartnerPremiumPage: React.FC = () => {
   const navigate = useNavigate();
   const { t, reloadUser } = useAuth();
+  const { purchaseWithPaystack, purchaseLoading } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
   const PLANS = [
@@ -63,22 +64,14 @@ const PartnerPremiumPage: React.FC = () => {
   const handleSubscribe = async (plan: any) => {
     setLoadingPlan(plan.id);
     try {
-      // 1. Initialize Paystack on server
-      const res = await apiRequest<any>('/api/payments/initialize', {
-        method: 'POST',
-        requireAuth: true,
-        body: JSON.stringify({
-          planId: plan.id,
-          type: 'PARTNER_PREMIUM'
-        })
-      });
-
-      if (res.authorization_url) {
-        // Redirect to Paystack
-        window.location.href = res.authorization_url;
+      const ok = await purchaseWithPaystack('PARTNER_PREMIUM', plan.priceAmount, undefined, { planId: plan.id });
+      if (ok) {
+        await reloadUser();
+        showAlert(t('success'), t('purchase_activated'));
       }
     } catch (e: any) {
       showAlert('Erreur', e.message || 'Impossible d\'initialiser le paiement.');
+    } finally {
       setLoadingPlan(null);
     }
   };
@@ -134,7 +127,7 @@ const PartnerPremiumPage: React.FC = () => {
               </div>
 
               <div className="flex items-baseline gap-2">
-                <span className="text-5xl font-[1000] tracking-tighter">{plan.price}</span>
+                <span className="text-5xl font-extrabold tracking-tight">{plan.price}</span>
                 <span className="text-sm font-medium opacity-60">/ mois</span>
               </div>
 
@@ -152,7 +145,7 @@ const PartnerPremiumPage: React.FC = () => {
 
             <button
               onClick={() => handleSubscribe(plan)}
-              disabled={!!loadingPlan}
+              disabled={!!loadingPlan || purchaseLoading}
               className={`w-full mt-10 py-5 rounded-2xl font-black text-xs uppercase tracking-prestige flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl ${
                 plan.isBest ? 'bg-white text-slate-900 hover:bg-slate-100' : 'bg-slate-900 text-white hover:bg-black'
               }`}
@@ -173,7 +166,7 @@ const PartnerPremiumPage: React.FC = () => {
       <div className="max-w-md mx-auto p-6 bg-slate-50 dark:bg-white/5 rounded-3xl border border-slate-100 dark:border-white/10 flex items-center gap-4">
         <ShieldCheck className="text-emerald-500 flex-shrink-0" size={24} />
         <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 leading-relaxed uppercase tracking-wider">
-          Paiements 100% sécurisés par Paystack. Acceptation Orange Money, MTN, Moov et Wave.
+          Paiements 100% sécurisés par Paystack. Cartes bancaires, Orange Money, MTN, Moov et Wave acceptés.
         </p>
       </div>
     </div>

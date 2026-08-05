@@ -46,7 +46,7 @@ const StoryPurchaseModal: React.FC<Props> = ({ isOpen, onClose, onPurchase, load
               {loading ? <Loader2 className="animate-spin" size={20} /> : (
                 <>
                   <CreditCard size={20} />
-                  Mobile Money
+                  Carte ou Mobile Money
                 </>
               )}
             </button>
