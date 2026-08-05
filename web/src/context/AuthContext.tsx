@@ -41,7 +41,7 @@ const AuthContext = createContext<AuthContextType>({
   language: 'fr',
   setLanguage: () => {},
   themePreference: 'system',
-  activeTheme: 'light',
+  activeTheme: 'dark',
   setThemePreference: () => {},
   isFakeCallActive: false,
   setIsFakeCallActive: () => {},
@@ -69,7 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [themePreference, setThemePreferenceState] = useState<ThemePreference>(() => {
     const saved = localStorage.getItem('galant_theme');
     if (saved === 'light' || saved === 'dark' || saved === 'system') return saved;
-    return 'system';
+    return 'dark';
   });
 
   const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(
