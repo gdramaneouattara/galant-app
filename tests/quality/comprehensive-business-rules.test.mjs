@@ -33,6 +33,10 @@ test('Rules: BoostScreen handles multi-plan boosts', async () => {
 test('Rules: StatusScreen exists and is accessible', async () => {
   const code = await read('src/screens/home/StatusScreen.tsx');
   assert.match(code, /StatusScreen/);
+  assert.match(code, /storyUploadUnlocked \|\| await refreshStoryUploadAccess\(\)/);
+  assert.match(code, /locked\s*\?\s*await refreshStoryUploadAccess\(\{ forceServer: true \}\)/);
+  assert.match(code, /!forceServer && \(currentUser\.is_premium \|\| currentUser\.is_vip\)/);
+  assert.doesNotMatch(code, /const canPublish = !locked/);
 });
 
 test('Rules: Auth forms keep Galant logo visible after login or signup choice', async () => {

@@ -155,9 +155,9 @@ const StatusScreen: React.FC = () => {
   useEffect(() => { void fetchStatuses(); }, []);
   useEffect(() => { if (appResumeVersion > 0) void fetchStatuses(); }, [appResumeVersion]);
 
-  const refreshStoryUploadAccess = async () => {
+  const refreshStoryUploadAccess = async ({ forceServer = false }: { forceServer?: boolean } = {}) => {
     if (!currentUser) return false;
-    if (currentUser.is_premium || currentUser.is_vip) return true;
+    if (!forceServer && (currentUser.is_premium || currentUser.is_vip)) return true;
     try {
       const access = await apiRequest<{ canPublish?: boolean; hasPurchasedUpload?: boolean }>('/api/statuses/upload-access', { requireAuth: true });
       setStoryUploadUnlocked(!!access.hasPurchasedUpload);
@@ -169,7 +169,9 @@ const StatusScreen: React.FC = () => {
 
   const pickStatusMedia = async () => {
     if (uploading) return;
-    const canPublish = !locked && (currentUser?.is_premium || currentUser?.is_vip || storyUploadUnlocked || await refreshStoryUploadAccess());
+    const canPublish = locked
+      ? await refreshStoryUploadAccess({ forceServer: true })
+      : currentUser?.is_premium || currentUser?.is_vip || storyUploadUnlocked || await refreshStoryUploadAccess();
     if (!canPublish) {
       setShowStoryPurchaseModal(true);
       return;
