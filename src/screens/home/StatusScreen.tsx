@@ -78,6 +78,7 @@ const SUPER_LIKE_SKU = String(process.env.EXPO_PUBLIC_SUPER_LIKE_SKU || 'super_l
 const DIRECT_MESSAGE_SKU = String(process.env.EXPO_PUBLIC_DIRECT_MESSAGE_SKU || 'direct_message_1').trim();
 const STORY_VIDEO_MAX_DURATION_MS = 16 * 1000;
 const VIDEO_UPLOAD_MAX_BYTES = 30 * 1024 * 1024;
+const STORIES_TEST_OPEN = String(process.env.EXPO_PUBLIC_OPEN_STORIES_FOR_TESTS || process.env.EXPO_PUBLIC_OPEN_TEST_FEATURES || 'true') === 'true';
 
 const StatusScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -157,6 +158,7 @@ const StatusScreen: React.FC = () => {
 
   const refreshStoryUploadAccess = async () => {
     if (!currentUser) return false;
+    if (STORIES_TEST_OPEN) return true;
     if (currentUser.is_premium || currentUser.is_vip) return true;
     try {
       const access = await apiRequest<{ canPublish?: boolean; hasPurchasedUpload?: boolean }>('/api/statuses/upload-access', { requireAuth: true });
@@ -169,7 +171,7 @@ const StatusScreen: React.FC = () => {
 
   const pickStatusMedia = async () => {
     if (uploading) return;
-    const canPublish = !locked && (currentUser?.is_premium || currentUser?.is_vip || storyUploadUnlocked || await refreshStoryUploadAccess());
+    const canPublish = !locked && (STORIES_TEST_OPEN || currentUser?.is_premium || currentUser?.is_vip || storyUploadUnlocked || await refreshStoryUploadAccess());
     if (!canPublish) {
       setShowStoryPurchaseModal(true);
       return;

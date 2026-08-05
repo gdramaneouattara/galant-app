@@ -81,6 +81,8 @@ type StoryBubble = {
 import { useMatchmaking } from '../../hooks/useMatchmaking';
 import { useSubscription } from '../../hooks/useSubscription';
 
+const STORIES_TEST_OPEN = String(process.env.EXPO_PUBLIC_OPEN_STORIES_FOR_TESTS || process.env.EXPO_PUBLIC_OPEN_TEST_FEATURES || 'true') === 'true';
+
 type MatchModalState = {
   user: any;
   matchId: string;
@@ -388,7 +390,7 @@ const HomeScreen: React.FC = () => {
       <View style={styles.storiesSection}>
         <View style={styles.storiesSectionHeader}>
           <Text style={[styles.storiesSectionTitle, { color: colors.textMuted }]}>Stories</Text>
-          <Pressable onPress={() => trialLocked ? navigation.navigate('Premium') : navigation.navigate('Status')}>
+          <Pressable onPress={() => trialLocked && !STORIES_TEST_OPEN ? navigation.navigate('Premium') : navigation.navigate('Status')}>
             <Text style={styles.storiesSeeAll}>Voir tout</Text>
           </Pressable>
         </View>
@@ -400,7 +402,7 @@ const HomeScreen: React.FC = () => {
         >
           <Pressable
             style={styles.storyBubbleItem}
-            onPress={() => trialLocked ? navigation.navigate('Premium') : navigation.navigate('Status', { openComposer: true })}
+            onPress={() => trialLocked && !STORIES_TEST_OPEN ? navigation.navigate('Premium') : navigation.navigate('Status', { openComposer: true })}
           >
             <View style={[styles.myStoryBubble, { backgroundColor: colors.card, borderColor: COLORS.primary }]}>
               <Text style={styles.myStoryPlus}>+</Text>
@@ -422,7 +424,7 @@ const HomeScreen: React.FC = () => {
               <Pressable
                 key={story.id}
                 style={styles.storyBubbleItem}
-                onPress={() => trialLocked ? navigation.navigate('Premium') : navigation.navigate('Status', { initialStatusId: story.id })}
+                onPress={() => trialLocked && !STORIES_TEST_OPEN ? navigation.navigate('Premium') : navigation.navigate('Status', { initialStatusId: story.id })}
               >
                 <View style={[styles.storyBubbleBorder, story.profiles?.is_premium && styles.storyBubblePremium]}>
                   <Image source={{ uri: avatar }} style={styles.storyBubbleAvatar} />
@@ -438,13 +440,13 @@ const HomeScreen: React.FC = () => {
           {!storiesLoading && storyBubbles.length === 0 && (
             <Pressable
               style={[styles.storyEmptyBubble, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => navigation.navigate(storiesUnavailable ? 'Premium' : 'Status')}
+              onPress={() => navigation.navigate(storiesUnavailable && !STORIES_TEST_OPEN ? 'Premium' : 'Status')}
             >
               <View style={[styles.storyEmptyIcon, { backgroundColor: colors.input }]}>
                 <Sparkles size={18} color={COLORS.primary} />
               </View>
               <Text style={[styles.storyEmptyText, { color: colors.textMuted }]}>
-                {storiesUnavailable ? 'Stories Premium' : 'Aucune story active'}
+                {storiesUnavailable && !STORIES_TEST_OPEN ? 'Stories Premium' : 'Aucune story active'}
               </Text>
             </Pressable>
           )}

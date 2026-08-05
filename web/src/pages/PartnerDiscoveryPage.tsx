@@ -49,6 +49,8 @@ const DISCOVERY_CATEGORIES: Array<{ id: DiscoveryCategory; icon: React.Component
   { id: 'CULTURE', icon: Palette }
 ];
 
+const PARTNER_DISCOVERY_TEST_OPEN = String(import.meta.env.VITE_OPEN_PARTNER_DISCOVERY_FOR_TESTS || import.meta.env.VITE_OPEN_TEST_FEATURES || 'true') === 'true';
+
 const copy = {
   fr: {
     title: 'Partenaires autour de moi',
@@ -107,7 +109,7 @@ const PartnerDiscoveryPage: React.FC = () => {
   const [hasSearched, setHasSearched] = useState(false);
   const [category, setCategory] = useState<DiscoveryCategory>('ALL');
   const c = copy[language] || copy.fr;
-  const hasDiscoveryAccess = !!(profile?.is_premium || profile?.is_vip || profile?.partner_discovery_unlocked);
+  const hasDiscoveryAccess = PARTNER_DISCOVERY_TEST_OPEN || !!(profile?.is_premium || profile?.is_vip || profile?.partner_discovery_unlocked);
 
   const promptUnlock = async () => {
     if (!window.confirm(`${c.payTitle}\n\n${c.payBody}`)) return;
