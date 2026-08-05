@@ -225,7 +225,7 @@ const RosesInboxPage: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-2 bg-rose-50 dark:bg-rose-900/20 px-3 py-1.5 rounded-xl w-fit transition-colors">
                     <Star size={12} className="text-primary" fill="currentColor" />
-                    <span className="text-[10px] font-[1000] text-primary uppercase tracking-tighter">Rose recue</span>
+                    <span className="text-[10px] font-extrabold text-primary uppercase tracking-tight">Rose recue</span>
                   </div>
                 </div>
               </div>

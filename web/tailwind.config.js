@@ -8,11 +8,14 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Montserrat', 'sans-serif'],
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         serif: ['Playfair Display', 'serif'],
       },
+      fontWeight: {
+        black: '800',
+      },
       letterSpacing: {
-        prestige: '.25em',
+        prestige: '.16em',
       },
       colors: {
         primary: "#ef4444", // Le rouge Galant

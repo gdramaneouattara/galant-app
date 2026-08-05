@@ -127,7 +127,7 @@ const PartnerPremiumPage: React.FC = () => {
               </div>
 
               <div className="flex items-baseline gap-2">
-                <span className="text-5xl font-[1000] tracking-tighter">{plan.price}</span>
+                <span className="text-5xl font-extrabold tracking-tight">{plan.price}</span>
                 <span className="text-sm font-medium opacity-60">/ mois</span>
               </div>
 
