@@ -169,7 +169,7 @@ const StatusScreen: React.FC = () => {
 
   const pickStatusMedia = async () => {
     if (uploading) return;
-    const canPublish = !locked && (currentUser?.is_premium || currentUser?.is_vip || storyUploadUnlocked || await refreshStoryUploadAccess());
+    const canPublish = currentUser?.is_premium || currentUser?.is_vip || storyUploadUnlocked || await refreshStoryUploadAccess();
     if (!canPublish) {
       setShowStoryPurchaseModal(true);
       return;
