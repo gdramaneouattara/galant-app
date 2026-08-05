@@ -16,6 +16,7 @@ import { COLORS } from '../../data/mock';
 import SuperLikePurchaseModal from '../../components/SuperLikePurchaseModal';
 import { IAP_EXPO_GO_MESSAGE, isExpoGo } from '../../lib/iapRuntime';
 import { useApp } from '../../state/AppContext';
+import { safeGoBack } from '../../lib/navigationBack';
 
 // Components
 import LikesHeader from './components/LikesHeader';
@@ -124,7 +125,7 @@ const LikesReceivedScreen: React.FC = () => {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: COLORS.bg }]}>
       <ScrollView contentContainerStyle={styles.content}>
-        <LikesHeader onBack={() => navigation.goBack()} />
+        <LikesHeader onBack={() => safeGoBack(navigation, 'MainTabs', { screen: 'ProfileTab' })} />
 
         {loading || error || superLikes.length === 0 ? (
           <EmptyLikesState loading={loading} error={error} />

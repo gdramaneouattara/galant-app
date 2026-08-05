@@ -35,6 +35,16 @@ test('Rules: StatusScreen exists and is accessible', async () => {
   assert.match(code, /StatusScreen/);
 });
 
+test('Rules: Auth forms keep Galant logo visible after login or signup choice', async () => {
+  const webAuth = await read('web/src/pages/AuthPage.tsx');
+  const nativeAuthMethod = await read('src/screens/auth/components/AuthMethodStep.tsx');
+
+  assert.match(webAuth, /galant-logo-web\.png/);
+  assert.match(webAuth, /alt="Galant Logo"/);
+  assert.match(nativeAuthMethod, /assets\/icon \(2\)\.png/);
+  assert.match(nativeAuthMethod, /brandHeader/);
+});
+
 test('Rules: Stories move into discovery and Apps replaces the stories tab', async () => {
   const homeScreen = await read('src/screens/home/HomeScreen.tsx');
   const navigator = await read('src/navigation/MainNavigator.tsx');
@@ -171,6 +181,95 @@ test('Rules: Guide Google photos are referenced, sized and attributed without St
   assert.match(nativeGuide, /optimizedPhotoUrl\(item\.photo_url,\s*item\.photo_variants,\s*'thumb'\)/);
   assert.match(nativeVenueDetail, /google_photo_attributions/);
   assert.match(nativeVenueDetail, /Photo Google Places/);
+});
+
+test('Rules: Guide venue detail returns to the selected venue instead of agenda', async () => {
+  const webGuide = await read('web/src/pages/GuidePage.tsx');
+  const webVenueDetail = await read('web/src/pages/VenueDetailPage.tsx');
+
+  assert.match(webGuide, /from:\s*'\/guide'/);
+  assert.match(webGuide, /scrollToVenueId:\s*venue\.id/);
+  assert.match(webGuide, /guideState:\s*\{\s*searchQuery,\s*activeCategory\s*\}/);
+  assert.match(webGuide, /venue-card-\$\{venue\.id\}/);
+  assert.match(webVenueDetail, /routeState\.from === '\/guide'/);
+  assert.match(webVenueDetail, /navigate\('\/guide'/);
+  assert.match(webVenueDetail, /scrollToVenueId:\s*routeState\.scrollToVenueId \|\| venue\?\.id/);
+});
+
+test('Rules: Web mobile PWA reinstall help and Experiences rail stay usable', async () => {
+  const pwaPrompt = await read('web/src/components/PWAInstallPrompt.tsx');
+  const experiencesPage = await read('web/src/pages/ExperiencesPage.tsx');
+
+  assert.match(pwaPrompt, /INSTALL_HELP_SEEN_KEY/);
+  assert.match(pwaPrompt, /md:hidden/);
+  assert.match(pwaPrompt, /Ouvrir Galant/);
+  assert.match(pwaPrompt, /liste des applications/);
+  assert.match(pwaPrompt, /appinstalled/);
+  assert.match(experiencesPage, /isTabRailCompact/);
+  assert.match(experiencesPage, /window\.addEventListener\('scroll'/);
+  assert.match(experiencesPage, /window\.innerWidth < 768/);
+  assert.match(experiencesPage, /-translate-y-3/);
+});
+
+test('Rules: Back navigation uses safe fallbacks across web and native surfaces', async () => {
+  const navigationBack = await read('src/lib/navigationBack.ts');
+  const nativeFiles = [
+    'src/screens/messages/ChatScreen.tsx',
+    'src/screens/premium/LikesInboxScreen.tsx',
+    'src/screens/premium/LikesReceivedScreen.tsx',
+    'src/screens/guide/VenueDetailScreen.tsx',
+    'src/screens/apps/SentinelScreen.tsx',
+    'src/screens/home/StatusScreen.tsx',
+    'src/screens/profile/BoostedProfileDetailScreen.tsx',
+    'src/screens/verify/VerifyScreen.tsx',
+    'src/screens/boost/BoostScreen.tsx',
+    'src/screens/premium/PremiumScreen.tsx',
+    'src/screens/partner/PartnerPremiumScreen.tsx',
+    'src/screens/auth/ResetPasswordScreen.tsx',
+  ];
+  const webFiles = [
+    'web/src/pages/TermsPage.tsx',
+    'web/src/pages/PrivacyPage.tsx',
+    'web/src/pages/ProfileDetailPage.tsx',
+    'web/src/pages/PartnerPremiumPage.tsx',
+    'web/src/pages/VenueDetailPage.tsx',
+  ];
+
+  assert.match(navigationBack, /canGoBack/);
+  assert.match(navigationBack, /fallbackRoute/);
+  for (const file of nativeFiles) {
+    assert.match(await read(file), /safeGoBack/);
+  }
+  for (const file of webFiles) {
+    const code = await read(file);
+    assert.match(code, /window\.history\.state\?\.idx/);
+    assert.match(code, /handleBack/);
+  }
+});
+
+test('Rules: Venue suggestions in chat are actionable across web and mobile', async () => {
+  const venueController = await read('server/src/controllers/venueController.js');
+  const venueRoutes = await read('server/src/routes/venueRoutes.js');
+  const webProposeModal = await read('web/src/components/ProposeVenueModal.tsx');
+  const webChat = await read('web/src/pages/ChatPage.tsx');
+  const webVenueDetail = await read('web/src/pages/VenueDetailPage.tsx');
+  const nativeVenueDetail = await read('src/screens/guide/VenueDetailScreen.tsx');
+  const nativeChatItem = await read('src/screens/messages/components/ChatMessageItem.tsx');
+
+  assert.match(venueController, /getVenueById/);
+  assert.match(venueRoutes, /\/:id/);
+  assert.match(webProposeModal, /messageType:\s*'VENUE_SUGGESTION'/);
+  assert.match(webProposeModal, /address:\s*venue\.address/);
+  assert.match(webProposeModal, /google_maps_uri:\s*venue\.google_maps_uri/);
+  assert.match(webChat, /openVenueSuggestion/);
+  assert.match(webChat, /handleVenueOpinion/);
+  assert.match(webChat, /VENUE_SUGGESTION_OPINION/);
+  assert.match(webVenueDetail, /\/api\/venues\/\$\{id\}/);
+  assert.match(nativeVenueDetail, /messageType:\s*'VENUE_SUGGESTION'/);
+  assert.match(nativeVenueDetail, /Proposer ce lieu/);
+  assert.match(nativeChatItem, /openVenueSuggestion/);
+  assert.match(nativeChatItem, /sendVenueOpinion/);
+  assert.match(nativeChatItem, /VenueDetail/);
 });
 
 test('Rules: Apps exposes paid user partner discovery with direct Google import', async () => {

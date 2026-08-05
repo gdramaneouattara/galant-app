@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { apiRequest } from '@shared/lib/api';
 import { MapPin, Star, Utensils, GlassWater, Sparkles, ChevronRight, Info, Send, MessageCircle, Car, Compass, Search, Heart, Trophy, Globe } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import ProposeVenueModal from '../components/ProposeVenueModal';
 import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
 import { showAlert } from '@shared/lib/ui-bridge';
@@ -25,13 +25,16 @@ interface Venue {
 
 const GuidePage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const routeState = (location.state as any) || {};
+  const initialGuideState = routeState.guideState || {};
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pendingVenueContact, setPendingVenueContact] = useState<Venue | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState<'ALL' | 'RESTAURANT' | 'LOUNGE' | 'HOTEL'>('ALL');
+  const [searchQuery, setSearchQuery] = useState(initialGuideState.searchQuery || '');
+  const [activeCategory, setActiveCategory] = useState<'ALL' | 'RESTAURANT' | 'LOUNGE' | 'HOTEL'>(initialGuideState.activeCategory || 'ALL');
 
   useEffect(() => {
     const fetchVenues = async () => {
@@ -89,6 +92,19 @@ const GuidePage: React.FC = () => {
     const matchesCategory = activeCategory === 'ALL' || v.venue_type === activeCategory;
     return matchesSearch && matchesCategory;
   });
+
+  useEffect(() => {
+    const scrollToVenueId = routeState.scrollToVenueId;
+    if (loading || !scrollToVenueId) return;
+
+    const timer = window.setTimeout(() => {
+      document
+        .getElementById(`venue-card-${scrollToVenueId}`)
+        ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 80);
+
+    return () => window.clearTimeout(timer);
+  }, [loading, routeState.scrollToVenueId, filteredVenues.length]);
 
   const openVenueChat = async (venue: Venue) => {
     const res = await apiRequest<{ venueChatId: string }>(`/api/venues/${venue.id}/chat-thread`, {
@@ -220,7 +236,15 @@ const GuidePage: React.FC = () => {
         {filteredVenues.map((venue) => (
           <div
             key={venue.id}
-            onClick={() => navigate(`/venue/${venue.id}`)}
+            id={`venue-card-${venue.id}`}
+            onClick={() => navigate(`/venue/${venue.id}`, {
+              state: {
+                from: '/guide',
+                venue,
+                scrollToVenueId: venue.id,
+                guideState: { searchQuery, activeCategory },
+              },
+            })}
             className="group bg-white dark:bg-slate-900 rounded-[3.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.08)] dark:shadow-none border border-slate-100 dark:border-white/10 overflow-hidden hover:scale-[1.02] transition-all duration-500 flex flex-col cursor-pointer"
           >
             <div className="relative h-72 overflow-hidden">

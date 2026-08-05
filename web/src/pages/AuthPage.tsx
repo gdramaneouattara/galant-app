@@ -12,7 +12,8 @@ import {
 import { useNavigate, Link } from 'react-router-dom';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, CheckSquare, Square, Lock, ArrowLeft, Mail, RefreshCw } from 'lucide-react';
+import { Eye, EyeOff, CheckSquare, Square, ArrowLeft, Mail, RefreshCw } from 'lucide-react';
+import logoImg from '../assets/galant-logo-web.png';
 
 const AuthPage: React.FC = () => {
   const { user, reloadUser, t } = useAuth();
@@ -151,7 +152,7 @@ const AuthPage: React.FC = () => {
       <div className="relative z-10 w-full max-w-md flex flex-col items-center py-10">
         {/* Header avec Logo */}
         <div className="mb-10 text-center flex flex-col items-center gap-4 animate-in fade-in slide-in-from-top duration-700">
-          <img src="pwa-192x192.png" alt="Galant Logo" className="w-20 h-20 rounded-[2rem] shadow-2xl border-4 border-white/20" />
+          <img src={logoImg} alt="Galant Logo" className="w-20 h-20 rounded-[2rem] shadow-2xl border-4 border-white/20 object-contain bg-white/90" />
           <div>
             <h1 className="text-5xl font-serif font-black text-white italic mb-2 drop-shadow-2xl">
               GALANT

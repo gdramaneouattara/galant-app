@@ -42,6 +42,14 @@ const ProfileDetailPage: React.FC = () => {
     type: 'SUPER_LIKE'
   });
 
+  const handleBack = () => {
+    if ((window.history.state?.idx ?? 0) > 0) {
+      navigate(-1);
+      return;
+    }
+    navigate('/');
+  };
+
   useEffect(() => {
     if (!profile && id) {
       const fetchProfile = async () => {
@@ -124,7 +132,7 @@ const ProfileDetailPage: React.FC = () => {
   if (!profile) return (
     <div className="text-center py-20">
       <p className="text-slate-400 font-bold">Profil introuvable.</p>
-      <button onClick={() => navigate(-1)} className="mt-4 text-primary font-black">Retour</button>
+      <button onClick={handleBack} className="mt-4 text-primary font-black">Retour</button>
     </div>
   );
 
@@ -140,7 +148,7 @@ const ProfileDetailPage: React.FC = () => {
           <div className="relative aspect-[3/4] rounded-[3rem] overflow-hidden shadow-2xl dark:shadow-none border-4 border-white dark:border-slate-800 transition-colors">
             <OptimizedImage src={optimizedPhotoUrl(coverPhoto, profile.photo_variants, 'medium')} className="w-full h-full object-cover" alt="" eager />
             <button
-              onClick={() => navigate(-1)}
+              onClick={handleBack}
               className="absolute top-6 left-6 p-3 bg-black/20 hover:bg-black/40 backdrop-blur-md text-white rounded-2xl transition-all"
             >
               <ChevronLeft size={24} />

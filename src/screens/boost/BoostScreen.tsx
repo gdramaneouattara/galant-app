@@ -10,6 +10,7 @@ import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 import { IAP_EXPO_GO_MESSAGE, isExpoGo } from '../../lib/iapRuntime';
 import { getBoostActiveMessage, getBoostStatus } from '../../lib/boostStatus';
+import { safeGoBack } from '../../lib/navigationBack';
 
 import { useSubscription } from '../../hooks/useSubscription';
 
@@ -27,7 +28,7 @@ type BoostPlan = {
 
 const BoostScreen: React.FC = () => {
   // Quality requirements: /api/payments/initialize, /api/payments/verify
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const { currentUser, refreshCurrentUser, activateBoost, appResumeVersion, t } = useApp();
   const { purchaseLoading, purchaseWithPaystack, purchaseWithStore, initIAP, endIAP } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
@@ -99,7 +100,7 @@ const BoostScreen: React.FC = () => {
       const result = await activateBoost();
       if (result) {
         Alert.alert(t('success'), t('free_boost_success'));
-        navigation.goBack();
+        safeGoBack(navigation, 'MainTabs', { screen: 'ProfileTab' });
       }
     } catch {
       Alert.alert(t('error'), "...");
@@ -115,7 +116,7 @@ const BoostScreen: React.FC = () => {
     if (ok) {
       await refreshCurrentUser();
       Alert.alert(t('success'), t('boost_activated'));
-      navigation.goBack();
+      safeGoBack(navigation, 'MainTabs', { screen: 'ProfileTab' });
     }
     setLoadingPlan(null);
   };
@@ -127,7 +128,7 @@ const BoostScreen: React.FC = () => {
     if (ok) {
       await refreshCurrentUser();
       Alert.alert(t('success'), t('boost_activated'));
-      navigation.goBack();
+      safeGoBack(navigation, 'MainTabs', { screen: 'ProfileTab' });
     }
     setLoadingPlan(null);
   };

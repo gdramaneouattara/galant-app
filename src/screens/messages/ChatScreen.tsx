@@ -17,6 +17,7 @@ import { rtdb, db, COLLECTIONS, fbStorage } from '../../lib/firebase';
 import { PresenceInfo, subscribeToUserPresence } from '../../lib/presence';
 import { uploadArrayBufferToBucket, getPublicUrl } from '../../lib/storageUpload';
 import { optimizedPhotoUrl } from '../../lib/mediaVariants';
+import { safeGoBack } from '../../lib/navigationBack';
 
 // Components
 import ChatHeader from './components/ChatHeader';
@@ -28,7 +29,7 @@ interface ChatMessage {
   match_id: string;
   sender_id: string;
   content: string;
-  message_type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'VOICE';
+  message_type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'VOICE' | 'VENUE_SUGGESTION' | 'EVENT_SUGGESTION';
   media_url?: string | null;
   metadata?: Record<string, any>;
   is_read: boolean;
@@ -360,7 +361,7 @@ const ChatScreen: React.FC = () => {
         title={targetUser?.name || 'Chat'}
         subtitle={targetPresence ? (targetPresence.is_online ? t('online') : t('offline')) : undefined}
         isOnline={!!targetPresence?.is_online}
-        onBack={() => navigation.goBack()}
+        onBack={() => safeGoBack(navigation, 'MainTabs', { screen: 'MessagesTab' })}
         onOpenSafety={() => {}}
         colors={colors}
       />

@@ -21,6 +21,13 @@ const PartnerPremiumPage: React.FC = () => {
   const { t, reloadUser } = useAuth();
   const { purchaseWithPaystack, purchaseLoading } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const handleBack = () => {
+    if ((window.history.state?.idx ?? 0) > 0) {
+      navigate(-1);
+      return;
+    }
+    navigate('/partner');
+  };
 
   const PLANS = [
     {
@@ -81,7 +88,7 @@ const PartnerPremiumPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center gap-4">
         <button
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
           className="p-3 bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-white/10 rounded-2xl text-slate-400 hover:text-primary transition-all"
         >
           <ChevronLeft size={20} />

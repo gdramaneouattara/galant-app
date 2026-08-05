@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { ChevronLeft, Clock, Phone, PhoneIncoming, Shield, User, X } from 'lucide-react-native';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
+import { safeGoBack } from '../../lib/navigationBack';
 
 const DELAYS_MINUTES = [0, 1, 2, 5];
 
@@ -146,7 +147,7 @@ const SentinelScreen: React.FC = () => {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Pressable
-            onPress={() => navigation.goBack()}
+            onPress={() => safeGoBack(navigation, 'MainTabs', { screen: 'AppsTab' })}
             style={[styles.backButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           >
             <ChevronLeft size={22} color={colors.text} />

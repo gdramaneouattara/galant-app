@@ -26,6 +26,7 @@ import OptimizedImage from '../../components/OptimizedImage';
 import { optimizedPhotoUrl } from '../../lib/mediaVariants';
 import type { ProfileDetailParam, RootStackParamList } from '../../navigation/MainNavigator';
 import { useApp } from '../../state/AppContext';
+import { safeGoBack } from '../../lib/navigationBack';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -73,6 +74,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
   const genderLabel = GENDER_LABELS[normalizedGender] || profile?.gender || 'Non renseigné';
   const relationshipGoalLabel = RELATIONSHIP_GOAL_LABELS[normalizedGoal] || profile?.relationship_goal || 'Non renseigné';
   const ageLabel = typeof profile?.age === 'number' ? `${profile.age}` : null;
+  const handleBack = () => safeGoBack(navigation, 'MainTabs', { screen: 'DiscoverTab' });
 
   const loadProducts = async (): Promise<Set<string>> => {
     if (Platform.OS !== 'android' || isExpoGo) return new Set();
@@ -283,7 +285,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
       <SafeAreaView style={styles.safe}>
         <View style={styles.emptyWrap}>
           <Text style={styles.emptyText}>{t('profile_not_found')}</Text>
-          <Pressable style={styles.backButtonSolid} onPress={() => navigation.goBack()}>
+          <Pressable style={styles.backButtonSolid} onPress={handleBack}>
             <Text style={styles.backButtonSolidText}>{t('back_to_login')}</Text>
           </Pressable>
         </View>
@@ -296,7 +298,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.hero}>
           <OptimizedImage uri={optimizedPhotoUrl(coverPhoto, profile.photo_variants, 'medium')} style={styles.heroImage} />
-          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Pressable style={styles.backButton} onPress={handleBack}>
             <ChevronLeft color="#fff" size={24} />
           </Pressable>
           <View style={styles.heroOverlay}>

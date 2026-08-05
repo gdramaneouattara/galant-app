@@ -5,7 +5,7 @@ import { db, rtdb, COLLECTIONS, fbStorage } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { ref, onValue } from 'firebase/database';
 import { apiRequest } from '@shared/lib/api';
-import { Send, ChevronLeft, ShieldCheck, Gem, Sparkles, Languages, Loader2, MapPin, Calendar, Image as ImageIcon, Video, Paperclip, Mic, Square, Trash2 } from 'lucide-react';
+import { Send, ChevronLeft, ShieldCheck, Gem, Sparkles, Languages, Loader2, MapPin, Calendar, Image as ImageIcon, Video, Paperclip, Mic, Square, Trash2, ExternalLink, Check, X } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { compressImageWeb } from '../lib/imageCompression';
 import { CHAT_VIDEO_MAX_DURATION_SECONDS, compressVideoWeb, validateVideoFileWeb, VIDEO_UPLOAD_MAX_BYTES } from '../lib/videoOptimization';
@@ -352,6 +352,34 @@ const ChatPage: React.FC = () => {
     setAudioStream(null);
   };
 
+  const openVenueSuggestion = (venue: any) => {
+    if (!venue?.id) return;
+    navigate(`/venue/${venue.id}`, { state: { venue } });
+  };
+
+  const handleVenueOpinion = async (message: string) => {
+    if (sending || !user || !targetUser || (!matchId && !venueChatId)) return;
+    setSending(true);
+    try {
+      await apiRequest('/api/messages/send', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({
+          matchId: venueChatId ? undefined : matchId,
+          venueChatId: venueChatId || undefined,
+          content: message,
+          messageType: 'TEXT',
+          recipientId: targetUser.isVenue ? undefined : targetUser.id,
+          metadata: { reply_kind: 'VENUE_SUGGESTION_OPINION' }
+        })
+      });
+    } catch (error: any) {
+      showAlert(t('error'), error.message);
+    } finally {
+      setSending(false);
+    }
+  };
+
   useEffect(() => {
     if (isRecording && recordingDuration >= VOICE_MAX_DURATION_SECONDS) {
       void handleStopRec();
@@ -444,19 +472,52 @@ const ChatPage: React.FC = () => {
                       <p className="text-[10px] font-medium uppercase tracking-prestige text-slate-400 dark:text-slate-500 mb-2">
                         {isMine ? t('my_suggestion') : t('outing_suggestion')}
                       </p>
-                      <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => isVenue ? openVenueSuggestion(msg.metadata?.venue) : undefined}
+                        className={`w-full flex items-center gap-3 text-left rounded-xl transition-all ${isVenue ? 'hover:bg-white dark:hover:bg-white/5 cursor-pointer' : ''}`}
+                      >
                         <OptimizedImage
-                          src={isVenue ? msg.metadata?.venue?.photo_url : msg.metadata?.event?.photo_url}
+                          src={isVenue ? optimizedPhotoUrl(msg.metadata?.venue?.photo_url, msg.metadata?.venue?.photo_variants, 'thumb') : msg.metadata?.event?.photo_url}
                           className="w-12 h-12 rounded-xl object-cover"
                           alt=""
                         />
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="font-bold truncate text-xs">{isVenue ? msg.metadata?.venue?.name : msg.metadata?.event?.title}</p>
                           <p className="text-[10px] text-primary font-bold">
                             {isVenue ? `🎁 ${msg.metadata?.venue?.benefit_description}` : `📅 ${msg.metadata?.event?.venues?.name}`}
                           </p>
                         </div>
-                      </div>
+                        {isVenue && <ExternalLink size={14} className="text-slate-300 flex-shrink-0" />}
+                      </button>
+                      {isVenue && !isMine && (
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
+                          <button
+                            type="button"
+                            onClick={() => handleVenueOpinion(`Oui, ${msg.metadata?.venue?.name} me tente. On regarde les détails ?`)}
+                            disabled={sending}
+                            className="px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wide flex items-center justify-center gap-1 disabled:opacity-50"
+                          >
+                            <Check size={12} /> Ça me tente
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleVenueOpinion(`Je ne suis pas convaincu(e) par ${msg.metadata?.venue?.name}. On cherche une autre option ?`)}
+                            disabled={sending}
+                            className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 text-[10px] font-bold uppercase tracking-wide flex items-center justify-center gap-1 disabled:opacity-50"
+                          >
+                            <X size={12} /> Autre idée
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleVenueOpinion(`Je veux bien, mais dis-moi ce qui te plaît dans ${msg.metadata?.venue?.name}.`)}
+                            disabled={sending}
+                            className="px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-primary text-[10px] font-bold uppercase tracking-wide flex items-center justify-center gap-1 disabled:opacity-50"
+                          >
+                            <Send size={12} /> Mon avis
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 

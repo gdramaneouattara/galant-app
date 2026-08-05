@@ -6,6 +6,7 @@ import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 import * as WebBrowser from 'expo-web-browser';
+import { safeGoBack } from '../../lib/navigationBack';
 
 import { useSubscription } from '../../hooks/useSubscription';
 
@@ -54,7 +55,7 @@ const PartnerPremiumScreen: React.FC = () => {
     if (ok) {
       await refreshCurrentUser();
       Alert.alert(t('success'), "Abonnement partenaire activé ! ✨");
-      navigation.goBack();
+      safeGoBack(navigation, 'PartnerDashboard');
     }
     setLoadingPlan(null);
   };
@@ -62,7 +63,7 @@ const PartnerPremiumScreen: React.FC = () => {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
       <View style={[styles.header, { backgroundColor: colors.header }]}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable onPress={() => safeGoBack(navigation, 'PartnerDashboard')} style={styles.backBtn}>
           <ChevronLeft color={colors.text} size={28} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.text }]}>{t('manage_subscription')}</Text>

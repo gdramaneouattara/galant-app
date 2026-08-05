@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Pressable, Dimensions, Alert, Platform } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Pressable, Dimensions, Alert, Platform, Modal } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { ChevronLeft, MapPin, MessageCircle, Star, Sparkles, Navigation as NavigationIcon } from 'lucide-react-native';
+import { ChevronLeft, MapPin, MessageCircle, Star, Sparkles, Navigation as NavigationIcon, Send, X } from 'lucide-react-native';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
@@ -10,6 +10,7 @@ import OptimizedImage from '../../components/OptimizedImage';
 import { optimizedPhotoUrl } from '../../lib/mediaVariants';
 import DirectMessagePurchaseModal from '../../components/DirectMessagePurchaseModal';
 import { useSubscription } from '../../hooks/useSubscription';
+import { safeGoBack } from '../../lib/navigationBack';
 
 const { width } = Dimensions.get('window');
 const DIRECT_MESSAGE_SKU = String(process.env.EXPO_PUBLIC_DIRECT_MESSAGE_SKU || 'direct_message_1').trim();
@@ -17,10 +18,12 @@ const DIRECT_MESSAGE_SKU = String(process.env.EXPO_PUBLIC_DIRECT_MESSAGE_SKU || 
 const VenueDetailScreen: React.FC = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const { colors, activeTheme, t } = useApp();
+  const { colors, activeTheme, t, currentUser, matches, users } = useApp();
   const { purchaseLoading, purchaseWithPaystack, purchaseWithStore, initIAP, endIAP } = useSubscription();
   const { venue } = route.params;
   const [showDirectMessagePurchaseModal, setShowDirectMessagePurchaseModal] = useState(false);
+  const [showProposeModal, setShowProposeModal] = useState(false);
+  const [sendingMatchId, setSendingMatchId] = useState<string | null>(null);
 
   const photos = Array.isArray(venue.photos) && venue.photos.length > 0 ? venue.photos : [venue.photo_url];
   const googleAttributions = Array.isArray(venue.google_photo_attributions)
@@ -31,6 +34,55 @@ const VenueDetailScreen: React.FC = () => {
     void initIAP([DIRECT_MESSAGE_SKU]);
     return () => { void endIAP(); };
   }, [initIAP, endIAP]);
+
+  const activeMatches = useMemo(() => {
+    if (!currentUser) return [];
+    return matches
+      .map((match: any) => {
+        const otherUserId = match.user_one_id === currentUser.id ? match.user_two_id : match.user_one_id;
+        const otherUser = users.find((candidate: any) => candidate.id === otherUserId);
+        return otherUser ? { match, user: otherUser } : null;
+      })
+      .filter(Boolean) as { match: any; user: any }[];
+  }, [currentUser, matches, users]);
+
+  const venueSuggestionPayload = {
+    id: venue.id,
+    name: venue.name,
+    photo_url: venue.photo_url,
+    photo_variants: venue.photo_variants || {},
+    venue_type: venue.venue_type || '',
+    city: venue.city || '',
+    address: venue.address || '',
+    description: venue.description || '',
+    rating: venue.rating || null,
+    google_maps_uri: venue.google_maps_uri || '',
+    phone_number: venue.phone_number || '',
+    benefit_description: venue.benefit_description || ''
+  };
+
+  const proposeVenueToMatch = async (match: any, otherUser: any) => {
+    try {
+      setSendingMatchId(match.id);
+      await apiRequest('/api/messages/send', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({
+          matchId: match.id,
+          recipientId: otherUser.id,
+          content: `Je nous propose un rendez-vous a ${venue.name} !`,
+          messageType: 'VENUE_SUGGESTION',
+          metadata: { venue: venueSuggestionPayload }
+        })
+      });
+      setShowProposeModal(false);
+      Alert.alert('Proposition envoyee', `Votre suggestion a ete envoyee a ${otherUser.name}.`);
+    } catch (e: any) {
+      Alert.alert(t('error'), e?.message || t('chat_error'));
+    } finally {
+      setSendingMatchId(null);
+    }
+  };
 
   const openVenueChat = async () => {
     const res = await apiRequest<{ venueChatId: string }>(`/api/venues/${venue.id}/chat-thread`, {
@@ -88,7 +140,7 @@ const VenueDetailScreen: React.FC = () => {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
       <View style={[styles.header, { backgroundColor: colors.header }]}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable onPress={() => safeGoBack(navigation, currentUser?.is_partner ? 'PartnerDashboard' : 'Guide')} style={styles.backBtn}>
           <ChevronLeft color={colors.text} size={28} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>{venue.name}</Text>
@@ -146,11 +198,49 @@ const VenueDetailScreen: React.FC = () => {
       </ScrollView>
 
       <View style={[styles.footer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+        <Pressable style={[styles.proposeBtn, { borderColor: colors.border }]} onPress={() => setShowProposeModal(true)}>
+          <Send color="#e11d48" size={20} />
+          <Text style={styles.proposeBtnText}>Proposer a un match</Text>
+        </Pressable>
         <Pressable style={styles.chatBtn} onPress={startVenueChat}>
           <MessageCircle color="#fff" size={20} />
           <Text style={styles.chatBtnText}>{t('chat_host')}</Text>
         </Pressable>
       </View>
+      <Modal visible={showProposeModal} transparent animationType="fade" onRequestClose={() => setShowProposeModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.proposeModal, { backgroundColor: colors.card }]}>
+            <View style={styles.proposeModalHeader}>
+              <Text style={[styles.proposeModalTitle, { color: colors.text }]}>Proposer ce lieu</Text>
+              <Pressable onPress={() => setShowProposeModal(false)} style={styles.closeBtn}>
+                <X size={20} color={colors.textMuted} />
+              </Pressable>
+            </View>
+            {activeMatches.length === 0 ? (
+              <Text style={[styles.emptyMatches, { color: colors.textMuted }]}>Aucun match disponible pour le moment.</Text>
+            ) : (
+              <ScrollView style={styles.matchList} showsVerticalScrollIndicator={false}>
+                {activeMatches.map(({ match, user: otherUser }) => (
+                  <Pressable
+                    key={match.id}
+                    style={[styles.matchRow, { borderColor: colors.border }]}
+                    disabled={!!sendingMatchId}
+                    onPress={() => proposeVenueToMatch(match, otherUser)}
+                  >
+                    <OptimizedImage uri={optimizedPhotoUrl(otherUser.photos?.[0], otherUser.photo_variants, 'thumb') || 'https://placehold.co/80x80'} style={styles.matchAvatar} />
+                    <Text style={[styles.matchName, { color: colors.text }]} numberOfLines={1}>{otherUser.name}</Text>
+                    {sendingMatchId === match.id ? (
+                      <Text style={styles.sendingText}>...</Text>
+                    ) : (
+                      <Send size={18} color="#e11d48" />
+                    )}
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
       <DirectMessagePurchaseModal
         visible={showDirectMessagePurchaseModal}
         onClose={() => setShowDirectMessagePurchaseModal(false)}
@@ -187,9 +277,22 @@ const styles = StyleSheet.create({
   section: { gap: 12 },
   sectionTitle: { fontSize: 18, fontFamily: 'PlayfairBlack' },
   description: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter', opacity: 0.8 },
-  footer: { padding: 16, borderTopWidth: 1 },
+  footer: { padding: 16, borderTopWidth: 1, gap: 10 },
+  proposeBtn: { height: 52, borderRadius: 16, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#fff1f2' },
+  proposeBtnText: { color: '#e11d48', fontSize: 13, fontFamily: 'InterBold', textTransform: 'uppercase' },
   chatBtn: { backgroundColor: '#e11d48', height: 56, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
   chatBtnText: { color: '#fff', fontSize: 16, fontFamily: 'InterBold' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.72)', alignItems: 'center', justifyContent: 'center', padding: 20 },
+  proposeModal: { width: '100%', maxHeight: '72%', borderRadius: 28, padding: 18 },
+  proposeModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  proposeModalTitle: { fontSize: 22, fontFamily: 'PlayfairBlack' },
+  closeBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 18, backgroundColor: '#f8fafc' },
+  emptyMatches: { textAlign: 'center', paddingVertical: 30, fontFamily: 'InterSemiBold' },
+  matchList: { maxHeight: 360 },
+  matchRow: { minHeight: 64, borderWidth: 1, borderRadius: 18, paddingHorizontal: 12, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  matchAvatar: { width: 42, height: 42, borderRadius: 21 },
+  matchName: { flex: 1, fontSize: 14, fontFamily: 'InterBold' },
+  sendingText: { color: '#e11d48', fontSize: 18, fontFamily: 'InterBold' },
 });
 
 export default VenueDetailScreen;

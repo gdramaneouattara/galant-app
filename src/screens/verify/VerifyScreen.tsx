@@ -16,6 +16,7 @@ import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 import { uploadArrayBufferToBucket } from '../../lib/storageUpload';
+import { safeGoBack } from '../../lib/navigationBack';
 
 type KycStatus = 'PENDING' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED';
 
@@ -49,7 +50,7 @@ const getStatusKey = (status?: string) => {
 };
 
 const VerifyScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const { currentUser, refreshCurrentUser, t } = useApp();
   const [loadingState, setLoadingState] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -178,7 +179,7 @@ const VerifyScreen: React.FC = () => {
           <CheckCircle2 color="#22c55e" size={64} />
           <Text style={styles.title}>{t('kyc_verified_title')}</Text>
           <Text style={styles.subtitle}>{t('kyc_verified_body')}</Text>
-          <Pressable style={styles.primary} onPress={() => navigation.goBack()}>
+          <Pressable style={styles.primary} onPress={() => safeGoBack(navigation, 'MainTabs', { screen: 'ProfileTab' })}>
             <Text style={styles.primaryLabel}>{t('back_to_profile')}</Text>
           </Pressable>
         </View>

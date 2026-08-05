@@ -87,6 +87,23 @@ const getVenues = async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
 
+const getVenueById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const doc = await db.collection('venues').doc(id).get();
+    if (!doc.exists) return res.status(404).json({ error: 'venue_not_found' });
+
+    const venue = doc.data();
+    if (venue.status && venue.status !== 'APPROVED') {
+      return res.status(403).json({ error: 'venue_not_available' });
+    }
+
+    res.json({ venue: decorateVenueMedia(req, { id: doc.id, ...venue }, 'medium') });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const getVenueRecommendations = async (req, res) => {
   const me = req.user;
   const interests = me.interests || [];
@@ -446,7 +463,7 @@ const logVenueView = async (req, res) => {
 };
 
 module.exports = {
-  getVenues, getVenueRecommendations, getVenuePhoto, getPartnerDiscoveryAccess, discoverGooglePartners,
+  getVenues, getVenueById, getVenueRecommendations, getVenuePhoto, getPartnerDiscoveryAccess, discoverGooglePartners,
   getAgendaEvents, createPartnerEvent, deletePartnerEvent,
   createVenueChatThread, getPartnerChats, getUserVenueChats, getMyVenue, updateVenue,
   updateVenuePhotos, getVenueStats, logVenueView, attendEvent, unattendEvent
