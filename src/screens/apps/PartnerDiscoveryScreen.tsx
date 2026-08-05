@@ -55,8 +55,6 @@ const DISCOVERY_CATEGORIES = [
   { id: 'CULTURE' as DiscoveryCategory, icon: Palette },
 ];
 
-const PARTNER_DISCOVERY_TEST_OPEN = String(process.env.EXPO_PUBLIC_OPEN_PARTNER_DISCOVERY_FOR_TESTS || process.env.EXPO_PUBLIC_OPEN_TEST_FEATURES || 'true') === 'true';
-
 const PartnerDiscoveryScreen: React.FC = () => {
   const { colors, t, language, currentUser, refreshCurrentUser } = useApp();
   const { purchaseWithPaystack, purchaseLoading } = useSubscription();
@@ -65,7 +63,7 @@ const PartnerDiscoveryScreen: React.FC = () => {
   const [loadingDiscovery, setLoadingDiscovery] = React.useState(false);
   const [hasSearched, setHasSearched] = React.useState(false);
   const [category, setCategory] = React.useState<DiscoveryCategory>('ALL');
-  const hasDiscoveryAccess = PARTNER_DISCOVERY_TEST_OPEN || !!(currentUser?.is_premium || currentUser?.is_vip || currentUser?.partner_discovery_unlocked);
+  const hasDiscoveryAccess = !!(currentUser?.is_premium || currentUser?.is_vip || currentUser?.partner_discovery_unlocked);
 
   const labels = language === 'en'
     ? {

@@ -36,8 +36,6 @@ interface Status {
   };
 }
 
-const STORIES_TEST_OPEN = String(import.meta.env.VITE_OPEN_STORIES_FOR_TESTS || import.meta.env.VITE_OPEN_TEST_FEATURES || 'true') === 'true';
-
 const StoriesPage: React.FC = () => {
   const { user, profile, t } = useAuth();
   const navigate = useNavigate();
@@ -69,7 +67,7 @@ const StoriesPage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const initialActionHandledRef = useRef(false);
 
-  const canPublishForFree = STORIES_TEST_OPEN || !!profile?.is_premium || !!profile?.is_vip;
+  const canPublishForFree = !!profile?.is_premium || !!profile?.is_vip;
   const canPublishNow = canPublishForFree || storyUploadUnlocked;
 
   const resolveMediaUrls = useCallback((items: Status[]) => {
