@@ -88,7 +88,7 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
             ) : (
               <>
                 <CreditCard size={18} />
-                Payer par Mobile Money
+                Payer par Carte ou Mobile Money
               </>
             )}
           </button>

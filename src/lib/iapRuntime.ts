@@ -6,4 +6,4 @@ const appOwnership = String((Constants as any)?.appOwnership || '');
 export const isExpoGo = executionEnvironment === 'storeClient' || appOwnership === 'expo';
 
 export const IAP_EXPO_GO_MESSAGE =
-  "Google Play / App Store n'est pas disponible dans Expo Go. Utilisez Mobile Money (Paystack) ou un build natif.";
+  "Google Play / App Store n'est pas disponible dans Expo Go. Utilisez Carte ou Mobile Money (Paystack) ou un build natif.";

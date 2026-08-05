@@ -106,7 +106,7 @@ const SuperLikePurchaseModal: React.FC<Props> = ({
           <View style={styles.buttonGroup}>
             <Pressable style={[styles.btn, styles.paystackBtn]} onPress={() => onPurchasePaystack(note)} disabled={loading}>
               {loading ? <ActivityIndicator color="#fff" /> : (
-                <><CreditCard color="#fff" size={20} /><Text style={styles.btnText}>Mobile Money</Text></>
+                <><CreditCard color="#fff" size={20} /><Text style={styles.btnText}>Carte ou Mobile Money</Text></>
               )}
             </Pressable>
             {Platform.OS !== 'web' && (

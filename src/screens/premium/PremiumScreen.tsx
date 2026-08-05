@@ -136,7 +136,7 @@ const PremiumScreen: React.FC = () => {
               <View style={styles.buttonGroup}>
                 <Pressable style={[styles.payBtn, styles.paystackBtn]} onPress={() => subscribePaystack(plan)} disabled={!!loadingPlan}>
                   {loadingPlan === plan.id ? <ActivityIndicator size="small" color="#fff" /> : (
-                    <><CreditCard size={18} color="#fff" /><Text style={styles.payBtnText}>Mobile Money</Text></>
+                    <><CreditCard size={18} color="#fff" /><Text style={styles.payBtnText}>Carte ou Mobile Money</Text></>
                   )}
                 </Pressable>
                 {Platform.OS !== 'web' && (

@@ -96,6 +96,18 @@ test('Payments: all payment handlers are exported and routed', async () => {
   assert.match(routes, /router\.post\(['"]\/webhook['"],\s*handleWebhook\)/);
 });
 
+test('Payments: Paystack supports card and mobile money channels', async () => {
+  const controller = await read('server/src/controllers/paymentController.js');
+  const hook = await read('src/hooks/useSubscription.ts');
+
+  assert.match(controller, /CARD_MOBILE_MONEY/);
+  assert.match(controller, /payload\.channels\s*=\s*\['card'\]/);
+  assert.match(controller, /payload\.channels\s*=\s*\['mobile_money'\]/);
+  assert.match(controller, /payload\.channels\s*=\s*\['card',\s*'mobile_money'\]/);
+  assert.match(hook, /PaystackPaymentMethod/);
+  assert.match(hook, /CARD_MOBILE_MONEY/);
+});
+
 test('Payments: web Paystack returns are verified after checkout', async () => {
   const hook = await read('src/hooks/useSubscription.ts');
   const app = await read('web/src/App.tsx');

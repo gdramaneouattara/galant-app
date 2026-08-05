@@ -49,7 +49,7 @@ const DirectMessagePurchaseModal: React.FC<Props> = ({
               {loading ? <ActivityIndicator color="#fff" /> : (
                 <>
                   <CreditCard color="#fff" size={20} />
-                  <Text style={styles.btnText}>Mobile Money</Text>
+                  <Text style={styles.btnText}>Carte ou Mobile Money</Text>
                 </>
               )}
             </Pressable>

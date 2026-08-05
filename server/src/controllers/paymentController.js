@@ -12,7 +12,10 @@ const initializePayment = async (req, res) => {
   const email = req.authUser?.email || `${req.user.id}@galant.app`;
   const normalizedType = String(type || '').toUpperCase();
   const normalizedPlanId = String(planId || '').toUpperCase();
-  const normalizedPaymentMethod = String(paymentMethod || 'CARD').toUpperCase();
+  const requestedPaymentMethod = String(paymentMethod || 'CARD_MOBILE_MONEY').toUpperCase();
+  const normalizedPaymentMethod = ['CARD', 'MOBILE_MONEY', 'CARD_MOBILE_MONEY'].includes(requestedPaymentMethod)
+    ? requestedPaymentMethod
+    : 'CARD_MOBILE_MONEY';
   const expectedAmount = await getExpectedAmountForPurchase({ type: normalizedType, planId: normalizedPlanId });
   const roundedAmount = Math.round(Number(expectedAmount || 0) * 100);
 
@@ -54,8 +57,12 @@ const initializePayment = async (req, res) => {
     },
   };
 
-  if (normalizedPaymentMethod === 'MOBILE_MONEY') {
+  if (normalizedPaymentMethod === 'CARD') {
+    payload.channels = ['card'];
+  } else if (normalizedPaymentMethod === 'MOBILE_MONEY') {
     payload.channels = ['mobile_money'];
+  } else {
+    payload.channels = ['card', 'mobile_money'];
   }
 
   try {
@@ -89,10 +96,18 @@ const verifyPayment = async (req, res) => {
     });
     const data = response.data.data;
     if (data.status === 'success') {
-      const { userId, planId, type, targetId, note } = data.metadata || {};
+      const { userId, planId, type, targetId, note, paymentMethod } = data.metadata || {};
       if (!userId || userId !== req.user.id) return res.status(403).json({ error: 'payment_user_mismatch' });
 
-      await applyPurchasedEntitlement({ userId, planId, type, targetId, reference, paymentMethod: 'PAYSTACK', note });
+      await applyPurchasedEntitlement({
+        userId,
+        planId,
+        type,
+        targetId,
+        reference,
+        paymentMethod: paymentMethod ? `PAYSTACK_${paymentMethod}` : 'PAYSTACK',
+        note
+      });
       return res.json({ status: 'active', reference });
     }
     res.json({ status: data.status });
@@ -113,7 +128,7 @@ const handleWebhook = async (req, res) => {
   const event = req.body;
   if (event.event === 'charge.success') {
     const data = event.data;
-    const { userId, planId, type, targetId, note } = data.metadata || {};
+    const { userId, planId, type, targetId, note, paymentMethod } = data.metadata || {};
     const reference = data.reference;
 
     if (userId) {
@@ -124,7 +139,7 @@ const handleWebhook = async (req, res) => {
           type,
           targetId,
           reference,
-          paymentMethod: 'PAYSTACK_WEBHOOK',
+          paymentMethod: paymentMethod ? `PAYSTACK_WEBHOOK_${paymentMethod}` : 'PAYSTACK_WEBHOOK',
           note
         });
         console.log(`✅ Webhook processed successfully for user ${userId}, reference ${reference}`);

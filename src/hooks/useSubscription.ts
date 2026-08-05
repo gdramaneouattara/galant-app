@@ -7,6 +7,7 @@ import { openPaymentUrl } from '../lib/payment-bridge';
 const isWeb = typeof window !== 'undefined' && !((window as any).expo);
 
 export type PurchaseType = 'SUPER_LIKE' | 'DIRECT_MESSAGE' | 'BOOST' | 'PREMIUM' | 'PARTNER_PREMIUM' | 'ROSE_NOTE_UNLOCK' | 'STORY_UPLOAD' | 'LIKES_INBOX_2H' | 'DISCOVER_GRID_UNLOCK' | 'GOLDEN_ROSE' | 'ROSE_PACK' | 'PARTNER_DISCOVERY_UNLOCK';
+export type PaystackPaymentMethod = 'CARD' | 'MOBILE_MONEY' | 'CARD_MOBILE_MONEY';
 
 export const useSubscription = () => {
   const [purchaseLoading, setPurchaseLoading] = useState(false);
@@ -39,19 +40,26 @@ export const useSubscription = () => {
       const callbackUrl = isWeb
         ? `${window.location.origin}/payment-return?next=${encodeURIComponent(currentPath)}`
         : undefined;
+      const rawPaymentMethod = String(metadata?.paymentMethod || 'CARD_MOBILE_MONEY').toUpperCase();
+      const requestedPaymentMethod: PaystackPaymentMethod = ['CARD', 'MOBILE_MONEY', 'CARD_MOBILE_MONEY'].includes(rawPaymentMethod)
+        ? rawPaymentMethod as PaystackPaymentMethod
+        : 'CARD_MOBILE_MONEY';
       const init = await apiRequest<{ authorization_url: string; reference: string }>(
         '/api/payments/initialize',
         {
           method: 'POST',
           requireAuth: true,
           body: JSON.stringify({
+            ...(metadata || {}),
             amount,
             type,
             targetId,
-            paymentMethod: 'MOBILE_MONEY',
+            paymentMethod: requestedPaymentMethod,
             callbackUrl,
-            ...(metadata || {}),
-            metadata
+            metadata: {
+              ...(metadata || {}),
+              paymentMethod: requestedPaymentMethod
+            }
           }),
         }
       );
@@ -88,7 +96,7 @@ export const useSubscription = () => {
     offerToken?: string
   ): Promise<boolean> => {
     if (isWeb) {
-      showAlert('Info', 'Veuillez utiliser le paiement Mobile Money sur le Web.');
+      showAlert('Info', 'Veuillez utiliser le paiement Carte bancaire ou Mobile Money sur le Web.');
       return false;
     }
     // ... La logique Mobile restera accessible via un fichier séparé si nécessaire
