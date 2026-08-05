@@ -79,6 +79,11 @@ const AuthMethodStep: React.FC<AuthMethodStepProps> = ({ mode, onBack, onSuccess
         <ChevronLeft color={colors.textMuted} size={32} />
       </Pressable>
 
+      <View style={styles.brandHeader}>
+        <Image source={require('../../../../assets/icon (2).png')} style={styles.logoImage} />
+        <Text style={styles.brandName}>GALANT</Text>
+      </View>
+
       <Text style={[styles.title, { color: colors.text }]}>{mode === 'signup' ? t('create_account') : t('login')}</Text>
 
       <View style={styles.authMethodRow}>
@@ -179,6 +184,9 @@ const AuthMethodStep: React.FC<AuthMethodStepProps> = ({ mode, onBack, onSuccess
 const styles = StyleSheet.create({
   content: { padding: 24, gap: 18 },
   topBackButton: { alignSelf: 'flex-start', marginBottom: 10 },
+  brandHeader: { alignItems: 'center', gap: 10, marginBottom: 4 },
+  logoImage: { width: 78, height: 78, borderRadius: 22 },
+  brandName: { color: COLORS.primary, fontSize: 26, fontWeight: '900', letterSpacing: 0 },
   title: { fontSize: 28, fontWeight: '900' },
   authMethodRow: { flexDirection: 'row', gap: 12 },
   authMethodChip: { flex: 1, paddingVertical: 10, borderRadius: 999, borderWidth: 1, alignItems: 'center' },

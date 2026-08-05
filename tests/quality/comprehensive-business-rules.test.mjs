@@ -35,6 +35,16 @@ test('Rules: StatusScreen exists and is accessible', async () => {
   assert.match(code, /StatusScreen/);
 });
 
+test('Rules: Auth forms keep Galant logo visible after login or signup choice', async () => {
+  const webAuth = await read('web/src/pages/AuthPage.tsx');
+  const nativeAuthMethod = await read('src/screens/auth/components/AuthMethodStep.tsx');
+
+  assert.match(webAuth, /galant-logo-web\.png/);
+  assert.match(webAuth, /alt="Galant Logo"/);
+  assert.match(nativeAuthMethod, /assets\/icon \(2\)\.png/);
+  assert.match(nativeAuthMethod, /brandHeader/);
+});
+
 test('Rules: Stories move into discovery and Apps replaces the stories tab', async () => {
   const homeScreen = await read('src/screens/home/HomeScreen.tsx');
   const navigator = await read('src/navigation/MainNavigator.tsx');
