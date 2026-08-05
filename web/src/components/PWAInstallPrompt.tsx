@@ -1,38 +1,62 @@
 import React, { useState, useEffect } from 'react';
-import { Download, X, Share, PlusSquare } from 'lucide-react';
+import { Download, X, Share, PlusSquare, MoreVertical } from 'lucide-react';
+
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+};
+
+type InstallMode = 'native' | 'ios' | 'android-manual';
 
 const PWAInstallPrompt: React.FC = () => {
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
-  const [showIOSPrompt, setShowIOSPrompt] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installMode, setInstallMode] = useState<InstallMode | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // 1. Détection Android / Chrome (BeforeInstallPromptEvent)
-    const handler = (e: any) => {
+    let hasNativePrompt = false;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    if (isStandalone) return;
+
+    const userAgent = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
+    const isAndroid = /Android/i.test(userAgent);
+    const isMobileViewport = window.innerWidth <= 768 || navigator.maxTouchPoints > 1;
+
+    const handler = (e: Event) => {
       e.preventDefault();
-      setInstallPrompt(e);
+      hasNativePrompt = true;
+      setInstallPrompt(e as BeforeInstallPromptEvent);
+      setInstallMode('native');
       setIsVisible(true);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
 
-    // 2. Détection iOS (Safari)
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
-
-    if (isIOS && !isStandalone) {
-      setShowIOSPrompt(true);
+    if (isIOS) {
+      setInstallMode('ios');
       setIsVisible(true);
     }
 
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    const fallbackTimer = window.setTimeout(() => {
+      if (!hasNativePrompt && !isIOS && (isAndroid || isMobileViewport)) {
+        setInstallMode('android-manual');
+        setIsVisible(true);
+      }
+    }, 1800);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      window.clearTimeout(fallbackTimer);
+    };
   }, []);
 
   const handleInstallClick = async () => {
     if (!installPrompt) return;
-    installPrompt.prompt();
+
+    await installPrompt.prompt();
     const { outcome } = await installPrompt.userChoice;
-    if (outcome === 'accepted') {
+    if (outcome === 'accepted' || outcome === 'dismissed') {
       setIsVisible(false);
     }
     setInstallPrompt(null);
@@ -53,14 +77,12 @@ const PWAInstallPrompt: React.FC = () => {
               <p className="text-xs text-slate-400 font-medium">Installez l'app sur votre écran d'accueil</p>
             </div>
           </div>
-          <button onClick={() => setIsVisible(false)} className="p-2 text-slate-500 hover:text-white transition-colors">
+          <button onClick={() => setIsVisible(false)} className="p-2 text-slate-500 hover:text-white transition-colors" aria-label="Fermer">
             <X size={18} />
           </button>
         </div>
 
-        {/* Contenu spécifique selon l'OS */}
-        {installPrompt ? (
-          /* ANDROID / CHROME */
+        {installMode === 'native' && installPrompt ? (
           <button
             onClick={handleInstallClick}
             className="w-full bg-primary text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-red-500/20 active:scale-95 transition-all"
@@ -68,16 +90,28 @@ const PWAInstallPrompt: React.FC = () => {
             <Download size={18} />
             Installer maintenant
           </button>
-        ) : showIOSPrompt ? (
-          /* iOS SAFARI */
+        ) : installMode === 'ios' ? (
           <div className="space-y-3 bg-white/5 p-4 rounded-2xl border border-white/5">
             <p className="text-[11px] font-medium leading-relaxed text-slate-300">
               Sur votre iPhone : cliquez sur le bouton <span className="text-white font-bold inline-flex items-center gap-1 mx-1"><Share size={14} /> Partager</span>
               puis sur <span className="text-white font-bold inline-flex items-center gap-1 mx-1"><PlusSquare size={14} /> Sur l'écran d'accueil</span>.
             </p>
             <div className="flex justify-center">
-               <div className="w-1.5 h-1.5 bg-primary rounded-full animate-ping"></div>
+              <div className="w-1.5 h-1.5 bg-primary rounded-full animate-ping" />
             </div>
+          </div>
+        ) : installMode === 'android-manual' ? (
+          <div className="space-y-3 bg-white/5 p-4 rounded-2xl border border-white/5">
+            <p className="text-[11px] font-medium leading-relaxed text-slate-300">
+              Sur Android : ouvrez le menu <span className="text-white font-bold inline-flex items-center gap-1 mx-1"><MoreVertical size={14} /> Chrome</span>
+              puis choisissez <span className="text-white font-bold mx-1">Installer l'application</span> ou <span className="text-white font-bold mx-1">Ajouter à l'écran d'accueil</span>.
+            </p>
+            <button
+              onClick={() => setIsVisible(false)}
+              className="w-full bg-primary text-white py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-red-500/20 active:scale-95 transition-all"
+            >
+              J'ai compris
+            </button>
           </div>
         ) : null}
       </div>
