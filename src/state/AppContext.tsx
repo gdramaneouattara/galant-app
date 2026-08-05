@@ -80,7 +80,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
 
-  const [themePreference, setThemePreference] = useState<AppThemePreference>('system');
+  const [themePreference, setThemePreference] = useState<AppThemePreference>('dark');
   const [language, setLanguageState] = useState<Language>('fr');
   const systemColorScheme = useColorScheme();
 
