@@ -25,6 +25,7 @@ import { fbStorage } from '../../lib/firebase';
 import { uploadImageVariantsToBucket } from '../../lib/storageUpload';
 import { IAP_EXPO_GO_MESSAGE, isExpoGo } from '../../lib/iapRuntime';
 import type { RootStackParamList } from '../../navigation/MainNavigator';
+import { safeGoBack } from '../../lib/navigationBack';
 
 // Components
 import StatusCard from './components/StatusCard';
@@ -79,7 +80,7 @@ const STORY_VIDEO_MAX_DURATION_MS = 16 * 1000;
 const VIDEO_UPLOAD_MAX_BYTES = 30 * 1024 * 1024;
 
 const StatusScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<RootStackParamList, 'Status'>>();
   const { currentUser, appResumeVersion, t } = useApp();
   const { handleSwipe } = useMatchmaking();
@@ -376,7 +377,7 @@ const StatusScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()}><ChevronLeft color={COLORS.ink} /></Pressable>
+        <Pressable onPress={() => safeGoBack(navigation, 'MainTabs', { screen: 'DiscoverTab' })}><ChevronLeft color={COLORS.ink} /></Pressable>
         <Text style={styles.headerTitle}>Galant Stories</Text>
         <Pressable onPress={pickStatusMedia} disabled={uploading}>
           {uploading ? <ActivityIndicator size="small" color={COLORS.primary} /> : <Plus color={COLORS.primary} />}

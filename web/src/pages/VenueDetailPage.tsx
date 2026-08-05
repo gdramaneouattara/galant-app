@@ -20,6 +20,7 @@ const VenueDetailPage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const routeState = (location.state as any) || {};
   const [venue, setVenue] = useState<any>((location.state as any)?.venue || null);
   const [loading, setLoading] = useState(true);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
@@ -92,6 +93,25 @@ const VenueDetailPage: React.FC = () => {
     showAlert('Guide Galant', 'Aucun numero direct disponible pour ce lieu.');
   };
 
+  const handleBack = () => {
+    if (routeState.from === '/guide') {
+      navigate('/guide', {
+        state: {
+          scrollToVenueId: routeState.scrollToVenueId || venue?.id,
+          guideState: routeState.guideState,
+        },
+      });
+      return;
+    }
+
+    if ((window.history.state?.idx ?? 0) > 0) {
+      navigate(-1);
+      return;
+    }
+
+    navigate('/guide');
+  };
+
   if (loading || !venue) {
     return (
       <div className="flex flex-col items-center justify-center py-40">
@@ -111,7 +131,7 @@ const VenueDetailPage: React.FC = () => {
     <div className="max-w-2xl mx-auto pb-24 space-y-8 animate-in fade-in duration-500">
       <div className="flex items-center justify-between px-4 pt-2">
         <button
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
           className="p-3 bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-white/10 rounded-2xl text-slate-400 hover:text-primary transition-all"
         >
           <ChevronLeft size={20} />

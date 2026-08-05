@@ -183,6 +183,55 @@ test('Rules: Guide Google photos are referenced, sized and attributed without St
   assert.match(nativeVenueDetail, /Photo Google Places/);
 });
 
+test('Rules: Guide venue detail returns to the selected venue instead of agenda', async () => {
+  const webGuide = await read('web/src/pages/GuidePage.tsx');
+  const webVenueDetail = await read('web/src/pages/VenueDetailPage.tsx');
+
+  assert.match(webGuide, /from:\s*'\/guide'/);
+  assert.match(webGuide, /scrollToVenueId:\s*venue\.id/);
+  assert.match(webGuide, /guideState:\s*\{\s*searchQuery,\s*activeCategory\s*\}/);
+  assert.match(webGuide, /venue-card-\$\{venue\.id\}/);
+  assert.match(webVenueDetail, /routeState\.from === '\/guide'/);
+  assert.match(webVenueDetail, /navigate\('\/guide'/);
+  assert.match(webVenueDetail, /scrollToVenueId:\s*routeState\.scrollToVenueId \|\| venue\?\.id/);
+});
+
+test('Rules: Back navigation uses safe fallbacks across web and native surfaces', async () => {
+  const navigationBack = await read('src/lib/navigationBack.ts');
+  const nativeFiles = [
+    'src/screens/messages/ChatScreen.tsx',
+    'src/screens/premium/LikesInboxScreen.tsx',
+    'src/screens/premium/LikesReceivedScreen.tsx',
+    'src/screens/guide/VenueDetailScreen.tsx',
+    'src/screens/apps/SentinelScreen.tsx',
+    'src/screens/home/StatusScreen.tsx',
+    'src/screens/profile/BoostedProfileDetailScreen.tsx',
+    'src/screens/verify/VerifyScreen.tsx',
+    'src/screens/boost/BoostScreen.tsx',
+    'src/screens/premium/PremiumScreen.tsx',
+    'src/screens/partner/PartnerPremiumScreen.tsx',
+    'src/screens/auth/ResetPasswordScreen.tsx',
+  ];
+  const webFiles = [
+    'web/src/pages/TermsPage.tsx',
+    'web/src/pages/PrivacyPage.tsx',
+    'web/src/pages/ProfileDetailPage.tsx',
+    'web/src/pages/PartnerPremiumPage.tsx',
+    'web/src/pages/VenueDetailPage.tsx',
+  ];
+
+  assert.match(navigationBack, /canGoBack/);
+  assert.match(navigationBack, /fallbackRoute/);
+  for (const file of nativeFiles) {
+    assert.match(await read(file), /safeGoBack/);
+  }
+  for (const file of webFiles) {
+    const code = await read(file);
+    assert.match(code, /window\.history\.state\?\.idx/);
+    assert.match(code, /handleBack/);
+  }
+});
+
 test('Rules: Venue suggestions in chat are actionable across web and mobile', async () => {
   const venueController = await read('server/src/controllers/venueController.js');
   const venueRoutes = await read('server/src/routes/venueRoutes.js');

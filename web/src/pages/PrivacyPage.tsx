@@ -4,10 +4,17 @@ import { useNavigate } from 'react-router-dom';
 
 const PrivacyPage: React.FC = () => {
   const navigate = useNavigate();
+  const handleBack = () => {
+    if ((window.history.state?.idx ?? 0) > 0) {
+      navigate(-1);
+      return;
+    }
+    navigate('/');
+  };
 
   return (
     <div className="max-w-3xl mx-auto py-10 px-6 pb-20">
-      <button onClick={() => navigate(-1)} className="mb-8 flex items-center gap-2 text-slate-400 dark:text-slate-500 font-bold text-sm hover:text-primary transition-colors">
+      <button onClick={handleBack} className="mb-8 flex items-center gap-2 text-slate-400 dark:text-slate-500 font-bold text-sm hover:text-primary transition-colors">
         <ChevronLeft size={20} /> RETOUR
       </button>
 

@@ -15,9 +15,10 @@ import { fbAuth } from '../../lib/firebase';
 import { COLORS } from '../../data/mock';
 import PrimaryButton from '../../components/PrimaryButton';
 import { useApp } from '../../state/AppContext';
+import { safeGoBack } from '../../lib/navigationBack';
 
 const ResetPasswordScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const { t } = useApp();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,7 +29,7 @@ const ResetPasswordScreen: React.FC = () => {
     try {
       await fbAuth.sendPasswordResetEmail(email.trim().toLowerCase());
       Alert.alert(t('email_sent'), t('reset_email_sent'), [
-        { text: 'OK', onPress: () => navigation.goBack() }
+        { text: 'OK', onPress: () => safeGoBack(navigation, 'AuthFlow') }
       ]);
     } catch (error: any) {
       Alert.alert(t('error'), error.message);

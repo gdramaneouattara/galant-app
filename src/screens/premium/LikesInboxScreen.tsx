@@ -18,6 +18,7 @@ import { useApp } from '../../state/AppContext';
 import { useSubscription } from '../../hooks/useSubscription';
 import OptimizedImage from '../../components/OptimizedImage';
 import { optimizedPhotoUrl } from '../../lib/mediaVariants';
+import { safeGoBack } from '../../lib/navigationBack';
 
 type LikeInboxRow = {
   liker_id: string;
@@ -216,7 +217,7 @@ const LikesInboxScreen: React.FC = () => {
             <Text style={styles.title}>Boîte Likes reçus</Text>
             <Text style={styles.subtitle}>Like en retour pour obtenir un match.</Text>
           </View>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Pressable onPress={() => safeGoBack(navigation, 'MainTabs', { screen: 'ProfileTab' })} style={styles.backButton}>
             <Text style={styles.backButtonText}>Retour</Text>
           </Pressable>
         </View>

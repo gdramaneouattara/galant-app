@@ -9,6 +9,7 @@ import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
 import { IAP_EXPO_GO_MESSAGE, isExpoGo } from '../../lib/iapRuntime';
+import { safeGoBack } from '../../lib/navigationBack';
 
 import { useSubscription } from '../../hooks/useSubscription';
 
@@ -26,7 +27,7 @@ type PremiumPlan = {
 
 const PremiumScreen: React.FC = () => {
   // Quality requirement: /api/payments/initialize, /api/payments/verify
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const { refreshCurrentUser, currentUser, t } = useApp();
   const { purchaseLoading, purchaseWithPaystack, purchaseWithStore, initIAP, endIAP, androidOfferTokenBySku } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
@@ -66,7 +67,7 @@ const PremiumScreen: React.FC = () => {
     if (ok) {
       await refreshCurrentUser();
       Alert.alert(t('success'), t('premium_active'));
-      navigation.goBack();
+      safeGoBack(navigation, 'MainTabs', { screen: 'ProfileTab' });
     }
     setLoadingPlan(null);
   };
@@ -78,7 +79,7 @@ const PremiumScreen: React.FC = () => {
     if (ok) {
       await refreshCurrentUser();
       Alert.alert(t('success'), t('premium_active'));
-      navigation.goBack();
+      safeGoBack(navigation, 'MainTabs', { screen: 'ProfileTab' });
     }
     setLoadingPlan(null);
   };

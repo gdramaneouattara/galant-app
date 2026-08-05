@@ -17,6 +17,7 @@ import { rtdb, db, COLLECTIONS, fbStorage } from '../../lib/firebase';
 import { PresenceInfo, subscribeToUserPresence } from '../../lib/presence';
 import { uploadArrayBufferToBucket, getPublicUrl } from '../../lib/storageUpload';
 import { optimizedPhotoUrl } from '../../lib/mediaVariants';
+import { safeGoBack } from '../../lib/navigationBack';
 
 // Components
 import ChatHeader from './components/ChatHeader';
@@ -360,7 +361,7 @@ const ChatScreen: React.FC = () => {
         title={targetUser?.name || 'Chat'}
         subtitle={targetPresence ? (targetPresence.is_online ? t('online') : t('offline')) : undefined}
         isOnline={!!targetPresence?.is_online}
-        onBack={() => navigation.goBack()}
+        onBack={() => safeGoBack(navigation, 'MainTabs', { screen: 'MessagesTab' })}
         onOpenSafety={() => {}}
         colors={colors}
       />
