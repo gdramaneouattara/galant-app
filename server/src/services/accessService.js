@@ -1,4 +1,4 @@
-const { TRIAL_DAYS } = require('../config/constants');
+const { TRIAL_DAYS, TEST_OPEN_FEATURES } = require('../config/constants');
 
 const isTrialActive = (p) => {
   if (!p || p.gender === 'FEMALE') return false;
@@ -10,6 +10,7 @@ const isTrialActive = (p) => {
 
 const hasStandardAccess = (p) => {
   if (!p) return false;
+  if (TEST_OPEN_FEATURES.STORIES) return true;
   // Les Stories sont désormais une fonctionnalité réservée aux membres Premium, VIP ou en période d'essai (Hommes)
   return !!p.is_premium || !!p.is_vip || isTrialActive(p);
 };

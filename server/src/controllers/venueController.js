@@ -1,5 +1,6 @@
 const { db } = require('../config/firebase');
 const { FieldValue } = require('firebase-admin/firestore');
+const { TEST_OPEN_FEATURES } = require('../config/constants');
 const { getLatestActiveSubscriptionForUser } = require('../services/subscriptionService');
 const { hasDirectMessagePurchase } = require('../services/usageService');
 const {
@@ -145,6 +146,7 @@ const getVenuePhoto = async (req, res) => {
 };
 
 const canUsePartnerDiscovery = (profile = {}) => (
+  TEST_OPEN_FEATURES.PARTNER_DISCOVERY ||
   !!profile.is_premium ||
   !!profile.is_vip ||
   !!profile.partner_discovery_unlocked
@@ -196,6 +198,7 @@ const discoverGooglePartners = async (req, res) => {
       category,
       radiusKm,
       access: {
+        testOpen: TEST_OPEN_FEATURES.PARTNER_DISCOVERY,
         includedWithPremium: !!(req.user.is_premium || req.user.is_vip),
         unlocked: !!req.user.partner_discovery_unlocked
       }
