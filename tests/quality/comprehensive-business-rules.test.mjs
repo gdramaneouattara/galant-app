@@ -173,6 +173,31 @@ test('Rules: Guide Google photos are referenced, sized and attributed without St
   assert.match(nativeVenueDetail, /Photo Google Places/);
 });
 
+test('Rules: Venue suggestions in chat are actionable across web and mobile', async () => {
+  const venueController = await read('server/src/controllers/venueController.js');
+  const venueRoutes = await read('server/src/routes/venueRoutes.js');
+  const webProposeModal = await read('web/src/components/ProposeVenueModal.tsx');
+  const webChat = await read('web/src/pages/ChatPage.tsx');
+  const webVenueDetail = await read('web/src/pages/VenueDetailPage.tsx');
+  const nativeVenueDetail = await read('src/screens/guide/VenueDetailScreen.tsx');
+  const nativeChatItem = await read('src/screens/messages/components/ChatMessageItem.tsx');
+
+  assert.match(venueController, /getVenueById/);
+  assert.match(venueRoutes, /\/:id/);
+  assert.match(webProposeModal, /messageType:\s*'VENUE_SUGGESTION'/);
+  assert.match(webProposeModal, /address:\s*venue\.address/);
+  assert.match(webProposeModal, /google_maps_uri:\s*venue\.google_maps_uri/);
+  assert.match(webChat, /openVenueSuggestion/);
+  assert.match(webChat, /handleVenueOpinion/);
+  assert.match(webChat, /VENUE_SUGGESTION_OPINION/);
+  assert.match(webVenueDetail, /\/api\/venues\/\$\{id\}/);
+  assert.match(nativeVenueDetail, /messageType:\s*'VENUE_SUGGESTION'/);
+  assert.match(nativeVenueDetail, /Proposer ce lieu/);
+  assert.match(nativeChatItem, /openVenueSuggestion/);
+  assert.match(nativeChatItem, /sendVenueOpinion/);
+  assert.match(nativeChatItem, /VenueDetail/);
+});
+
 test('Rules: Apps exposes paid user partner discovery with direct Google import', async () => {
   const googleMapsService = await read('server/src/services/googleMapsService.js');
   const venueController = await read('server/src/controllers/venueController.js');

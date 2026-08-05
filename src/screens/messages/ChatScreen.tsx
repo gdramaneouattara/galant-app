@@ -28,7 +28,7 @@ interface ChatMessage {
   match_id: string;
   sender_id: string;
   content: string;
-  message_type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'VOICE';
+  message_type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'VOICE' | 'VENUE_SUGGESTION' | 'EVENT_SUGGESTION';
   media_url?: string | null;
   metadata?: Record<string, any>;
   is_read: boolean;

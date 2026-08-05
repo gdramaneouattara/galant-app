@@ -3,6 +3,7 @@ const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const {
   getVenues, getVenueRecommendations, getVenuePhoto, getPartnerDiscoveryAccess, discoverGooglePartners,
+  getVenueById,
   getAgendaEvents, createPartnerEvent, deletePartnerEvent,
   createVenueChatThread, getPartnerChats, getUserVenueChats, getMyVenue, updateVenue,
   updateVenuePhotos, getVenueStats, logVenueView, attendEvent, unattendEvent
@@ -14,6 +15,7 @@ router.get('/recommendations', requireAuth, getVenueRecommendations);
 router.get('/partner-discovery/access', requireAuth, getPartnerDiscoveryAccess);
 router.get('/partner-discovery/google', requireAuth, discoverGooglePartners);
 router.get('/agenda', requireAuth, getAgendaEvents);
+router.get('/:id', requireAuth, getVenueById);
 router.post('/agenda/:id/attend', requireAuth, attendEvent);
 router.post('/agenda/:id/unattend', requireAuth, unattendEvent);
 router.post('/partner/events', requireAuth, createPartnerEvent);

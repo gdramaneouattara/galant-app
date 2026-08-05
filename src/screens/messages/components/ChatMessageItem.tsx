@@ -1,7 +1,8 @@
 import React, { memo, useRef, useState } from 'react';
 import { Modal, View, Text, Pressable, ActivityIndicator, StyleSheet, Alert } from 'react-native';
-import { Music, Play, Languages, MapPin, Calendar, Trash2, Film, X } from 'lucide-react-native';
+import { Music, Play, Languages, MapPin, Calendar, Trash2, Film, X, ExternalLink, Check, Send } from 'lucide-react-native';
 import { Audio, Video, ResizeMode } from 'expo-av';
+import { useNavigation } from '@react-navigation/native';
 import { apiRequest } from '../../../lib/api';
 import { COLORS } from '../../../data/mock';
 import OptimizedImage from '../../../components/OptimizedImage';
@@ -11,7 +12,7 @@ interface ChatMessage {
   match_id: string;
   sender_id: string;
   content: string;
-  message_type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'VOICE';
+  message_type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'VOICE' | 'VENUE_SUGGESTION' | 'EVENT_SUGGESTION';
   media_url?: string | null;
   metadata?: Record<string, any>;
   is_read: boolean;
@@ -34,6 +35,7 @@ interface ChatMessageItemProps {
 const ChatMessageItem = memo<ChatMessageItemProps>(({
   item, matchId, venueChatId, isMine, avatarUri, mediaUrl, displayTime, t, is_premium, language
 }) => {
+  const navigation = useNavigation<any>();
   const hasText = !!item.content;
   const hasImage = item.message_type === 'IMAGE' && !!mediaUrl;
   const isVideo = item.message_type === 'VIDEO' && !!mediaUrl;
@@ -52,6 +54,7 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
   const [isTranslating, setIsTranslating] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
   const [videoOpen, setVideoOpen] = useState(false);
+  const [responding, setResponding] = useState(false);
   const playedMarkRef = useRef(false);
 
   const translateMessage = async () => {
@@ -129,6 +132,33 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
   const venueData = isVenue ? (item.metadata as any)?.venue : null;
   const eventData = isEvent ? (item.metadata as any)?.event : null;
 
+  const openVenueSuggestion = () => {
+    if (!venueData?.id) return;
+    navigation.navigate('VenueDetail', { venue: venueData });
+  };
+
+  const sendVenueOpinion = async (content: string) => {
+    if (responding) return;
+    try {
+      setResponding(true);
+      await apiRequest('/api/messages/send', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({
+          matchId,
+          venueChatId,
+          content,
+          messageType: 'TEXT',
+          metadata: { reply_kind: 'VENUE_SUGGESTION_OPINION' }
+        })
+      });
+    } catch (e: any) {
+      Alert.alert(t('error'), e?.message || t('chat_error'));
+    } finally {
+      setResponding(false);
+    }
+  };
+
   return (
     <View style={[styles.messageRow, isMine && styles.myMessageRow]}>
       {!isMine && <OptimizedImage uri={avatarUri} style={styles.senderAvatar} />}
@@ -149,13 +179,43 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
         {isVenue && (
           <View style={styles.venueContent}>
             <Text style={styles.venueHint}>{isMine ? t('my_suggestion') : t('date_suggestion')}</Text>
-            <View style={styles.venueCardInner}>
+            <Pressable style={styles.venueCardInner} onPress={openVenueSuggestion}>
               <OptimizedImage uri={venueData?.photo_url || 'https://placehold.co/80x80'} style={styles.venueThumb} />
               <View style={styles.venueTextWrap}>
                 <Text style={styles.venueNameText}>{venueData?.name}</Text>
+                <Text style={styles.venueMetaText} numberOfLines={1}>{venueData?.address || venueData?.city || 'Guide Galant'}</Text>
                 <Text style={styles.venueBenefitText}>🎁 {venueData?.benefit_description}</Text>
               </View>
-            </View>
+              <ExternalLink size={16} color="#94a3b8" />
+            </Pressable>
+            {!isMine && (
+              <View style={styles.venueOpinionRow}>
+                <Pressable
+                  style={[styles.venueOpinionButton, styles.venueOpinionPositive, responding && styles.disabledAction]}
+                  disabled={responding}
+                  onPress={() => sendVenueOpinion(`Oui, ${venueData?.name} me tente. On regarde les details ?`)}
+                >
+                  <Check size={12} color="#047857" />
+                  <Text style={styles.venueOpinionPositiveText}>Ca me tente</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.venueOpinionButton, styles.venueOpinionNeutral, responding && styles.disabledAction]}
+                  disabled={responding}
+                  onPress={() => sendVenueOpinion(`Je ne suis pas convaincu(e) par ${venueData?.name}. On cherche une autre option ?`)}
+                >
+                  <X size={12} color="#475569" />
+                  <Text style={styles.venueOpinionNeutralText}>Autre idee</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.venueOpinionButton, styles.venueOpinionAsk, responding && styles.disabledAction]}
+                  disabled={responding}
+                  onPress={() => sendVenueOpinion(`Je veux bien, mais dis-moi ce qui te plait dans ${venueData?.name}.`)}
+                >
+                  <Send size={12} color="#e11d48" />
+                  <Text style={styles.venueOpinionAskText}>Mon avis</Text>
+                </Pressable>
+              </View>
+            )}
           </View>
         )}
 
@@ -262,7 +322,17 @@ const styles = StyleSheet.create({
   venueThumb: { width: 50, height: 50, borderRadius: 8 },
   venueTextWrap: { flex: 1 },
   venueNameText: { fontSize: 14, fontWeight: '800' },
+  venueMetaText: { fontSize: 11, color: '#64748b', fontWeight: '700', marginTop: 2 },
   venueBenefitText: { fontSize: 12, color: '#e11d48', fontWeight: '700' },
+  venueOpinionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
+  venueOpinionButton: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 12, paddingHorizontal: 9, paddingVertical: 8 },
+  venueOpinionPositive: { backgroundColor: '#ecfdf5' },
+  venueOpinionNeutral: { backgroundColor: '#f1f5f9' },
+  venueOpinionAsk: { backgroundColor: '#fff1f2' },
+  venueOpinionPositiveText: { color: '#047857', fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
+  venueOpinionNeutralText: { color: '#475569', fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
+  venueOpinionAskText: { color: '#e11d48', fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
+  disabledAction: { opacity: 0.55 },
   serenadeBubble: { backgroundColor: '#fff1f2', borderColor: '#fecdd3', borderWidth: 1 },
   voiceAction: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 8 },
   voiceText: { fontSize: 13, fontWeight: '700' },
