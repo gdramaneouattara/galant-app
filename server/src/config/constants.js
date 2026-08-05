@@ -59,11 +59,6 @@ const PHOTO_LIMITS = {
   PREMIUM: 6
 };
 
-const TEST_OPEN_FEATURES = {
-  STORIES: String(process.env.OPEN_STORIES_FOR_TESTS || process.env.OPEN_TEST_FEATURES || 'true') === 'true',
-  PARTNER_DISCOVERY: String(process.env.OPEN_PARTNER_DISCOVERY_FOR_TESTS || process.env.OPEN_TEST_FEATURES || 'true') === 'true'
-};
-
 const BOOST_SCORES = {
   '1D': 500,
   '3D': 700,
@@ -97,7 +92,6 @@ module.exports = {
   ROSE_PACKS,
   QUOTAS,
   PHOTO_LIMITS,
-  TEST_OPEN_FEATURES,
   BOOST_SCORES,
   PLAN_DURATIONS,
   ALLOWED_REPORT_REASONS,

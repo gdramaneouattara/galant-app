@@ -50,7 +50,6 @@ test('Rules: Stories move into discovery and Apps replaces the stories tab', asy
   const navigator = await read('src/navigation/MainNavigator.tsx');
   const webApp = await read('web/src/App.tsx');
   const webDiscover = await read('web/src/pages/DiscoverPage.tsx');
-  const webStories = await read('web/src/pages/StoriesPage.tsx');
 
   assert.match(homeScreen, /\/api\/statuses/);
   assert.match(homeScreen, /storyBubbles/);
@@ -59,8 +58,6 @@ test('Rules: Stories move into discovery and Apps replaces the stories tab', asy
   assert.match(webApp, /\/apps/);
   assert.match(webDiscover, /\/api\/statuses/);
   assert.match(webDiscover, /initialStatusId/);
-  assert.match(webStories, /STORIES_TEST_OPEN/);
-  assert.match(homeScreen, /STORIES_TEST_OPEN/);
 });
 
 test('Rules: Sentinel fake call is wired on web and mobile', async () => {
@@ -299,15 +296,12 @@ test('Rules: Apps exposes paid user partner discovery with direct Google import'
   assert.match(googleMapsService, /GIFTS:\s*\['florist',\s*'gift_shop'\]/);
   assert.match(googleMapsService, /CULTURE:\s*\['museum',\s*'art_gallery',\s*'movie_theater',\s*'park'\]/);
   assert.match(venueController, /discoverGooglePartners/);
-  assert.match(venueController, /TEST_OPEN_FEATURES\.PARTNER_DISCOVERY/);
   assert.match(venueController, /req\.query\.category/);
   assert.match(venueController, /partner_discovery_unlocked/);
   assert.match(venueController, /partner_discovery_requires_payment/);
   assert.match(venueRoutes, /\/partner-discovery\/google/);
   assert.match(venueRoutes, /\/partner-discovery\/access/);
   assert.match(constants, /PARTNER_DISCOVERY_UNLOCK:\s*parseInt\(process\.env\.PARTNER_DISCOVERY_UNLOCK_AMOUNT \|\| '500'\)/);
-  assert.match(constants, /OPEN_PARTNER_DISCOVERY_FOR_TESTS/);
-  assert.match(constants, /OPEN_STORIES_FOR_TESTS/);
   assert.match(paymentHelpers, /PARTNER_DISCOVERY_UNLOCK/);
   assert.match(subscriptionService, /partner_discovery_unlocked:\s*true/);
   assert.match(webApp, /\/partner-discovery/);
@@ -315,7 +309,6 @@ test('Rules: Apps exposes paid user partner discovery with direct Google import'
   assert.doesNotMatch(webApps, /PARTNER_DISCOVERY_UNLOCK/);
   assert.doesNotMatch(webApps, /\/api\/venues\/partner-discovery\/google/);
   assert.match(webPartnerDiscovery, /PARTNER_DISCOVERY_UNLOCK/);
-  assert.match(webPartnerDiscovery, /PARTNER_DISCOVERY_TEST_OPEN/);
   assert.match(webPartnerDiscovery, /window\.confirm/);
   assert.match(webPartnerDiscovery, /\/api\/venues\/partner-discovery\/google/);
   assert.match(webPartnerDiscovery, /DISCOVERY_CATEGORIES/);
@@ -328,7 +321,6 @@ test('Rules: Apps exposes paid user partner discovery with direct Google import'
   assert.doesNotMatch(nativeApps, /PARTNER_DISCOVERY_UNLOCK/);
   assert.doesNotMatch(nativeApps, /\/api\/venues\/partner-discovery\/google/);
   assert.match(nativePartnerDiscovery, /PARTNER_DISCOVERY_UNLOCK/);
-  assert.match(nativePartnerDiscovery, /PARTNER_DISCOVERY_TEST_OPEN/);
   assert.match(nativePartnerDiscovery, /Alert\.alert\(labels\.payTitle/);
   assert.match(nativePartnerDiscovery, /\/api\/venues\/partner-discovery\/google/);
   assert.match(nativePartnerDiscovery, /DISCOVERY_CATEGORIES/);
