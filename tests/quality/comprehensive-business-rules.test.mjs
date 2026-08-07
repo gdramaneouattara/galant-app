@@ -253,6 +253,7 @@ test('Rules: Back navigation uses safe fallbacks across web and native surfaces'
 
 test('Rules: Venue suggestions in chat are actionable across web and mobile', async () => {
   const venueController = await read('server/src/controllers/venueController.js');
+  const messageController = await read('server/src/controllers/messageController.js');
   const venueRoutes = await read('server/src/routes/venueRoutes.js');
   const webProposeModal = await read('web/src/components/ProposeVenueModal.tsx');
   const webChat = await read('web/src/pages/ChatPage.tsx');
@@ -268,12 +269,20 @@ test('Rules: Venue suggestions in chat are actionable across web and mobile', as
   assert.match(webChat, /openVenueSuggestion/);
   assert.match(webChat, /handleVenueOpinion/);
   assert.match(webChat, /VENUE_SUGGESTION_OPINION/);
+  assert.match(webChat, /source_message_id:\s*sourceMessage\?\.id/);
+  assert.match(webChat, /venue_id:\s*sourceMessage\?\.metadata\?\.venue\?\.id/);
   assert.match(webVenueDetail, /\/api\/venues\/\$\{id\}/);
   assert.match(nativeVenueDetail, /messageType:\s*'VENUE_SUGGESTION'/);
   assert.match(nativeVenueDetail, /Proposer ce lieu/);
   assert.match(nativeChatItem, /openVenueSuggestion/);
   assert.match(nativeChatItem, /sendVenueOpinion/);
+  assert.match(nativeChatItem, /source_message_id:\s*item\.id/);
+  assert.match(nativeChatItem, /venue_id:\s*venueData\?\.id/);
   assert.match(nativeChatItem, /VenueDetail/);
+  assert.match(messageController, /hasPriorVenueSuggestionForReply/);
+  assert.match(messageController, /VENUE_SUGGESTION_OPINION/);
+  assert.match(messageController, /message\.message_type === 'VENUE_SUGGESTION'/);
+  assert.match(messageController, /canReplyToVenueSuggestion/);
 });
 
 test('Rules: Apps exposes paid user partner discovery with direct Google import', async () => {

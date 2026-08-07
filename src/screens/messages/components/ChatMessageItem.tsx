@@ -149,7 +149,11 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
           venueChatId,
           content,
           messageType: 'TEXT',
-          metadata: { reply_kind: 'VENUE_SUGGESTION_OPINION' }
+          metadata: {
+            reply_kind: 'VENUE_SUGGESTION_OPINION',
+            source_message_id: item.id,
+            venue_id: venueData?.id
+          }
         })
       });
     } catch (e: any) {

@@ -357,7 +357,7 @@ const ChatPage: React.FC = () => {
     navigate(`/venue/${venue.id}`, { state: { venue } });
   };
 
-  const handleVenueOpinion = async (message: string) => {
+  const handleVenueOpinion = async (message: string, sourceMessage: any) => {
     if (sending || !user || !targetUser || (!matchId && !venueChatId)) return;
     setSending(true);
     try {
@@ -370,7 +370,11 @@ const ChatPage: React.FC = () => {
           content: message,
           messageType: 'TEXT',
           recipientId: targetUser.isVenue ? undefined : targetUser.id,
-          metadata: { reply_kind: 'VENUE_SUGGESTION_OPINION' }
+          metadata: {
+            reply_kind: 'VENUE_SUGGESTION_OPINION',
+            source_message_id: sourceMessage?.id,
+            venue_id: sourceMessage?.metadata?.venue?.id
+          }
         })
       });
     } catch (error: any) {
@@ -494,7 +498,7 @@ const ChatPage: React.FC = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
                           <button
                             type="button"
-                            onClick={() => handleVenueOpinion(`Oui, ${msg.metadata?.venue?.name} me tente. On regarde les détails ?`)}
+                            onClick={() => handleVenueOpinion(`Oui, ${msg.metadata?.venue?.name} me tente. On regarde les détails ?`, msg)}
                             disabled={sending}
                             className="px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wide flex items-center justify-center gap-1 disabled:opacity-50"
                           >
@@ -502,7 +506,7 @@ const ChatPage: React.FC = () => {
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleVenueOpinion(`Je ne suis pas convaincu(e) par ${msg.metadata?.venue?.name}. On cherche une autre option ?`)}
+                            onClick={() => handleVenueOpinion(`Je ne suis pas convaincu(e) par ${msg.metadata?.venue?.name}. On cherche une autre option ?`, msg)}
                             disabled={sending}
                             className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 text-[10px] font-bold uppercase tracking-wide flex items-center justify-center gap-1 disabled:opacity-50"
                           >
@@ -510,7 +514,7 @@ const ChatPage: React.FC = () => {
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleVenueOpinion(`Je veux bien, mais dis-moi ce qui te plaît dans ${msg.metadata?.venue?.name}.`)}
+                            onClick={() => handleVenueOpinion(`Je veux bien, mais dis-moi ce qui te plaît dans ${msg.metadata?.venue?.name}.`, msg)}
                             disabled={sending}
                             className="px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-primary text-[10px] font-bold uppercase tracking-wide flex items-center justify-center gap-1 disabled:opacity-50"
                           >
