@@ -144,13 +144,24 @@ test('backend applies baseline transport and browser security controls', async (
 test('web recovers from stale dynamic chunks after deployments', async () => {
   const main = await read('web/src/main.tsx');
   const recovery = await read('web/src/lib/chunkRecovery.ts');
+  const index = await read('web/index.html');
+  const viteConfig = await read('web/vite.config.ts');
 
   assert.match(main, /installChunkRecovery\(\)/);
+  assert.match(main, /__GALANT_APP_BOOTED/);
   assert.match(main, /onNeedRefresh/);
   assert.match(recovery, /vite:preloadError/);
   assert.match(recovery, /Failed to fetch dynamically imported module/i);
   assert.match(recovery, /window\.location\.reload\(\)/);
   assert.match(recovery, /galant-media-cache/);
+  assert.match(index, /galant-boot-loader/);
+  assert.match(index, /galant_pwa_boot_recovery_at/);
+  assert.match(index, /unregisterServiceWorkers/);
+  assert.match(index, /pwa_recover/);
+  assert.match(viteConfig, /const pwaRoot/);
+  assert.match(viteConfig, /start_url:\s*pwaRoot/);
+  assert.match(viteConfig, /scope:\s*pwaRoot/);
+  assert.match(viteConfig, /cleanupOutdatedCaches:\s*true/);
 });
 
 test('backend exposes internal KYC endpoints for user submission', async () => {

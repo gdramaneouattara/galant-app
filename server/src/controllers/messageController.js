@@ -5,6 +5,31 @@ const { hasDirectMessagePurchase } = require('../services/usageService');
 const { sendPushNotification } = require('../services/notificationService');
 const { QUOTAS, ALLOWED_REPORT_REASONS } = require('../config/constants');
 
+const hasPriorVenueSuggestionForReply = async (messagesRef, meId, metadata = {}) => {
+  const sourceMessageId = String(metadata.source_message_id || '').trim();
+  const venueId = String(metadata.venue_id || '').trim();
+  const snapshot = await messagesRef.once('value');
+  if (!snapshot.exists()) return false;
+
+  let found = false;
+  snapshot.forEach(child => {
+    if (found) return;
+    const message = child.val() || {};
+    const messageVenueId = String(message.metadata?.venue?.id || '').trim();
+    const isExpectedSource = !sourceMessageId || child.key === sourceMessageId;
+    const isExpectedVenue = !venueId || messageVenueId === venueId;
+    const isReceivedVenueSuggestion =
+      message.sender_id !== meId &&
+      message.message_type === 'VENUE_SUGGESTION' &&
+      isExpectedSource &&
+      isExpectedVenue;
+
+    if (isReceivedVenueSuggestion) found = true;
+  });
+
+  return found;
+};
+
 /**
  * Sends a message.
  * Persistent thread state in Firestore, messages in Realtime DB.
@@ -12,6 +37,12 @@ const { QUOTAS, ALLOWED_REPORT_REASONS } = require('../config/constants');
 const sendMessage = async (req, res) => {
   const { matchId, venueChatId, content, recipientId, messageType, mediaPath } = req.body;
   const me = req.user;
+  const normalizedType = String(messageType || 'TEXT').toUpperCase();
+  const normalizedContent = typeof content === 'string' ? content.trim() : '';
+  const metadata = req.body.metadata && typeof req.body.metadata === 'object' ? req.body.metadata : {};
+  const isVenueSuggestionOpinion =
+    normalizedType === 'TEXT' &&
+    metadata.reply_kind === 'VENUE_SUGGESTION_OPINION';
 
   try {
     if (matchId) {
@@ -40,12 +71,17 @@ const sendMessage = async (req, res) => {
 
         // Check if I am the engager (first message or following my own message)
         const messagesRef = rtdb.ref(`messages/${matchId}`);
+        const canReplyToVenueSuggestion = isVenueSuggestionOpinion
+          ? await hasPriorVenueSuggestionForReply(messagesRef, me.id, metadata)
+          : false;
         const lastMsgSnap = await messagesRef.orderByKey().limitToLast(1).once('value');
         const lastMsg = lastMsgSnap.exists() ? Object.values(lastMsgSnap.val())[0] : null;
 
         const isEngagement = !lastMsg || lastMsg.sender_id === me.id;
 
-        if (isEngagement) {
+        if (canReplyToVenueSuggestion) {
+          // The recipient of a venue card can answer the card without unlocking generic direct messaging.
+        } else if (isEngagement) {
           // Allow the VERY FIRST message in a match for free (Mutual match)
           // Consecutive messages (double-texting) still require Premium or Purchase
           const isConsecutive = !!lastMsg && lastMsg.sender_id === me.id;
@@ -88,8 +124,6 @@ const sendMessage = async (req, res) => {
       return res.status(400).json({ error: 'missing_chat_context' });
     }
 
-    const normalizedType = String(messageType || 'TEXT').toUpperCase();
-    const normalizedContent = typeof content === 'string' ? content.trim() : '';
     const now = new Date().toISOString();
 
     const messageData = {
@@ -97,7 +131,7 @@ const sendMessage = async (req, res) => {
       content: normalizedContent || null,
       message_type: normalizedType,
       media_url: mediaPath || null,
-      metadata: req.body.metadata || {},
+      metadata,
       created_at: now,
       is_read: false
     };

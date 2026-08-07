@@ -8,10 +8,11 @@ export default defineConfig(({ mode }) => {
   // Détecte si on est sur GitHub Pages (staging) via la variable d'env GITHUB_ACTIONS
   // ou si le mode est explicitement staging
   const isGitHubPages = process.env.GITHUB_ACTIONS === 'true' || mode === 'staging';
+  const pwaRoot = isGitHubPages ? '/galant-app/' : '/';
 
   return {
     // Utilise /galant-app/ pour GitHub Pages, sinon la racine
-    base: isGitHubPages ? '/galant-app/' : '/',
+    base: pwaRoot,
     plugins: [
       react(),
     VitePWA({
@@ -22,11 +23,11 @@ export default defineConfig(({ mode }) => {
         short_name: 'Galant',
         description: 'La première plateforme de rencontre premium en Afrique Centrale.',
         lang: 'fr',
-        id: './',
-        start_url: './',
-        scope: './',
+        id: pwaRoot,
+        start_url: pwaRoot,
+        scope: pwaRoot,
         theme_color: '#ef4444',
-        background_color: '#f8fafc',
+        background_color: '#0f172a',
         display: 'standalone', // Mode "App" sans barre d'adresse
         orientation: 'portrait',
         icons: [
@@ -48,7 +49,11 @@ export default defineConfig(({ mode }) => {
           }
         ]
       },
+      cleanupOutdatedCaches: true,
+      injectRegister: false,
       workbox: {
+        clientsClaim: true,
+        skipWaiting: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/.*$/,
