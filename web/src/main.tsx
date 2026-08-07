@@ -27,3 +27,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <App />
   </React.StrictMode>,
 )
+
+;(window as any).__GALANT_APP_BOOTED = true;
