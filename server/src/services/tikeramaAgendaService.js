@@ -117,7 +117,7 @@ const firstImage = (value) => {
 const pickCity = (text = '') => {
   const normalized = normalizeText(text).toLowerCase();
   const found = IVORY_COAST_CITIES.find(city => normalized.includes(city));
-  if (!found) return DEFAULT_CITY;
+  if (!found) return null;
   if (found.includes('yamoussoukro')) return 'Yamoussoukro';
   if (found.includes('bouake')) return 'Bouake';
   if (found.includes('san')) return 'San-Pedro';
@@ -128,6 +128,13 @@ const pickCity = (text = '') => {
   if (found.includes('abengourou')) return 'Abengourou';
   if (found.includes('grand')) return 'Grand-Bassam';
   return DEFAULT_CITY;
+};
+
+const hasIvoryCoastLocation = (text = '') => {
+  const normalized = normalizeText(text).toLowerCase();
+  return normalized.includes("cote d'ivoire") ||
+    normalized.includes('ivory coast') ||
+    IVORY_COAST_CITIES.some(city => normalized.includes(city));
 };
 
 const extractPriceLabel = (text = '', offers) => {
@@ -151,13 +158,11 @@ const isIvoryCoastEvent = (candidate = {}) => {
     candidate.description,
     candidate.venueName,
     candidate.address,
-    candidate.city,
+    candidate.locationText,
     candidate.url,
   ].filter(Boolean).join(' ')).toLowerCase();
 
-  return text.includes("cote d'ivoire") ||
-    text.includes('ivory coast') ||
-    IVORY_COAST_CITIES.some(city => text.includes(city));
+  return hasIvoryCoastLocation(text);
 };
 
 const looksLikeEvent = (candidate = {}) => {
@@ -171,14 +176,14 @@ const parseDate = (value) => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
-const getListingLinks = async () => {
+const getListingLinks = async ({ maxListingPaths = LISTING_PATHS.length, requestTimeoutMs = 12000 } = {}) => {
   const links = new Set();
 
-  for (const path of LISTING_PATHS) {
+  for (const path of LISTING_PATHS.slice(0, maxListingPaths)) {
     try {
       const { data } = await axios.get(`${TIKERAMA_BASE_URL}${path}`, {
         headers: COMMON_HEADERS,
-        timeout: 12000,
+        timeout: requestTimeoutMs,
       });
       const $ = cheerio.load(data);
       $('a[href]').each((_, el) => {
@@ -201,10 +206,10 @@ const getListingLinks = async () => {
   return [...links].slice(0, TIKERAMA_IMPORT_LIMIT * 2);
 };
 
-const parseEventDetail = async (url) => {
+const parseEventDetail = async (url, { requestTimeoutMs = 12000 } = {}) => {
   const { data } = await axios.get(url, {
     headers: COMMON_HEADERS,
-    timeout: 12000,
+    timeout: requestTimeoutMs,
   });
   const $ = cheerio.load(data);
   const pageText = normalizeText($('body').text());
@@ -232,7 +237,8 @@ const parseEventDetail = async (url) => {
   const endDate = parseDate(jsonLd.endDate) || new Date(startDate.getTime() + 12 * 60 * 60 * 1000);
   const venueName = normalizeText(location.name || $('[class*="location"], [class*="venue"], [class*="lieu"]').first().text()) || 'TIKERAMA';
   const address = normalizeText(addressValue || pageText.slice(0, 220));
-  const city = pickCity(`${address} ${pageText}`);
+  const locationText = `${address} ${pageText}`;
+  const city = pickCity(locationText);
   const priceLabel = extractPriceLabel(pageText, offers);
   const ticketUrl = absoluteUrl(offers.url || url) || url;
 
@@ -246,6 +252,7 @@ const parseEventDetail = async (url) => {
     venueName,
     address,
     city,
+    locationText,
     priceLabel,
     ticketUrl,
     eventType: eventTypeFor(title, description),
@@ -254,7 +261,7 @@ const parseEventDetail = async (url) => {
   if (!title || !isIvoryCoastEvent(candidate) || !looksLikeEvent(candidate)) return null;
   if (endDate.getTime() < Date.now() - 12 * 60 * 60 * 1000) return null;
 
-  return candidate;
+  return { ...candidate, city: city || DEFAULT_CITY };
 };
 
 const upsertEvent = async (event) => {
@@ -316,7 +323,12 @@ const shouldSync = async (force) => {
   return !lastSyncDate || Date.now() - lastSyncDate.getTime() > TIKERAMA_SYNC_INTERVAL_MS;
 };
 
-const syncTikeramaAgendaIfNeeded = async ({ force = false } = {}) => {
+const syncTikeramaAgendaIfNeeded = async ({
+  force = false,
+  maxEvents = TIKERAMA_IMPORT_LIMIT,
+  maxListingPaths = LISTING_PATHS.length,
+  requestTimeoutMs = 12000,
+} = {}) => {
   if (process.env.TIKERAMA_AGENDA_ENABLED === 'false') {
     return { skipped: true, reason: 'disabled' };
   }
@@ -327,13 +339,14 @@ const syncTikeramaAgendaIfNeeded = async ({ force = false } = {}) => {
   const metaRef = db.collection('integrations').doc(TIKERAMA_META_DOC);
   await metaRef.set({ status: 'running', started_at: new Date().toISOString() }, { merge: true });
 
-  const links = await getListingLinks();
+  const importLimit = Math.max(1, Math.min(TIKERAMA_IMPORT_LIMIT, Number(maxEvents || TIKERAMA_IMPORT_LIMIT)));
+  const links = await getListingLinks({ maxListingPaths, requestTimeoutMs });
   const imported = [];
   const errors = [];
 
-  for (const link of links.slice(0, TIKERAMA_IMPORT_LIMIT)) {
+  for (const link of links.slice(0, importLimit)) {
     try {
-      const event = await parseEventDetail(link);
+      const event = await parseEventDetail(link, { requestTimeoutMs });
       if (!event) continue;
       imported.push(await upsertEvent(event));
     } catch (error) {

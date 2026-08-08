@@ -195,13 +195,23 @@ test('Rules: Agenda imports TIKERAMA Cote dIvoire events without copying media',
 
   assert.match(service, /TIKERAMA_SOURCE = 'TIKERAMA'/);
   assert.match(service, /COTE_D_IVOIRE/);
+  assert.match(service, /if \(!found\) return null/);
+  assert.match(service, /hasIvoryCoastLocation/);
+  assert.match(service, /locationText/);
+  assert.match(service, /return \{ \.\.\.candidate, city: city \|\| DEFAULT_CITY \}/);
   assert.match(service, /external_ticket_url/);
   assert.match(service, /source_label:\s*'Billetterie via TIKERAMA'/);
+  assert.match(service, /maxEvents/);
+  assert.match(service, /maxListingPaths/);
+  assert.match(service, /requestTimeoutMs/);
   assert.match(service, /venue_events/);
   assert.match(service, /venues/);
   assert.doesNotMatch(service, /bucket\(/);
   assert.doesNotMatch(service, /uploadBytes/);
   assert.match(venueController, /syncTikeramaAgendaIfNeeded/);
+  assert.match(venueController, /await syncTikeramaAgendaIfNeeded/);
+  assert.match(venueController, /maxEvents:\s*forceExternalRefresh \? undefined : 4/);
+  assert.doesNotMatch(venueController, /const externalSync = syncTikeramaAgendaIfNeeded/);
   assert.match(webAgenda, /BILLETTERIE TIKERAMA/);
   assert.match(webAgenda, /openExternalEvent/);
   assert.match(nativeAgenda, /Billetterie TIKERAMA/);
