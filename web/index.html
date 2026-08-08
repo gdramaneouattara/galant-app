@@ -70,10 +70,19 @@
           }));
         }
 
+        function getGalantServiceWorkerScope() {
+          var path = window.location.pathname || '/';
+          var scopePath = path.indexOf('/galant-app/') === 0 ? '/galant-app/' : '/';
+          return new URL(scopePath, window.location.origin).toString();
+        }
+
         async function unregisterServiceWorkers() {
           if (!('serviceWorker' in navigator)) return;
+          var galantScope = getGalantServiceWorkerScope();
           var registrations = await navigator.serviceWorker.getRegistrations();
-          await Promise.all(registrations.map(function (registration) {
+          await Promise.all(registrations.filter(function (registration) {
+            return registration.scope === galantScope;
+          }).map(function (registration) {
             return registration.unregister().catch(function () {});
           }));
         }

@@ -157,6 +157,9 @@ test('web recovers from stale dynamic chunks after deployments', async () => {
   assert.match(index, /galant-boot-loader/);
   assert.match(index, /galant_pwa_boot_recovery_at/);
   assert.match(index, /unregisterServiceWorkers/);
+  assert.match(index, /getGalantServiceWorkerScope/);
+  assert.match(index, /\/galant-app\//);
+  assert.match(index, /registration\.scope === galantScope/);
   assert.match(index, /pwa_recover/);
   assert.match(viteConfig, /const pwaRoot/);
   assert.match(viteConfig, /start_url:\s*pwaRoot/);

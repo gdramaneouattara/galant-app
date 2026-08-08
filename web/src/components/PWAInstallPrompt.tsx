@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Download, MoreVertical, PlusSquare, Share, Smartphone, X } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -14,10 +15,12 @@ const isPwaStandalone = () =>
   window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
 
 const PWAInstallPrompt: React.FC = () => {
+  const location = useLocation();
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installMode, setInstallMode] = useState<InstallMode | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
+  const isChatRoute = location.pathname.startsWith('/chat/');
 
   useEffect(() => {
     if (isPwaStandalone()) return;
@@ -88,7 +91,7 @@ const PWAInstallPrompt: React.FC = () => {
     setInstallPrompt(null);
   };
 
-  if (!isVisible) return null;
+  if (!isVisible || isChatRoute) return null;
 
   if (isCompact) {
     return (
