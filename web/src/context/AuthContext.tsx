@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
-import { fbAuth, db, rtdb, COLLECTIONS, fbMessaging } from '../firebase';
+import { fbAuth, db, rtdb, COLLECTIONS, getWebMessaging } from '../firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, collection, query, where, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, onSnapshot, setDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { ref, onValue } from 'firebase/database';
 import { getToken, onMessage } from 'firebase/messaging';
 import { TRANSLATIONS } from '@shared/translations';
 import { apiRequest } from '@shared/lib/api';
+import { showAlert } from '@shared/lib/ui-bridge';
 
 type Language = 'fr' | 'en';
 type ThemePreference = 'light' | 'dark' | 'system';
@@ -110,19 +111,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const registerWebPushToken = async (userId: string) => {
     try {
-      if (!fbMessaging) return;
-      const permission = await Notification.requestPermission();
+      if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+      const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+      if (!vapidKey) {
+        console.warn('Web Push VAPID key is missing. Set VITE_FIREBASE_VAPID_KEY.');
+        return;
+      }
+
+      const messaging = await getWebMessaging();
+      if (!messaging) return;
+
+      const permission = Notification.permission === 'granted'
+        ? 'granted'
+        : await Notification.requestPermission();
       if (permission !== 'granted') return;
-      const token = await getToken(fbMessaging, {
-        vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
+
+      const baseUrl = import.meta.env.BASE_URL || '/';
+      const serviceWorkerRegistration = await navigator.serviceWorker.register(
+        `${baseUrl}firebase-messaging-sw.js`,
+        { scope: baseUrl }
+      );
+      const token = await getToken(messaging, {
+        vapidKey,
+        serviceWorkerRegistration
       });
       if (token) {
-        await setDoc(doc(db, 'push_tokens', `${userId}_web`), {
-          user_id: userId, token, platform: 'web', is_active: true, updated_at: new Date().toISOString()
+        const tokenId = `${userId}_web_${token.substring(0, 50).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+        await setDoc(doc(db, 'push_tokens', tokenId), {
+          user_id: userId,
+          token,
+          platform: 'web',
+          is_active: true,
+          updated_at: new Date().toISOString()
         });
-        console.log('✅ Web Push Token registered');
+        console.log('Web Push Token registered');
       }
-    } catch (e) { console.error('❌ Web Push error:', e); }
+    } catch (e) { console.error('Web Push error:', e); }
   };
 
   const completeVernissage = async () => {
@@ -157,6 +181,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (profileDoc.exists()) {
             const profileData = { id: profileDoc.id, ...profileDoc.data() };
             setProfile(profileData);
+            if ('Notification' in window && Notification.permission === 'granted') {
+              void registerWebPushToken(firebaseUser.uid);
+            }
 
             // Admin Login tracking (once)
             if (profileData.is_admin && !profile) {
@@ -186,6 +213,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    let unsubscribe: (() => void) | undefined;
+    let cancelled = false;
+
+    void getWebMessaging().then((messaging) => {
+      if (!messaging || cancelled) return;
+      unsubscribe = onMessage(messaging, (payload) => {
+        const title = payload.notification?.title || String(payload.data?.title || 'Galant');
+        const body = payload.notification?.body || String(payload.data?.body || payload.data?.message || 'Nouvelle notification');
+        showAlert(title, body);
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      if (unsubscribe) unsubscribe();
+    };
+  }, [user]);
 
   // Realtime Matches (Firestore)
   useEffect(() => {
@@ -257,6 +304,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [matches, user]);
 
   const logout = async () => {
+    if (user) {
+      const tokensQuery = query(
+        collection(db, 'push_tokens'),
+        where('user_id', '==', user.uid),
+        where('platform', '==', 'web'),
+        where('is_active', '==', true)
+      );
+      const snapshot = await getDocs(tokensQuery);
+      await Promise.all(snapshot.docs.map((tokenDoc) => updateDoc(tokenDoc.ref, {
+        is_active: false,
+        updated_at: new Date().toISOString()
+      })));
+    }
     await fbAuth.signOut();
   };
 

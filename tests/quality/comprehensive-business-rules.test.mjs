@@ -249,6 +249,31 @@ test('Rules: Web mobile PWA reinstall help and Experiences rail stay usable', as
   assert.match(experiencesPage, /-translate-y-3/);
 });
 
+test('Rules: Web push notifications are fully wired', async () => {
+  const authContext = await read('web/src/context/AuthContext.tsx');
+  const firebase = await read('web/src/firebase.ts');
+  const viteConfig = await read('web/vite.config.ts');
+  const appHosting = await read('web/apphosting.yaml');
+  const envTypes = await read('src/env.d.ts');
+
+  assert.match(firebase, /getWebMessaging/);
+  assert.match(firebase, /isSupported/);
+  assert.match(authContext, /VITE_FIREBASE_VAPID_KEY/);
+  assert.match(authContext, /navigator\.serviceWorker\.register/);
+  assert.match(authContext, /serviceWorkerRegistration/);
+  assert.match(authContext, /getToken\(messaging/);
+  assert.match(authContext, /onMessage\(messaging/);
+  assert.match(authContext, /platform:\s*'web'/);
+  assert.match(authContext, /updateDoc\(tokenDoc\.ref/);
+  assert.match(viteConfig, /galant-firebase-messaging-sw/);
+  assert.match(viteConfig, /loadEnv/);
+  assert.match(viteConfig, /firebase-messaging-sw\.js/);
+  assert.match(viteConfig, /onBackgroundMessage/);
+  assert.match(viteConfig, /notificationclick/);
+  assert.match(appHosting, /VITE_FIREBASE_VAPID_KEY/);
+  assert.match(envTypes, /VITE_FIREBASE_VAPID_KEY/);
+});
+
 test('Rules: Back navigation uses safe fallbacks across web and native surfaces', async () => {
   const navigationBack = await read('src/lib/navigationBack.ts');
   const nativeFiles = [

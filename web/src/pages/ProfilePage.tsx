@@ -20,7 +20,7 @@ import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 import { uploadImageVariantsWeb } from '../lib/imageUploadVariants';
 
 const ProfilePage: React.FC = () => {
-  const { user, profile, logout, t } = useAuth();
+  const { user, profile, logout, registerWebPushToken, t } = useAuth();
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(profile?.name || '');
@@ -558,7 +558,11 @@ const ProfilePage: React.FC = () => {
 
             {/* General Menu Items */}
             <button
-              onClick={() => showAlert(t('notifications'), t('notifications_hint'))}
+              onClick={async () => {
+                if (!user) return;
+                await registerWebPushToken(user.uid);
+                showAlert(t('notifications'), t('notifications_hint'));
+              }}
               className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-left group"
             >
               <div className="w-12 h-12 bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-slate-600 rounded-xl flex items-center justify-center group-hover:bg-slate-100 dark:group-hover:bg-white/10 transition-colors">
