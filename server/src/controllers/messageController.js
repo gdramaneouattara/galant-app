@@ -8,16 +8,19 @@ const { QUOTAS, ALLOWED_REPORT_REASONS } = require('../config/constants');
 const hasPriorVenueSuggestionForReply = async (messagesRef, meId, metadata = {}) => {
   const sourceMessageId = String(metadata.source_message_id || '').trim();
   const venueId = String(metadata.venue_id || '').trim();
+  if (!sourceMessageId || !venueId) return false;
+
   const snapshot = await messagesRef.once('value');
   if (!snapshot.exists()) return false;
 
   let found = false;
+  let alreadyConsumed = false;
   snapshot.forEach(child => {
-    if (found) return;
+    if (found && alreadyConsumed) return;
     const message = child.val() || {};
     const messageVenueId = String(message.metadata?.venue?.id || '').trim();
-    const isExpectedSource = !sourceMessageId || child.key === sourceMessageId;
-    const isExpectedVenue = !venueId || messageVenueId === venueId;
+    const isExpectedSource = child.key === sourceMessageId;
+    const isExpectedVenue = messageVenueId === venueId;
     const isReceivedVenueSuggestion =
       message.sender_id !== meId &&
       message.message_type === 'VENUE_SUGGESTION' &&
@@ -25,9 +28,24 @@ const hasPriorVenueSuggestionForReply = async (messagesRef, meId, metadata = {})
       isExpectedVenue;
 
     if (isReceivedVenueSuggestion) found = true;
+
+    const consumedSourceId = String(
+      message.metadata?.consumes_source_message_id ||
+      message.metadata?.source_message_id ||
+      ''
+    ).trim();
+    const consumedVenueId = String(message.metadata?.venue_id || '').trim();
+    const isConsumedReply =
+      message.sender_id === meId &&
+      message.message_type === 'TEXT' &&
+      message.metadata?.reply_kind === 'VENUE_SUGGESTION_OPINION' &&
+      consumedSourceId === sourceMessageId &&
+      consumedVenueId === venueId;
+
+    if (isConsumedReply) alreadyConsumed = true;
   });
 
-  return found;
+  return found && !alreadyConsumed;
 };
 
 /**

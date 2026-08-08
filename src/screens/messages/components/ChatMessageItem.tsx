@@ -139,6 +139,10 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
 
   const sendVenueOpinion = async (content: string) => {
     if (responding) return;
+    if (!item.id || !venueData?.id) {
+      Alert.alert(t('error'), t('chat_error'));
+      return;
+    }
     try {
       setResponding(true);
       await apiRequest('/api/messages/send', {
@@ -152,7 +156,7 @@ const ChatMessageItem = memo<ChatMessageItemProps>(({
           metadata: {
             reply_kind: 'VENUE_SUGGESTION_OPINION',
             source_message_id: item.id,
-            venue_id: venueData?.id
+            venue_id: venueData.id
           }
         })
       });

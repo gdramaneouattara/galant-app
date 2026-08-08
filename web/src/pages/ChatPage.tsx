@@ -359,6 +359,12 @@ const ChatPage: React.FC = () => {
 
   const handleVenueOpinion = async (message: string, sourceMessage: any) => {
     if (sending || !user || !targetUser || (!matchId && !venueChatId)) return;
+    const sourceMessageId = sourceMessage?.id;
+    const venueId = sourceMessage?.metadata?.venue?.id;
+    if (!sourceMessageId || !venueId) {
+      showAlert(t('error'), 'Cette suggestion de sortie ne peut plus recevoir de reponse.');
+      return;
+    }
     setSending(true);
     try {
       await apiRequest('/api/messages/send', {
@@ -372,8 +378,8 @@ const ChatPage: React.FC = () => {
           recipientId: targetUser.isVenue ? undefined : targetUser.id,
           metadata: {
             reply_kind: 'VENUE_SUGGESTION_OPINION',
-            source_message_id: sourceMessage?.id,
-            venue_id: sourceMessage?.metadata?.venue?.id
+            source_message_id: sourceMessageId,
+            venue_id: venueId
           }
         })
       });
