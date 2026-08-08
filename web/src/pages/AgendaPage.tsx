@@ -1,7 +1,7 @@
 // Force re-process for Trophy icon
 import React, { useEffect, useState } from 'react';
 import { apiRequest } from '@shared/lib/api';
-import { Calendar, MapPin, Zap, ChevronRight, Clock, Star, Users, CheckCircle, Sparkles, Filter, Ticket, Share2, Trophy } from 'lucide-react';
+import { Calendar, MapPin, Zap, ChevronRight, Clock, Star, CheckCircle, Sparkles, Filter, Ticket, Share2, Trophy, ExternalLink } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { showAlert } from '@shared/lib/ui-bridge';
 import OptimizedImage from '../components/OptimizedImage';
@@ -13,11 +13,17 @@ interface AgendaEvent {
   description: string;
   photo_url: string;
   photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
-  event_type: 'PARTY' | 'FLASH_OFFER' | 'NETWORKING' | 'LIVE_MUSIC';
+  event_type: 'EVENT' | 'PARTY' | 'FLASH_OFFER' | 'NETWORKING' | 'LIVE_MUSIC';
   starts_at: string;
   expires_at: string;
   attendees_count: number;
   is_attending: boolean;
+  source?: string;
+  source_label?: string;
+  source_url?: string;
+  external_ticket_url?: string;
+  price_label?: string | null;
+  is_external?: boolean;
   venues: {
     name: string;
     city: string;
@@ -76,7 +82,7 @@ const AgendaPage: React.FC = () => {
   };
 
   const handleShareEvent = async (event: AgendaEvent) => {
-    const url = `${window.location.origin}/agenda`;
+    const url = event.external_ticket_url || event.source_url || `${window.location.origin}/agenda`;
     const text = `${event.title} - ${event.venues?.name || 'Galant'}`;
     try {
       if (navigator.share) {
@@ -86,6 +92,12 @@ const AgendaPage: React.FC = () => {
         showAlert('Lien copie', 'La sortie a ete copiee.');
       }
     } catch {}
+  };
+
+  const openExternalEvent = (event: AgendaEvent) => {
+    const url = event.external_ticket_url || event.source_url;
+    if (!url) return;
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const filteredEvents = events.filter(e => {
@@ -189,7 +201,9 @@ const AgendaPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-10">
-          {filteredEvents.map((event) => (
+          {filteredEvents.map((event) => {
+            const isExternalEvent = event.is_external || event.source === 'TIKERAMA' || !!event.external_ticket_url;
+            return (
             <div
               key={event.id}
               className="group bg-white dark:bg-slate-900 rounded-[3.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.08)] dark:shadow-none border border-slate-100 dark:border-white/10 overflow-hidden flex flex-col md:flex-row transition-all duration-500 hover:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.12)] dark:hover:shadow-none hover:-translate-y-1"
@@ -231,12 +245,18 @@ const AgendaPage: React.FC = () => {
                   <h3 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white leading-none group-hover:text-primary transition-colors">
                     {event.title}
                   </h3>
+                  {isExternalEvent && (
+                    <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-amber-200/70 bg-amber-50 px-3 py-2 text-[8px] font-black uppercase tracking-[0.2em] text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
+                      <ExternalLink size={12} />
+                      {event.source_label || 'Billetterie via TIKERAMA'}
+                    </div>
+                  )}
                 </div>
 
                 <div className="bg-slate-50/50 dark:bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 border border-slate-100/50 dark:border-white/5">
                   <OptimizedImage src={optimizedPhotoUrl(event.venues?.photo_url, event.venues?.photo_variants, 'thumb')} className="w-10 h-10 rounded-xl shadow-sm border border-white dark:border-slate-700" alt="" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1">Établissement Hôte</p>
+                    <p className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1">{isExternalEvent ? 'Source officielle' : 'Établissement Hôte'}</p>
                     <p className="text-sm font-black text-slate-800 dark:text-slate-200 truncate">{event.venues?.name}</p>
                   </div>
                   <ChevronRight size={16} className="text-slate-300 dark:text-slate-700" />
@@ -252,6 +272,12 @@ const AgendaPage: React.FC = () => {
                       <Clock size={16} className="text-primary" />
                       <span>{new Date(event.starts_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
+                    {event.price_label && (
+                      <div className="flex items-center gap-2 text-amber-500 font-black text-xs uppercase mt-2">
+                        <Ticket size={16} />
+                        <span>{event.price_label}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex -space-x-2">
@@ -268,15 +294,22 @@ const AgendaPage: React.FC = () => {
 
                 <div className="flex gap-3 pt-2">
                   <button
-                    onClick={(e) => { e.stopPropagation(); handleAttendToggle(event.id, event.is_attending); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isExternalEvent) {
+                        openExternalEvent(event);
+                        return;
+                      }
+                      handleAttendToggle(event.id, event.is_attending);
+                    }}
                     className={`flex-1 py-5 rounded-2xl font-medium text-[10px] uppercase tracking-prestige transition-all flex items-center justify-center gap-3 shadow-xl ${
                       event.is_attending
                         ? 'bg-rose-50 dark:bg-rose-900/20 text-primary border border-rose-100 dark:border-rose-900/30 shadow-rose-500/5'
                         : 'bg-slate-950 dark:bg-white text-white dark:text-slate-900 shadow-slate-950/10 dark:shadow-none hover:bg-black dark:hover:bg-slate-100 active:scale-95'
                     }`}
                   >
-                    {event.is_attending ? <CheckCircle size={18} fill="currentColor" className="opacity-40" /> : <Ticket size={18} />}
-                    {event.is_attending ? 'J\'Y SERAI' : 'RÉSERVER MA PLACE'}
+                    {isExternalEvent ? <ExternalLink size={18} /> : event.is_attending ? <CheckCircle size={18} fill="currentColor" className="opacity-40" /> : <Ticket size={18} />}
+                    {isExternalEvent ? 'BILLETTERIE TIKERAMA' : event.is_attending ? 'J\'Y SERAI' : 'RÉSERVER MA PLACE'}
                   </button>
 
                   <button onClick={() => void handleShareEvent(event)} className="w-16 py-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-white/10 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5 transition-all flex items-center justify-center">
@@ -285,7 +318,8 @@ const AgendaPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
 
