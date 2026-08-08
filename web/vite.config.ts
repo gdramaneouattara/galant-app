@@ -27,6 +27,8 @@ if (isConfigValid) {
   const messaging = firebase.messaging();
 
   messaging.onBackgroundMessage((payload) => {
+    if (payload.notification) return;
+
     const notificationTitle = payload.notification?.title || payload.data?.title || 'Galant';
     const notificationOptions = {
       body: payload.notification?.body || payload.data?.body || payload.data?.message || 'Nouvelle notification',
@@ -121,6 +123,7 @@ export default defineConfig(({ mode }) => {
       workbox: {
         clientsClaim: true,
         skipWaiting: true,
+        importScripts: ['firebase-messaging-sw.js'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/.*$/,
