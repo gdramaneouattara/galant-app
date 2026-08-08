@@ -187,6 +187,27 @@ test('Rules: Guide Google photos are referenced, sized and attributed without St
   assert.match(nativeVenueDetail, /Photo Google Places/);
 });
 
+test('Rules: Agenda imports TIKERAMA Cote dIvoire events without copying media', async () => {
+  const service = await read('server/src/services/tikeramaAgendaService.js');
+  const venueController = await read('server/src/controllers/venueController.js');
+  const webAgenda = await read('web/src/pages/AgendaPage.tsx');
+  const nativeAgenda = await read('src/screens/agenda/AgendaScreen.tsx');
+
+  assert.match(service, /TIKERAMA_SOURCE = 'TIKERAMA'/);
+  assert.match(service, /COTE_D_IVOIRE/);
+  assert.match(service, /external_ticket_url/);
+  assert.match(service, /source_label:\s*'Billetterie via TIKERAMA'/);
+  assert.match(service, /venue_events/);
+  assert.match(service, /venues/);
+  assert.doesNotMatch(service, /bucket\(/);
+  assert.doesNotMatch(service, /uploadBytes/);
+  assert.match(venueController, /syncTikeramaAgendaIfNeeded/);
+  assert.match(webAgenda, /BILLETTERIE TIKERAMA/);
+  assert.match(webAgenda, /openExternalEvent/);
+  assert.match(nativeAgenda, /Billetterie TIKERAMA/);
+  assert.match(nativeAgenda, /Linking\.openURL/);
+});
+
 test('Rules: Guide venue detail returns to the selected venue instead of agenda', async () => {
   const webGuide = await read('web/src/pages/GuidePage.tsx');
   const webVenueDetail = await read('web/src/pages/VenueDetailPage.tsx');

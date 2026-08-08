@@ -10,6 +10,7 @@ import {
   Alert,
   FlatList,
   Modal,
+  Linking,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import {
@@ -26,6 +27,8 @@ import {
   Scissors,
   Flower2,
   Palette,
+  ExternalLink,
+  Ticket,
 } from 'lucide-react-native';
 import { COLORS } from '../../data/mock';
 import { apiRequest } from '../../lib/api';
@@ -52,6 +55,12 @@ interface VenueEvent {
   event_type: string;
   starts_at: string;
   expires_at: string;
+  source?: string;
+  source_label?: string;
+  source_url?: string;
+  external_ticket_url?: string;
+  price_label?: string | null;
+  is_external?: boolean;
   venues: {
     name: string;
     city: string;
@@ -156,6 +165,12 @@ const AgendaScreen: React.FC = () => {
     }
   };
 
+  const openExternalEvent = async (event: VenueEvent) => {
+    const url = event.external_ticket_url || event.source_url;
+    if (!url) return;
+    await Linking.openURL(url);
+  };
+
   const renderFlashOffer = (item: VenueEvent) => (
     <Pressable key={item.id} style={[styles.flashCard, { backgroundColor: activeTheme === 'dark' ? '#1e293b' : '#000' }]} onPress={() => Alert.alert(item.title, item.description)}>
       <OptimizedImage uri={optimizedPhotoUrl(item.photo_url || item.venues.photo_url, item.photo_variants || item.venues.photo_variants, 'thumb')} style={styles.flashImage} />
@@ -179,15 +194,33 @@ const AgendaScreen: React.FC = () => {
           <View style={[styles.certBadge, { backgroundColor: activeTheme === 'dark' ? '#451a03' : '#fef3c7' }]}><Sparkles size={10} color="#b45309" /></View>
         </View>
         <Text style={[styles.eventTitle, { color: colors.text }]}>{item.title}</Text>
+        {(item.is_external || item.source === 'TIKERAMA' || !!item.external_ticket_url) && (
+          <View style={[styles.sourceBadge, { backgroundColor: activeTheme === 'dark' ? '#451a03' : '#fef3c7' }]}>
+            <ExternalLink size={11} color="#b45309" />
+            <Text style={styles.sourceBadgeText}>{item.source_label || 'Billetterie via TIKERAMA'}</Text>
+          </View>
+        )}
         <View style={styles.eventMeta}>
           <Clock size={12} color={colors.textMuted} />
           <Text style={[styles.eventMetaText, { color: colors.textMuted }]}>{new Date(item.starts_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</Text>
           <MapPin size={12} color={colors.textMuted} style={{ marginLeft: 10 }} />
           <Text style={[styles.eventMetaText, { color: colors.textMuted }]}>{item.venues.address}</Text>
         </View>
+        {item.price_label && (
+          <View style={styles.priceRow}>
+            <Ticket size={12} color="#b45309" />
+            <Text style={styles.priceText}>{item.price_label}</Text>
+          </View>
+        )}
         <View style={[styles.eventBenefitBox, { backgroundColor: activeTheme === 'dark' ? '#4c0519' : '#fff1f2' }]}>
           <Text style={[styles.eventBenefitText, { color: activeTheme === 'dark' ? '#fb7185' : '#9f1239' }]}>🎁 {item.venues.benefit_description}</Text>
         </View>
+        {(item.is_external || item.source === 'TIKERAMA' || !!item.external_ticket_url) && (
+          <Pressable style={styles.ticketBtn} onPress={() => void openExternalEvent(item)}>
+            <Ticket size={14} color="#fff" />
+            <Text style={styles.ticketBtnText}>Billetterie TIKERAMA</Text>
+          </Pressable>
+        )}
         <Pressable style={[styles.proposeBtn, { borderTopColor: colors.border }]} onPress={() => { setSelectedEvent(item); setShowMatchModal(true); }}>
           <Share2 size={14} color="#e11d48" />
           <Text style={styles.proposeBtnText}>{t('propose_match')}</Text>
@@ -326,6 +359,12 @@ const styles = StyleSheet.create({
   eventMetaText: { fontSize: 12, fontFamily: 'InterSemiBold', marginLeft: 4 },
   eventBenefitBox: { padding: 10, borderRadius: 12, borderLeftWidth: 3, borderLeftColor: '#e11d48' },
   eventBenefitText: { fontSize: 13, fontFamily: 'InterBold' },
+  sourceBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
+  sourceBadgeText: { color: '#b45309', fontSize: 10, fontFamily: 'InterBold', textTransform: 'uppercase' },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  priceText: { color: '#b45309', fontSize: 12, fontFamily: 'InterBold' },
+  ticketBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#111827', paddingVertical: 12, borderRadius: 14, marginTop: 6 },
+  ticketBtnText: { color: '#fff', fontSize: 12, fontFamily: 'InterBold', textTransform: 'uppercase' },
   proposeBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderTopWidth: 1, marginTop: 8 },
   proposeBtnText: { color: '#e11d48', fontSize: 14, fontFamily: 'InterBold' },
   footerPartner: { margin: 20, padding: 25, borderRadius: 24, alignItems: 'center', gap: 10, borderWidth: 1, borderStyle: 'dashed' },
