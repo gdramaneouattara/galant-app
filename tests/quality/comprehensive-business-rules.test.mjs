@@ -260,6 +260,8 @@ test('Rules: Web push notifications are fully wired', async () => {
   assert.match(firebase, /isSupported/);
   assert.match(authContext, /VITE_FIREBASE_VAPID_KEY/);
   assert.match(authContext, /navigator\.serviceWorker\.register/);
+  assert.match(authContext, /navigator\.serviceWorker\.getRegistration/);
+  assert.doesNotMatch(authContext, /register\(\s*`\$\{baseUrl\}firebase-messaging-sw\.js`/);
   assert.match(authContext, /serviceWorkerRegistration/);
   assert.match(authContext, /getToken\(messaging/);
   assert.match(authContext, /onMessage\(messaging/);
@@ -268,7 +270,9 @@ test('Rules: Web push notifications are fully wired', async () => {
   assert.match(viteConfig, /galant-firebase-messaging-sw/);
   assert.match(viteConfig, /loadEnv/);
   assert.match(viteConfig, /firebase-messaging-sw\.js/);
+  assert.match(viteConfig, /importScripts:\s*\['firebase-messaging-sw\.js'\]/);
   assert.match(viteConfig, /onBackgroundMessage/);
+  assert.match(viteConfig, /if \(payload\.notification\) return/);
   assert.match(viteConfig, /notificationclick/);
   assert.match(appHosting, /VITE_FIREBASE_VAPID_KEY/);
   assert.match(envTypes, /VITE_FIREBASE_VAPID_KEY/);

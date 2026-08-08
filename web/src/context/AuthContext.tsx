@@ -127,10 +127,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (permission !== 'granted') return;
 
       const baseUrl = import.meta.env.BASE_URL || '/';
-      const serviceWorkerRegistration = await navigator.serviceWorker.register(
-        `${baseUrl}firebase-messaging-sw.js`,
-        { scope: baseUrl }
-      );
+      const serviceWorkerRegistration =
+        await navigator.serviceWorker.getRegistration(baseUrl)
+        || await navigator.serviceWorker.register(`${baseUrl}sw.js`, { scope: baseUrl });
       const token = await getToken(messaging, {
         vapidKey,
         serviceWorkerRegistration
