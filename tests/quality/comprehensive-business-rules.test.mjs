@@ -242,8 +242,10 @@ test('Rules: Web mobile PWA reinstall help and Experiences rail stay usable', as
   assert.match(pwaPrompt, /appinstalled/);
   assert.match(pwaPrompt, /useLocation/);
   assert.match(pwaPrompt, /isDiscoverRoute/);
-  assert.match(pwaPrompt, /location\.pathname === '\/'/);
-  assert.match(pwaPrompt, /location\.pathname === '\/discover-grid'/);
+  assert.match(pwaPrompt, /normalizedPathname/);
+  assert.match(pwaPrompt, /replace\(\/\\\/\+\$\/,\s*''\)/);
+  assert.match(pwaPrompt, /normalizedPathname === '\/'/);
+  assert.match(pwaPrompt, /normalizedPathname === '\/discover-grid'/);
   assert.match(pwaPrompt, /!isVisible \|\| !isDiscoverRoute/);
   assert.match(experiencesPage, /isTabRailCompact/);
   assert.match(experiencesPage, /window\.addEventListener\('scroll'/);

@@ -20,7 +20,8 @@ const PWAInstallPrompt: React.FC = () => {
   const [installMode, setInstallMode] = useState<InstallMode | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
-  const isDiscoverRoute = location.pathname === '/' || location.pathname === '/discover-grid';
+  const normalizedPathname = location.pathname.replace(/\/+$/, '') || '/';
+  const isDiscoverRoute = normalizedPathname === '/' || normalizedPathname === '/discover-grid';
 
   useEffect(() => {
     if (isPwaStandalone()) return;
