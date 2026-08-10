@@ -20,7 +20,8 @@ const PWAInstallPrompt: React.FC = () => {
   const [installMode, setInstallMode] = useState<InstallMode | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
-  const isChatRoute = location.pathname.startsWith('/chat/');
+  const normalizedPathname = location.pathname.replace(/\/+$/, '') || '/';
+  const isDiscoverRoute = normalizedPathname === '/' || normalizedPathname === '/discover-grid';
 
   useEffect(() => {
     if (isPwaStandalone()) return;
@@ -91,7 +92,7 @@ const PWAInstallPrompt: React.FC = () => {
     setInstallPrompt(null);
   };
 
-  if (!isVisible || isChatRoute) return null;
+  if (!isVisible || !isDiscoverRoute) return null;
 
   if (isCompact) {
     return (
