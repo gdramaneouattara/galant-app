@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
 COPY package*.json ./
 
 # Install production dependencies.
-RUN npm install --only=production
+RUN npm ci --omit=dev
 
 # Copy local code to the container image.
 COPY . .

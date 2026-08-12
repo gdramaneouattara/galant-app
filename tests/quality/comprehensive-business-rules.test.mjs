@@ -381,6 +381,25 @@ test('Rules: User-facing counters and commerce avoid Firestore composite index t
   assert.match(subscriptionService, /filter\(sub => sub\.status === 'active'/);
 });
 
+test('Rules: Server video processing uses the system ffmpeg binary for reproducible Cloud Run builds', async () => {
+  const packageJson = await read('server/package.json');
+  const packageLock = await read('server/package-lock.json');
+  const dockerfile = await read('server/Dockerfile');
+  const mediaController = await read('server/src/controllers/mediaController.js');
+  const mediaMaintenanceService = await read('server/src/services/mediaMaintenanceService.js');
+  const ffmpegBinary = await read('server/src/utils/ffmpegBinary.js');
+
+  assert.doesNotMatch(packageJson, /ffmpeg-static/);
+  assert.doesNotMatch(packageLock, /ffmpeg-static/);
+  assert.match(dockerfile, /apt-get install -y ffmpeg/);
+  assert.match(dockerfile, /npm ci --omit=dev/);
+  assert.match(ffmpegBinary, /process\.env\.FFMPEG_PATH \|\| '\/usr\/bin\/ffmpeg'/);
+  assert.match(mediaController, /configureFfmpeg/);
+  assert.match(mediaMaintenanceService, /configureFfmpeg/);
+  assert.doesNotMatch(mediaController, /require\('ffmpeg-static'\)/);
+  assert.doesNotMatch(mediaMaintenanceService, /require\('ffmpeg-static'\)/);
+});
+
 test('Rules: Back navigation uses safe fallbacks across web and native surfaces', async () => {
   const navigationBack = await read('src/lib/navigationBack.ts');
   const nativeFiles = [

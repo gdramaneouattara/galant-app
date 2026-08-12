@@ -2,11 +2,10 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
-const ffmpeg = require('fluent-ffmpeg');
-const ffmpegStatic = require('ffmpeg-static');
 const { db, rtdb, bucket } = require('../config/firebase');
+const { configureFfmpeg } = require('../utils/ffmpegBinary');
 
-ffmpeg.setFfmpegPath(ffmpegStatic);
+const ffmpeg = configureFfmpeg();
 
 const IMAGE_VARIANTS = {
   thumb: { width: 240, quality: 62 },
