@@ -5,6 +5,12 @@ const { hasDirectMessagePurchase } = require('../services/usageService');
 const { createInternalNotification, NOTIFICATION_TYPES } = require('../services/notificationCenterService');
 const { QUOTAS, ALLOWED_REPORT_REASONS } = require('../config/constants');
 
+const createNotificationSafely = (payload) => {
+  void createInternalNotification(payload).catch((error) => {
+    console.warn('[messages] notification_failed', error.message);
+  });
+};
+
 const hasPriorVenueSuggestionForReply = async (messagesRef, meId, metadata = {}) => {
   const sourceMessageId = String(metadata.source_message_id || '').trim();
   const venueId = String(metadata.venue_id || '').trim();
@@ -167,7 +173,7 @@ const sendMessage = async (req, res) => {
       const match = (await db.collection('matches').doc(matchId).get()).data();
       const recipientId = match.user_one_id === me.id ? match.user_two_id : match.user_one_id;
       const body = normalizedType === 'TEXT' ? normalizedContent : `Nouveau média (${normalizedType.toLowerCase()})`;
-      void createInternalNotification({
+      createNotificationSafely({
         userId: recipientId,
         type: NOTIFICATION_TYPES.MESSAGE,
         title: `Message de ${me.name}`,
@@ -190,7 +196,7 @@ const sendMessage = async (req, res) => {
       const recipientId = venueChat.user_id === me.id ? venueChat.partner_id : venueChat.user_id;
       if (recipientId && recipientId !== me.id) {
         const body = normalizedType === 'TEXT' ? normalizedContent : `Nouveau media (${normalizedType.toLowerCase()})`;
-        void createInternalNotification({
+        createNotificationSafely({
           userId: recipientId,
           type: NOTIFICATION_TYPES.PARTNER,
           title: `Message de ${me.name}`,

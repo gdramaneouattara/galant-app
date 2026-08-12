@@ -66,6 +66,10 @@ const normalizePayload = ({
   };
 };
 
+const dedupeDocId = (dedupeKey) => (
+  String(dedupeKey).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 180)
+);
+
 const createInternalNotification = async ({
   userId,
   type,
@@ -80,29 +84,44 @@ const createInternalNotification = async ({
 }) => {
   if (!userId) return null;
 
-  const payload = normalizePayload({ userId, type, title, message, targetId, targetRoute, metadata });
-  const collection = db.collection('notifications');
+  try {
+    const payload = normalizePayload({ userId, type, title, message, targetId, targetRoute, metadata });
+    const collection = db.collection('notifications');
 
-  let ref = collection.doc();
-  if (dedupeKey) {
-    ref = collection.doc(String(dedupeKey).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 180));
+    let ref = collection.doc();
+    if (dedupeKey) {
+      ref = collection.doc(dedupeDocId(dedupeKey));
+      const created = await db.runTransaction(async (tx) => {
+        const existing = await tx.get(ref);
+        if (existing.exists) return false;
+        tx.set(ref, payload);
+        return true;
+      });
+
+      if (!created) return { id: ref.id, duplicate: true };
+    } else {
+      await ref.set(payload);
+    }
+
+    if (sendPush) {
+      // Lazy require avoids a circular dependency with notificationService.
+      const { sendPushNotification } = require('./notificationService');
+      void sendPushNotification(userId, payload.title, payload.message, {
+        type: payload.type,
+        notificationId: ref.id,
+        targetRoute: payload.target_route,
+        targetId: payload.target_id || '',
+        ...pushData,
+      }).catch((error) => {
+        console.warn('[notification_center] push_failed', error.message);
+      });
+    }
+
+    return { id: ref.id, ...payload };
+  } catch (error) {
+    console.warn('[notification_center] write_failed', error.message);
+    return null;
   }
-
-  await ref.set(payload, { merge: !!dedupeKey });
-
-  if (sendPush) {
-    // Lazy require avoids a circular dependency with notificationService.
-    const { sendPushNotification } = require('./notificationService');
-    void sendPushNotification(userId, payload.title, payload.message, {
-      type: payload.type,
-      notificationId: ref.id,
-      targetRoute: payload.target_route,
-      targetId: payload.target_id || '',
-      ...pushData,
-    });
-  }
-
-  return { id: ref.id, ...payload };
 };
 
 const legacyEventToNotification = (doc) => {
@@ -113,7 +132,7 @@ const legacyEventToNotification = (doc) => {
     : NOTIFICATION_TYPES.ADMIN;
 
   return {
-    id: `event_${doc.id}`,
+    id: `legacy_event_${doc.id}`,
     legacy_event_id: doc.id,
     user_id: item.user_id,
     type,
