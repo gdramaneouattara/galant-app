@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { db, admin } = require('../config/firebase');
 const { STORY_LIKE_NOTIFICATION_DEDUP_MS } = require('../config/constants');
+const { createInternalNotification, NOTIFICATION_TYPES } = require('./notificationCenterService');
 
 const EXPO_PUSH_ACCESS_TOKEN = process.env.EXPO_PUSH_ACCESS_TOKEN || '';
 
@@ -90,6 +91,24 @@ const createStoryLikeNotificationIfNeeded = async ({ recipientId, storyId, liker
 
   const likerName = String(likerProfile.name || 'Un utilisateur');
   const likerPhoto = Array.isArray(likerProfile.photos) ? (likerProfile.photos[0] || null) : null;
+
+  await createInternalNotification({
+    userId: recipientId,
+    type: NOTIFICATION_TYPES.STORY_LIKED,
+    title: 'Story likee',
+    message: `${likerName} a aime votre story.`,
+    targetId: String(storyId),
+    metadata: {
+      story_id: String(storyId),
+      liker_id: String(likerProfile.id),
+      liker_name: likerName,
+      liker_photo: likerPhoto,
+    },
+    dedupeKey: `story_like_${recipientId}_${storyId}_${likerProfile.id}`,
+    sendPush: true,
+    pushData: { storyId, type: 'STORY_LIKE' }
+  });
+  return;
 
   await db.collection('events').add({
     user_id: recipientId,

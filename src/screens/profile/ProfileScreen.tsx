@@ -45,10 +45,31 @@ const ProfileScreen: React.FC = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const [savingBio, setSavingBio] = useState(false);
   const [goldenRoseTimeLeft, setGoldenRoseTimeLeft] = useState<string | null>(null);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
 
   useEffect(() => {
     if (currentUser) setTempBio(currentUser.bio || '');
   }, [currentUser]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!currentUser) {
+      setNotificationUnreadCount(0);
+      return;
+    }
+
+    apiRequest<{ unreadCount: number }>('/api/notifications/unread-count', { requireAuth: true })
+      .then((payload) => {
+        if (!cancelled) setNotificationUnreadCount(Number(payload.unreadCount || 0));
+      })
+      .catch(() => {
+        if (!cancelled) setNotificationUnreadCount(0);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser?.id]);
 
   useEffect(() => {
     if (!currentUser?.golden_rose_until) return;
@@ -210,6 +231,7 @@ const ProfileScreen: React.FC = () => {
           onOpenBio={() => setShowBioModal(true)}
           onOpenGoal={() => setShowGoalModal(true)}
           onOpenSettings={() => setShowSettingsModal(true)}
+          onOpenNotifications={() => navigation.navigate('Notifications')}
           onToggleInvisible={handleInvisibleToggle}
           onVerify={() => navigation.navigate('Verify')}
           onGoPremium={() => navigation.navigate('Premium')}
@@ -219,6 +241,7 @@ const ProfileScreen: React.FC = () => {
             if (msg) Alert.alert(t('boost_active'), msg);
             else navigation.navigate('Boost');
           }}
+          notificationUnreadCount={notificationUnreadCount}
           onExportData={exportData}
           onDeleteAccount={deleteAccount}
           onShareInvite={handleShareInvite}

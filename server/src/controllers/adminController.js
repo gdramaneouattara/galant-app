@@ -1,6 +1,7 @@
 const { db, admin, auth } = require('../config/firebase');
 const { buildUserSegmentFilter, appendAdminAuditLog } = require('../services/accessService');
 const { sendPushNotification } = require('../services/notificationService');
+const { createInternalNotification, NOTIFICATION_TYPES } = require('../services/notificationCenterService');
 const { processUserAction } = require('../services/conciergeService');
 const { reconcileAllCounters, backfillProfileGeohashes } = require('../services/maintenanceService');
 const { backfillImageVariants, backfillVideoMedia, cleanupOrphanMedia } = require('../services/mediaMaintenanceService');
@@ -98,6 +99,19 @@ const approveVenue = async (req, res) => {
       metadata: { title: 'Félicitations ! 🌹', message: `Votre établissement "${venue.name}" a été approuvé.` }
     });
 
+    void createInternalNotification({
+      userId: venue.owner_id,
+      type: NOTIFICATION_TYPES.PARTNER,
+      title: 'Etablissement approuve',
+      message: `Votre etablissement "${venue.name}" est maintenant visible dans le Guide Galant.`,
+      targetId: id,
+      targetRoute: '/partner',
+      metadata: { venue_id: id, target_route: '/partner' },
+      dedupeKey: `venue_approved_${venue.owner_id}_${id}`,
+      sendPush: true,
+      pushData: { type: 'VENUE_APPROVED', venueId: id }
+    });
+
     res.json({ success: true });
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
@@ -177,12 +191,27 @@ const broadcastMessage = async (req, res) => {
       const batch = db.batch();
       recipients.forEach(uid => {
         const ref = db.collection('events').doc();
+        const notificationRef = db.collection('notifications').doc();
+        const now = new Date().toISOString();
         batch.set(ref, {
           user_id: uid,
           event_type: 'ADMIN_NOTIFICATION',
           event_name: 'ADMIN_BROADCAST',
-          created_at: new Date().toISOString(),
+          created_at: now,
           metadata: { title, message, segment, is_read: false }
+        });
+        batch.set(notificationRef, {
+          user_id: uid,
+          type: NOTIFICATION_TYPES.ADMIN,
+          title,
+          message,
+          target_id: null,
+          target_route: '/notifications',
+          metadata: { segment, target_route: '/notifications' },
+          is_read: false,
+          read_at: null,
+          archived_at: null,
+          created_at: now
         });
         void sendPushNotification(uid, title, message, { type: 'ADMIN_BROADCAST' });
       });
@@ -231,8 +260,30 @@ const reviewKyc = async (req, res) => {
       // Trigger Concierge IA
       processUserAction(kycData.user_id, 'BADGE_VERIFIED');
 
+      void createInternalNotification({
+        userId: kycData.user_id,
+        type: NOTIFICATION_TYPES.SECURITY,
+        title: 'Profil certifie',
+        message: 'Votre identite a ete verifiee avec succes.',
+        targetRoute: '/profile',
+        metadata: { kyc_id: id, target_route: '/profile' },
+        dedupeKey: `kyc_approved_${kycData.user_id}_${id}`,
+        sendPush: false
+      });
+
       void sendPushNotification(kycData.user_id, 'Profil Certifié ! 💎', 'Votre identité a été vérifiée avec succès.');
     } else if (status === 'REJECTED') {
+      void createInternalNotification({
+        userId: kycData.user_id,
+        type: NOTIFICATION_TYPES.SECURITY,
+        title: 'KYC refuse',
+        message: `Votre demande a ete rejetee : ${note || 'document non valide'}`,
+        targetRoute: '/verify',
+        metadata: { kyc_id: id, target_route: '/verify' },
+        dedupeKey: `kyc_rejected_${kycData.user_id}_${id}`,
+        sendPush: false
+      });
+
       void sendPushNotification(kycData.user_id, 'KYC Refusé', `Votre demande a été rejetée : ${note}`);
     }
 

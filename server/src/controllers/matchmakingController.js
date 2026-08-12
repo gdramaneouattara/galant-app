@@ -5,7 +5,7 @@ const { normalizeCity } = require('../utils/geo');
 const { getGeohashPrefixesForRadius, getGeohashRangeForPrefix } = require('../utils/geohash');
 const { hasInvisiblePremiumAccessForPlan, isHiddenByInvisibleMode, hasQuarterlyLimitedInvisibleAccess, isTrialActive } = require('../services/accessService');
 const { getDailyUsage, incrementUsage, hasDirectMessagePurchase } = require('../services/usageService');
-const { sendPushNotification } = require('../services/notificationService');
+const { createInternalNotification, NOTIFICATION_TYPES } = require('../services/notificationCenterService');
 const { QUOTAS } = require('../config/constants');
 
 const normalizeText = (value) => String(value || '').trim().toLowerCase()
@@ -557,6 +557,29 @@ const handleSwipe = async (req, res) => {
 
     if (meHiddenByInvisibleMode) return res.json({ matched: false, matchId: null, invisible_like: true });
 
+    void createInternalNotification({
+      userId: safeTargetUserId,
+      type: nextIsSuperLike ? NOTIFICATION_TYPES.ROSE_RECEIVED : NOTIFICATION_TYPES.LIKE_RECEIVED,
+      title: nextIsSuperLike ? 'Rose recue' : 'Nouveau like',
+      message: nextIsSuperLike
+        ? `${me.name} vous a envoye une rose.`
+        : `${me.name} aime votre profil.`,
+      targetId: me.id,
+      metadata: {
+        liker_id: me.id,
+        liker_name: me.name,
+        is_super_like: nextIsSuperLike,
+        like_id: likeId
+      },
+      dedupeKey: `${nextIsSuperLike ? 'rose' : 'like'}_${safeTargetUserId}_${me.id}`,
+      sendPush: true,
+      pushData: {
+        likerId: me.id,
+        likeId,
+        type: nextIsSuperLike ? 'ROSE_RECEIVED' : 'LIKE_RECEIVED'
+      }
+    });
+
     // 6. Check Reciprocal
     const reciprocalId = `${safeTargetUserId}_${me.id}`;
     const reciprocalLike = await db.collection('likes').doc(reciprocalId).get();
@@ -579,8 +602,28 @@ const handleSwipe = async (req, res) => {
       last_message_at: new Date().toISOString()
     });
 
-    void sendPushNotification(me.id, "C'est un Match ! 🎉", `Vous avez matché avec ${targetProfile.name}.`, { matchId, type: 'MATCH' });
-    void sendPushNotification(safeTargetUserId, "C'est un Match ! 🎉", `Vous avez matché avec ${me.name}.`, { matchId, type: 'MATCH' });
+    void createInternalNotification({
+      userId: me.id,
+      type: NOTIFICATION_TYPES.MATCH_CREATED,
+      title: "C'est un Match !",
+      message: `Vous avez matche avec ${targetProfile.name}.`,
+      targetId: matchId,
+      metadata: { match_id: matchId, other_user_id: safeTargetUserId, other_user_name: targetProfile.name },
+      dedupeKey: `match_${me.id}_${matchId}`,
+      sendPush: true,
+      pushData: { matchId, type: 'MATCH' }
+    });
+    void createInternalNotification({
+      userId: safeTargetUserId,
+      type: NOTIFICATION_TYPES.MATCH_CREATED,
+      title: "C'est un Match !",
+      message: `Vous avez matche avec ${me.name}.`,
+      targetId: matchId,
+      metadata: { match_id: matchId, other_user_id: me.id, other_user_name: me.name },
+      dedupeKey: `match_${safeTargetUserId}_${matchId}`,
+      sendPush: true,
+      pushData: { matchId, type: 'MATCH' }
+    });
 
     return res.json({ matched: true, matchId });
 
@@ -644,7 +687,17 @@ const respondToSuperLike = async (req, res) => {
         });
 
         // 3. Notify sender
-        void sendPushNotification(senderId, "Rose Acceptée ! 🌹", `${me.name} a accepté votre rose. Discutez maintenant !`, { matchId, type: 'MATCH' });
+        void createInternalNotification({
+          userId: senderId,
+          type: NOTIFICATION_TYPES.MATCH_CREATED,
+          title: 'Rose acceptee !',
+          message: `${me.name} a accepte votre rose. Discutez maintenant !`,
+          targetId: matchId,
+          metadata: { match_id: matchId, other_user_id: me.id, other_user_name: me.name, rose_id: id },
+          dedupeKey: `rose_accepted_${senderId}_${id}`,
+          sendPush: true,
+          pushData: { matchId, type: 'MATCH' }
+        });
       }
 
       return res.json({ success: true, matchId });

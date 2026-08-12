@@ -282,6 +282,58 @@ test('Rules: Web push notifications are fully wired', async () => {
   assert.match(envTypes, /VITE_FIREBASE_VAPID_KEY/);
 });
 
+test('Rules: Internal notification center is wired across server, web and native', async () => {
+  const centerService = await read('server/src/services/notificationCenterService.js');
+  const notificationController = await read('server/src/controllers/notificationController.js');
+  const notificationRoutes = await read('server/src/routes/notificationRoutes.js');
+  const messageController = await read('server/src/controllers/messageController.js');
+  const matchmakingController = await read('server/src/controllers/matchmakingController.js');
+  const subscriptionService = await read('server/src/services/subscriptionService.js');
+  const adminController = await read('server/src/controllers/adminController.js');
+  const venueController = await read('server/src/controllers/venueController.js');
+  const webApp = await read('web/src/App.tsx');
+  const webProfile = await read('web/src/pages/ProfilePage.tsx');
+  const webNotifications = await read('web/src/pages/NotificationsPage.tsx');
+  const nativeNavigator = await read('src/navigation/MainNavigator.tsx');
+  const nativeProfile = await read('src/screens/profile/ProfileScreen.tsx');
+  const nativeProfileMenu = await read('src/screens/profile/components/ProfileMenu.tsx');
+  const nativeNotifications = await read('src/screens/notifications/NotificationsScreen.tsx');
+
+  assert.match(centerService, /NOTIFICATION_TYPES/);
+  assert.match(centerService, /createInternalNotification/);
+  assert.match(centerService, /target_route/);
+  assert.match(centerService, /legacyEventToNotification/);
+  assert.match(centerService, /Lazy require avoids a circular dependency/);
+  assert.match(notificationController, /getUnreadCount/);
+  assert.match(notificationController, /archiveNotification/);
+  assert.match(notificationController, /legacyEventToNotification/);
+  assert.match(notificationRoutes, /\/unread-count/);
+  assert.match(notificationRoutes, /\/:id\/archive/);
+  assert.match(messageController, /NOTIFICATION_TYPES\.MESSAGE/);
+  assert.match(messageController, /NOTIFICATION_TYPES\.PARTNER/);
+  assert.match(matchmakingController, /NOTIFICATION_TYPES\.LIKE_RECEIVED/);
+  assert.match(matchmakingController, /NOTIFICATION_TYPES\.ROSE_RECEIVED/);
+  assert.match(matchmakingController, /NOTIFICATION_TYPES\.MATCH_CREATED/);
+  assert.match(subscriptionService, /NOTIFICATION_TYPES\.PAYMENT_SUCCESS/);
+  assert.match(adminController, /NOTIFICATION_TYPES\.ADMIN/);
+  assert.match(adminController, /NOTIFICATION_TYPES\.SECURITY/);
+  assert.match(venueController, /NOTIFICATION_TYPES\.AGENDA/);
+  assert.match(webApp, /\/notifications/);
+  assert.match(webProfile, /\/api\/notifications\/unread-count/);
+  assert.match(webProfile, /navigate\('\/notifications'\)/);
+  assert.match(webNotifications, /markAllAsRead/);
+  assert.match(webNotifications, /archiveNotification/);
+  assert.match(webNotifications, /target_route/);
+  assert.match(nativeNavigator, /NotificationsScreen/);
+  assert.match(nativeNavigator, /Notifications: undefined/);
+  assert.match(nativeProfile, /\/api\/notifications\/unread-count/);
+  assert.match(nativeProfileMenu, /onOpenNotifications/);
+  assert.match(nativeNotifications, /\/api\/notifications/);
+  assert.match(nativeNotifications, /markAllAsRead/);
+  assert.match(nativeNotifications, /archiveNotification/);
+  assert.match(nativeNotifications, /openNotificationTarget/);
+});
+
 test('Rules: Back navigation uses safe fallbacks across web and native surfaces', async () => {
   const navigationBack = await read('src/lib/navigationBack.ts');
   const nativeFiles = [

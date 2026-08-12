@@ -20,7 +20,7 @@ import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 import { uploadImageVariantsWeb } from '../lib/imageUploadVariants';
 
 const ProfilePage: React.FC = () => {
-  const { user, profile, logout, registerWebPushToken, t } = useAuth();
+  const { user, profile, logout, t } = useAuth();
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(profile?.name || '');
@@ -36,6 +36,7 @@ const ProfilePage: React.FC = () => {
   const [isTogglingInvisible, setIsTogglingInvisible] = useState(false);
   const [hasAdminAccess, setHasAdminAccess] = useState(false);
   const [rosesInboxCount, setRosesInboxCount] = useState(0);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const maxProfilePhotos = profile?.is_premium || profile?.is_vip ? 6 : 3;
 
   useEffect(() => {
@@ -69,6 +70,7 @@ const ProfilePage: React.FC = () => {
 
     if (!user) {
       setRosesInboxCount(0);
+      setNotificationUnreadCount(0);
       return;
     }
 
@@ -80,6 +82,14 @@ const ProfilePage: React.FC = () => {
       })
       .catch(() => {
         if (!cancelled) setRosesInboxCount(0);
+      });
+
+    apiRequest<{ unreadCount: number }>('/api/notifications/unread-count', { requireAuth: true })
+      .then((payload) => {
+        if (!cancelled) setNotificationUnreadCount(Number(payload.unreadCount || 0));
+      })
+      .catch(() => {
+        if (!cancelled) setNotificationUnreadCount(0);
       });
 
     return () => {
@@ -558,17 +568,19 @@ const ProfilePage: React.FC = () => {
 
             {/* General Menu Items */}
             <button
-              onClick={async () => {
-                if (!user) return;
-                await registerWebPushToken(user.uid);
-                showAlert(t('notifications'), t('notifications_hint'));
-              }}
+              onClick={() => navigate('/notifications')}
               className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-left group"
             >
-              <div className="w-12 h-12 bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-slate-600 rounded-xl flex items-center justify-center group-hover:bg-slate-100 dark:group-hover:bg-white/10 transition-colors">
+              <div className="relative w-12 h-12 bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-slate-600 rounded-xl flex items-center justify-center group-hover:bg-slate-100 dark:group-hover:bg-white/10 transition-colors">
                 <Bell size={20} />
+                {notificationUnreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-black text-white">
+                    {notificationUnreadCount > 99 ? '99+' : notificationUnreadCount}
+                  </span>
+                )}
               </div>
               <p className="flex-1 text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">{t('notifications')}</p>
+              <ChevronRight size={16} className="text-slate-200 dark:text-slate-700" />
             </button>
 
             <button onClick={() => navigate('/premium')} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-left group">

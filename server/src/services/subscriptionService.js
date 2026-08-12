@@ -4,6 +4,7 @@ const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const { PLAN_DURATIONS, BOOST_SCORES, QUOTAS } = require('../config/constants');
 const { getCurrentPricing } = require('./pricingService');
+const { createInternalNotification, NOTIFICATION_TYPES } = require('./notificationCenterService');
 
 const SUBSCRIPTION_RENEWAL_REFRESH_COOLDOWN_MS = 5 * 60 * 1000;
 
@@ -124,6 +125,7 @@ const applyPurchasedEntitlement = async ({
 }) => {
   const normalizedType = String(type || '').toUpperCase();
   const normalizedPlanId = String(planId || '').toUpperCase();
+  let paymentNotification = null;
   const existingPurchaseSnapshot = reference
     ? await db.collection('purchased_interactions').where('reference', '==', reference).limit(1).get()
     : null;
@@ -157,6 +159,11 @@ const applyPurchasedEntitlement = async ({
     if (normalizedType === 'PARTNER_PREMIUM') profileUpdate.is_partner = true;
 
     await db.collection('profiles').doc(userId).update(profileUpdate);
+    paymentNotification = {
+      title: normalizedType === 'PARTNER_PREMIUM' ? 'Compte partenaire active' : 'Privilege active',
+      message: `Votre abonnement ${normalizedPlanId || 'Premium'} est actif.`,
+      next_route: normalizedType === 'PARTNER_PREMIUM' ? '/partner' : '/profile'
+    };
 
   } else if (normalizedType === 'BOOST') {
     const boostDurationMs = (normalizedPlanId === '7D' ? 7 : normalizedPlanId === '3D' ? 3 : 1) * 24 * 3600 * 1000;
@@ -167,6 +174,11 @@ const applyPurchasedEntitlement = async ({
       boosted_until: boostedUntil,
       boost_score: boostScore
     });
+    paymentNotification = {
+      title: 'Boost active',
+      message: `Votre boost ${normalizedPlanId || 'Galant'} est actif.`,
+      next_route: '/boost'
+    };
 
   } else if (['SUPER_LIKE', 'DIRECT_MESSAGE', 'ROSE_NOTE_UNLOCK'].includes(normalizedType)) {
     const pricing = await getCurrentPricing();
@@ -179,6 +191,11 @@ const applyPurchasedEntitlement = async ({
       provider: paymentMethod,
       created_at: new Date().toISOString()
     });
+    paymentNotification = {
+      title: 'Interaction debloquee',
+      message: 'Votre achat est confirme. Vous pouvez continuer.',
+      next_route: '/profile'
+    };
 
   } else if (normalizedType === 'GOLDEN_ROSE') {
     const expiresAt = new Date(Date.now() + 3 * 3600 * 1000).toISOString();
@@ -190,6 +207,11 @@ const applyPurchasedEntitlement = async ({
     await db.collection('profiles').doc(userId).update({
       golden_rose_until: expiresAt
     });
+    paymentNotification = {
+      title: "Rose d'Or activee",
+      message: "Votre visibilite prioritaire est active pendant 3 heures.",
+      next_route: '/boost'
+    };
   } else if (normalizedType === 'ROSE_PACK') {
     const pricing = await getCurrentPricing();
     const pack = pricing.ROSE_PACKS?.[normalizedPlanId];
@@ -226,6 +248,11 @@ const applyPurchasedEntitlement = async ({
         updated_at: now
       });
     });
+    paymentNotification = {
+      title: 'Roses ajoutees',
+      message: `${quantity} rose${quantity > 1 ? 's' : ''} ajoutee${quantity > 1 ? 's' : ''} a votre solde.`,
+      next_route: '/profile'
+    };
   } else if (normalizedType === 'STORY_UPLOAD') {
     const pricing = await getCurrentPricing();
     await db.collection('purchased_interactions').add({
@@ -237,11 +264,21 @@ const applyPurchasedEntitlement = async ({
       provider: paymentMethod,
       created_at: new Date().toISOString()
     });
+    paymentNotification = {
+      title: 'Story debloquee',
+      message: 'Votre publication de story est debloquee.',
+      next_route: '/stories'
+    };
   } else if (normalizedType === 'LIKES_INBOX_2H') {
     const expiresAt = new Date(Date.now() + 2 * 3600 * 1000).toISOString();
     await db.collection('profiles').doc(userId).update({
       likes_unlocked_until: expiresAt
     });
+    paymentNotification = {
+      title: 'Likes debloques',
+      message: 'Votre boite des likes est ouverte pendant 2 heures.',
+      next_route: '/likes'
+    };
   } else if (normalizedType === 'DISCOVER_GRID_UNLOCK') {
     const pricing = await getCurrentPricing();
     const quota = pricing.PRICES.GRID_QUOTA || 100;
@@ -251,6 +288,11 @@ const applyPurchasedEntitlement = async ({
       is_grid_unlocked: true, // Legacy flag if needed
       updated_at: new Date().toISOString()
     });
+    paymentNotification = {
+      title: 'Grille decouverte debloquee',
+      message: 'Votre quota de decouverte en grille a ete ajoute.',
+      next_route: '/discover-grid'
+    };
   } else if (normalizedType === 'PARTNER_DISCOVERY_UNLOCK') {
     const pricing = await getCurrentPricing();
     await db.collection('purchased_interactions').add({
@@ -266,6 +308,31 @@ const applyPurchasedEntitlement = async ({
       partner_discovery_unlocked: true,
       partner_discovery_unlocked_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
+    });
+    paymentNotification = {
+      title: 'Partenaires autour de moi debloque',
+      message: 'La recherche de partenaires proches est maintenant disponible.',
+      next_route: '/partner-discovery'
+    };
+  }
+
+  if (paymentNotification) {
+    void createInternalNotification({
+      userId,
+      type: NOTIFICATION_TYPES.PAYMENT_SUCCESS,
+      title: paymentNotification.title,
+      message: paymentNotification.message,
+      targetId: reference || normalizedType,
+      metadata: {
+        payment_reference: reference || null,
+        purchase_type: normalizedType,
+        plan_id: normalizedPlanId || null,
+        payment_method: paymentMethod || null,
+        next_route: paymentNotification.next_route
+      },
+      dedupeKey: `payment_success_${userId}_${reference || `${normalizedType}_${Date.now()}`}`,
+      sendPush: true,
+      pushData: { type: 'PAYMENT_SUCCESS', reference: reference || '', purchaseType: normalizedType }
     });
   }
 

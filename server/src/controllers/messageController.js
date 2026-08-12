@@ -2,7 +2,7 @@ const { db, rtdb } = require('../config/firebase');
 const { FieldValue } = require('firebase-admin/firestore');
 const { analyzeMessageWithAI } = require('../services/aiService');
 const { hasDirectMessagePurchase } = require('../services/usageService');
-const { sendPushNotification } = require('../services/notificationService');
+const { createInternalNotification, NOTIFICATION_TYPES } = require('../services/notificationCenterService');
 const { QUOTAS, ALLOWED_REPORT_REASONS } = require('../config/constants');
 
 const hasPriorVenueSuggestionForReply = async (messagesRef, meId, metadata = {}) => {
@@ -163,11 +163,52 @@ const sendMessage = async (req, res) => {
     if (matchId) {
       await db.collection('matches').doc(matchId).update({ last_message_at: now });
 
-      // Push Notification
+      // Internal + push notification
       const match = (await db.collection('matches').doc(matchId).get()).data();
       const recipientId = match.user_one_id === me.id ? match.user_two_id : match.user_one_id;
       const body = normalizedType === 'TEXT' ? normalizedContent : `Nouveau média (${normalizedType.toLowerCase()})`;
-      void sendPushNotification(recipientId, `Message de ${me.name}`, body, { matchId, type: 'CHAT' });
+      void createInternalNotification({
+        userId: recipientId,
+        type: NOTIFICATION_TYPES.MESSAGE,
+        title: `Message de ${me.name}`,
+        message: body,
+        targetId: matchId,
+        metadata: {
+          match_id: matchId,
+          sender_id: me.id,
+          sender_name: me.name,
+          message_id: newMsgRef.key,
+          message_type: normalizedType,
+        },
+        dedupeKey: `message_${recipientId}_${matchId}_${newMsgRef.key}`,
+        sendPush: true,
+        pushData: { matchId, type: 'CHAT' }
+      });
+    } else if (venueChatId) {
+      const vChat = await db.collection('venue_chats').doc(venueChatId).get();
+      const venueChat = vChat.exists ? vChat.data() : {};
+      const recipientId = venueChat.user_id === me.id ? venueChat.partner_id : venueChat.user_id;
+      if (recipientId && recipientId !== me.id) {
+        const body = normalizedType === 'TEXT' ? normalizedContent : `Nouveau media (${normalizedType.toLowerCase()})`;
+        void createInternalNotification({
+          userId: recipientId,
+          type: NOTIFICATION_TYPES.PARTNER,
+          title: `Message de ${me.name}`,
+          message: body,
+          targetId: venueChatId,
+          metadata: {
+            venue_chat_id: venueChatId,
+            sender_id: me.id,
+            sender_name: me.name,
+            message_id: newMsgRef.key,
+            venue_id: venueChat.venue_id,
+            message_type: normalizedType,
+          },
+          dedupeKey: `venue_message_${recipientId}_${venueChatId}_${newMsgRef.key}`,
+          sendPush: true,
+          pushData: { venueChatId, type: 'PARTNER_CHAT' }
+        });
+      }
     }
 
     res.json({ id: newMsgRef.key, ...messageData });
