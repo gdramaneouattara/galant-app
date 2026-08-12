@@ -70,6 +70,11 @@ const slugify = (value = '') => normalizeText(value)
   .replace(/^_+|_+$/g, '')
   .slice(0, 48) || 'event';
 
+const normalizeCacheText = (value = '') => normalizeText(value)
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, '_')
+  .replace(/^_+|_+$/g, '') || 'unknown';
+
 const absoluteUrl = (url) => {
   if (!url) return null;
   try {
@@ -275,6 +280,7 @@ const upsertEvent = async (event) => {
     city: event.city || DEFAULT_CITY,
     country: COTE_D_IVOIRE,
     address: event.address || event.city || DEFAULT_CITY,
+    city_normalized: normalizeCacheText(event.city || DEFAULT_CITY),
     venue_type: event.eventType === 'LIVE_MUSIC' ? 'OTHER' : 'OTHER',
     benefit_description: event.priceLabel ? `Billetterie TIKERAMA - ${event.priceLabel}` : 'Billetterie officielle via TIKERAMA',
     photo_url: event.image,
@@ -300,10 +306,12 @@ const upsertEvent = async (event) => {
     source_url: event.url,
     external_ticket_url: event.ticketUrl || event.url,
     city: event.city || DEFAULT_CITY,
+    city_normalized: normalizeCacheText(event.city || DEFAULT_CITY),
     country: COTE_D_IVOIRE,
     price_label: event.priceLabel,
     is_external: true,
     status: 'APPROVED',
+    attendees_count: 0,
     updated_at: now,
     imported_at: now,
   }, { merge: true });

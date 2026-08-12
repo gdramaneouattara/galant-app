@@ -418,6 +418,44 @@ test('Rules: Apps exposes paid user partner discovery with direct Google import'
   assert.match(purchaseHook, /PARTNER_DISCOVERY_UNLOCK/);
 });
 
+test('Rules: Cost controls limit reads and cache expensive external calls', async () => {
+  const statusController = await read('server/src/controllers/statusController.js');
+  const venueController = await read('server/src/controllers/venueController.js');
+  const googleMapsService = await read('server/src/services/googleMapsService.js');
+  const tikeramaService = await read('server/src/services/tikeramaAgendaService.js');
+  const webAuth = await read('web/src/context/AuthContext.tsx');
+  const nativeContext = await read('src/state/AppContext.tsx');
+  const deployWorkflow = await read('.github/workflows/deploy-server.yml');
+
+  assert.match(statusController, /clampLimit/);
+  assert.match(statusController, /\.limit\(safeLimit \* 2\)/);
+  assert.match(venueController, /clampLimit/);
+  assert.match(venueController, /query = query\.limit\(city \? safeLimit \* 3 : safeLimit\)/);
+  assert.match(venueController, /attendanceDoc = await db\.collection\('event_attendance'\)\.doc\(`\$\{ev\.id\}_\$\{meId\}`\)\.get\(\)/);
+  assert.match(venueController, /attendees_count:\s*FieldValue\.increment\(1\)/);
+  assert.match(venueController, /Math\.max\(0,\s*Number\(eventDoc\.data\(\)\?\.attendees_count/);
+  assert.match(venueController, /city_normalized/);
+  assert.match(venueController, /where\('venue_id',\s*'==',\s*venueId\)[\s\S]*\.limit\(safeLimit\)/);
+  assert.match(venueController, /where\('user_id',\s*'==',\s*req\.user\.id\)[\s\S]*\.limit\(safeLimit\)/);
+  assert.match(venueController, /view_count:\s*FieldValue\.increment\(1\)/);
+  assert.match(venueController, /venue_analytics'\)\.doc\(`\$\{id\}_\$\{req\.user\.id\}_\$\{dayKey\}`\)/);
+  assert.match(googleMapsService, /partner_discovery_cache/);
+  assert.match(googleMapsService, /USER_DISCOVERY_CACHE_DAYS/);
+  assert.match(googleMapsService, /getCachedUserPartnerDiscovery/);
+  assert.match(googleMapsService, /setCachedUserPartnerDiscovery/);
+  assert.match(googleMapsService, /cache_hit:\s*true/);
+  assert.match(tikeramaService, /city_normalized/);
+  assert.match(tikeramaService, /attendees_count:\s*0/);
+  assert.match(webAuth, /documentId/);
+  assert.doesNotMatch(webAuth, /collection\(db,\s*COLLECTIONS\.PROFILES\),\s*where\('onboarding_completed'/);
+  assert.match(nativeContext, /refreshProfilesForMatches/);
+  assert.match(nativeContext, /\.limit\(80\)/);
+  assert.match(deployWorkflow, /--min-instances 0/);
+  assert.match(deployWorkflow, /--max-instances 10/);
+  assert.match(deployWorkflow, /--concurrency 80/);
+  assert.match(deployWorkflow, /GOOGLE_MAPS_API_KEY=GOOGLE_MAPS_API_KEY:latest/);
+});
+
 test('Rules: ProfileScreen manages internationalization', async () => {
   const code = await read('src/screens/profile/ProfileScreen.tsx');
   assert.match(code, /language/);

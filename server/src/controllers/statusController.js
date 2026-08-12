@@ -29,6 +29,12 @@ const chunkArray = (items, size = 30) => {
   return chunks;
 };
 
+const clampLimit = (value, fallback = 35, max = 60) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(1, Math.min(max, Math.floor(parsed)));
+};
+
 const getStatuses = async (req, res) => {
   const me = req.user;
   if (!hasStandardAccess(me)) return res.status(403).json({ error: 'subscription_required' });
@@ -41,9 +47,14 @@ const getStatuses = async (req, res) => {
     }
 
     const now = new Date().toISOString();
-    const snapshot = await db.collection('statuses').where('expires_at', '>', now).get();
+    const safeLimit = clampLimit(req.query.limit);
+    const snapshot = await db.collection('statuses')
+      .where('expires_at', '>', now)
+      .limit(safeLimit * 2)
+      .get();
     let rows = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-      .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+      .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+      .slice(0, safeLimit);
 
     // Hydrate Profiles
     const authors = await Promise.all(rows.map(async row => {
