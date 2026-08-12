@@ -2,6 +2,7 @@ const { db } = require('../config/firebase');
 const { FieldValue } = require('firebase-admin/firestore');
 const { getLatestActiveSubscriptionForUser } = require('../services/subscriptionService');
 const { hasDirectMessagePurchase } = require('../services/usageService');
+const { createInternalNotification, NOTIFICATION_TYPES } = require('../services/notificationCenterService');
 const {
   searchUserPartnerDiscovery,
   buildGooglePhotoMediaUrl,
@@ -353,6 +354,22 @@ const createPartnerEvent = async (req, res) => {
       created_at: new Date().toISOString()
     };
     const ref = await db.collection('venue_events').add(eventData);
+    void createInternalNotification({
+      userId: req.user.id,
+      type: NOTIFICATION_TYPES.AGENDA,
+      title: 'Evenement publie',
+      message: `"${title}" est maintenant visible dans l'Agenda Galant.`,
+      targetId: ref.id,
+      targetRoute: `/agenda?event=${encodeURIComponent(ref.id)}`,
+      metadata: {
+        event_id: ref.id,
+        venue_id: venue.id,
+        target_route: `/agenda?event=${encodeURIComponent(ref.id)}`
+      },
+      dedupeKey: `event_created_${req.user.id}_${ref.id}`,
+      sendPush: true,
+      pushData: { type: 'AGENDA_EVENT_CREATED', eventId: ref.id }
+    });
     res.json({ success: true, event: { id: ref.id, ...eventData } });
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
@@ -419,12 +436,12 @@ const createVenueChatThread = async (req, res) => {
           rose_balance: FieldValue.increment(-1),
           updated_at: now
         });
-        tx.set(chatRef, { user_id: meId, venue_id: id, created_at: now, unlocked_with_rose: true });
+        tx.set(chatRef, { user_id: meId, partner_id: venue.owner_id || null, venue_id: id, created_at: now, unlocked_with_rose: true });
       });
       return res.json({ venueChatId: chatRef.id });
     }
 
-    await chatRef.set({ user_id: meId, venue_id: id, created_at: now, unlocked_with_purchase: purchased, unlocked_with_premium: hasPremiumAccess });
+    await chatRef.set({ user_id: meId, partner_id: venue.owner_id || null, venue_id: id, created_at: now, unlocked_with_purchase: purchased, unlocked_with_premium: hasPremiumAccess });
     res.json({ venueChatId: chatRef.id });
   } catch (error) {
     if (error?.code === 'payment_required') {

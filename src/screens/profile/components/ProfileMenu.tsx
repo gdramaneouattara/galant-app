@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import {
   Trophy, Sparkles, ChevronRight, Settings, EyeOff, ShieldCheck,
-  Crown, Rocket, LogOut, LayoutDashboard
+  Crown, Rocket, LogOut, LayoutDashboard, Bell
 } from 'lucide-react-native';
 import { COLORS } from '../../../data/mock';
 import { hasAdminProfileAccess } from '../../../lib/adminAccess';
@@ -22,11 +22,13 @@ interface ProfileMenuProps {
   onOpenBio: () => void;
   onOpenGoal: () => void;
   onOpenSettings: () => void;
+  onOpenNotifications: () => void;
   onToggleInvisible: (enabled: boolean) => void;
   onVerify: () => void;
   onGoPremium: () => void;
   onOpenLikes: () => void;
   onOpenBoost: () => void;
+  notificationUnreadCount?: number;
   onExportData: () => void;
   onDeleteAccount: () => void;
   onShareInvite: () => void;
@@ -51,11 +53,13 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
   onOpenBio,
   onOpenGoal,
   onOpenSettings,
+  onOpenNotifications,
   onToggleInvisible,
   onVerify,
   onGoPremium,
   onOpenLikes,
   onOpenBoost,
+  notificationUnreadCount = 0,
   onExportData,
   onDeleteAccount,
   onShareInvite,
@@ -213,6 +217,22 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
         <ChevronRight size={18} color="#c4b5fd" />
       </Pressable>
 
+      <Pressable style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={onOpenNotifications}>
+        <View style={[styles.rowIcon, { backgroundColor: colors.input }]}>
+          <Bell size={18} color={colors.textMuted} />
+          {notificationUnreadCount > 0 ? (
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationBadgeText}>{notificationUnreadCount > 99 ? '99+' : notificationUnreadCount}</Text>
+            </View>
+          ) : null}
+        </View>
+        <View style={styles.rowContent}>
+          <Text style={[styles.rowLabel, { color: colors.text }]}>Notifications</Text>
+          <Text style={[styles.rowSubLabel, { color: colors.textMuted }]}>Messages, paiements et alertes</Text>
+        </View>
+        <ChevronRight size={18} color={colors.border} />
+      </Pressable>
+
       <Pressable
         style={[styles.row, styles.rowPrivacy, { backgroundColor: activeTheme === 'dark' ? '#082f49' : '#f0f9ff', borderColor: activeTheme === 'dark' ? '#0c4a6e' : '#bae6fd' }]}
         onPress={onExportData}
@@ -352,6 +372,23 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 10,
     elevation: 4,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  notificationBadgeText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '900',
   },
 });
 

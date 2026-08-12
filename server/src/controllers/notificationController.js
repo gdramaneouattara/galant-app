@@ -1,8 +1,24 @@
 const { db } = require('../config/firebase');
+const { legacyEventToNotification } = require('../services/notificationCenterService');
 
 const getNotifications = async (req, res) => {
   const limit = Math.max(1, Math.min(100, Number(req.query.limit || 20)));
   try {
+    const type = String(req.query.type || 'ALL').trim().toUpperCase();
+    const unreadOnly = String(req.query.unreadOnly || '').toLowerCase() === 'true';
+
+    let notificationsQuery = db.collection('notifications')
+      .where('user_id', '==', req.user.id);
+    notificationsQuery = notificationsQuery
+      .orderBy('created_at', 'desc')
+      .limit(Math.min(100, limit * 2));
+
+    const notificationsSnapshot = await notificationsQuery.get();
+    const nextNotifications = notificationsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+      .filter((item) => !item.archived_at)
+      .filter((item) => type === 'ALL' || item.type === type)
+      .filter((item) => !unreadOnly || item.is_read !== true);
+
     const snapshot = await db.collection('events')
       .where('user_id', '==', req.user.id)
       .where('event_type', 'in', ['ADMIN_NOTIFICATION', 'STORY_NOTIFICATION'])
@@ -10,14 +26,14 @@ const getNotifications = async (req, res) => {
       .limit(limit)
       .get();
 
-    const notifications = snapshot.docs.map((doc) => {
-      const item = doc.data();
-      return {
-        id: doc.id,
-        ...item,
-        is_read: item.metadata?.is_read === true,
-      };
-    });
+    const legacyNotifications = snapshot.docs.map(legacyEventToNotification)
+      .filter((item) => !item.archived_at)
+      .filter((item) => type === 'ALL' || item.type === type)
+      .filter((item) => !unreadOnly || item.is_read !== true);
+
+    const notifications = [...nextNotifications, ...legacyNotifications]
+      .sort((left, right) => String(right.created_at || '').localeCompare(String(left.created_at || '')))
+      .slice(0, limit);
 
     const unreadCount = notifications.filter((item) => !item.is_read).length;
     res.json({ notifications, unreadCount });
@@ -26,16 +42,51 @@ const getNotifications = async (req, res) => {
   }
 };
 
+const getUnreadCount = async (req, res) => {
+  try {
+    const [nextSnapshot, legacySnapshot] = await Promise.all([
+      db.collection('notifications')
+        .where('user_id', '==', req.user.id)
+        .where('is_read', '==', false)
+        .limit(100)
+        .get(),
+      db.collection('events')
+        .where('user_id', '==', req.user.id)
+        .where('event_type', 'in', ['ADMIN_NOTIFICATION', 'STORY_NOTIFICATION'])
+        .limit(100)
+        .get(),
+    ]);
+
+    const legacyUnread = legacySnapshot.docs
+      .map(legacyEventToNotification)
+      .filter((item) => !item.is_read && !item.archived_at).length;
+
+    res.json({ unreadCount: nextSnapshot.size + legacyUnread });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const markAsRead = async (req, res) => {
   const id = req.params.id;
   try {
-    const ref = db.collection('events').doc(id);
+    if (String(id).startsWith('event_')) {
+      const eventId = String(id).replace(/^event_/, '');
+      const ref = db.collection('events').doc(eventId);
+      const doc = await ref.get();
+      if (!doc.exists || doc.data().user_id !== req.user.id) return res.status(404).json({ error: 'not_found' });
+
+      const item = doc.data();
+      const nextMetadata = { ...(item.metadata || {}), is_read: true, read_at: new Date().toISOString() };
+      await ref.update({ metadata: nextMetadata, is_read: true });
+      return res.json({ success: true });
+    }
+
+    const ref = db.collection('notifications').doc(id);
     const doc = await ref.get();
     if (!doc.exists || doc.data().user_id !== req.user.id) return res.status(404).json({ error: 'not_found' });
 
-    const item = doc.data();
-    const nextMetadata = { ...(item.metadata || {}), is_read: true, read_at: new Date().toISOString() };
-    await ref.update({ metadata: nextMetadata });
+    await ref.update({ is_read: true, read_at: new Date().toISOString() });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -44,17 +95,29 @@ const markAsRead = async (req, res) => {
 
 const markAllAsRead = async (req, res) => {
   try {
-    const snapshot = await db.collection('events')
-      .where('user_id', '==', req.user.id)
-      .where('event_type', 'in', ['ADMIN_NOTIFICATION', 'STORY_NOTIFICATION'])
-      .get();
+    const [notificationSnapshot, eventSnapshot] = await Promise.all([
+      db.collection('notifications')
+        .where('user_id', '==', req.user.id)
+        .where('is_read', '==', false)
+        .limit(400)
+        .get(),
+      db.collection('events')
+        .where('user_id', '==', req.user.id)
+        .where('event_type', 'in', ['ADMIN_NOTIFICATION', 'STORY_NOTIFICATION'])
+        .limit(400)
+        .get()
+    ]);
 
-    if (snapshot.empty) return res.json({ success: true });
+    if (notificationSnapshot.empty && eventSnapshot.empty) return res.json({ success: true });
 
     const batch = db.batch();
-    snapshot.docs.forEach((doc) => {
+    notificationSnapshot.docs.forEach((doc) => {
+      batch.update(doc.ref, { is_read: true, read_at: new Date().toISOString() });
+    });
+    eventSnapshot.docs.forEach((doc) => {
       const item = doc.data();
       batch.update(doc.ref, {
+        is_read: true,
         metadata: { ...(item.metadata || {}), is_read: true, read_at: new Date().toISOString() }
       });
     });
@@ -66,4 +129,31 @@ const markAllAsRead = async (req, res) => {
   }
 };
 
-module.exports = { getNotifications, markAsRead, markAllAsRead };
+const archiveNotification = async (req, res) => {
+  const id = req.params.id;
+  try {
+    const now = new Date().toISOString();
+    if (String(id).startsWith('event_')) {
+      const eventId = String(id).replace(/^event_/, '');
+      const ref = db.collection('events').doc(eventId);
+      const doc = await ref.get();
+      if (!doc.exists || doc.data().user_id !== req.user.id) return res.status(404).json({ error: 'not_found' });
+      const item = doc.data();
+      await ref.update({
+        is_read: true,
+        metadata: { ...(item.metadata || {}), is_read: true, archived_at: now, read_at: item.metadata?.read_at || now }
+      });
+      return res.json({ success: true });
+    }
+
+    const ref = db.collection('notifications').doc(id);
+    const doc = await ref.get();
+    if (!doc.exists || doc.data().user_id !== req.user.id) return res.status(404).json({ error: 'not_found' });
+    await ref.update({ is_read: true, read_at: doc.data().read_at || now, archived_at: now });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { getNotifications, getUnreadCount, markAsRead, markAllAsRead, archiveNotification };

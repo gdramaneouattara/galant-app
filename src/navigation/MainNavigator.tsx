@@ -21,6 +21,7 @@ import LikesReceivedScreen from '../screens/premium/LikesReceivedScreen';
 import LikesInboxScreen from '../screens/premium/LikesInboxScreen';
 import VerifyScreen from '../screens/verify/VerifyScreen';
 import BoostScreen from '../screens/boost/BoostScreen';
+import NotificationsScreen from '../screens/notifications/NotificationsScreen';
 import DiscoverGridScreen from '../screens/discover/DiscoverGridScreen';
 import BoostedProfileDetailScreen from '../screens/profile/BoostedProfileDetailScreen';
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
@@ -49,6 +50,7 @@ export type RootStackParamList = {
   LikesInbox: undefined;
   Verify: undefined;
   Boost: undefined;
+  Notifications: undefined;
   DiscoverGrid: { includeSelf?: boolean } | undefined;
   ProfileDetail: { profile: ProfileDetailParam };
   VenueDetail: { venue: any };
@@ -209,6 +211,7 @@ const MainNavigator: React.FC = () => {
             <RootStack.Screen name="LikesInbox" component={LikesInboxScreen} />
             <RootStack.Screen name="Verify" component={VerifyScreen} />
             <RootStack.Screen name="Boost" component={BoostScreen} />
+            <RootStack.Screen name="Notifications" component={NotificationsScreen} />
             <RootStack.Screen name="DiscoverGrid" component={DiscoverGridScreen} />
             <RootStack.Screen name="ProfileDetail" component={BoostedProfileDetailScreen} />
             <RootStack.Screen name="VenueDetail" component={VenueDetailScreen} />
@@ -221,6 +224,7 @@ const MainNavigator: React.FC = () => {
           <>
             <RootStack.Screen name="PartnerDashboard" component={PartnerDashboardScreen} />
             <RootStack.Screen name="PartnerPremium" component={PartnerPremiumScreen} />
+            <RootStack.Screen name="Notifications" component={NotificationsScreen} />
             <RootStack.Screen name="Chat" component={ChatScreen} />
             <RootStack.Screen name="VenueDetail" component={VenueDetailScreen} />
           </>
@@ -233,6 +237,7 @@ const MainNavigator: React.FC = () => {
             <RootStack.Screen name="LikesInbox" component={LikesInboxScreen} />
             <RootStack.Screen name="Verify" component={VerifyScreen} />
             <RootStack.Screen name="Boost" component={BoostScreen} />
+            <RootStack.Screen name="Notifications" component={NotificationsScreen} />
             <RootStack.Screen name="DiscoverGrid" component={DiscoverGridScreen} />
             <RootStack.Screen name="ProfileDetail" component={BoostedProfileDetailScreen} />
             <RootStack.Screen name="VenueDetail" component={VenueDetailScreen} />
