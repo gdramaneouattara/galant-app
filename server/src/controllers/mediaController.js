@@ -1,11 +1,9 @@
-const ffmpeg = require('fluent-ffmpeg');
-const ffmpegStatic = require('ffmpeg-static');
 const path = require('path');
 const fs = require('fs');
 const { bucket } = require('../config/firebase');
+const { configureFfmpeg } = require('../utils/ffmpegBinary');
 
-// Configure ffmpeg to use the static binary
-ffmpeg.setFfmpegPath(ffmpegStatic);
+const ffmpeg = configureFfmpeg();
 
 const VIDEO_PROFILES = {
   STATUS: {
