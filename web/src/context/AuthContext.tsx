@@ -322,10 +322,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const reloadUser = async () => {
     if (fbAuth.currentUser) {
       await fbAuth.currentUser.reload();
+      const profileDoc = await getDoc(doc(db, COLLECTIONS.PROFILES, fbAuth.currentUser.uid));
+      if (profileDoc.exists()) {
+        setProfile({ id: profileDoc.id, ...profileDoc.data() });
+      }
       // On force React à voir un nouvel objet pour déclencher le re-render
       // mais on garde les méthodes en récupérant l'instance fraîche
-      setUser(null);
-      setTimeout(() => setUser(fbAuth.currentUser), 10);
+      setUser(fbAuth.currentUser);
     }
   };
 
