@@ -8,6 +8,12 @@ const { getDailyUsage, incrementUsage, hasDirectMessagePurchase } = require('../
 const { createInternalNotification, NOTIFICATION_TYPES } = require('../services/notificationCenterService');
 const { QUOTAS } = require('../config/constants');
 
+const createNotificationSafely = (payload) => {
+  void createInternalNotification(payload).catch((error) => {
+    console.warn('[matchmaking] notification_failed', error.message);
+  });
+};
+
 const normalizeText = (value) => String(value || '').trim().toLowerCase()
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '');
@@ -557,7 +563,7 @@ const handleSwipe = async (req, res) => {
 
     if (meHiddenByInvisibleMode) return res.json({ matched: false, matchId: null, invisible_like: true });
 
-    void createInternalNotification({
+    createNotificationSafely({
       userId: safeTargetUserId,
       type: nextIsSuperLike ? NOTIFICATION_TYPES.ROSE_RECEIVED : NOTIFICATION_TYPES.LIKE_RECEIVED,
       title: nextIsSuperLike ? 'Rose recue' : 'Nouveau like',
@@ -602,7 +608,7 @@ const handleSwipe = async (req, res) => {
       last_message_at: new Date().toISOString()
     });
 
-    void createInternalNotification({
+    createNotificationSafely({
       userId: me.id,
       type: NOTIFICATION_TYPES.MATCH_CREATED,
       title: "C'est un Match !",
@@ -613,7 +619,7 @@ const handleSwipe = async (req, res) => {
       sendPush: true,
       pushData: { matchId, type: 'MATCH' }
     });
-    void createInternalNotification({
+    createNotificationSafely({
       userId: safeTargetUserId,
       type: NOTIFICATION_TYPES.MATCH_CREATED,
       title: "C'est un Match !",
@@ -687,7 +693,7 @@ const respondToSuperLike = async (req, res) => {
         });
 
         // 3. Notify sender
-        void createInternalNotification({
+        createNotificationSafely({
           userId: senderId,
           type: NOTIFICATION_TYPES.MATCH_CREATED,
           title: 'Rose acceptee !',

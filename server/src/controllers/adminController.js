@@ -8,6 +8,20 @@ const { backfillImageVariants, backfillVideoMedia, cleanupOrphanMedia } = requir
 const { searchVenuesInCity, ADMIN_SEEDER_CATEGORY_TYPES } = require('../services/googleMapsService');
 const pricingDefaults = require('../config/constants');
 
+const createNotificationSafely = (payload) => {
+  void createInternalNotification(payload).catch((error) => {
+    console.warn('[admin] notification_failed', error.message);
+  });
+};
+
+const chunkRows = (rows, size) => {
+  const chunks = [];
+  for (let index = 0; index < rows.length; index += size) {
+    chunks.push(rows.slice(index, index + size));
+  }
+  return chunks;
+};
+
 const mergeRosePacks = (overrides = {}) => {
   const merged = {};
   const keys = new Set([...Object.keys(pricingDefaults.ROSE_PACKS), ...Object.keys(overrides || {})]);
@@ -99,7 +113,7 @@ const approveVenue = async (req, res) => {
       metadata: { title: 'Félicitations ! 🌹', message: `Votre établissement "${venue.name}" a été approuvé.` }
     });
 
-    void createInternalNotification({
+    createNotificationSafely({
       userId: venue.owner_id,
       type: NOTIFICATION_TYPES.PARTNER,
       title: 'Etablissement approuve',
@@ -188,34 +202,25 @@ const broadcastMessage = async (req, res) => {
       .map(u => u.id);
 
     if (recipients.length > 0) {
-      const batch = db.batch();
+      const now = new Date().toISOString();
+      for (const chunk of chunkRows(recipients, 450)) {
+        const batch = db.batch();
+        chunk.forEach(uid => {
+          const ref = db.collection('events').doc();
+          batch.set(ref, {
+            user_id: uid,
+            event_type: 'ADMIN_NOTIFICATION',
+            event_name: 'ADMIN_BROADCAST',
+            created_at: now,
+            metadata: { title, message, segment, is_read: false }
+          });
+        });
+        await batch.commit();
+      }
+
       recipients.forEach(uid => {
-        const ref = db.collection('events').doc();
-        const notificationRef = db.collection('notifications').doc();
-        const now = new Date().toISOString();
-        batch.set(ref, {
-          user_id: uid,
-          event_type: 'ADMIN_NOTIFICATION',
-          event_name: 'ADMIN_BROADCAST',
-          created_at: now,
-          metadata: { title, message, segment, is_read: false }
-        });
-        batch.set(notificationRef, {
-          user_id: uid,
-          type: NOTIFICATION_TYPES.ADMIN,
-          title,
-          message,
-          target_id: null,
-          target_route: '/notifications',
-          metadata: { segment, target_route: '/notifications' },
-          is_read: false,
-          read_at: null,
-          archived_at: null,
-          created_at: now
-        });
         void sendPushNotification(uid, title, message, { type: 'ADMIN_BROADCAST' });
       });
-      await batch.commit();
     }
 
     res.json({ success: true, recipientCount: recipients.length });
@@ -260,7 +265,7 @@ const reviewKyc = async (req, res) => {
       // Trigger Concierge IA
       processUserAction(kycData.user_id, 'BADGE_VERIFIED');
 
-      void createInternalNotification({
+      createNotificationSafely({
         userId: kycData.user_id,
         type: NOTIFICATION_TYPES.SECURITY,
         title: 'Profil certifie',
@@ -273,7 +278,7 @@ const reviewKyc = async (req, res) => {
 
       void sendPushNotification(kycData.user_id, 'Profil Certifié ! 💎', 'Votre identité a été vérifiée avec succès.');
     } else if (status === 'REJECTED') {
-      void createInternalNotification({
+      createNotificationSafely({
         userId: kycData.user_id,
         type: NOTIFICATION_TYPES.SECURITY,
         title: 'KYC refuse',

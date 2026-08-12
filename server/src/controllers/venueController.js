@@ -14,6 +14,12 @@ const { syncTikeramaAgendaIfNeeded } = require('../services/tikeramaAgendaServic
 
 const PARTNER_DISCOVERY_PRICE = 500;
 
+const createNotificationSafely = (payload) => {
+  void createInternalNotification(payload).catch((error) => {
+    console.warn('[venues] notification_failed', error.message);
+  });
+};
+
 const clampLimit = (value, fallback = 50, max = 100) => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
@@ -354,7 +360,7 @@ const createPartnerEvent = async (req, res) => {
       created_at: new Date().toISOString()
     };
     const ref = await db.collection('venue_events').add(eventData);
-    void createInternalNotification({
+    createNotificationSafely({
       userId: req.user.id,
       type: NOTIFICATION_TYPES.AGENDA,
       title: 'Evenement publie',
@@ -366,7 +372,7 @@ const createPartnerEvent = async (req, res) => {
         venue_id: venue.id,
         target_route: `/agenda?event=${encodeURIComponent(ref.id)}`
       },
-      dedupeKey: `event_created_${req.user.id}_${ref.id}`,
+      dedupeKey: `agenda_created_${req.user.id}_${ref.id}`,
       sendPush: true,
       pushData: { type: 'AGENDA_EVENT_CREATED', eventId: ref.id }
     });

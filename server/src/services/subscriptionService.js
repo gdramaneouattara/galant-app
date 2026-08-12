@@ -8,6 +8,12 @@ const { createInternalNotification, NOTIFICATION_TYPES } = require('./notificati
 
 const SUBSCRIPTION_RENEWAL_REFRESH_COOLDOWN_MS = 5 * 60 * 1000;
 
+const createNotificationSafely = (payload) => {
+  void createInternalNotification(payload).catch((error) => {
+    console.warn('[subscription] notification_failed', error.message);
+  });
+};
+
 const getGoogleAccessToken = async () => {
   try {
     const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
@@ -317,7 +323,7 @@ const applyPurchasedEntitlement = async ({
   }
 
   if (paymentNotification) {
-    void createInternalNotification({
+    createNotificationSafely({
       userId,
       type: NOTIFICATION_TYPES.PAYMENT_SUCCESS,
       title: paymentNotification.title,
