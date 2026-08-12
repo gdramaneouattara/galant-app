@@ -20,7 +20,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import * as IAP from 'react-native-iap';
-import { Heart, MessageCircle, PlayCircle, SlidersHorizontal, X, Sparkles, ChevronRight } from 'lucide-react-native';
+import { Bell, Heart, LayoutGrid, MessageCircle, PlayCircle, SlidersHorizontal, X, Sparkles, ChevronRight } from 'lucide-react-native';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
@@ -39,6 +39,7 @@ import ProfileBadges from '../../components/ProfileBadges'; // Required for qual
 import SuperLikePurchaseModal from '../../components/SuperLikePurchaseModal';
 import GoldenRosePurchaseModal from '../../components/GoldenRosePurchaseModal';
 import DirectMessagePurchaseModal from '../../components/DirectMessagePurchaseModal';
+import DiscoverGridPurchaseModal from '../../components/DiscoverGridPurchaseModal';
 import PassportModal from '../../components/passport/PassportModal';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -92,6 +93,8 @@ const TRIAL_DAYS = 7;
 const SUPER_LIKE_SKU = String(process.env.EXPO_PUBLIC_SUPER_LIKE_SKU || 'super_like').trim();
 const GOLDEN_ROSE_SKU = String(process.env.EXPO_PUBLIC_GOLDEN_ROSE_SKU || 'golden_rose').trim();
 const DIRECT_MESSAGE_SKU = String(process.env.EXPO_PUBLIC_DIRECT_MESSAGE_SKU || 'direct_message_1').trim();
+const DISCOVER_GRID_UNLOCK_SKU = String(process.env.EXPO_PUBLIC_DISCOVER_GRID_UNLOCK_SKU || 'discover_grid_unlock').trim();
+const DISCOVER_GRID_UNLOCK_AMOUNT = parseInt(process.env.EXPO_PUBLIC_DISCOVER_GRID_UNLOCK_AMOUNT || '1000', 10);
 
 const HomeScreen: React.FC = () => {
   // Quality requirements: /api/matchmaking/suggestions, /api/matchmaking/swipe, /api/payments/initialize
@@ -107,9 +110,11 @@ const HomeScreen: React.FC = () => {
   const [showSuperLikeModal, setShowSuperLikeModal] = useState(false);
   const [showGoldenRoseModal, setShowGoldenRoseModal] = useState(false);
   const [showDirectMessageModal, setShowDirectMessageModal] = useState(false);
+  const [showDiscoverGridModal, setShowDiscoverGridModal] = useState(false);
   const [showPassportModal, setShowPassportModal] = useState(false);
   const [likesInboxCount, setLikesInboxCount] = useState(0);
   const [rosesInboxCount, setRosesInboxCount] = useState(0);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [storyBubbles, setStoryBubbles] = useState<StoryBubble[]>([]);
   const [storiesLoading, setStoriesLoading] = useState(false);
   const [storiesUnavailable, setStoriesUnavailable] = useState(false);
@@ -159,7 +164,7 @@ const HomeScreen: React.FC = () => {
   }, [trialInfo]);
 
   useEffect(() => {
-    void initIAP([SUPER_LIKE_SKU, GOLDEN_ROSE_SKU, DIRECT_MESSAGE_SKU]);
+    void initIAP([SUPER_LIKE_SKU, GOLDEN_ROSE_SKU, DIRECT_MESSAGE_SKU, DISCOVER_GRID_UNLOCK_SKU]);
     return () => { void endIAP(); };
   }, []);
 
@@ -194,6 +199,14 @@ const HomeScreen: React.FC = () => {
     } catch { setRosesInboxCount(0); }
   }, [currentUser]);
 
+  const fetchNotificationUnreadCount = useCallback(async () => {
+    if (!currentUser) { setNotificationUnreadCount(0); return; }
+    try {
+      const payload = await apiRequest<{ unreadCount: number }>('/api/notifications/unread-count', { requireAuth: true });
+      setNotificationUnreadCount(Math.max(0, Number(payload?.unreadCount || 0)));
+    } catch { setNotificationUnreadCount(0); }
+  }, [currentUser]);
+
   const fetchVisibilityInsight = useCallback(async () => {
     if (!currentUser) return;
     try {
@@ -224,9 +237,10 @@ const HomeScreen: React.FC = () => {
       void loadSuggestions();
       void fetchLikesInboxCount();
       void fetchRosesInboxCount();
+      void fetchNotificationUnreadCount();
       void fetchVisibilityInsight();
       void fetchStoryBubbles();
-    }, [loadSuggestions, fetchLikesInboxCount, fetchRosesInboxCount, fetchVisibilityInsight, fetchStoryBubbles, appResumeVersion])
+    }, [loadSuggestions, fetchLikesInboxCount, fetchRosesInboxCount, fetchNotificationUnreadCount, fetchVisibilityInsight, fetchStoryBubbles, appResumeVersion])
   );
 
   // Auto-reload when empty
@@ -344,6 +358,15 @@ const HomeScreen: React.FC = () => {
     }
   };
 
+  const openDiscoverGrid = () => {
+    const hasAccess = !!currentUser?.is_premium || Number(currentUser?.grid_consultations_remaining || 0) > 0;
+    if (hasAccess) {
+      navigation.navigate('DiscoverGrid');
+      return;
+    }
+    setShowDiscoverGridModal(true);
+  };
+
   const handleDirectMessagePurchasePaystack = async () => {
     const target = suggestions[0];
     if (!target) return;
@@ -364,6 +387,22 @@ const HomeScreen: React.FC = () => {
     }
   };
 
+  const handleDiscoverGridPurchasePaystack = async () => {
+    const ok = await purchaseWithPaystack('DISCOVER_GRID_UNLOCK', DISCOVER_GRID_UNLOCK_AMOUNT, 'grid_unlock', { targetName: 'Acces Galerie' });
+    if (ok) {
+      setShowDiscoverGridModal(false);
+      navigation.navigate('DiscoverGrid');
+    }
+  };
+
+  const handleDiscoverGridPurchaseGoogle = async () => {
+    const ok = await purchaseWithStore(DISCOVER_GRID_UNLOCK_SKU, 'DISCOVER_GRID_UNLOCK', 'grid_unlock');
+    if (ok) {
+      setShowDiscoverGridModal(false);
+      navigation.navigate('DiscoverGrid');
+    }
+  };
+
   const openBoost = () => {
     const msg = getBoostActiveMessage(currentUser?.boosted_until);
     if (msg) Alert.alert(t('boost_active'), msg);
@@ -374,11 +413,24 @@ const HomeScreen: React.FC = () => {
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.header }]}>
-        <View>
-          <Text style={styles.brand}>Galant</Text>
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>{t('discover_subtitle')}</Text>
+        <View style={styles.headerTitle}>
+          <Text style={styles.brand} numberOfLines={1}>Galant</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]} numberOfLines={1}>{t('discover_subtitle')}</Text>
         </View>
         <View style={styles.headerActions}>
+          <Pressable style={[styles.headerIconBtn, { backgroundColor: colors.input }]} onPress={() => navigation.navigate('Notifications')}>
+            <Bell color={activeTheme === 'dark' ? colors.text : COLORS.ink} size={20} />
+            {notificationUnreadCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {notificationUnreadCount > 99 ? '99+' : notificationUnreadCount}
+                </Text>
+              </View>
+            )}
+          </Pressable>
+          <Pressable style={[styles.headerIconBtn, { backgroundColor: colors.input }]} onPress={openDiscoverGrid}>
+            <LayoutGrid color={activeTheme === 'dark' ? colors.text : COLORS.ink} size={20} />
+          </Pressable>
           <Pressable style={[styles.filterBtn, { backgroundColor: colors.input }]} onPress={() => setShowFilters(true)}>
             <SlidersHorizontal color={activeTheme === 'dark' ? colors.text : COLORS.ink} size={20} />
           </Pressable>
@@ -573,6 +625,13 @@ const HomeScreen: React.FC = () => {
         loading={purchaseLoading}
         userName={suggestions[0]?.name}
       />
+      <DiscoverGridPurchaseModal
+        visible={showDiscoverGridModal}
+        onClose={() => setShowDiscoverGridModal(false)}
+        onPurchasePaystack={handleDiscoverGridPurchasePaystack}
+        onPurchaseGoogle={handleDiscoverGridPurchaseGoogle}
+        loading={purchaseLoading}
+      />
       <PassportModal visible={showPassportModal} onClose={() => setShowPassportModal(false)} />
     </SafeAreaView>
   );
@@ -580,11 +639,15 @@ const HomeScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  brand: { fontSize: 32, fontFamily: 'PlayfairBlack', color: COLORS.primary, letterSpacing: -0.5 },
-  subtitle: { fontSize: 13, fontFamily: 'InterSemiBold', marginTop: -4 },
-  filterBtn: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
+  headerTitle: { flex: 1, minWidth: 0 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  brand: { fontSize: 25, fontFamily: 'PlayfairBlack', color: COLORS.primary, letterSpacing: -0.3 },
+  subtitle: { fontSize: 10, fontFamily: 'InterBold', marginTop: -1, textTransform: 'uppercase', letterSpacing: 1.1 },
+  headerIconBtn: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  filterBtn: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  notificationBadge: { position: 'absolute', right: -4, top: -5, minWidth: 18, height: 18, borderRadius: 9, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: '#fff' },
+  notificationBadgeText: { color: '#fff', fontSize: 9, fontFamily: 'InterBold' },
   storiesSection: { marginTop: -6, marginBottom: 10 },
   storiesSectionHeader: { paddingHorizontal: 16, marginBottom: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   storiesSectionTitle: { fontSize: 11, fontFamily: 'InterBold', textTransform: 'uppercase', letterSpacing: 1.6 },

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useMatchmaking } from '@shared/hooks/useMatchmaking';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIcon, SlidersHorizontal, Sparkles, RefreshCw, ChevronRight, Crown, Gem, MessageCircle, Plus, LayoutGrid } from 'lucide-react';
+import { ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIcon, SlidersHorizontal, Sparkles, RefreshCw, ChevronRight, Crown, Gem, MessageCircle, Plus, LayoutGrid, Bell } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
 import FilterModal from '../components/FilterModal';
@@ -20,6 +20,7 @@ const DiscoverPage: React.FC = () => {
   const [storyBubbles, setStoryBubbles] = useState<any[]>([]);
   const [storiesLoading, setStoriesLoading] = useState(false);
   const [storiesUnavailable, setStoriesUnavailable] = useState(false);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean; type: 'SUPER_LIKE' | 'DIRECT_MESSAGE'; userName: string; targetId: string } | null>(null);
   const navigate = useNavigate();
 
@@ -89,6 +90,7 @@ const DiscoverPage: React.FC = () => {
     if (!user) {
       setStoryBubbles([]);
       setStoriesUnavailable(false);
+      setNotificationUnreadCount(0);
       return;
     }
 
@@ -104,6 +106,17 @@ const DiscoverPage: React.FC = () => {
         setStoriesUnavailable(true);
       })
       .finally(() => setStoriesLoading(false));
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setNotificationUnreadCount(0);
+      return;
+    }
+
+    apiRequest<{ unreadCount: number }>('/api/notifications/unread-count', { requireAuth: true })
+      .then((payload) => setNotificationUnreadCount(Math.max(0, Number(payload?.unreadCount || 0))))
+      .catch(() => setNotificationUnreadCount(0));
   }, [user]);
 
   const onSwipe = async (direction: 'LEFT' | 'RIGHT') => {
@@ -268,18 +281,32 @@ const DiscoverPage: React.FC = () => {
   return (
     <div className="max-w-2xl mx-auto pb-10 px-4 relative">
       {/* Header avec Filtre à droite */}
-      <div className="flex justify-between items-start mb-8 pt-2">
-        <div>
-          <h2 className="text-4xl font-serif italic tracking-tighter text-slate-900 dark:text-white leading-none">
+      <div className="flex justify-between items-start gap-3 mb-6 pt-2">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-2xl sm:text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white leading-none truncate">
             {t('discover') || "Découvrir"}
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 font-medium mt-2 text-[10px] uppercase tracking-prestige">
+          <p className="text-slate-500 dark:text-slate-400 font-black mt-1.5 text-[8px] sm:text-[9px] uppercase tracking-[0.18em] truncate">
             {t('discover_subtitle') || "Découvre de nouvelles personnes"}
           </p>
         </div>
 
         {/* Boutons de vue & filtre alignés à droite */}
-        <div className="flex gap-3">
+        <div className="flex shrink-0 gap-2">
+          <button
+            onClick={() => navigate('/notifications')}
+            className="relative w-10 h-10 rounded-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 shadow-lg flex items-center justify-center text-slate-400 hover:text-primary transition-all active:scale-95"
+            title="Notifications"
+            aria-label="Notifications"
+          >
+            <Bell size={18} />
+            {notificationUnreadCount > 0 && (
+              <span className="absolute -right-1 -top-1 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-white text-[9px] font-black leading-[18px] text-center shadow-lg shadow-red-500/30">
+                {notificationUnreadCount > 99 ? '99+' : notificationUnreadCount}
+              </span>
+            )}
+          </button>
+
           <FeatureHighlight id="discover_grid" type="GOLD">
             <button
               onClick={handleGridTransition}

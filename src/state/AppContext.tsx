@@ -217,6 +217,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       likes_count: profile.likes_count || 0,
       roses_count: profile.roses_count || 0,
       rose_balance: profile.rose_balance || 0,
+      grid_consultations_remaining: Number(profile.grid_consultations_remaining || 0),
       galanterie_score: profile.galanterie_score || 5.0,
       galanterie_ratings_count: profile.galanterie_ratings_count || 0,
       is_invisible: !!profile.is_invisible && invisibleModeEligible,

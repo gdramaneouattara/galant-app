@@ -84,6 +84,7 @@ export type ProfileDetailParam = {
   distance_km?: number | null;
   roses_count?: number | null;
   rose_balance?: number | null;
+  grid_consultations_remaining?: number | null;
   last_active_at?: string | null;
   likes_count?: number | null;
 };
