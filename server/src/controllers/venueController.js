@@ -96,12 +96,13 @@ const getVenues = async (req, res) => {
   try {
     const safeLimit = clampLimit(req.query.limit);
     let query = db.collection('venues').where('status', '==', 'APPROVED');
-    if (type) query = query.where('venue_type', '==', type);
     if (city) query = query.limit(safeLimit * 4);
     else query = query.limit(safeLimit);
 
     const snapshot = await query.get();
-    let venues = snapshot.docs.map(doc => decorateVenueMedia(req, { id: doc.id, ...doc.data() }, 'thumb'));
+    let venues = snapshot.docs
+      .map(doc => decorateVenueMedia(req, { id: doc.id, ...doc.data() }, 'thumb'))
+      .filter(v => !type || v.venue_type === type);
 
     if (city) {
       venues = venues.filter(v => cityMatches(v.city || v.city_normalized || '', city));
@@ -251,11 +252,11 @@ const getAgendaEvents = async (req, res) => {
     });
 
     let query = db.collection('venue_events').where('expires_at', '>', now);
-    if (type) query = query.where('event_type', '==', type);
     query = query.limit(city ? safeLimit * 3 : safeLimit);
 
     const snapshot = await query.get();
     let events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(ev => !type || ev.event_type === type)
       .sort((a, b) => String(a.starts_at || a.expires_at || '').localeCompare(String(b.starts_at || b.expires_at || '')));
 
     if (city) {
@@ -340,9 +341,9 @@ const createPartnerEvent = async (req, res) => {
     if (sub?.payment_method === 'TRIAL') {
       const activeEvents = await db.collection('venue_events')
         .where('venue_id', '==', venue.id)
-        .where('expires_at', '>', new Date().toISOString())
         .get();
-      if (activeEvents.size >= 1) return res.status(403).json({ error: 'trial_limit_reached' });
+      const hasActiveEvent = activeEvents.docs.some((doc) => String(doc.data()?.expires_at || '') > new Date().toISOString());
+      if (hasActiveEvent) return res.status(403).json({ error: 'trial_limit_reached' });
     }
 
     const eventData = {
@@ -406,8 +407,9 @@ const createVenueChatThread = async (req, res) => {
     if (venue.status && venue.status !== 'APPROVED') return res.status(403).json({ error: 'venue_not_available' });
     if (venue.owner_id === meId) return res.status(400).json({ error: 'cannot_chat_own_venue' });
 
-    const chatSnap = await db.collection('venue_chats').where('user_id', '==', meId).where('venue_id', '==', id).limit(1).get();
-    if (!chatSnap.empty) return res.json({ venueChatId: chatSnap.docs[0].id });
+    const chatRef = db.collection('venue_chats').doc(`vchat_${meId}_${id}`);
+    const chatSnap = await chatRef.get();
+    if (chatSnap.exists) return res.json({ venueChatId: chatSnap.id });
 
     const profileRef = db.collection('profiles').doc(meId);
     const profileSnap = await profileRef.get();
@@ -416,8 +418,6 @@ const createVenueChatThread = async (req, res) => {
     const purchased = await hasDirectMessagePurchase(meId, id);
     const roseBalance = Number(profile?.rose_balance || 0);
     const now = new Date().toISOString();
-    const chatRef = db.collection('venue_chats').doc(`vchat_${meId}_${id}`);
-
     if (!hasPremiumAccess && !purchased && roseBalance < 1) {
       return res.status(403).json({
         error: 'payment_required',
@@ -466,10 +466,12 @@ const getPartnerChats = async (req, res) => {
 
     const chatsSnap = await db.collection('venue_chats')
       .where('venue_id', '==', venueId)
-      .orderBy('created_at', 'desc')
       .limit(safeLimit)
       .get();
-    const chats = await Promise.all(chatsSnap.docs.map(async doc => {
+    const sortedDocs = chatsSnap.docs.sort((left, right) => (
+      String(right.data()?.created_at || '').localeCompare(String(left.data()?.created_at || ''))
+    ));
+    const chats = await Promise.all(sortedDocs.map(async doc => {
       const data = doc.data();
       const userDoc = await db.collection('profiles').doc(data.user_id).get();
       return { id: doc.id, ...data, profiles: userDoc.exists ? toPublicProfile({ id: userDoc.id, ...userDoc.data() }) : null };
@@ -483,10 +485,12 @@ const getUserVenueChats = async (req, res) => {
     const safeLimit = clampLimit(req.query.limit, 50, 100);
     const snapshot = await db.collection('venue_chats')
       .where('user_id', '==', req.user.id)
-      .orderBy('created_at', 'desc')
       .limit(safeLimit)
       .get();
-    const chats = await Promise.all(snapshot.docs.map(async doc => {
+    const sortedDocs = snapshot.docs.sort((left, right) => (
+      String(right.data()?.created_at || '').localeCompare(String(left.data()?.created_at || ''))
+    ));
+    const chats = await Promise.all(sortedDocs.map(async doc => {
       const data = doc.data();
       const venueDoc = await db.collection('venues').doc(data.venue_id).get();
       return { id: doc.id, ...data, venues: venueDoc.exists ? decorateVenueMedia(req, { id: venueDoc.id, ...venueDoc.data() }, 'thumb') : null };

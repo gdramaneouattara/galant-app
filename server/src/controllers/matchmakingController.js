@@ -128,16 +128,10 @@ const fetchProfilesByGeohash = async ({ latitude, longitude, radiusKm, maxDocs =
   return [...docsById.values()];
 };
 
-const buildBroadProfilesQuery = (desiredGenders) => {
-  let query = db.collection('profiles')
-    .where('onboarding_completed', '==', true);
-
-  if (desiredGenders.length === 1) {
-    query = query.where('gender', '==', desiredGenders[0]);
-  }
-
-  return query;
-};
+const buildBroadProfilesQuery = () => (
+  db.collection('profiles')
+    .where('onboarding_completed', '==', true)
+);
 
 const mergeProfilesById = (primary, fallback) => {
   const rowsById = new Map();
@@ -207,7 +201,7 @@ const getSuggestions = async (req, res) => {
       db.collection('likes').where('liker_id', '==', me.id).get(),
       db.collection('swipes').where('swiper_id', '==', me.id).get(),
       db.collection('matches').where('status', '==', 'ACTIVE').get(),
-      db.collection('likes').where('liked_id', '==', me.id).where('is_super_like', '==', true).get(),
+      db.collection('likes').where('liked_id', '==', me.id).get(),
     ]);
 
     const goldenRoseUserIds = new Set(grSnapshot.docs.map(doc => doc.data().user_id));
@@ -216,7 +210,12 @@ const getSuggestions = async (req, res) => {
       const data = doc.data();
       if (data.direction === 'LEFT') alreadySwipedIds.add(data.target_id);
     });
-    const incomingSuperLikesByCandidate = new Set(incomingSuperLikesSnapshot.docs.map(doc => doc.data().liker_id));
+    const incomingSuperLikesByCandidate = new Set(
+      incomingSuperLikesSnapshot.docs
+        .map(doc => doc.data())
+        .filter(row => row.is_super_like === true)
+        .map(row => row.liker_id)
+    );
 
     // Add existing matches to already swiped
     myMatchesSnapshot.docs.forEach(doc => {
@@ -228,7 +227,7 @@ const getSuggestions = async (req, res) => {
     // 2. Fetch candidates from Firestore. Prefer geohash-bounded reads when GPS is available.
     // Fallback to the broad query only when search is explicit or the geohash index is not populated enough yet.
     const canUseGeohash = Number.isFinite(myLat) && Number.isFinite(myLon) && !searchQuery;
-    const broadQuery = buildBroadProfilesQuery(desiredGenders);
+    const broadQuery = buildBroadProfilesQuery();
     let candidates = [];
 
     if (canUseGeohash) {
@@ -277,14 +276,14 @@ const getSuggestions = async (req, res) => {
         // We will check the expiration date in memory below.
         const subSnapshot = await db.collection('subscriptions')
           .where('user_id', 'in', chunk)
-          .where('status', '==', 'active')
           .get();
 
         subSnapshot.docs.forEach(doc => {
           const data = doc.data();
+          const isActive = data.status === 'active';
           const isExpired = data.current_period_end && new Date(data.current_period_end) < new Date();
 
-          if (!isExpired) {
+          if (isActive && !isExpired) {
             const profile = candidates.find(c => c.id === data.user_id);
             if (profile && hasInvisiblePremiumAccessForPlan(profile, data.plan_id)) {
               invisibleEligibleBySubscription.add(data.user_id);
@@ -512,10 +511,12 @@ const handleSwipe = async (req, res) => {
       if (!free) {
         const pSnapshot = await db.collection('purchased_interactions')
           .where('user_id', '==', me.id)
-          .where('interaction_type', '==', 'SUPER_LIKE')
-          .where('target_id', '==', safeTargetUserId)
-          .limit(1).get();
-        if (pSnapshot.empty) return res.status(403).json({ error: 'premium_required_for_super_like' });
+          .limit(80).get();
+        const purchasedSuperLike = pSnapshot.docs.some((doc) => {
+          const item = doc.data();
+          return item.interaction_type === 'SUPER_LIKE' && item.target_id === safeTargetUserId;
+        });
+        if (!purchasedSuperLike) return res.status(403).json({ error: 'premium_required_for_super_like' });
       }
       await incrementUsage(me.id, 'SUPER_LIKE');
     }
@@ -720,10 +721,11 @@ const getSuperLikesReceived = async (req, res) => {
   try {
     const snapshot = await db.collection('likes')
       .where('liked_id', '==', me.id)
-      .where('is_super_like', '==', true)
       .get();
 
-    const rows = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const rows = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(row => row.is_super_like === true);
 
     const results = await Promise.all(rows.map(async row => {
       const senderDoc = await db.collection('profiles').doc(row.liker_id).get();

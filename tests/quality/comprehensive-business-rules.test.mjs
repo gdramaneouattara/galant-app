@@ -313,7 +313,11 @@ test('Rules: Internal notification center is wired across server, web and native
   assert.match(notificationController, /collectNotificationDocs/);
   assert.match(notificationController, /commitUpdatesInChunks/);
   assert.match(notificationController, /LEGACY_PREFIX = 'legacy_event_'/);
-  assert.match(notificationController, /startAfter/);
+  assert.match(notificationController, /offset/);
+  assert.doesNotMatch(notificationController, /where\('event_type'/);
+  assert.doesNotMatch(notificationController, /where\('is_read'/);
+  assert.doesNotMatch(notificationController, /orderBy\('created_at'/);
+  assert.doesNotMatch(notificationController, /startAfter/);
   assert.match(notificationRoutes, /\/unread-count/);
   assert.match(notificationRoutes, /\/:id\/archive/);
   assert.match(messageController, /createNotificationSafely/);
@@ -344,6 +348,37 @@ test('Rules: Internal notification center is wired across server, web and native
   assert.match(nativeNotifications, /markAllAsRead/);
   assert.match(nativeNotifications, /archiveNotification/);
   assert.match(nativeNotifications, /openNotificationTarget/);
+});
+
+test('Rules: User-facing counters and commerce avoid Firestore composite index traps', async () => {
+  const notificationController = await read('server/src/controllers/notificationController.js');
+  const matchmakingController = await read('server/src/controllers/matchmakingController.js');
+  const venueController = await read('server/src/controllers/venueController.js');
+  const usageService = await read('server/src/services/usageService.js');
+  const subscriptionService = await read('server/src/services/subscriptionService.js');
+  const statusController = await read('server/src/controllers/statusController.js');
+  const notificationService = await read('server/src/services/notificationService.js');
+
+  for (const file of [
+    notificationController,
+    matchmakingController,
+    venueController,
+    usageService,
+    subscriptionService,
+    statusController,
+    notificationService,
+  ]) {
+    assert.doesNotMatch(file, /\.where\([^)\n]+\)\s*\.\s*orderBy\(/);
+    assert.doesNotMatch(file, /\.where\([^)\n]+\)\s*\.\s*where\(/);
+  }
+
+  assert.match(matchmakingController, /incomingSuperLikesSnapshot/);
+  assert.match(matchmakingController, /filter\(row => row\.is_super_like === true\)/);
+  assert.match(venueController, /filter\(ev => !type \|\| ev\.event_type === type\)/);
+  assert.match(venueController, /doc\(`vchat_\$\{meId\}_\$\{id\}`\)/);
+  assert.match(usageService, /usageDocId/);
+  assert.match(usageService, /FieldValue\.increment/);
+  assert.match(subscriptionService, /filter\(sub => sub\.status === 'active'/);
 });
 
 test('Rules: Back navigation uses safe fallbacks across web and native surfaces', async () => {

@@ -87,15 +87,15 @@ const getLatestActiveSubscriptionForUser = async (userId) => {
     const now = new Date().toISOString();
     const snapshot = await db.collection('subscriptions')
       .where('user_id', '==', userId)
-      .where('status', '==', 'active')
-      .where('current_period_end', '>', now)
-      .orderBy('current_period_end', 'desc')
-      .limit(1)
+      .limit(30)
       .get();
 
-    if (snapshot.empty) return null;
-    const doc = snapshot.docs[0];
-    return { id: doc.id, ...doc.data() };
+    const subscriptions = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(sub => sub.status === 'active' && (!sub.current_period_end || sub.current_period_end > now))
+      .sort((left, right) => String(right.current_period_end || '').localeCompare(String(left.current_period_end || '')));
+
+    return subscriptions[0] || null;
   } catch (error) {
     console.error('Error fetching latest active sub:', error);
     return null;
@@ -106,14 +106,15 @@ const getLatestRenewableSubscriptionForUser = async (userId) => {
   try {
     const snapshot = await db.collection('subscriptions')
       .where('user_id', '==', userId)
-      .where('payment_method', 'in', ['GOOGLE_PLAY', 'APPLE_STORE'])
-      .orderBy('current_period_end', 'desc')
-      .limit(1)
+      .limit(30)
       .get();
 
-    if (snapshot.empty) return null;
-    const doc = snapshot.docs[0];
-    return { id: doc.id, ...doc.data() };
+    const subscriptions = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(sub => ['GOOGLE_PLAY', 'APPLE_STORE'].includes(sub.payment_method))
+      .sort((left, right) => String(right.current_period_end || '').localeCompare(String(left.current_period_end || '')));
+
+    return subscriptions[0] || null;
   } catch (error) {
     return null;
   }

@@ -1,4 +1,10 @@
 const { db } = require('../config/firebase');
+const { FieldValue } = require('firebase-admin/firestore');
+
+const todayKey = () => new Date().toISOString().split('T')[0];
+const usageDocId = (userId, type, date = todayKey()) => (
+  `${String(userId).replace(/[^a-zA-Z0-9_-]/g, '_')}_${String(type).replace(/[^a-zA-Z0-9_-]/g, '_')}_${date}`
+);
 
 /**
  * Checks if a user has purchased a specific interaction (DM or Rose Note)
@@ -8,12 +14,14 @@ const hasDirectMessagePurchase = async (userId, targetUserId) => {
   try {
     const snapshot = await db.collection('purchased_interactions')
       .where('user_id', '==', userId)
-      .where('target_id', '==', targetUserId)
-      .where('interaction_type', 'in', ['DIRECT_MESSAGE', 'ROSE_NOTE_UNLOCK'])
-      .limit(1)
+      .limit(80)
       .get();
 
-    return !snapshot.empty;
+    return snapshot.docs.some((doc) => {
+      const item = doc.data();
+      return item.target_id === targetUserId &&
+        ['DIRECT_MESSAGE', 'ROSE_NOTE_UNLOCK'].includes(item.interaction_type);
+    });
   } catch (error) {
     console.error('Error checking DM purchase:', error);
     return false;
@@ -24,17 +32,11 @@ const hasDirectMessagePurchase = async (userId, targetUserId) => {
  * Gets daily usage stats for a user and action type
  */
 const getDailyUsage = async (userId, type) => {
-  const date = new Date().toISOString().split('T')[0];
+  const date = todayKey();
   try {
-    const snapshot = await db.collection('daily_usage')
-      .where('user_id', '==', userId)
-      .where('action_type', '==', type)
-      .where('action_date', '==', date)
-      .limit(1)
-      .get();
-
-    if (snapshot.empty) return { usage_count: 0, usage_seconds: 0 };
-    return snapshot.docs[0].data();
+    const doc = await db.collection('daily_usage').doc(usageDocId(userId, type, date)).get();
+    if (!doc.exists) return { usage_count: 0, usage_seconds: 0 };
+    return doc.data();
   } catch (error) {
     console.error('Error getting daily usage:', error);
     return { usage_count: 0, usage_seconds: 0 };
@@ -45,33 +47,16 @@ const getDailyUsage = async (userId, type) => {
  * Increments daily usage count
  */
 const incrementUsage = async (userId, type, seconds = 0) => {
-  const date = new Date().toISOString().split('T')[0];
+  const date = todayKey();
   try {
-    const usageRef = db.collection('daily_usage');
-    const snapshot = await usageRef
-      .where('user_id', '==', userId)
-      .where('action_type', '==', type)
-      .where('action_date', '==', date)
-      .limit(1)
-      .get();
-
-    if (!snapshot.empty) {
-      const doc = snapshot.docs[0];
-      const data = doc.data();
-      await doc.ref.update({
-        usage_count: (data.usage_count || 0) + 1,
-        usage_seconds: (data.usage_seconds || 0) + seconds
-      });
-    } else {
-      await usageRef.add({
-        user_id: userId,
-        action_type: type,
-        action_date: date,
-        usage_count: 1,
-        usage_seconds: seconds,
-        created_at: new Date().toISOString()
-      });
-    }
+    await db.collection('daily_usage').doc(usageDocId(userId, type, date)).set({
+      user_id: userId,
+      action_type: type,
+      action_date: date,
+      usage_count: FieldValue.increment(1),
+      usage_seconds: FieldValue.increment(seconds),
+      updated_at: new Date().toISOString()
+    }, { merge: true });
   } catch (error) {
     console.error('Error incrementing usage:', error);
   }
@@ -85,15 +70,17 @@ const consumeStoryPurchase = async (userId) => {
   try {
     const snapshot = await db.collection('purchased_interactions')
       .where('user_id', '==', userId)
-      .where('interaction_type', '==', 'STORY_UPLOAD')
-      .where('status', '==', 'UNUSED')
-      .limit(1)
+      .limit(80)
       .get();
 
-    if (snapshot.empty) return false;
+    const doc = snapshot.docs.find((row) => {
+      const item = row.data();
+      return item.interaction_type === 'STORY_UPLOAD' && item.status === 'UNUSED';
+    });
+    if (!doc) return false;
 
     // Consume it
-    await snapshot.docs[0].ref.update({
+    await doc.ref.update({
       status: 'USED',
       consumed_at: new Date().toISOString()
     });
@@ -109,12 +96,13 @@ const hasUnusedStoryPurchase = async (userId) => {
   try {
     const snapshot = await db.collection('purchased_interactions')
       .where('user_id', '==', userId)
-      .where('interaction_type', '==', 'STORY_UPLOAD')
-      .where('status', '==', 'UNUSED')
-      .limit(1)
+      .limit(80)
       .get();
 
-    return !snapshot.empty;
+    return snapshot.docs.some((row) => {
+      const item = row.data();
+      return item.interaction_type === 'STORY_UPLOAD' && item.status === 'UNUSED';
+    });
   } catch (error) {
     console.error('Error checking story purchase:', error);
     return false;

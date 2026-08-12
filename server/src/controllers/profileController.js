@@ -85,9 +85,11 @@ const boostProfile = async (req, res) => {
     try {
       const usageSnap = await db.collection('daily_usage')
         .where('user_id', '==', me.id)
-        .where('action_type', '==', 'BOOST')
         .get();
-      const totalTrialUsage = usageSnap.docs.reduce((acc, curr) => acc + (curr.data().usage_seconds || 0), 0);
+      const totalTrialUsage = usageSnap.docs
+        .map(doc => doc.data())
+        .filter(item => item.action_type === 'BOOST')
+        .reduce((acc, curr) => acc + (curr.usage_seconds || 0), 0);
       if (totalTrialUsage < QUOTAS.TRIAL_BOOST_SECONDS) canBoost = true;
     } catch (e) {}
   }
