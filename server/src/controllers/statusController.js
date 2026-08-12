@@ -73,13 +73,14 @@ const getStatuses = async (req, res) => {
         const chunk = hiddenAuthorIds.slice(i, i + 30);
         const subSnapshot = await db.collection('subscriptions')
           .where('user_id', 'in', chunk)
-          .where('status', '==', 'active')
-          .where('current_period_end', '>', now)
           .get();
         subSnapshot.forEach(doc => {
-          const profile = rows.find(r => r.user_id === doc.data().user_id).profiles;
-          if (hasInvisiblePremiumAccessForPlan(profile, doc.data().plan_id)) {
-            invisibleEligibleBySubscription.add(doc.data().user_id);
+          const subscription = doc.data();
+          const isActive = subscription.status === 'active' &&
+            (!subscription.current_period_end || subscription.current_period_end > now);
+          const profile = rows.find(r => r.user_id === subscription.user_id)?.profiles;
+          if (isActive && profile && hasInvisiblePremiumAccessForPlan(profile, subscription.plan_id)) {
+            invisibleEligibleBySubscription.add(subscription.user_id);
           }
         });
       }

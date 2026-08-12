@@ -13,12 +13,14 @@ const sendPushNotification = async (userId, title, body, data = {}) => {
     console.log(`[PUSH] Triggering notification for user ${userId}: ${title}`);
     const snapshot = await db.collection('push_tokens')
       .where('user_id', '==', userId)
-      .where('is_active', '==', true)
       .get();
 
     if (snapshot.empty) return;
 
-    const tokens = snapshot.docs.map(doc => doc.data().token);
+    const tokens = snapshot.docs
+      .map(doc => doc.data())
+      .filter(item => item.is_active === true)
+      .map(item => item.token);
 
     // Split tokens into FCM and Expo
     const fcmTokens = tokens.filter(t => !t.includes('ExponentPushToken'));
@@ -74,17 +76,19 @@ const createStoryLikeNotificationIfNeeded = async ({ recipientId, storyId, liker
 
   const dedupSinceIso = new Date(Date.now() - STORY_LIKE_NOTIFICATION_DEDUP_MS).toISOString();
 
-  // Deduplication check
-  const snapshot = await db.collection('events')
+  const snapshot = await db.collection('notifications')
     .where('user_id', '==', recipientId)
-    .where('event_type', '==', 'STORY_NOTIFICATION')
-    .where('event_name', '==', 'STORY_LIKED')
-    .where('created_at', '>=', dedupSinceIso)
+    .limit(80)
     .get();
 
   const isDuplicate = snapshot.docs.some(doc => {
-    const meta = doc.data().metadata;
-    return meta && meta.story_id === String(storyId) && meta.liker_id === String(likerProfile.id);
+    const item = doc.data();
+    const meta = item.metadata;
+    return item.type === NOTIFICATION_TYPES.STORY_LIKED &&
+      item.created_at >= dedupSinceIso &&
+      meta &&
+      meta.story_id === String(storyId) &&
+      meta.liker_id === String(likerProfile.id);
   });
 
   if (isDuplicate) return;

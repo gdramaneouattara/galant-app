@@ -230,17 +230,16 @@ const broadcastMessage = async (req, res) => {
 const getKycRequests = async (req, res) => {
   try {
     const { status } = req.query;
-    let query = db.collection('kyc_verifications').orderBy('created_at', 'desc');
-    if (status && status !== 'ALL') {
-      query = db.collection('kyc_verifications').where('status', '==', status).orderBy('created_at', 'desc');
-    }
-    const snapshot = await query.get();
+    const snapshot = await db.collection('kyc_verifications').get();
     const requests = await Promise.all(snapshot.docs.map(async doc => {
       const data = doc.data();
       const userDoc = await db.collection('profiles').doc(data.user_id).get();
       return { id: doc.id, ...data, user: userDoc.exists ? { id: userDoc.id, ...userDoc.data() } : null };
     }));
-    res.json({ requests: requests.filter(r => !!r.user) });
+    const filtered = requests
+      .filter(r => !!r.user && (!status || status === 'ALL' || r.status === status))
+      .sort((left, right) => String(right.created_at || '').localeCompare(String(left.created_at || '')));
+    res.json({ requests: filtered });
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
 
@@ -315,11 +314,7 @@ const getPhotoReviews = async (req, res) => {
 const getReports = async (req, res) => {
   try {
     const { status } = req.query;
-    let query = db.collection('reports').orderBy('created_at', 'desc').limit(100);
-    if (status && status !== 'ALL') {
-      query = db.collection('reports').where('status', '==', status).orderBy('created_at', 'desc').limit(100);
-    }
-    const snapshot = await query.get();
+    const snapshot = await db.collection('reports').limit(150).get();
     const reports = await Promise.all(snapshot.docs.map(async doc => {
       const data = doc.data();
       const [reporterDoc, reportedDoc] = await Promise.all([
@@ -335,7 +330,12 @@ const getReports = async (req, res) => {
       };
     }));
 
-    res.json({ reports });
+    res.json({
+      reports: reports
+        .filter(report => !status || status === 'ALL' || report.status === status)
+        .sort((left, right) => String(right.created_at || '').localeCompare(String(left.created_at || '')))
+        .slice(0, 100)
+    });
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
 
