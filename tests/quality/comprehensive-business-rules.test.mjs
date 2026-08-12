@@ -66,13 +66,19 @@ test('Rules: Stories move into discovery and Apps replaces the stories tab', asy
 
 test('Rules: Discovery header exposes notifications with compact title and grid/filter actions', async () => {
   const nativeHome = await read('src/screens/home/HomeScreen.tsx');
+  const nativeGrid = await read('src/screens/discover/DiscoverGridScreen.tsx');
   const webDiscover = await read('web/src/pages/DiscoverPage.tsx');
 
   assert.match(nativeHome, /Bell/);
   assert.match(nativeHome, /notificationUnreadCount/);
   assert.match(nativeHome, /\/api\/notifications\/unread-count/);
   assert.match(nativeHome, /navigation\.navigate\('Notifications'\)/);
-  assert.match(nativeHome, /navigation\.navigate\('DiscoverGrid'\)/);
+  assert.match(nativeHome, /openDiscoverGrid/);
+  assert.match(nativeHome, /grid_consultations_remaining/);
+  assert.match(nativeHome, /setShowDiscoverGridModal\(true\)/);
+  assert.match(nativeHome, /DiscoverGridPurchaseModal/);
+  assert.match(nativeHome, /DISCOVER_GRID_UNLOCK/);
+  assert.match(nativeGrid, /isGrid=true/);
   assert.match(nativeHome, /headerTitle:\s*\{\s*flex:\s*1,\s*minWidth:\s*0/);
   assert.match(nativeHome, /numberOfLines=\{1\}/);
   assert.match(nativeHome, /brand:\s*\{\s*fontSize:\s*25/);

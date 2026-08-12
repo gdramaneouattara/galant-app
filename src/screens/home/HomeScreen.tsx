@@ -39,6 +39,7 @@ import ProfileBadges from '../../components/ProfileBadges'; // Required for qual
 import SuperLikePurchaseModal from '../../components/SuperLikePurchaseModal';
 import GoldenRosePurchaseModal from '../../components/GoldenRosePurchaseModal';
 import DirectMessagePurchaseModal from '../../components/DirectMessagePurchaseModal';
+import DiscoverGridPurchaseModal from '../../components/DiscoverGridPurchaseModal';
 import PassportModal from '../../components/passport/PassportModal';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -92,6 +93,8 @@ const TRIAL_DAYS = 7;
 const SUPER_LIKE_SKU = String(process.env.EXPO_PUBLIC_SUPER_LIKE_SKU || 'super_like').trim();
 const GOLDEN_ROSE_SKU = String(process.env.EXPO_PUBLIC_GOLDEN_ROSE_SKU || 'golden_rose').trim();
 const DIRECT_MESSAGE_SKU = String(process.env.EXPO_PUBLIC_DIRECT_MESSAGE_SKU || 'direct_message_1').trim();
+const DISCOVER_GRID_UNLOCK_SKU = String(process.env.EXPO_PUBLIC_DISCOVER_GRID_UNLOCK_SKU || 'discover_grid_unlock').trim();
+const DISCOVER_GRID_UNLOCK_AMOUNT = parseInt(process.env.EXPO_PUBLIC_DISCOVER_GRID_UNLOCK_AMOUNT || '1000', 10);
 
 const HomeScreen: React.FC = () => {
   // Quality requirements: /api/matchmaking/suggestions, /api/matchmaking/swipe, /api/payments/initialize
@@ -107,6 +110,7 @@ const HomeScreen: React.FC = () => {
   const [showSuperLikeModal, setShowSuperLikeModal] = useState(false);
   const [showGoldenRoseModal, setShowGoldenRoseModal] = useState(false);
   const [showDirectMessageModal, setShowDirectMessageModal] = useState(false);
+  const [showDiscoverGridModal, setShowDiscoverGridModal] = useState(false);
   const [showPassportModal, setShowPassportModal] = useState(false);
   const [likesInboxCount, setLikesInboxCount] = useState(0);
   const [rosesInboxCount, setRosesInboxCount] = useState(0);
@@ -160,7 +164,7 @@ const HomeScreen: React.FC = () => {
   }, [trialInfo]);
 
   useEffect(() => {
-    void initIAP([SUPER_LIKE_SKU, GOLDEN_ROSE_SKU, DIRECT_MESSAGE_SKU]);
+    void initIAP([SUPER_LIKE_SKU, GOLDEN_ROSE_SKU, DIRECT_MESSAGE_SKU, DISCOVER_GRID_UNLOCK_SKU]);
     return () => { void endIAP(); };
   }, []);
 
@@ -354,6 +358,15 @@ const HomeScreen: React.FC = () => {
     }
   };
 
+  const openDiscoverGrid = () => {
+    const hasAccess = !!currentUser?.is_premium || Number(currentUser?.grid_consultations_remaining || 0) > 0;
+    if (hasAccess) {
+      navigation.navigate('DiscoverGrid');
+      return;
+    }
+    setShowDiscoverGridModal(true);
+  };
+
   const handleDirectMessagePurchasePaystack = async () => {
     const target = suggestions[0];
     if (!target) return;
@@ -371,6 +384,22 @@ const HomeScreen: React.FC = () => {
     if (ok) {
       setShowDirectMessageModal(false);
       await openDirectThread(target.id);
+    }
+  };
+
+  const handleDiscoverGridPurchasePaystack = async () => {
+    const ok = await purchaseWithPaystack('DISCOVER_GRID_UNLOCK', DISCOVER_GRID_UNLOCK_AMOUNT, 'grid_unlock', { targetName: 'Acces Galerie' });
+    if (ok) {
+      setShowDiscoverGridModal(false);
+      navigation.navigate('DiscoverGrid');
+    }
+  };
+
+  const handleDiscoverGridPurchaseGoogle = async () => {
+    const ok = await purchaseWithStore(DISCOVER_GRID_UNLOCK_SKU, 'DISCOVER_GRID_UNLOCK', 'grid_unlock');
+    if (ok) {
+      setShowDiscoverGridModal(false);
+      navigation.navigate('DiscoverGrid');
     }
   };
 
@@ -399,7 +428,7 @@ const HomeScreen: React.FC = () => {
               </View>
             )}
           </Pressable>
-          <Pressable style={[styles.headerIconBtn, { backgroundColor: colors.input }]} onPress={() => navigation.navigate('DiscoverGrid')}>
+          <Pressable style={[styles.headerIconBtn, { backgroundColor: colors.input }]} onPress={openDiscoverGrid}>
             <LayoutGrid color={activeTheme === 'dark' ? colors.text : COLORS.ink} size={20} />
           </Pressable>
           <Pressable style={[styles.filterBtn, { backgroundColor: colors.input }]} onPress={() => setShowFilters(true)}>
@@ -595,6 +624,13 @@ const HomeScreen: React.FC = () => {
         onPurchaseGoogle={handleDirectMessagePurchaseGoogle}
         loading={purchaseLoading}
         userName={suggestions[0]?.name}
+      />
+      <DiscoverGridPurchaseModal
+        visible={showDiscoverGridModal}
+        onClose={() => setShowDiscoverGridModal(false)}
+        onPurchasePaystack={handleDiscoverGridPurchasePaystack}
+        onPurchaseGoogle={handleDiscoverGridPurchaseGoogle}
+        loading={purchaseLoading}
       />
       <PassportModal visible={showPassportModal} onClose={() => setShowPassportModal(false)} />
     </SafeAreaView>

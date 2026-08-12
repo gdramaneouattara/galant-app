@@ -48,7 +48,7 @@ const DiscoverGridScreen: React.FC = () => {
       const safeQ = (q || '').trim();
       const searchParam = safeQ ? `&search=${encodeURIComponent(safeQ)}` : '';
       const includeSelfParam = includeSelf ? '&includeSelf=true' : '';
-      const res = await apiRequest<DiscoverResponse>(`/api/matchmaking/suggestions?limit=${MATCHMAKING_LIMIT}${includeSelfParam}${searchParam}`, { requireAuth: true });
+      const res = await apiRequest<DiscoverResponse>(`/api/matchmaking/suggestions?limit=${MATCHMAKING_LIMIT}&isGrid=true${includeSelfParam}${searchParam}`, { requireAuth: true });
       setProfiles(res.suggestions || []);
       setCurrentUserRank(res.current_user_rank ?? null);
     } catch {

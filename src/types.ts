@@ -42,6 +42,7 @@ export interface User {
   likes_count: number;
   roses_count?: number;
   rose_balance?: number;
+  grid_consultations_remaining?: number;
   galanterie_score?: number;
   galanterie_ratings_count?: number;
   is_invisible?: boolean;
