@@ -20,7 +20,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import * as IAP from 'react-native-iap';
-import { Heart, MessageCircle, PlayCircle, SlidersHorizontal, X, Sparkles, ChevronRight } from 'lucide-react-native';
+import { Bell, Heart, LayoutGrid, MessageCircle, PlayCircle, SlidersHorizontal, X, Sparkles, ChevronRight } from 'lucide-react-native';
 import { COLORS } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { apiRequest } from '../../lib/api';
@@ -110,6 +110,7 @@ const HomeScreen: React.FC = () => {
   const [showPassportModal, setShowPassportModal] = useState(false);
   const [likesInboxCount, setLikesInboxCount] = useState(0);
   const [rosesInboxCount, setRosesInboxCount] = useState(0);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [storyBubbles, setStoryBubbles] = useState<StoryBubble[]>([]);
   const [storiesLoading, setStoriesLoading] = useState(false);
   const [storiesUnavailable, setStoriesUnavailable] = useState(false);
@@ -194,6 +195,14 @@ const HomeScreen: React.FC = () => {
     } catch { setRosesInboxCount(0); }
   }, [currentUser]);
 
+  const fetchNotificationUnreadCount = useCallback(async () => {
+    if (!currentUser) { setNotificationUnreadCount(0); return; }
+    try {
+      const payload = await apiRequest<{ unreadCount: number }>('/api/notifications/unread-count', { requireAuth: true });
+      setNotificationUnreadCount(Math.max(0, Number(payload?.unreadCount || 0)));
+    } catch { setNotificationUnreadCount(0); }
+  }, [currentUser]);
+
   const fetchVisibilityInsight = useCallback(async () => {
     if (!currentUser) return;
     try {
@@ -224,9 +233,10 @@ const HomeScreen: React.FC = () => {
       void loadSuggestions();
       void fetchLikesInboxCount();
       void fetchRosesInboxCount();
+      void fetchNotificationUnreadCount();
       void fetchVisibilityInsight();
       void fetchStoryBubbles();
-    }, [loadSuggestions, fetchLikesInboxCount, fetchRosesInboxCount, fetchVisibilityInsight, fetchStoryBubbles, appResumeVersion])
+    }, [loadSuggestions, fetchLikesInboxCount, fetchRosesInboxCount, fetchNotificationUnreadCount, fetchVisibilityInsight, fetchStoryBubbles, appResumeVersion])
   );
 
   // Auto-reload when empty
@@ -374,11 +384,24 @@ const HomeScreen: React.FC = () => {
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.header }]}>
-        <View>
-          <Text style={styles.brand}>Galant</Text>
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>{t('discover_subtitle')}</Text>
+        <View style={styles.headerTitle}>
+          <Text style={styles.brand} numberOfLines={1}>Galant</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]} numberOfLines={1}>{t('discover_subtitle')}</Text>
         </View>
         <View style={styles.headerActions}>
+          <Pressable style={[styles.headerIconBtn, { backgroundColor: colors.input }]} onPress={() => navigation.navigate('Notifications')}>
+            <Bell color={activeTheme === 'dark' ? colors.text : COLORS.ink} size={20} />
+            {notificationUnreadCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {notificationUnreadCount > 99 ? '99+' : notificationUnreadCount}
+                </Text>
+              </View>
+            )}
+          </Pressable>
+          <Pressable style={[styles.headerIconBtn, { backgroundColor: colors.input }]} onPress={() => navigation.navigate('DiscoverGrid')}>
+            <LayoutGrid color={activeTheme === 'dark' ? colors.text : COLORS.ink} size={20} />
+          </Pressable>
           <Pressable style={[styles.filterBtn, { backgroundColor: colors.input }]} onPress={() => setShowFilters(true)}>
             <SlidersHorizontal color={activeTheme === 'dark' ? colors.text : COLORS.ink} size={20} />
           </Pressable>
@@ -580,11 +603,15 @@ const HomeScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  brand: { fontSize: 32, fontFamily: 'PlayfairBlack', color: COLORS.primary, letterSpacing: -0.5 },
-  subtitle: { fontSize: 13, fontFamily: 'InterSemiBold', marginTop: -4 },
-  filterBtn: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
+  headerTitle: { flex: 1, minWidth: 0 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  brand: { fontSize: 25, fontFamily: 'PlayfairBlack', color: COLORS.primary, letterSpacing: -0.3 },
+  subtitle: { fontSize: 10, fontFamily: 'InterBold', marginTop: -1, textTransform: 'uppercase', letterSpacing: 1.1 },
+  headerIconBtn: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  filterBtn: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  notificationBadge: { position: 'absolute', right: -4, top: -5, minWidth: 18, height: 18, borderRadius: 9, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: '#fff' },
+  notificationBadgeText: { color: '#fff', fontSize: 9, fontFamily: 'InterBold' },
   storiesSection: { marginTop: -6, marginBottom: 10 },
   storiesSectionHeader: { paddingHorizontal: 16, marginBottom: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   storiesSectionTitle: { fontSize: 11, fontFamily: 'InterBold', textTransform: 'uppercase', letterSpacing: 1.6 },
