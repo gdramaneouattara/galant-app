@@ -6,11 +6,25 @@ const {
   searchUserPartnerDiscovery,
   buildGooglePhotoMediaUrl,
   extractGooglePhotoNameFromUrl,
-  GOOGLE_VENUE_PLACEHOLDER
+  GOOGLE_VENUE_PLACEHOLDER,
+  normalizeCacheText
 } = require('../services/googleMapsService');
 const { syncTikeramaAgendaIfNeeded } = require('../services/tikeramaAgendaService');
 
 const PARTNER_DISCOVERY_PRICE = 500;
+
+const clampLimit = (value, fallback = 50, max = 100) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(1, Math.min(max, Math.floor(parsed)));
+};
+
+const normalizeSearch = (value = '') => normalizeCacheText(value);
+
+const cityMatches = (value = '', search = '') => {
+  if (!search) return true;
+  return normalizeSearch(value).includes(normalizeSearch(search));
+};
 
 const googlePhotoNameForVenue = (venue = {}) => (
   venue.google_photo_name || extractGooglePhotoNameFromUrl(venue.photo_url)
@@ -73,18 +87,20 @@ const toPublicProfile = (p) => {
 const getVenues = async (req, res) => {
   const { city, type } = req.query;
   try {
+    const safeLimit = clampLimit(req.query.limit);
     let query = db.collection('venues').where('status', '==', 'APPROVED');
     if (type) query = query.where('venue_type', '==', type);
+    if (city) query = query.limit(safeLimit * 4);
+    else query = query.limit(safeLimit);
 
     const snapshot = await query.get();
     let venues = snapshot.docs.map(doc => decorateVenueMedia(req, { id: doc.id, ...doc.data() }, 'thumb'));
 
     if (city) {
-      const searchCity = city.toLowerCase();
-      venues = venues.filter(v => (v.city || '').toLowerCase().includes(searchCity));
+      venues = venues.filter(v => cityMatches(v.city || v.city_normalized || '', city));
     }
 
-    res.json({ venues });
+    res.json({ venues: venues.slice(0, safeLimit) });
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
 
@@ -216,6 +232,7 @@ const getAgendaEvents = async (req, res) => {
   const meId = req.user.id;
   const now = new Date().toISOString();
   try {
+    const safeLimit = clampLimit(req.query.limit, 50, 100);
     const forceExternalRefresh = req.query.refreshExternal === '1' && req.user?.is_admin === true;
     await syncTikeramaAgendaIfNeeded({
       force: forceExternalRefresh,
@@ -228,20 +245,25 @@ const getAgendaEvents = async (req, res) => {
 
     let query = db.collection('venue_events').where('expires_at', '>', now);
     if (type) query = query.where('event_type', '==', type);
+    query = query.limit(city ? safeLimit * 3 : safeLimit);
 
     const snapshot = await query.get();
     let events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
       .sort((a, b) => String(a.starts_at || a.expires_at || '').localeCompare(String(b.starts_at || b.expires_at || '')));
 
-    const results = await Promise.all(events.map(async ev => {
+    if (city) {
+      events = events.filter(ev => cityMatches(ev.city || ev.city_normalized || '', city));
+    }
+
+    const results = await Promise.all(events.slice(0, safeLimit).map(async ev => {
       const venueDoc = await db.collection('venues').doc(ev.venue_id).get();
       const venueData = venueDoc.exists ? decorateVenueMedia(req, { id: venueDoc.id, ...venueDoc.data() }, 'thumb') : null;
       if (!venueData) return null;
-      if (city && !String(venueData.city || '').toLowerCase().includes(String(city).toLowerCase())) return null;
+      if (city && !cityMatches(`${venueData.city || ''} ${venueData.city_normalized || ''}`, city)) return null;
 
-      const attendanceSnap = await db.collection('event_attendance').where('event_id', '==', ev.id).get();
-      const attendeesCount = attendanceSnap.size;
-      const isAttending = attendanceSnap.docs.some(d => d.data().user_id === meId);
+      const attendanceDoc = await db.collection('event_attendance').doc(`${ev.id}_${meId}`).get();
+      const attendeesCount = Number(ev.attendees_count || 0);
+      const isAttending = attendanceDoc.exists;
 
       return { ...ev, venues: venueData, attendees_count: attendeesCount, is_attending: isAttending };
     }));
@@ -254,24 +276,48 @@ const attendEvent = async (req, res) => {
   const { id } = req.params;
   const meId = req.user.id;
   try {
-    const eventDoc = await db.collection('venue_events').doc(id).get();
-    if (!eventDoc.exists) return res.status(404).json({ error: 'event_not_found' });
+    const eventRef = db.collection('venue_events').doc(id);
+    const attendanceRef = db.collection('event_attendance').doc(`${id}_${meId}`);
+    await db.runTransaction(async (tx) => {
+      const eventDoc = await tx.get(eventRef);
+      if (!eventDoc.exists) {
+        const error = new Error('event_not_found');
+        error.code = 'event_not_found';
+        throw error;
+      }
 
-    await db.collection('event_attendance').doc(`${id}_${meId}`).set({
-      event_id: id,
-      user_id: meId,
-      created_at: new Date().toISOString()
+      const attendanceDoc = await tx.get(attendanceRef);
+      if (attendanceDoc.exists) return;
+
+      tx.set(attendanceRef, {
+        event_id: id,
+        user_id: meId,
+        created_at: new Date().toISOString()
+      });
+      tx.update(eventRef, { attendees_count: FieldValue.increment(1) });
     });
 
     res.json({ success: true });
-  } catch (error) { res.status(500).json({ error: error.message }); }
+  } catch (error) {
+    if (error.code === 'event_not_found') return res.status(404).json({ error: 'event_not_found' });
+    res.status(500).json({ error: error.message });
+  }
 };
 
 const unattendEvent = async (req, res) => {
   const { id } = req.params;
   const meId = req.user.id;
   try {
-    await db.collection('event_attendance').doc(`${id}_${meId}`).delete();
+    const eventRef = db.collection('venue_events').doc(id);
+    const attendanceRef = db.collection('event_attendance').doc(`${id}_${meId}`);
+    await db.runTransaction(async (tx) => {
+      const [eventDoc, attendanceDoc] = await Promise.all([tx.get(eventRef), tx.get(attendanceRef)]);
+      if (!eventDoc.exists || !attendanceDoc.exists) return;
+      tx.delete(attendanceRef);
+      tx.update(eventRef, {
+        attendees_count: Math.max(0, Number(eventDoc.data()?.attendees_count || 0) - 1)
+      });
+    });
     res.json({ success: true });
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
@@ -301,6 +347,9 @@ const createPartnerEvent = async (req, res) => {
       event_type: eventType,
       starts_at: startsAt,
       expires_at: expiresAt,
+      city: venue.data()?.city || null,
+      city_normalized: normalizeSearch(venue.data()?.city || ''),
+      attendees_count: 0,
       created_at: new Date().toISOString()
     };
     const ref = await db.collection('venue_events').add(eventData);
@@ -387,11 +436,16 @@ const createVenueChatThread = async (req, res) => {
 
 const getPartnerChats = async (req, res) => {
   try {
+    const safeLimit = clampLimit(req.query.limit, 50, 100);
     const venueSnap = await db.collection('venues').where('owner_id', '==', req.user.id).limit(1).get();
     if (venueSnap.empty) return res.status(403).json({ error: 'not_a_partner' });
     const venueId = venueSnap.docs[0].id;
 
-    const chatsSnap = await db.collection('venue_chats').where('venue_id', '==', venueId).orderBy('created_at', 'desc').get();
+    const chatsSnap = await db.collection('venue_chats')
+      .where('venue_id', '==', venueId)
+      .orderBy('created_at', 'desc')
+      .limit(safeLimit)
+      .get();
     const chats = await Promise.all(chatsSnap.docs.map(async doc => {
       const data = doc.data();
       const userDoc = await db.collection('profiles').doc(data.user_id).get();
@@ -403,7 +457,12 @@ const getPartnerChats = async (req, res) => {
 
 const getUserVenueChats = async (req, res) => {
   try {
-    const snapshot = await db.collection('venue_chats').where('user_id', '==', req.user.id).orderBy('created_at', 'desc').get();
+    const safeLimit = clampLimit(req.query.limit, 50, 100);
+    const snapshot = await db.collection('venue_chats')
+      .where('user_id', '==', req.user.id)
+      .orderBy('created_at', 'desc')
+      .limit(safeLimit)
+      .get();
     const chats = await Promise.all(snapshot.docs.map(async doc => {
       const data = doc.data();
       const venueDoc = await db.collection('venues').doc(data.venue_id).get();
@@ -415,7 +474,7 @@ const getUserVenueChats = async (req, res) => {
 
 const getMyVenue = async (req, res) => {
   try {
-    const snapshot = await db.collection('venues').where('owner_id', '==', req.user.id).get();
+    const snapshot = await db.collection('venues').where('owner_id', '==', req.user.id).limit(5).get();
     res.json({ venues: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) });
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
@@ -427,7 +486,15 @@ const updateVenue = async (req, res) => {
     const doc = await ref.get();
     if (!doc.exists || doc.data().owner_id !== req.user.id) return res.status(403).json({ error: 'unauthorized' });
 
-    await ref.update({ name, description, benefit_description: benefit, address, city, updated_at: new Date().toISOString() });
+    await ref.update({
+      name,
+      description,
+      benefit_description: benefit,
+      address,
+      city,
+      city_normalized: normalizeSearch(city || ''),
+      updated_at: new Date().toISOString()
+    });
     res.json({ success: true });
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
@@ -460,15 +527,42 @@ const updateVenuePhotos = async (req, res) => {
 const getVenueStats = async (req, res) => {
   const { venueId } = req.params;
   try {
-    const statsSnap = await db.collection('venue_analytics').where('venue_id', '==', venueId).get();
-    res.json({ totalViews: statsSnap.size, weeklyHistory: [] }); // Simplified for migration
+    const venueDoc = await db.collection('venues').doc(venueId).get();
+    if (!venueDoc.exists) return res.status(404).json({ error: 'venue_not_found' });
+    res.json({ totalViews: Number(venueDoc.data()?.view_count || 0), weeklyHistory: [] });
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
 
 const logVenueView = async (req, res) => {
   const { id } = req.params;
   try {
-    await db.collection('venue_analytics').add({ venue_id: id, viewer_id: req.user.id, created_at: new Date().toISOString() });
+    const dayKey = new Date().toISOString().slice(0, 10);
+    const analyticsRef = db.collection('venue_analytics').doc(`${id}_${req.user.id}_${dayKey}`);
+    const venueRef = db.collection('venues').doc(id);
+    await db.runTransaction(async (tx) => {
+      const analyticsDoc = await tx.get(analyticsRef);
+      if (!analyticsDoc.exists) {
+        tx.set(analyticsRef, {
+          venue_id: id,
+          viewer_id: req.user.id,
+          day_key: dayKey,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+        tx.set(venueRef, {
+          view_count: FieldValue.increment(1),
+          updated_at: new Date().toISOString()
+        }, { merge: true });
+        return;
+      }
+
+      tx.update(analyticsRef, {
+        venue_id: id,
+        viewer_id: req.user.id,
+        day_key: dayKey,
+        updated_at: new Date().toISOString()
+      });
+    });
     res.json({ success: true });
   } catch (error) { res.status(500).json({ error: error.message }); }
 };

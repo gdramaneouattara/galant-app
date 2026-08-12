@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { fbAuth, db, rtdb, COLLECTIONS, getWebMessaging } from '../firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, collection, query, where, onSnapshot, setDoc, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, onSnapshot, setDoc, getDocs, updateDoc, documentId } from 'firebase/firestore';
 import { ref, onValue } from 'firebase/database';
 import { getToken, onMessage } from 'firebase/messaging';
 import { TRANSLATIONS } from '@shared/translations';
@@ -237,14 +237,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!user) return;
 
-    const qUsers = query(collection(db, COLLECTIONS.PROFILES), where('onboarding_completed', '==', true));
-    const unsubUsers = onSnapshot(qUsers, (snapshot) => {
-      const activeProfiles = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      setUsers(activeProfiles);
-    }, (error) => {
-      console.error('Firestore Users Snapshot error:', error);
-    });
-
     const q1 = query(collection(db, COLLECTIONS.MATCHES), where('user_one_id', '==', user.uid));
     const q2 = query(collection(db, COLLECTIONS.MATCHES), where('user_two_id', '==', user.uid));
 
@@ -269,11 +261,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => {
-      unsubUsers();
       unsub1();
       unsub2();
     };
   }, [user]);
+
+  useEffect(() => {
+    if (!user || matches.length === 0) {
+      setUsers([]);
+      return;
+    }
+
+    let cancelled = false;
+    const otherUserIds = [...new Set(matches
+      .map((match) => match.user_one_id === user.uid ? match.user_two_id : match.user_one_id)
+      .filter(Boolean))];
+
+    const loadMatchedProfiles = async () => {
+      try {
+        const chunks: string[][] = [];
+        for (let i = 0; i < otherUserIds.length; i += 10) {
+          chunks.push(otherUserIds.slice(i, i + 10));
+        }
+
+        const snapshots = await Promise.all(chunks.map((chunk) => getDocs(query(
+          collection(db, COLLECTIONS.PROFILES),
+          where(documentId(), 'in', chunk)
+        ))));
+
+        const matchedProfiles = snapshots.flatMap((snapshot) => snapshot.docs.map((profileDoc) => ({
+          id: profileDoc.id,
+          ...profileDoc.data()
+        }))).filter((row: any) => !row.suspended_at && row.onboarding_completed !== false);
+
+        if (!cancelled) setUsers(matchedProfiles);
+      } catch (error) {
+        console.error('Matched profiles load error:', error);
+      }
+    };
+
+    void loadMatchedProfiles();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, matches]);
 
   // Realtime Messages (RTDB)
   useEffect(() => {
@@ -322,10 +353,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const reloadUser = async () => {
     if (fbAuth.currentUser) {
       await fbAuth.currentUser.reload();
+      const profileDoc = await getDoc(doc(db, COLLECTIONS.PROFILES, fbAuth.currentUser.uid));
+      if (profileDoc.exists()) {
+        setProfile({ id: profileDoc.id, ...profileDoc.data() });
+      }
       // On force React à voir un nouvel objet pour déclencher le re-render
       // mais on garde les méthodes en récupérant l'instance fraîche
-      setUser(null);
-      setTimeout(() => setUser(fbAuth.currentUser), 10);
+      setUser(fbAuth.currentUser);
     }
   };
 

@@ -9,7 +9,7 @@ type VerifyState = 'checking' | 'active' | 'pending' | 'error';
 const PaymentReturnPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { t, user, loading } = useAuth();
+  const { t, user, loading, reloadUser } = useAuth();
   const [state, setState] = useState<VerifyState>('checking');
   const [message, setMessage] = useState('Verification du paiement en cours...');
   const rawNextPath = searchParams.get('next') || '/profile';
@@ -47,6 +47,7 @@ const PaymentReturnPage: React.FC = () => {
         if (cancelled) return;
 
         if (res.status === 'active') {
+          await reloadUser();
           setState('active');
           setMessage(t('purchase_activated'));
           window.setTimeout(() => navigate(nextPath, { replace: true }), 1800);
@@ -67,7 +68,7 @@ const PaymentReturnPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [loading, navigate, nextPath, reference, t, user]);
+  }, [loading, navigate, nextPath, reference, reloadUser, t, user]);
 
   const Icon = state === 'active' ? CheckCircle2 : state === 'error' ? XCircle : Loader2;
 

@@ -48,5 +48,11 @@ jobs:
             --region ${{ env.REGION }} \
             --platform managed \
             --allow-unauthenticated \
+            --min-instances 0 \
+            --max-instances 10 \
+            --memory 512Mi \
+            --cpu 1 \
+            --concurrency 80 \
+            --timeout 120s \
             --set-env-vars "NODE_ENV=production,ALLOWED_ORIGINS=*" \
-            --set-secrets "PAYSTACK_SECRET_KEY=PAYSTACK_SECRET_KEY:latest,JWT_SECRET=JWT_SECRET:latest,FIREBASE_DATABASE_URL=FIREBASE_DATABASE_URL:latest,FIREBASE_STORAGE_BUCKET=FIREBASE_STORAGE_BUCKET:latest,EXPO_PUSH_ACCESS_TOKEN=EXPO_PUSH_ACCESS_TOKEN:latest,YANGO_API_KEY=YANGO_API_KEY:latest"
+            --set-secrets "PAYSTACK_SECRET_KEY=PAYSTACK_SECRET_KEY:latest,JWT_SECRET=JWT_SECRET:latest,FIREBASE_DATABASE_URL=FIREBASE_DATABASE_URL:latest,FIREBASE_STORAGE_BUCKET=FIREBASE_STORAGE_BUCKET:latest,EXPO_PUSH_ACCESS_TOKEN=EXPO_PUSH_ACCESS_TOKEN:latest,YANGO_API_KEY=YANGO_API_KEY:latest,GOOGLE_MAPS_API_KEY=GOOGLE_MAPS_API_KEY:latest"

@@ -124,6 +124,12 @@ const applyPurchasedEntitlement = async ({
 }) => {
   const normalizedType = String(type || '').toUpperCase();
   const normalizedPlanId = String(planId || '').toUpperCase();
+  const existingPurchaseSnapshot = reference
+    ? await db.collection('purchased_interactions').where('reference', '==', reference).limit(1).get()
+    : null;
+  if (existingPurchaseSnapshot && !existingPurchaseSnapshot.empty) {
+    return { already_processed: true };
+  }
 
   if (normalizedType === 'PREMIUM' || normalizedType === 'PARTNER_PREMIUM') {
     const durationDays = PLAN_DURATIONS[normalizedPlanId] || 30;
@@ -192,19 +198,33 @@ const applyPurchasedEntitlement = async ({
       throw new Error('invalid_rose_pack');
     }
 
-    await db.collection('purchased_interactions').add({
-      user_id: userId,
-      interaction_type: 'ROSE_PACK',
-      plan_id: normalizedPlanId,
-      reference,
-      quantity,
-      price_amount: pack.amount,
-      provider: paymentMethod,
-      created_at: new Date().toISOString()
-    });
-    await db.collection('profiles').doc(userId).update({
-      rose_balance: FieldValue.increment(quantity),
-      updated_at: new Date().toISOString()
+    const now = new Date().toISOString();
+    const safeReference = reference ? String(reference).replace(/[^a-zA-Z0-9_-]/g, '_') : '';
+    const profileRef = db.collection('profiles').doc(userId);
+    const purchaseRef = safeReference
+      ? db.collection('purchased_interactions').doc(`payment_${safeReference}`)
+      : db.collection('purchased_interactions').doc();
+
+    await db.runTransaction(async (tx) => {
+      if (safeReference) {
+        const existingPurchase = await tx.get(purchaseRef);
+        if (existingPurchase.exists) return;
+      }
+
+      tx.set(purchaseRef, {
+        user_id: userId,
+        interaction_type: 'ROSE_PACK',
+        plan_id: normalizedPlanId,
+        reference,
+        quantity,
+        price_amount: pack.amount,
+        provider: paymentMethod,
+        created_at: now
+      });
+      tx.update(profileRef, {
+        rose_balance: FieldValue.increment(quantity),
+        updated_at: now
+      });
     });
   } else if (normalizedType === 'STORY_UPLOAD') {
     const pricing = await getCurrentPricing();

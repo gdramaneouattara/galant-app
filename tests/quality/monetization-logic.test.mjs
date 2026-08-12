@@ -113,6 +113,8 @@ test('Payments: web Paystack returns are verified after checkout', async () => {
   const app = await read('web/src/App.tsx');
   const returnPage = await read('web/src/pages/PaymentReturnPage.tsx');
   const controller = await read('server/src/controllers/paymentController.js');
+  const authContext = await read('web/src/context/AuthContext.tsx');
+  const subscriptionService = await read('server/src/services/subscriptionService.js');
 
   assert.match(hook, /callbackUrl/);
   assert.match(hook, /\/payment-return/);
@@ -122,4 +124,12 @@ test('Payments: web Paystack returns are verified after checkout', async () => {
   assert.match(controller, /callback_url:\s*PAYSTACK_CALLBACK_URL/);
   assert.match(app, /path="\/payment-return"/);
   assert.match(returnPage, /\/api\/payments\/verify\?reference=/);
+  assert.match(returnPage, /reloadUser/);
+  assert.match(returnPage, /await reloadUser\(\)/);
+  assert.match(authContext, /getDoc\(doc\(db,\s*COLLECTIONS\.PROFILES/);
+  assert.match(authContext, /setProfile\(\{\s*id:\s*profileDoc\.id/);
+  assert.match(subscriptionService, /normalizedType === 'ROSE_PACK'/);
+  assert.match(subscriptionService, /db\.runTransaction/);
+  assert.match(subscriptionService, /payment_\$\{safeReference\}/);
+  assert.match(subscriptionService, /rose_balance:\s*FieldValue\.increment\(quantity\)/);
 });

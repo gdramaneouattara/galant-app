@@ -252,6 +252,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const snapshot = await db.collection(COLLECTIONS.PROFILES)
         .where('onboarding_completed', '==', true)
         .where('is_admin', '==', false)
+        .limit(80)
         .get();
 
       const activeProfiles = snapshot.docs
@@ -326,8 +327,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const allMatches = [...s1.docs, ...s2.docs].map(doc => ({ id: doc.id, ...doc.data() } as Match));
       setMatches(allMatches);
+      await refreshProfilesForMatches(uid, allMatches);
     } catch (e) {
       console.error('Error refreshing matches:', e);
+    }
+  };
+
+  const refreshProfilesForMatches = async (userId: string, nextMatches: Match[]) => {
+    const otherUserIds = [...new Set(nextMatches
+      .map((match: any) => match.user_one_id === userId ? match.user_two_id : match.user_one_id)
+      .filter(Boolean))];
+
+    if (otherUserIds.length === 0) {
+      setUsers([]);
+      return;
+    }
+
+    try {
+      const chunks: string[][] = [];
+      for (let i = 0; i < otherUserIds.length; i += 10) {
+        chunks.push(otherUserIds.slice(i, i + 10));
+      }
+
+      const snapshots = await Promise.all(chunks.map((chunk) => db.collection(COLLECTIONS.PROFILES)
+        .where('__name__', 'in', chunk)
+        .get()));
+      const activeProfiles = snapshots.flatMap(snapshot => snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter((p: any) => !p.suspended_at && p.onboarding_completed !== false && p.photo_review_status !== 'REJECTED'));
+
+      setUsers(activeProfiles.map(p => mapProfileToUser(p)));
+      setLastError(null);
+    } catch (e) {
+      console.error('Error refreshing matched profiles:', e);
     }
   };
 
@@ -390,7 +422,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const refreshedUser = await refreshCurrentUser(user.uid);
           if (refreshedUser) {
             await Promise.all([
-              refreshProfiles(),
               refreshMatches(user.uid),
               registerPushToken(user.uid)
             ]);

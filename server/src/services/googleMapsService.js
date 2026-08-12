@@ -1,9 +1,12 @@
 const axios = require('axios');
+const crypto = require('crypto');
+const { db } = require('../config/firebase');
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 const GOOGLE_TEXT_SEARCH_URL = 'https://places.googleapis.com/v1/places:searchText';
 const MIN_PRESTIGE_RATING = 4.0;
 const DEFAULT_LIMIT = 20;
+const USER_DISCOVERY_CACHE_DAYS = Math.max(1, Math.min(30, Number(process.env.PARTNER_DISCOVERY_CACHE_DAYS || 14)));
 const GOOGLE_PHOTO_WIDTHS = {
   thumb: 320,
   medium: 800,
@@ -55,6 +58,13 @@ const FIELD_MASK = [
 ].join(',');
 
 const normalizePlaceName = (place) => String(place?.displayName?.text || '').trim();
+
+const normalizeCacheText = (value = '') => String(value)
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, '_')
+  .replace(/^_+|_+$/g, '') || 'unknown';
 
 const normalizeRequestedType = (type) => {
   const cleanType = String(type || '').trim();
@@ -117,11 +127,13 @@ const buildDirectPhotoUrl = (venue, size = 'medium') => (
 const toVenue = (place, city, category) => {
   const now = new Date().toISOString();
   const photo = normalizePhotoMetadata(place);
+  const normalizedCity = String(city || 'Autour de vous').trim();
   return {
     google_place_id: place.id,
     name: normalizePlaceName(place),
-    address: place.formattedAddress || city,
-    city,
+    address: place.formattedAddress || normalizedCity,
+    city: normalizedCity,
+    city_normalized: normalizeCacheText(normalizedCity),
     latitude: place.location?.latitude || null,
     longitude: place.location?.longitude || null,
     rating: Number(place.rating),
@@ -281,6 +293,49 @@ const searchVenuesInCity = async (
   limit = DEFAULT_LIMIT
 ) => searchGoogleVenueCandidates(city, types, limit);
 
+const discoveryCacheKey = ({ city, latitude, longitude, radiusKm, category, limit }) => {
+  const hasLocation = hasCoordinates(latitude, longitude);
+  const locationBucket = hasLocation
+    ? `${Number(latitude).toFixed(2)}_${Number(longitude).toFixed(2)}`
+    : normalizeCacheText(city);
+  const rawKey = [
+    'partner_discovery_v1',
+    normalizeCacheText(category || 'ALL'),
+    Math.max(1, Math.min(50, Number(radiusKm || 15))),
+    Math.max(1, Math.min(DEFAULT_LIMIT, Number(limit) || DEFAULT_LIMIT)),
+    locationBucket,
+  ].join(':');
+  return crypto.createHash('sha1').update(rawKey).digest('hex');
+};
+
+const getCachedUserPartnerDiscovery = async (params) => {
+  const key = discoveryCacheKey(params);
+  const ref = db.collection('partner_discovery_cache').doc(key);
+  const snap = await ref.get();
+  if (!snap.exists) return { key, venues: null };
+
+  const data = snap.data();
+  if (!data?.expires_at || String(data.expires_at) <= new Date().toISOString()) {
+    return { key, venues: null };
+  }
+
+  return { key, venues: Array.isArray(data.venues) ? data.venues : null };
+};
+
+const setCachedUserPartnerDiscovery = async (key, params, venues) => {
+  const now = Date.now();
+  await db.collection('partner_discovery_cache').doc(key).set({
+    city: String(params.city || '').trim() || null,
+    latitude: hasCoordinates(params.latitude, params.longitude) ? Number(params.latitude) : null,
+    longitude: hasCoordinates(params.latitude, params.longitude) ? Number(params.longitude) : null,
+    radius_km: Math.max(1, Math.min(50, Number(params.radiusKm || 15))),
+    category: String(params.category || 'ALL').trim().toUpperCase(),
+    venues,
+    created_at: new Date(now).toISOString(),
+    expires_at: new Date(now + USER_DISCOVERY_CACHE_DAYS * 24 * 60 * 60 * 1000).toISOString()
+  });
+};
+
 const searchUserPartnerDiscovery = async ({
   city,
   latitude,
@@ -291,6 +346,12 @@ const searchUserPartnerDiscovery = async ({
 }) => {
   const normalizedCategory = String(category || 'ALL').trim().toUpperCase();
   const requestedTypes = USER_DISCOVERY_CATEGORY_TYPES[normalizedCategory] || USER_DISCOVERY_CATEGORY_TYPES.ALL;
+  const params = { city, latitude, longitude, radiusKm, limit, category: normalizedCategory };
+  const cached = await getCachedUserPartnerDiscovery(params);
+  if (cached.venues) {
+    return cached.venues.map((venue) => ({ ...venue, cache_hit: true }));
+  }
+
   const venues = await searchGoogleVenueCandidates(city, requestedTypes, limit, {
     city,
     latitude,
@@ -298,7 +359,7 @@ const searchUserPartnerDiscovery = async ({
     radiusKm
   });
 
-  return venues.map((venue) => {
+  const mapped = venues.map((venue) => {
     const thumb = buildDirectPhotoUrl(venue, 'thumb');
     return {
       ...venue,
@@ -315,6 +376,9 @@ const searchUserPartnerDiscovery = async ({
       is_user_discovery: true
     };
   });
+
+  await setCachedUserPartnerDiscovery(cached.key, params, mapped);
+  return mapped;
 };
 
 module.exports = {
@@ -327,5 +391,7 @@ module.exports = {
   CATEGORY_QUERIES,
   USER_DISCOVERY_CATEGORY_TYPES,
   ADMIN_SEEDER_CATEGORY_TYPES,
-  MIN_PRESTIGE_RATING
+  MIN_PRESTIGE_RATING,
+  USER_DISCOVERY_CACHE_DAYS,
+  normalizeCacheText
 };
