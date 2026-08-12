@@ -393,7 +393,8 @@ test('Rules: Server video processing uses the system ffmpeg binary for reproduci
   assert.doesNotMatch(packageLock, /ffmpeg-static/);
   assert.match(dockerfile, /apt-get install -y ffmpeg/);
   assert.match(dockerfile, /npm ci --omit=dev/);
-  assert.match(ffmpegBinary, /process\.env\.FFMPEG_PATH \|\| '\/usr\/bin\/ffmpeg'/);
+  assert.match(ffmpegBinary, /fs\.existsSync\('\/usr\/bin\/ffmpeg'\)/);
+  assert.match(ffmpegBinary, /if \(ffmpegPath\) ffmpeg\.setFfmpegPath\(ffmpegPath\)/);
   assert.match(mediaController, /configureFfmpeg/);
   assert.match(mediaMaintenanceService, /configureFfmpeg/);
   assert.doesNotMatch(mediaController, /require\('ffmpeg-static'\)/);
