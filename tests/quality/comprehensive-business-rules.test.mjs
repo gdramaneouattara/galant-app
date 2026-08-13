@@ -399,6 +399,11 @@ test('Rules: Web profile Store groups subscriptions and global purchases', async
   assert.match(webStore, /LIKES_INBOX_2H/);
   assert.match(webStore, /STORY_UPLOAD/);
   assert.match(webStore, /PARTNER_DISCOVERY_UNLOCK/);
+  assert.match(webStore, /hasPartnerDiscoveryAccess/);
+  assert.match(webStore, /type === 'PARTNER_DISCOVERY_UNLOCK' && hasPartnerDiscoveryAccess/);
+  assert.match(webStore, /alreadyGranted/);
+  assert.match(webStore, /disabled=\{disabled\}/);
+  assert.match(webStore, /Inclus/);
   assert.match(paymentHelpers, /STORY_UPLOAD/);
   assert.match(paymentHelpers, /PARTNER_DISCOVERY_UNLOCK/);
 });

@@ -30,8 +30,14 @@ const StorePage: React.FC = () => {
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const boostStatus = getBoostStatus(profile?.boosted_until);
+  const hasPartnerDiscoveryAccess = !!(profile?.is_premium || profile?.is_vip || profile?.partner_discovery_unlocked);
 
   const handlePurchase = async (type: PurchaseType, id: string, amount: number) => {
+    if (type === 'PARTNER_DISCOVERY_UNLOCK' && hasPartnerDiscoveryAccess) {
+      showAlert('Deja disponible', 'Partenaires autour de moi est deja inclus dans votre acces.');
+      return;
+    }
+
     setLoadingId(id);
     try {
       const ok = await purchaseWithPaystack(type, amount, undefined, { planId: id });
@@ -237,12 +243,17 @@ const StorePage: React.FC = () => {
                 { id: 'LIKES_INBOX_2H', type: 'LIKES_INBOX_2H' as PurchaseType, label: 'Débloquer les Likes', sub: 'Pendant 2 heures', price: 1000, icon: Heart, color: 'text-rose-500' },
                 { id: 'STORY_UPLOAD', type: 'STORY_UPLOAD' as PurchaseType, label: 'Publier une Story', sub: 'Publication ponctuelle', price: 500, icon: Camera, color: 'text-amber-500' },
                 { id: 'PARTNER_DISCOVERY_UNLOCK', type: 'PARTNER_DISCOVERY_UNLOCK' as PurchaseType, label: 'Partenaires autour de moi', sub: 'Recherche Google directe', price: 500, icon: MapPinned, color: 'text-emerald-500' },
-              ].map((item) => (
+              ].map((item) => {
+                const alreadyGranted = item.type === 'PARTNER_DISCOVERY_UNLOCK' && hasPartnerDiscoveryAccess;
+                const disabled = !!loadingId || purchaseLoading || alreadyGranted;
+                return (
                 <button
                   key={item.id}
                   onClick={() => handlePurchase(item.type, item.id, item.price)}
-                  disabled={!!loadingId || purchaseLoading}
-                  className="bg-white dark:bg-slate-900 p-5 rounded-[2rem] border border-slate-100 dark:border-white/5 shadow-lg flex items-center justify-between group hover:border-primary/30 transition-all active:scale-95"
+                  disabled={disabled}
+                  className={`bg-white dark:bg-slate-900 p-5 rounded-[2rem] border border-slate-100 dark:border-white/5 shadow-lg flex items-center justify-between group transition-all active:scale-95 ${
+                    alreadyGranted ? 'opacity-70 cursor-not-allowed' : 'hover:border-primary/30'
+                  }`}
                 >
                   <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 bg-slate-50 dark:bg-white/5 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform ${item.color}`}>
@@ -253,9 +264,12 @@ const StorePage: React.FC = () => {
                       <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">{item.sub}</p>
                     </div>
                   </div>
-                  <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2 rounded-xl text-[10px] font-black">{item.price} F</div>
+                  <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2 rounded-xl text-[10px] font-black">
+                    {alreadyGranted ? 'Inclus' : `${item.price} F`}
+                  </div>
                 </button>
-              ))}
+              );
+              })}
             </div>
           </div>
         </div>
