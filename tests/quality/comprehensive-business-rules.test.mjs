@@ -87,7 +87,7 @@ test('Rules: Discovery header exposes notifications with compact title and grid/
   assert.match(webDiscover, /Bell/);
   assert.match(webDiscover, /notificationUnreadCount/);
   assert.match(webDiscover, /\/api\/notifications\/unread-count/);
-  assert.match(webDiscover, /navigate\('\/notifications'\)/);
+  assert.match(webDiscover, /navigate\('\/notifications',\s*\{\s*state:\s*\{\s*from:\s*'\/'\s*\}\s*\}\)/);
   assert.match(webDiscover, /text-2xl sm:text-3xl/);
   assert.match(webDiscover, /flex shrink-0 gap-2/);
 });
@@ -364,13 +364,17 @@ test('Rules: Internal notification center is wired across server, web and native
   assert.match(venueController, /agenda_created_/);
   assert.match(webApp, /\/notifications/);
   assert.match(webProfile, /\/api\/notifications\/unread-count/);
-  assert.match(webProfile, /navigate\('\/notifications'\)/);
+  assert.match(webProfile, /navigate\('\/notifications',\s*\{\s*state:\s*\{\s*from:\s*'\/profile'\s*\}\s*\}\)/);
   assert.doesNotMatch(webProfile, /navigate\('\/likes'\)/);
   assert.doesNotMatch(webProfile, /navigate\('\/roses'\)/);
   assert.doesNotMatch(webProfile, /\/api\/super-likes\/received/);
   assert.match(webNotifications, /markAllAsRead/);
   assert.match(webNotifications, /archiveNotification/);
   assert.match(webNotifications, /target_route/);
+  assert.match(webNotifications, /useLocation/);
+  assert.match(webNotifications, /returnPath/);
+  assert.match(webNotifications, /location\.state\?\.from/);
+  assert.match(webNotifications, /navigate\(returnPath\)/);
   assert.match(webNotifications, /Vos alertes, likes et roses recues au meme endroit/);
   assert.match(webNotifications, /navigate\('\/likes'\)/);
   assert.match(webNotifications, /navigate\('\/roses'\)/);

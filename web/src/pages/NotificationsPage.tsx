@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Archive,
   Bell,
@@ -74,6 +74,7 @@ const formatDate = (value?: string) => {
 
 const NotificationsPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile, loading: authLoading } = useAuth();
   const [notifications, setNotifications] = useState<GalantNotification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,6 +84,7 @@ const NotificationsPage: React.FC = () => {
   const [rosesInboxCount, setRosesInboxCount] = useState(0);
 
   const likesQuickCount = Number(profile?.likes_count || 0);
+  const returnPath = typeof location.state?.from === 'string' ? location.state.from : '/profile';
 
   const loadNotifications = async () => {
     try {
@@ -175,7 +177,7 @@ const NotificationsPage: React.FC = () => {
     <div className="mx-auto max-w-4xl px-4 pb-24">
       <div className="mb-8 flex items-start gap-4">
         <button
-          onClick={() => navigate('/profile')}
+          onClick={() => navigate(returnPath)}
           className="mt-1 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-slate-900 text-slate-300 transition hover:text-white"
           aria-label="Retour"
         >
