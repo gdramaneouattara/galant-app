@@ -15,8 +15,6 @@ interface ProfileMenuProps {
   isTogglingInvisible: boolean;
   invisibleModeDescription: string;
   isInvisibleEligible: boolean;
-  exportingData: boolean;
-  deletingAccount: boolean;
   onOpenDiscover: () => void;
   onOpenAdmin: () => void;
   onOpenBio: () => void;
@@ -29,8 +27,6 @@ interface ProfileMenuProps {
   onOpenLikes: () => void;
   onOpenBoost: () => void;
   notificationUnreadCount?: number;
-  onExportData: () => void;
-  onDeleteAccount: () => void;
   onShareInvite: () => void;
   onLogout: () => void;
   colors: any;
@@ -46,8 +42,6 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
   isTogglingInvisible,
   invisibleModeDescription,
   isInvisibleEligible,
-  exportingData,
-  deletingAccount,
   onOpenDiscover,
   onOpenAdmin,
   onOpenBio,
@@ -60,8 +54,6 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
   onOpenLikes,
   onOpenBoost,
   notificationUnreadCount = 0,
-  onExportData,
-  onDeleteAccount,
   onShareInvite,
   onLogout,
   colors,
@@ -233,28 +225,6 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
         <ChevronRight size={18} color={colors.border} />
       </Pressable>
 
-      <Pressable
-        style={[styles.row, styles.rowPrivacy, { backgroundColor: activeTheme === 'dark' ? '#082f49' : '#f0f9ff', borderColor: activeTheme === 'dark' ? '#0c4a6e' : '#bae6fd' }]}
-        onPress={onExportData}
-        disabled={exportingData}
-      >
-        <View style={[styles.rowIcon, { backgroundColor: colors.card }]}>
-          <ShieldCheck size={18} color="#0369a1" />
-        </View>
-        <Text style={[styles.rowLabel, { color: colors.text }]}>
-          {exportingData ? '...' : t('download_my_data')}
-        </Text>
-        <ChevronRight size={18} color="#7dd3fc" />
-      </Pressable>
-
-      <Pressable style={[styles.row, styles.rowPrivacyDelete, { backgroundColor: activeTheme === 'dark' ? '#4c0519' : '#fff1f2', borderColor: activeTheme === 'dark' ? '#881337' : '#fecdd3' }]} onPress={onDeleteAccount} disabled={deletingAccount}>
-        <View style={[styles.rowIcon, { backgroundColor: colors.card }]}>
-          <LogOut size={18} color="#b91c1c" />
-        </View>
-        <Text style={[styles.rowLabel, { color: colors.text }]}>{deletingAccount ? '...' : t('delete_my_account')}</Text>
-        <ChevronRight size={18} color="#fca5a5" />
-      </Pressable>
-
       <Pressable style={[styles.row, styles.rowLogout, { backgroundColor: activeTheme === 'dark' ? '#450a0a' : '#fff1f2', borderColor: activeTheme === 'dark' ? '#7f1d1d' : '#ffe4e6' }]} onPress={onLogout}>
         <View style={[styles.rowIcon, { backgroundColor: colors.card }]}>
           <LogOut size={18} color="#e11d48" />
@@ -340,14 +310,6 @@ const styles = StyleSheet.create({
   rowBoost: {
     backgroundColor: '#f5f3ff',
     borderColor: '#ede9fe',
-  },
-  rowPrivacy: {
-    backgroundColor: '#f0f9ff',
-    borderColor: '#bae6fd',
-  },
-  rowPrivacyDelete: {
-    backgroundColor: '#fff1f2',
-    borderColor: '#fecdd3',
   },
   rowLogout: {
     backgroundColor: '#fff1f2',

@@ -408,6 +408,33 @@ test('Rules: Web profile Store groups subscriptions and global purchases', async
   assert.match(paymentHelpers, /PARTNER_DISCOVERY_UNLOCK/);
 });
 
+test('Rules: Privacy data actions live inside profile settings', async () => {
+  const webProfile = await read('web/src/pages/ProfilePage.tsx');
+  const webSettings = await read('web/src/components/SettingsModal.tsx');
+  const nativeProfile = await read('src/screens/profile/ProfileScreen.tsx');
+  const nativeSettings = await read('src/screens/profile/components/SettingsModal.tsx');
+  const nativeMenu = await read('src/screens/profile/components/ProfileMenu.tsx');
+
+  assert.match(webSettings, /onExportData/);
+  assert.match(webSettings, /onDeleteAccount/);
+  assert.match(webSettings, /download_my_data/);
+  assert.match(webSettings, /delete_my_account/);
+  assert.match(webSettings, /max-h-\[90vh\]/);
+  assert.match(webProfile, /onExportData=\{handleExportData\}/);
+  assert.match(webProfile, /onDeleteAccount=\{handleDeleteAccount\}/);
+  assert.doesNotMatch(webProfile, /GDPR Actions/);
+
+  assert.match(nativeSettings, /onExportData/);
+  assert.match(nativeSettings, /onDeleteAccount/);
+  assert.match(nativeSettings, /download_my_data/);
+  assert.match(nativeSettings, /delete_my_account/);
+  assert.match(nativeSettings, /ScrollView/);
+  assert.match(nativeProfile, /onExportData=\{exportData\}/);
+  assert.match(nativeProfile, /onDeleteAccount=\{deleteAccount\}/);
+  assert.doesNotMatch(nativeMenu, /onExportData/);
+  assert.doesNotMatch(nativeMenu, /onDeleteAccount/);
+});
+
 test('Rules: User-facing counters and commerce avoid Firestore composite index traps', async () => {
   const notificationController = await read('server/src/controllers/notificationController.js');
   const matchmakingController = await read('server/src/controllers/matchmakingController.js');

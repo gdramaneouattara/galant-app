@@ -6,7 +6,7 @@ import {
   Camera, ShieldCheck, MapPin, Edit3, Save, LogOut,
   Sparkles, Plane, Globe, ChevronRight, Share2,
   EyeOff, Eye, Crown, Gem, Settings, User, Bell,
-  CreditCard, HelpCircle, FileText, Heart, Rocket, Star, LayoutDashboard,
+  CreditCard, HelpCircle, Heart, Rocket, Star, LayoutDashboard,
   ShoppingBag
 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
@@ -629,34 +629,6 @@ const ProfilePage: React.FC = () => {
               <p className="flex-1 text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">Aide</p>
             </button>
 
-            <div className="h-[1px] bg-slate-50 dark:bg-white/5 mx-4 my-2"></div>
-
-            {/* GDPR Actions */}
-            <button
-              onClick={handleExportData}
-              disabled={exportingData}
-              className="flex items-center gap-4 p-4 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all text-left group"
-            >
-              <div className="w-12 h-12 bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-slate-600 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                <FileText size={20} />
-              </div>
-              <p className="flex-1 text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">
-                {exportingData ? 'Préparation...' : t('download_my_data')}
-              </p>
-            </button>
-
-            <button
-              onClick={handleDeleteAccount}
-              disabled={deletingAccount}
-              className="flex items-center gap-4 p-4 rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/10 transition-all text-left group"
-            >
-              <div className="w-12 h-12 bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-slate-600 rounded-xl flex items-center justify-center group-hover:bg-red-100 transition-colors">
-                <LogOut size={20} className="text-red-500" />
-              </div>
-              <p className="flex-1 text-sm font-black text-red-600 uppercase tracking-tight">
-                {deletingAccount ? 'Suppression...' : t('delete_my_account')}
-              </p>
-            </button>
           </div>
 
           <button
@@ -677,6 +649,10 @@ const ProfilePage: React.FC = () => {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+        onExportData={handleExportData}
+        onDeleteAccount={handleDeleteAccount}
+        exportingData={exportingData}
+        deletingAccount={deletingAccount}
       />
 
       <GoalModal
