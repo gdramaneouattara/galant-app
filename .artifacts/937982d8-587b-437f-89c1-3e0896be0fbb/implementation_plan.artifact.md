@@ -1,39 +1,40 @@
-# Remplissage Automatique du Guide (Google Maps Integration)
+# Centralisation de la Monétisation (Nouveau "Store" Prestige)
 
-Ce plan vise à doter l'administrateur d'un outil permettant de peupler instantanément le guide Galant avec les établissements les plus prestigieux d'une ville, en utilisant les données de Google Places.
+Ce plan vise à créer un espace unique nommé "Store" regroupant tous les abonnements et achats ponctuels, accessible directement depuis la page Profil (Moi).
 
 ## Proposed Changes
 
-### [Server] Service d'Intégration Google
+### [Web Mobile] Création du Hub de Vente
 
-#### [NEW] [googleMapsService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/googleMapsService.js)
-- Implémentation de la recherche de lieux via `https://places.googleapis.com/v1/places:searchText`.
-- Filtrage par catégories : `restaurant`, `night_club`, `bar`, `lodging`.
-- Extraction des données : Nom, adresse, coordonnées GPS, note, et URL des photos.
+#### [NEW] [StorePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/StorePage.tsx)
+- Création d'une page unifiée regroupant :
+    - **Abonnements** : Standard et Privilège.
+    - **Solde Roses** : Packs de 1, 5, 10 roses.
+    - **Boosts de Visibilité** : 1, 3, 7 jours.
+    - **Déblocages** : Accès Galerie (Grid) et Boîte de Likes.
+- Design aligné sur la charte "Signature Prestige" (Playfair Display, Montserrat).
+- Intégration de la logique de paiement Paystack via le hook `useSubscription`.
 
-#### [MODIFY] [adminController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/adminController.js)
-- Ajouter une fonction `seedVenuesFromGoogle` qui reçoit une ville, appelle le service Google, et enregistre les résultats dans Firestore sous le statut `EDITORIAL` ou `APPROVED`.
+### [Web Mobile] Intégration dans le Profil
 
-### [Web Mobile] Outil d'Administration
+#### [MODIFY] [ProfilePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ProfilePage.tsx)
+- Ajout d'une section **"STORE GALANT"** très proéminente en haut de la liste d'actions.
+- Cette section servira d'entrée principale vers tous les privilèges payants.
+- **Note** : Conformément aux instructions, aucun élément existant ne sera supprimé ou modifié.
 
-#### [NEW] [AdminGuideSeeder.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminGuideSeeder.tsx)
-- Une nouvelle page dans l'espace Admin.
-- Un champ de saisie pour la ville (ex: "Abidjan").
-- Un bouton "Peupler le Guide" avec barre de progression.
-
-### [Shared] Modèle de Données
-
-- Ajouter un flag `is_editorial: boolean` sur les établissements pour distinguer les lieux "Partenaires" (qui ont un compte admin) des lieux "Suggérés" (récupérés sur Google).
+#### [MODIFY] [App.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/App.tsx)
+- Enregistrement de la nouvelle route `/store`.
 
 ## User Review Required
 
-> [!CAUTION]
-> **Clé API Google Maps** : Vous devrez fournir une clé API valide avec "Places API" activé dans votre console Google Cloud. Sans cette clé, l'outil ne pourra pas fonctionner.
+> [!IMPORTANT]
+> **Consolidation** : Bien que les liens individuels (Premium, Boost, Roses) restent présents dans le menu du profil pour respecter la consigne de non-suppression, le "Store" deviendra le point d'entrée recommandé pour une expérience plus fluide.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Aller dans **Admin > Audit > Outils (Seeder)**.
-2.  Taper "Douala" et lancer le processus.
-3.  Vérifier dans l'onglet **Sorties (Guide)** que 20 nouvelles adresses sont apparues avec leurs photos et notes Google.
-4.  Vérifier qu'elles sont bien marquées comme "Conseil Galant" ou "Recommandation".
+1.  Ouvrir la page **Profil (Moi)**.
+2.  Vérifier la présence du nouveau bouton/section **"STORE"**.
+3.  Cliquer sur le Store : vérifier que tous les produits (Abonnements, Roses, Boosts, Déblocages) sont bien listés avec leurs prix.
+4.  Tester l'ouverture d'un tunnel de paiement pour une Rose.
+5.  Vérifier que le design respecte les polices et espacements "Prestige".

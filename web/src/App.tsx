@@ -48,6 +48,7 @@ const AgendaPage = lazy(() => import('./pages/AgendaPage'));
 const GuidePage = lazy(() => import('./pages/GuidePage'));
 const ExperiencesPage = lazy(() => import('./pages/ExperiencesPage'));
 const StoriesPage = lazy(() => import('./pages/StoriesPage'));
+const StorePage = lazy(() => import('./pages/StorePage'));
 const MarketPage = lazy(() => import('./pages/MarketPage'));
 const PartnerDiscoveryPage = lazy(() => import('./pages/PartnerDiscoveryPage'));
 const VenueDetailPage = lazy(() => import('./pages/VenueDetailPage'));
