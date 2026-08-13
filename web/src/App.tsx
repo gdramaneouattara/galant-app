@@ -284,6 +284,7 @@ const AppContent: React.FC = () => {
             <Route path="/chat/:matchId" element={<ChatPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/profile/:id" element={<ProfileDetailPage />} />
+            <Route path="/store" element={<StorePage />} />
             <Route path="/premium" element={<PremiumPage />} />
             <Route path="/payment-return" element={<PaymentReturnPage />} />
             <Route path="/agenda" element={<AgendaPage />} />

@@ -16,7 +16,8 @@ import {
   LayoutGrid,
   Heart,
   Flame,
-  ArrowRight
+  Camera,
+  MapPinned
 } from 'lucide-react';
 import { useSubscription, PurchaseType } from '@shared/hooks/useSubscription';
 import { showAlert } from '@shared/lib/ui-bridge';
@@ -234,6 +235,8 @@ const StorePage: React.FC = () => {
               {[
                 { id: 'DISCOVER_GRID_UNLOCK', type: 'DISCOVER_GRID_UNLOCK' as PurchaseType, label: 'Accès Galerie', sub: 'Quota 100 profils', price: 1000, icon: LayoutGrid, color: 'text-indigo-500' },
                 { id: 'LIKES_INBOX_2H', type: 'LIKES_INBOX_2H' as PurchaseType, label: 'Débloquer les Likes', sub: 'Pendant 2 heures', price: 1000, icon: Heart, color: 'text-rose-500' },
+                { id: 'STORY_UPLOAD', type: 'STORY_UPLOAD' as PurchaseType, label: 'Publier une Story', sub: 'Publication ponctuelle', price: 500, icon: Camera, color: 'text-amber-500' },
+                { id: 'PARTNER_DISCOVERY_UNLOCK', type: 'PARTNER_DISCOVERY_UNLOCK' as PurchaseType, label: 'Partenaires autour de moi', sub: 'Recherche Google directe', price: 500, icon: MapPinned, color: 'text-emerald-500' },
               ].map((item) => (
                 <button
                   key={item.id}
