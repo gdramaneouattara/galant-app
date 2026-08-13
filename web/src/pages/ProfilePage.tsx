@@ -6,7 +6,7 @@ import {
   Camera, ShieldCheck, MapPin, Edit3, Save, LogOut,
   Sparkles, Plane, Globe, ChevronRight, Share2,
   EyeOff, Eye, Crown, Gem, Settings, User, Bell,
-  CreditCard, HelpCircle, Heart, Rocket, Star, LayoutDashboard,
+  HelpCircle, Heart, Star, LayoutDashboard,
   ShoppingBag
 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
@@ -36,7 +36,6 @@ const ProfilePage: React.FC = () => {
   const [isGoalOpen, setIsGoalOpen] = useState(false);
   const [isTogglingInvisible, setIsTogglingInvisible] = useState(false);
   const [hasAdminAccess, setHasAdminAccess] = useState(false);
-  const [rosesInboxCount, setRosesInboxCount] = useState(0);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const maxProfilePhotos = profile?.is_premium || profile?.is_vip ? 6 : 3;
 
@@ -70,20 +69,9 @@ const ProfilePage: React.FC = () => {
     let cancelled = false;
 
     if (!user) {
-      setRosesInboxCount(0);
       setNotificationUnreadCount(0);
       return;
     }
-
-    apiRequest<any[]>('/api/super-likes/received', { requireAuth: true })
-      .then((rows) => {
-        if (!cancelled) {
-          setRosesInboxCount((rows || []).filter((row) => row.status === 'PENDING' || row.is_countable).length);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setRosesInboxCount(0);
-      });
 
     apiRequest<{ unreadCount: number }>('/api/notifications/unread-count', { requireAuth: true })
       .then((payload) => {
@@ -505,58 +493,6 @@ const ProfilePage: React.FC = () => {
               </button>
             )}
 
-            {/* Action Item: Standard Likes */}
-            <button
-              onClick={() => navigate('/likes')}
-              className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-left group"
-            >
-              <div className="w-12 h-12 bg-rose-50 dark:bg-rose-900/20 text-primary rounded-xl flex items-center justify-center group-hover:bg-rose-100 dark:group-hover:bg-rose-900/40 transition-colors">
-                <Heart size={24} />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">Likes Reçus</p>
-                <p className="text-[10px] font-bold text-slate-400">Voir vos admirateurs</p>
-              </div>
-              <ChevronRight size={16} className="text-slate-200 dark:text-slate-700" />
-            </button>
-
-            {/* Action Item: Received Roses (Super Likes) */}
-            <button
-              onClick={() => navigate('/roses')}
-              className="flex items-center gap-4 p-4 rounded-2xl bg-amber-50/30 dark:bg-amber-900/10 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all text-left group"
-            >
-              <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center group-hover:bg-amber-100 dark:group-hover:bg-amber-900/40 transition-colors text-xl">
-                🌹
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-serif italic tracking-tighter text-amber-900 dark:text-amber-400 uppercase">Roses recues</p>
-                <p className="text-[10px] font-bold text-amber-600">
-                  {rosesInboxCount > 0 ? `${rosesInboxCount} rose${rosesInboxCount > 1 ? 's' : ''} a traiter` : 'Super Likes recus'}
-                </p>
-              </div>
-              {rosesInboxCount > 0 && (
-                <span className="min-w-6 h-6 px-2 rounded-full bg-primary text-white text-[10px] font-black flex items-center justify-center">
-                  {rosesInboxCount}
-                </span>
-              )}
-              <ChevronRight size={16} className="text-amber-200" />
-            </button>
-
-            {/* Action Item: Boosts */}
-            <button
-              onClick={() => navigate('/boost')}
-              className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-left group"
-            >
-              <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 text-secondary rounded-xl flex items-center justify-center group-hover:bg-purple-100 dark:group-hover:bg-purple-900/40 transition-colors">
-                <Rocket size={24} />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">{t('boosts')}</p>
-                <p className="text-[10px] font-bold text-slate-400">{t('shine_in_city')}</p>
-              </div>
-              <ChevronRight size={16} className="text-slate-200 dark:text-slate-700" />
-            </button>
-
             {/* Action Item: Invisible */}
             <button
               onClick={handleToggleInvisible}
@@ -600,13 +536,6 @@ const ProfilePage: React.FC = () => {
               </div>
               <p className="flex-1 text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">{t('notifications')}</p>
               <ChevronRight size={16} className="text-slate-200 dark:text-slate-700" />
-            </button>
-
-            <button onClick={() => navigate('/premium')} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-left group">
-              <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-xl flex items-center justify-center group-hover:bg-amber-100 dark:group-hover:bg-amber-900/40 transition-colors">
-                <CreditCard size={20} />
-              </div>
-              <p className="flex-1 text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">{t('subscriptions')}</p>
             </button>
 
             <button

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '@shared/lib/api';
 import { showAlert } from '@shared/lib/ui-bridge';
+import { useAuth } from '../context/AuthContext';
 
 type NotificationType =
   | 'ALL'
@@ -73,11 +74,15 @@ const formatDate = (value?: string) => {
 
 const NotificationsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [notifications, setNotifications] = useState<GalantNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<NotificationType>('ALL');
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
+  const [rosesInboxCount, setRosesInboxCount] = useState(0);
+
+  const likesQuickCount = Number(profile?.likes_count || 0);
 
   const loadNotifications = async () => {
     try {
@@ -97,6 +102,24 @@ const NotificationsPage: React.FC = () => {
   useEffect(() => {
     void loadNotifications();
   }, [filter, unreadOnly]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    apiRequest<any[]>('/api/super-likes/received', { requireAuth: true })
+      .then((rows) => {
+        if (!cancelled) {
+          setRosesInboxCount((rows || []).filter((row) => row.status === 'PENDING' || row.is_countable).length);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setRosesInboxCount(0);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const unreadCount = useMemo(() => notifications.filter((item) => item.is_read !== true).length, [notifications]);
 
@@ -143,7 +166,7 @@ const NotificationsPage: React.FC = () => {
           <p className="text-[10px] font-black uppercase tracking-prestige text-primary">Centre interne</p>
           <h1 className="text-3xl font-black text-slate-950 dark:text-white">Notifications</h1>
           <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">
-            Messages, roses, paiements, agenda et alertes importantes.
+            Vos alertes, likes et roses recues au meme endroit.
           </p>
         </div>
         <button
@@ -153,6 +176,40 @@ const NotificationsPage: React.FC = () => {
         >
           <CheckCheck size={16} />
           {markingAll ? '...' : 'Tout lu'}
+        </button>
+      </div>
+
+      <div className="mb-6 grid grid-cols-2 gap-3">
+        <button
+          onClick={() => navigate('/likes')}
+          className="group rounded-[1.5rem] border border-rose-100 bg-white p-4 text-left shadow-lg shadow-rose-500/5 transition hover:-translate-y-0.5 hover:border-primary/30 dark:border-rose-500/10 dark:bg-slate-900"
+        >
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-primary dark:bg-rose-500/10">
+              <Heart size={20} />
+            </div>
+            <span className="min-w-8 rounded-full bg-primary px-2 py-1 text-center text-xs font-black text-white">
+              {likesQuickCount > 99 ? '99+' : likesQuickCount}
+            </span>
+          </div>
+          <p className="text-sm font-black uppercase tracking-tight text-slate-950 dark:text-white">Likes recus</p>
+          <p className="mt-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">Voir vos admirateurs</p>
+        </button>
+
+        <button
+          onClick={() => navigate('/roses')}
+          className="group rounded-[1.5rem] border border-amber-100 bg-white p-4 text-left shadow-lg shadow-amber-500/5 transition hover:-translate-y-0.5 hover:border-amber-300 dark:border-amber-500/10 dark:bg-slate-900"
+        >
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-500/10">
+              <Sparkles size={20} />
+            </div>
+            <span className="min-w-8 rounded-full bg-amber-500 px-2 py-1 text-center text-xs font-black text-white">
+              {rosesInboxCount > 99 ? '99+' : rosesInboxCount}
+            </span>
+          </div>
+          <p className="text-sm font-black uppercase tracking-tight text-slate-950 dark:text-white">Roses recues</p>
+          <p className="mt-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">Super Likes a traiter</p>
         </button>
       </div>
 
