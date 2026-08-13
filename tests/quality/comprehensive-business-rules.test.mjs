@@ -377,6 +377,9 @@ test('Rules: Internal notification center is wired across server, web and native
   assert.match(webNotifications, /\/api\/super-likes\/received/);
   assert.match(webNotifications, /likesQuickCount/);
   assert.match(webNotifications, /rosesInboxCount/);
+  assert.match(webNotifications, /loading:\s*authLoading/);
+  assert.match(webNotifications, /if \(authLoading\) return/);
+  assert.match(webNotifications, /\[authLoading,\s*user\?\.uid\]/);
   assert.match(nativeNavigator, /NotificationsScreen/);
   assert.match(nativeNavigator, /Notifications: undefined/);
   assert.match(nativeProfile, /\/api\/notifications\/unread-count/);

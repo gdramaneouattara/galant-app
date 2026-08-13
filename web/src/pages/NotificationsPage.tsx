@@ -74,7 +74,7 @@ const formatDate = (value?: string) => {
 
 const NotificationsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [notifications, setNotifications] = useState<GalantNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<NotificationType>('ALL');
@@ -100,11 +100,30 @@ const NotificationsPage: React.FC = () => {
   };
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      setNotifications([]);
+      setLoading(false);
+      return;
+    }
     void loadNotifications();
-  }, [filter, unreadOnly]);
+  }, [filter, unreadOnly, authLoading, user?.uid]);
 
   useEffect(() => {
     let cancelled = false;
+
+    if (authLoading) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!user) {
+      setRosesInboxCount(0);
+      return () => {
+        cancelled = true;
+      };
+    }
 
     apiRequest<any[]>('/api/super-likes/received', { requireAuth: true })
       .then((rows) => {
@@ -119,7 +138,7 @@ const NotificationsPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [authLoading, user?.uid]);
 
   const unreadCount = useMemo(() => notifications.filter((item) => item.is_read !== true).length, [notifications]);
 
