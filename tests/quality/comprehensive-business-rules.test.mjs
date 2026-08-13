@@ -405,6 +405,8 @@ test('Rules: Web profile Store groups subscriptions and global purchases', async
   assert.doesNotMatch(webProfile, /Action Item: Boosts/);
   assert.doesNotMatch(webProfile, /\bCreditCard\b/);
   assert.doesNotMatch(webProfile, /\bRocket\b/);
+  assert.doesNotMatch(webProfile, /mailto:support@galant\.app/);
+  assert.doesNotMatch(webProfile, /\bHelpCircle\b/);
   assert.match(webStore, /Store Galant/);
   assert.match(webStore, /Abonnements/);
   assert.match(webStore, /MONTHLY/);
