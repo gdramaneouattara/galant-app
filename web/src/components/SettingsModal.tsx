@@ -1,20 +1,31 @@
 import React from 'react';
-import { X, Languages, CheckCircle, Sun, Moon, Monitor } from 'lucide-react';
+import { X, Languages, CheckCircle, Sun, Moon, Monitor, FileText, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  onExportData: () => void;
+  onDeleteAccount: () => void;
+  exportingData?: boolean;
+  deletingAccount?: boolean;
 }
 
-const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
+const SettingsModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  onExportData,
+  onDeleteAccount,
+  exportingData = false,
+  deletingAccount = false,
+}) => {
   const { language, setLanguage, themePreference, setThemePreference, t } = useAuth();
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[120] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-transparent dark:border-white/10 transition-colors">
+      <div className="bg-white dark:bg-slate-900 w-full max-w-md max-h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-transparent dark:border-white/10 transition-colors flex flex-col">
         <div className="p-8 border-b border-slate-50 dark:border-white/5 flex justify-between items-center">
           <h3 className="text-2xl font-black italic text-slate-900 dark:text-white">Paramètres</h3>
           <button onClick={onClose} className="p-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-full text-slate-300">
@@ -22,7 +33,7 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        <div className="p-8 space-y-8">
+        <div className="p-8 space-y-8 overflow-y-auto">
           {/* Apparence */}
           <div className="space-y-4">
             <p className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">Apparence</p>
@@ -74,6 +85,38 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
                   </div>
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Confidentialite & donnees */}
+          <div className="space-y-4">
+            <p className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">Confidentialite & donnees</p>
+            <div className="space-y-3">
+              <button
+                onClick={onExportData}
+                disabled={exportingData}
+                className="w-full p-4 rounded-2xl bg-white dark:bg-white/5 border border-slate-100 dark:border-transparent hover:border-blue-200 dark:hover:bg-white/10 transition-all flex items-center gap-4 text-left disabled:opacity-60"
+              >
+                <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center">
+                  <FileText size={20} />
+                </div>
+                <span className="flex-1 font-black text-sm uppercase tracking-tight text-slate-700 dark:text-slate-300">
+                  {exportingData ? 'Preparation...' : t('download_my_data')}
+                </span>
+              </button>
+
+              <button
+                onClick={onDeleteAccount}
+                disabled={deletingAccount}
+                className="w-full p-4 rounded-2xl bg-red-50/70 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 hover:border-red-200 dark:hover:bg-red-900/20 transition-all flex items-center gap-4 text-left disabled:opacity-60"
+              >
+                <div className="w-11 h-11 rounded-xl bg-white dark:bg-red-950/40 text-red-600 flex items-center justify-center">
+                  <Trash2 size={20} />
+                </div>
+                <span className="flex-1 font-black text-sm uppercase tracking-tight text-red-600">
+                  {deletingAccount ? 'Suppression...' : t('delete_my_account')}
+                </span>
+              </button>
             </div>
           </div>
         </div>

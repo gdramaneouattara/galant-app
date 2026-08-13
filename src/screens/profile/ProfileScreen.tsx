@@ -224,8 +224,6 @@ const ProfileScreen: React.FC = () => {
           isTogglingInvisible={isTogglingInvisible}
           invisibleModeDescription={invisibleModeDescription}
           isInvisibleEligible={isInvisibleEligible}
-          exportingData={exportingData}
-          deletingAccount={deletingAccount}
           onOpenDiscover={() => navigation.navigate('DiscoverGrid')}
           onOpenAdmin={() => navigation.navigate('AdminStack')}
           onOpenBio={() => setShowBioModal(true)}
@@ -242,8 +240,6 @@ const ProfileScreen: React.FC = () => {
             else navigation.navigate('Boost');
           }}
           notificationUnreadCount={notificationUnreadCount}
-          onExportData={exportData}
-          onDeleteAccount={deleteAccount}
           onShareInvite={handleShareInvite}
           onLogout={logout}
           colors={colors}
@@ -293,6 +289,10 @@ const ProfileScreen: React.FC = () => {
         onSetTheme={setThemePreference}
         language={language}
         onSetLanguage={setLanguage}
+        onExportData={exportData}
+        onDeleteAccount={deleteAccount}
+        exportingData={exportingData}
+        deletingAccount={deletingAccount}
         t={t}
         colors={colors}
       />
