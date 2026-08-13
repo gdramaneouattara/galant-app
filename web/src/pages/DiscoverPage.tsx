@@ -277,6 +277,9 @@ const DiscoverPage: React.FC = () => {
 
   const currentProfile = suggestions[0];
   const isFilterActive = filters.premiumOnly || filters.verifiedOnly || filters.minScore > 0 || filters.gender !== 'ALL' || filters.minAge !== 18 || filters.maxAge !== 50;
+  const headerActionBaseClass = "relative w-10 h-10 shrink-0 rounded-2xl border shadow-lg flex items-center justify-center transition-all active:scale-95";
+  const headerActionIdleClass = "bg-white dark:bg-slate-900 border-slate-100 dark:border-white/5 text-slate-400 hover:text-primary";
+  const headerActionActiveClass = "bg-amber-500/10 border-amber-500/40 text-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.15)]";
 
   return (
     <div className="max-w-2xl mx-auto pb-10 px-4 relative">
@@ -295,7 +298,7 @@ const DiscoverPage: React.FC = () => {
         <div className="flex shrink-0 gap-2">
           <button
             onClick={() => navigate('/notifications')}
-            className="relative w-10 h-10 rounded-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 shadow-lg flex items-center justify-center text-slate-400 hover:text-primary transition-all active:scale-95"
+            className={`${headerActionBaseClass} ${headerActionIdleClass}`}
             title="Notifications"
             aria-label="Notifications"
           >
@@ -310,8 +313,9 @@ const DiscoverPage: React.FC = () => {
           <FeatureHighlight id="discover_grid" type="GOLD">
             <button
               onClick={handleGridTransition}
-              className="w-10 h-10 rounded-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 shadow-lg flex items-center justify-center text-slate-400 hover:text-primary transition-all active:scale-95"
+              className={`${headerActionBaseClass} ${headerActionIdleClass}`}
               title="Vue Grille"
+              aria-label="Vue Grille"
             >
               <LayoutGrid size={18} />
             </button>
@@ -319,13 +323,11 @@ const DiscoverPage: React.FC = () => {
 
           <button
             onClick={() => setIsFilterOpen(true)}
-            className={`w-10 h-10 rounded-full backdrop-blur-xl flex items-center justify-center transition-all active:scale-95 border group ${
-              isFilterActive
-                ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.15)] text-amber-500'
-                : 'bg-white/10 dark:bg-slate-900/40 border-white/20 dark:border-white/5 text-slate-400 hover:text-white shadow-lg'
-            }`}
+            className={`${headerActionBaseClass} group ${isFilterActive ? headerActionActiveClass : headerActionIdleClass}`}
+            title="Filtres"
+            aria-label="Filtres"
           >
-            <SlidersHorizontal size={16} className={isFilterActive ? 'animate-pulse' : 'group-hover:rotate-12 transition-transform'} />
+            <SlidersHorizontal size={18} className={isFilterActive ? 'animate-pulse' : 'group-hover:rotate-12 transition-transform'} />
           </button>
         </div>
       </div>
