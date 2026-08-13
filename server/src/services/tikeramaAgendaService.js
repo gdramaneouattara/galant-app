@@ -7,6 +7,10 @@ const TIKERAMA_SOURCE = 'TIKERAMA';
 const TIKERAMA_BASE_URL = (process.env.TIKERAMA_BASE_URL || 'https://tikerama.com').replace(/\/+$/, '');
 const TIKERAMA_IMPORT_LIMIT = Math.max(1, Math.min(50, Number(process.env.TIKERAMA_IMPORT_LIMIT || 24)));
 const TIKERAMA_SYNC_INTERVAL_MS = Math.max(30 * 60 * 1000, Number(process.env.TIKERAMA_SYNC_INTERVAL_MS || 12 * 60 * 60 * 1000));
+const TIKERAMA_SEARCH_BUDGET_MS = Math.max(10000, Math.min(55000, Number(process.env.TIKERAMA_SEARCH_BUDGET_MS || 45000)));
+const TIKERAMA_SEARCH_TIMEOUT_MS = Math.max(3000, Math.min(10000, Number(process.env.TIKERAMA_SEARCH_TIMEOUT_MS || 5000)));
+const TIKERAMA_SEARCH_DETAIL_LIMIT = Math.max(4, Math.min(30, Number(process.env.TIKERAMA_SEARCH_DETAIL_LIMIT || 18)));
+const TIKERAMA_SEARCH_CONCURRENCY = Math.max(1, Math.min(6, Number(process.env.TIKERAMA_SEARCH_CONCURRENCY || 4)));
 const TIKERAMA_META_DOC = 'tikerama_agenda_ci';
 const COTE_D_IVOIRE = "Cote d'Ivoire";
 const DEFAULT_CITY = 'Abidjan';
@@ -85,6 +89,21 @@ const normalizeCacheText = (value = '') => normalizeText(value)
   .toLowerCase()
   .replace(/[^a-z0-9]+/g, '_')
   .replace(/^_+|_+$/g, '') || 'unknown';
+
+const titleCaseCity = (value = '') => normalizeText(value)
+  .toLowerCase()
+  .split(' ')
+  .filter(Boolean)
+  .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+  .join(' ');
+
+const timeLeftMs = (deadlineAt) => deadlineAt ? Math.max(0, deadlineAt - Date.now()) : Number.POSITIVE_INFINITY;
+
+const timeoutFor = (requestTimeoutMs, deadlineAt) => {
+  const remaining = timeLeftMs(deadlineAt);
+  if (remaining !== Number.POSITIVE_INFINITY && remaining <= 0) return 0;
+  return Math.max(1000, Math.min(requestTimeoutMs, remaining));
+};
 
 const absoluteUrl = (url) => {
   if (!url) return null;
@@ -218,14 +237,16 @@ const parseDate = (value) => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
-const getListingLinks = async ({ maxListingPaths = LISTING_PATHS.length, requestTimeoutMs = 12000 } = {}) => {
+const getListingLinks = async ({ maxListingPaths = LISTING_PATHS.length, requestTimeoutMs = 12000, deadlineAt = null } = {}) => {
   const links = new Set();
 
   for (const path of LISTING_PATHS.slice(0, maxListingPaths)) {
+    const timeout = timeoutFor(requestTimeoutMs, deadlineAt);
+    if (!timeout) break;
     try {
       const { data } = await axios.get(`${TIKERAMA_BASE_URL}${path}`, {
         headers: COMMON_HEADERS,
-        timeout: requestTimeoutMs,
+        timeout,
       });
       const $ = cheerio.load(data);
       $('a[href]').each((_, el) => {
@@ -248,10 +269,12 @@ const getListingLinks = async ({ maxListingPaths = LISTING_PATHS.length, request
   return [...links].slice(0, TIKERAMA_IMPORT_LIMIT * 2);
 };
 
-const parseEventDetail = async (url, { requestTimeoutMs = 12000 } = {}) => {
+const parseEventDetail = async (url, { requestTimeoutMs = 12000, deadlineAt = null } = {}) => {
+  const timeout = timeoutFor(requestTimeoutMs, deadlineAt);
+  if (!timeout) return null;
   const { data } = await axios.get(url, {
     headers: COMMON_HEADERS,
-    timeout: requestTimeoutMs,
+    timeout,
   });
   const $ = cheerio.load(data);
   const pageText = normalizeText($('body').text());
@@ -303,7 +326,7 @@ const parseEventDetail = async (url, { requestTimeoutMs = 12000 } = {}) => {
   if (!title || !isIvoryCoastEvent(candidate) || !looksLikeEvent(candidate)) return null;
   if (endDate.getTime() < Date.now() - 12 * 60 * 60 * 1000) return null;
 
-  return { ...candidate, city: city || DEFAULT_CITY };
+  return { ...candidate, city };
 };
 
 const toAdminCandidate = (event) => ({
@@ -370,34 +393,50 @@ const searchTikeramaAgendaCandidates = async ({
   maxEvents = TIKERAMA_IMPORT_LIMIT,
   maxListingPaths = LISTING_PATHS.length,
   requestTimeoutMs = 12000,
+  searchBudgetMs = TIKERAMA_SEARCH_BUDGET_MS,
+  detailConcurrency = TIKERAMA_SEARCH_CONCURRENCY,
+  maxDetailLinks = TIKERAMA_SEARCH_DETAIL_LIMIT,
 } = {}) => {
   if (process.env.TIKERAMA_AGENDA_ENABLED === 'false') {
     return { skipped: true, reason: 'disabled', candidates: [] };
   }
 
   const limit = Math.max(1, Math.min(TIKERAMA_IMPORT_LIMIT, Number(maxEvents || TIKERAMA_IMPORT_LIMIT)));
-  const links = await getListingLinks({ maxListingPaths, requestTimeoutMs });
+  const cleanCity = titleCaseCity(city) || DEFAULT_CITY;
+  const deadlineAt = Date.now() + Math.max(10000, Math.min(55000, Number(searchBudgetMs || TIKERAMA_SEARCH_BUDGET_MS)));
+  const boundedTimeoutMs = Math.max(1000, Math.min(TIKERAMA_SEARCH_TIMEOUT_MS, Number(requestTimeoutMs || TIKERAMA_SEARCH_TIMEOUT_MS)));
+  const links = await getListingLinks({ maxListingPaths, requestTimeoutMs: boundedTimeoutMs, deadlineAt });
+  const detailLinks = links.slice(0, Math.max(limit, Math.min(Number(maxDetailLinks || TIKERAMA_SEARCH_DETAIL_LIMIT), TIKERAMA_SEARCH_DETAIL_LIMIT)));
+  const workerCount = Math.max(1, Math.min(Number(detailConcurrency || TIKERAMA_SEARCH_CONCURRENCY), TIKERAMA_SEARCH_CONCURRENCY, detailLinks.length || 1));
   const candidates = [];
   const errors = [];
+  let cursor = 0;
 
-  for (const link of links) {
-    if (candidates.length >= limit) break;
-    try {
-      const event = await parseEventDetail(link, { requestTimeoutMs });
-      if (!event) continue;
-      if (!matchesCity(event, city)) continue;
-      if (!matchesCategory(event, category)) continue;
-      candidates.push(toAdminCandidate(event));
-    } catch (error) {
-      errors.push({ url: link, message: error.message });
-      console.warn('[tikerama] candidate_fetch_failed', link, error.message);
+  const scanNext = async () => {
+    while (candidates.length < limit && timeLeftMs(deadlineAt) > 1000) {
+      const link = detailLinks[cursor++];
+      if (!link) return;
+
+      try {
+        const event = await parseEventDetail(link, { requestTimeoutMs: boundedTimeoutMs, deadlineAt });
+        if (!event) continue;
+        if (!matchesCity(event, cleanCity)) continue;
+        if (!matchesCategory(event, category)) continue;
+        const resolvedCity = event.city || cleanCity;
+        candidates.push(toAdminCandidate({ ...event, city: resolvedCity }));
+      } catch (error) {
+        errors.push({ url: link, message: error.message });
+        console.warn('[tikerama] candidate_fetch_failed', link, error.message);
+      }
     }
-  }
+  };
+
+  await Promise.all(Array.from({ length: workerCount }, () => scanNext()));
 
   return {
-    candidates,
-    candidate_count: candidates.length,
-    scanned_count: links.length,
+    candidates: candidates.slice(0, limit),
+    candidate_count: Math.min(candidates.length, limit),
+    scanned_count: detailLinks.length,
     error_count: errors.length,
     sample_errors: errors.slice(0, 3),
   };

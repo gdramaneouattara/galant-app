@@ -231,12 +231,17 @@ test('Rules: Agenda imports TIKERAMA Cote dIvoire events through admin curation 
   assert.match(service, /if \(!found\) return null/);
   assert.match(service, /hasIvoryCoastLocation/);
   assert.match(service, /locationText/);
-  assert.match(service, /return \{ \.\.\.candidate, city: city \|\| DEFAULT_CITY \}/);
+  assert.match(service, /return \{ \.\.\.candidate, city \}/);
   assert.match(service, /external_ticket_url/);
   assert.match(service, /source_label:\s*'Billetterie via TIKERAMA'/);
   assert.match(service, /searchTikeramaAgendaCandidates/);
   assert.match(service, /importSelectedTikeramaAgendaEvents/);
   assert.match(service, /TIKERAMA_AGENDA_CATEGORIES/);
+  assert.match(service, /TIKERAMA_SEARCH_BUDGET_MS/);
+  assert.match(service, /TIKERAMA_SEARCH_CONCURRENCY/);
+  assert.match(service, /deadlineAt/);
+  assert.match(service, /Promise\.all\(Array\.from/);
+  assert.match(service, /const resolvedCity = event\.city \|\| cleanCity/);
   assert.match(service, /maxEvents/);
   assert.match(service, /maxListingPaths/);
   assert.match(service, /requestTimeoutMs/);
