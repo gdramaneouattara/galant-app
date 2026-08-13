@@ -13,7 +13,8 @@ import {
   Building2,
   Send,
   History,
-  Database
+  Database,
+  CalendarPlus
 } from 'lucide-react';
 import { hasAdminProfileAccess } from '../../lib/adminAccess';
 
@@ -40,6 +41,7 @@ const AdminLayout: React.FC = () => {
     { path: '/admin/reports', icon: AlertCircle, label: 'Alertes' },
     { path: '/admin/audit', icon: History, label: 'Audit' },
     { path: '/admin/seeder', icon: Database, label: 'Seeder' },
+    { path: '/admin/agenda-seeder', icon: CalendarPlus, label: 'Agenda' },
   ];
 
   return (

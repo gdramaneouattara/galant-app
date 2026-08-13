@@ -6,6 +6,11 @@ const { processUserAction } = require('../services/conciergeService');
 const { reconcileAllCounters, backfillProfileGeohashes } = require('../services/maintenanceService');
 const { backfillImageVariants, backfillVideoMedia, cleanupOrphanMedia } = require('../services/mediaMaintenanceService');
 const { searchVenuesInCity, ADMIN_SEEDER_CATEGORY_TYPES } = require('../services/googleMapsService');
+const {
+  searchTikeramaAgendaCandidates,
+  importSelectedTikeramaAgendaEvents,
+  TIKERAMA_AGENDA_CATEGORIES
+} = require('../services/tikeramaAgendaService');
 const pricingDefaults = require('../config/constants');
 
 const createNotificationSafely = (payload) => {
@@ -619,6 +624,70 @@ const seedVenuesFromGoogle = async (req, res) => {
   }
 };
 
+const searchTikeramaAgenda = async (req, res) => {
+  const city = String(req.body?.city || req.query?.city || '').trim();
+  const category = String(req.body?.category || req.query?.category || 'ALL').trim().toUpperCase();
+  if (!city) return res.status(400).json({ error: 'missing_city' });
+  if (!TIKERAMA_AGENDA_CATEGORIES[category]) return res.status(400).json({ error: 'invalid_category' });
+
+  try {
+    const result = await searchTikeramaAgendaCandidates({
+      city,
+      category,
+      maxEvents: req.body?.limit || req.query?.limit || undefined,
+    });
+
+    await appendAdminAuditLog({
+      adminId: req.user.id,
+      action: 'SEARCH_TIKERAMA_AGENDA',
+      metadata: {
+        city,
+        category,
+        candidateCount: result.candidate_count || 0,
+        scannedCount: result.scanned_count || 0,
+        errorCount: result.error_count || 0
+      }
+    });
+
+    res.json({
+      success: true,
+      city,
+      category,
+      candidates: result.candidates || [],
+      candidateCount: result.candidate_count || 0,
+      scannedCount: result.scanned_count || 0,
+      errorCount: result.error_count || 0,
+      sampleErrors: result.sample_errors || []
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const importTikeramaAgenda = async (req, res) => {
+  const candidates = Array.isArray(req.body?.candidates) ? req.body.candidates : [];
+  if (!candidates.length) return res.status(400).json({ error: 'missing_candidates' });
+
+  try {
+    const result = await importSelectedTikeramaAgendaEvents({ candidates });
+
+    await appendAdminAuditLog({
+      adminId: req.user.id,
+      action: 'IMPORT_TIKERAMA_AGENDA',
+      metadata: {
+        requestedCount: candidates.length,
+        importedCount: result.imported_count,
+        skippedCount: result.skipped_count,
+        imported: result.imported
+      }
+    });
+
+    res.json({ success: true, ...result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const backfillMediaVariants = async (req, res) => {
   try {
     const limit = Math.max(1, Math.min(1000, parseInt(req.body?.limit || req.query?.limit || '250', 10)));
@@ -662,6 +731,6 @@ module.exports = {
   getKycRequests, reviewKyc, getBroadcastAudience, broadcastMessage, getCampaignHistory,
   getReports, resolveReport,
   getUsers, toggleUserStatus, getPricing, updatePricing, reconcileCounters, backfillGeohashes,
-  seedVenuesFromGoogle,
+  seedVenuesFromGoogle, searchTikeramaAgenda, importTikeramaAgenda,
   backfillMediaVariants, cleanupMediaOrphans
 };

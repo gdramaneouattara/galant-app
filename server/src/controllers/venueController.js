@@ -10,7 +10,6 @@ const {
   GOOGLE_VENUE_PLACEHOLDER,
   normalizeCacheText
 } = require('../services/googleMapsService');
-const { syncTikeramaAgendaIfNeeded } = require('../services/tikeramaAgendaService');
 
 const PARTNER_DISCOVERY_PRICE = 500;
 
@@ -241,15 +240,6 @@ const getAgendaEvents = async (req, res) => {
   const now = new Date().toISOString();
   try {
     const safeLimit = clampLimit(req.query.limit, 50, 100);
-    const forceExternalRefresh = req.query.refreshExternal === '1' && req.user?.is_admin === true;
-    await syncTikeramaAgendaIfNeeded({
-      force: forceExternalRefresh,
-      maxEvents: forceExternalRefresh ? undefined : 4,
-      maxListingPaths: forceExternalRefresh ? undefined : 1,
-      requestTimeoutMs: forceExternalRefresh ? undefined : 5000,
-    }).catch(error => {
-      console.warn('[agenda] external_sync_failed', error.message);
-    });
 
     let query = db.collection('venue_events').where('expires_at', '>', now);
     query = query.limit(city ? safeLimit * 3 : safeLimit);
