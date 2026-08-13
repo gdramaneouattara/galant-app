@@ -6,7 +6,7 @@ import {
   Camera, ShieldCheck, MapPin, Edit3, Save, LogOut,
   Sparkles, Plane, Globe, ChevronRight, Share2,
   EyeOff, Eye, Crown, Gem, Settings, User, Bell,
-  CreditCard, HelpCircle, Heart, Rocket, Star, LayoutDashboard,
+  HelpCircle, Heart, Star, LayoutDashboard,
   ShoppingBag
 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
@@ -542,21 +542,6 @@ const ProfilePage: React.FC = () => {
               <ChevronRight size={16} className="text-amber-200" />
             </button>
 
-            {/* Action Item: Boosts */}
-            <button
-              onClick={() => navigate('/boost')}
-              className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-left group"
-            >
-              <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 text-secondary rounded-xl flex items-center justify-center group-hover:bg-purple-100 dark:group-hover:bg-purple-900/40 transition-colors">
-                <Rocket size={24} />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">{t('boosts')}</p>
-                <p className="text-[10px] font-bold text-slate-400">{t('shine_in_city')}</p>
-              </div>
-              <ChevronRight size={16} className="text-slate-200 dark:text-slate-700" />
-            </button>
-
             {/* Action Item: Invisible */}
             <button
               onClick={handleToggleInvisible}
@@ -600,13 +585,6 @@ const ProfilePage: React.FC = () => {
               </div>
               <p className="flex-1 text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">{t('notifications')}</p>
               <ChevronRight size={16} className="text-slate-200 dark:text-slate-700" />
-            </button>
-
-            <button onClick={() => navigate('/premium')} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-left group">
-              <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-xl flex items-center justify-center group-hover:bg-amber-100 dark:group-hover:bg-amber-900/40 transition-colors">
-                <CreditCard size={20} />
-              </div>
-              <p className="flex-1 text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">{t('subscriptions')}</p>
             </button>
 
             <button

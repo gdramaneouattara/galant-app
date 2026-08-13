@@ -388,6 +388,11 @@ test('Rules: Web profile Store groups subscriptions and global purchases', async
   assert.match(webApp, /path="\/store"/);
   assert.match(webProfile, /navigate\('\/store'\)/);
   assert.match(webProfile, /Store Galant/);
+  assert.doesNotMatch(webProfile, /navigate\('\/boost'\)/);
+  assert.doesNotMatch(webProfile, /t\('subscriptions'\)/);
+  assert.doesNotMatch(webProfile, /Action Item: Boosts/);
+  assert.doesNotMatch(webProfile, /\bCreditCard\b/);
+  assert.doesNotMatch(webProfile, /\bRocket\b/);
   assert.match(webStore, /Store Galant/);
   assert.match(webStore, /Abonnements/);
   assert.match(webStore, /MONTHLY/);
