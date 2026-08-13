@@ -6,7 +6,8 @@ import {
   Camera, ShieldCheck, MapPin, Edit3, Save, LogOut,
   Sparkles, Plane, Globe, ChevronRight, Share2,
   EyeOff, Eye, Crown, Gem, Settings, User, Bell,
-  CreditCard, HelpCircle, FileText, Heart, Rocket, Star, LayoutDashboard
+  CreditCard, HelpCircle, FileText, Heart, Rocket, Star, LayoutDashboard,
+  ShoppingBag
 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { apiRequest } from '@shared/lib/api';
@@ -365,6 +366,24 @@ const ProfilePage: React.FC = () => {
           <ChevronRight size={16} className="text-white/60" />
         </button>
       )}
+
+      {/* STORE ACCESS - New Grouped Section */}
+      <button
+        onClick={() => navigate('/store')}
+        className="mb-6 flex w-full items-center gap-5 rounded-[2.5rem] bg-gradient-to-br from-amber-400 to-amber-600 p-6 text-left text-white shadow-2xl shadow-amber-500/30 hover:scale-[1.02] active:scale-95 transition-all group overflow-hidden relative"
+      >
+        <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all"></div>
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 shadow-lg">
+          <ShoppingBag size={28} />
+        </div>
+        <div className="flex-1">
+          <h3 className="text-xl font-serif italic tracking-tighter uppercase leading-none mb-1">Store Galant</h3>
+          <p className="text-[10px] font-black uppercase tracking-prestige text-white/80">Abonnements, Roses & Boosts</p>
+        </div>
+        <div className="bg-white/20 p-2 rounded-full backdrop-blur-sm group-hover:translate-x-1 transition-transform">
+          <ChevronRight size={20} />
+        </div>
+      </button>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
         {/* Left Column: Info & Bio */}

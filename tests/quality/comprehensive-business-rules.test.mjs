@@ -378,6 +378,36 @@ test('Rules: Internal notification center is wired across server, web and native
   assert.match(nativeNotifications, /openNotificationTarget/);
 });
 
+test('Rules: Web profile Store groups subscriptions and global purchases', async () => {
+  const webApp = await read('web/src/App.tsx');
+  const webProfile = await read('web/src/pages/ProfilePage.tsx');
+  const webStore = await read('web/src/pages/StorePage.tsx');
+  const paymentHelpers = await read('server/src/utils/paymentHelpers.js');
+
+  assert.match(webApp, /StorePage/);
+  assert.match(webApp, /path="\/store"/);
+  assert.match(webProfile, /navigate\('\/store'\)/);
+  assert.match(webProfile, /Store Galant/);
+  assert.match(webStore, /Store Galant/);
+  assert.match(webStore, /Abonnements/);
+  assert.match(webStore, /MONTHLY/);
+  assert.match(webStore, /QUARTERLY/);
+  assert.match(webStore, /ROSE_PACK/);
+  assert.match(webStore, /GOLDEN_ROSE/);
+  assert.match(webStore, /BOOST/);
+  assert.match(webStore, /DISCOVER_GRID_UNLOCK/);
+  assert.match(webStore, /LIKES_INBOX_2H/);
+  assert.match(webStore, /STORY_UPLOAD/);
+  assert.match(webStore, /PARTNER_DISCOVERY_UNLOCK/);
+  assert.match(webStore, /hasPartnerDiscoveryAccess/);
+  assert.match(webStore, /type === 'PARTNER_DISCOVERY_UNLOCK' && hasPartnerDiscoveryAccess/);
+  assert.match(webStore, /alreadyGranted/);
+  assert.match(webStore, /disabled=\{disabled\}/);
+  assert.match(webStore, /Inclus/);
+  assert.match(paymentHelpers, /STORY_UPLOAD/);
+  assert.match(paymentHelpers, /PARTNER_DISCOVERY_UNLOCK/);
+});
+
 test('Rules: User-facing counters and commerce avoid Firestore composite index traps', async () => {
   const notificationController = await read('server/src/controllers/notificationController.js');
   const matchmakingController = await read('server/src/controllers/matchmakingController.js');

@@ -48,6 +48,7 @@ const AgendaPage = lazy(() => import('./pages/AgendaPage'));
 const GuidePage = lazy(() => import('./pages/GuidePage'));
 const ExperiencesPage = lazy(() => import('./pages/ExperiencesPage'));
 const StoriesPage = lazy(() => import('./pages/StoriesPage'));
+const StorePage = lazy(() => import('./pages/StorePage'));
 const MarketPage = lazy(() => import('./pages/MarketPage'));
 const PartnerDiscoveryPage = lazy(() => import('./pages/PartnerDiscoveryPage'));
 const VenueDetailPage = lazy(() => import('./pages/VenueDetailPage'));
@@ -283,6 +284,7 @@ const AppContent: React.FC = () => {
             <Route path="/chat/:matchId" element={<ChatPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/profile/:id" element={<ProfileDetailPage />} />
+            <Route path="/store" element={<StorePage />} />
             <Route path="/premium" element={<PremiumPage />} />
             <Route path="/payment-return" element={<PaymentReturnPage />} />
             <Route path="/agenda" element={<AgendaPage />} />
