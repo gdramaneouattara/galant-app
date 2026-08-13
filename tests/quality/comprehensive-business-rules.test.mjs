@@ -365,9 +365,18 @@ test('Rules: Internal notification center is wired across server, web and native
   assert.match(webApp, /\/notifications/);
   assert.match(webProfile, /\/api\/notifications\/unread-count/);
   assert.match(webProfile, /navigate\('\/notifications'\)/);
+  assert.doesNotMatch(webProfile, /navigate\('\/likes'\)/);
+  assert.doesNotMatch(webProfile, /navigate\('\/roses'\)/);
+  assert.doesNotMatch(webProfile, /\/api\/super-likes\/received/);
   assert.match(webNotifications, /markAllAsRead/);
   assert.match(webNotifications, /archiveNotification/);
   assert.match(webNotifications, /target_route/);
+  assert.match(webNotifications, /Vos alertes, likes et roses recues au meme endroit/);
+  assert.match(webNotifications, /navigate\('\/likes'\)/);
+  assert.match(webNotifications, /navigate\('\/roses'\)/);
+  assert.match(webNotifications, /\/api\/super-likes\/received/);
+  assert.match(webNotifications, /likesQuickCount/);
+  assert.match(webNotifications, /rosesInboxCount/);
   assert.match(nativeNavigator, /NotificationsScreen/);
   assert.match(nativeNavigator, /Notifications: undefined/);
   assert.match(nativeProfile, /\/api\/notifications\/unread-count/);
