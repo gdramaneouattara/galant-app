@@ -6,7 +6,7 @@ const {
   getPrivacyRequests, resolvePrivacyRequest, getPhotoReviews, reviewPhoto,
   getKycRequests, reviewKyc, getBroadcastAudience, broadcastMessage, getCampaignHistory,
   getReports, resolveReport, getUsers, toggleUserStatus, getPricing, updatePricing, reconcileCounters, backfillGeohashes,
-  seedVenuesFromGoogle,
+  seedVenuesFromGoogle, searchTikeramaAgenda, importTikeramaAgenda,
   backfillMediaVariants, cleanupMediaOrphans
 } = require('../controllers/adminController');
 
@@ -16,6 +16,8 @@ router.use(requireAdmin);
 router.get('/stats', getStats);
 router.get('/venues/pending', getPendingVenues);
 router.post('/venues/seed', seedVenuesFromGoogle);
+router.post('/agenda/tikerama/search', searchTikeramaAgenda);
+router.post('/agenda/tikerama/import', importTikeramaAgenda);
 router.post('/venues/:id/approve', approveVenue);
 router.post('/venues/:id/reject', rejectVenue);
 router.post('/users/reconcile-profiles', reconcileProfiles);

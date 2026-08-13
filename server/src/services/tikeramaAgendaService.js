@@ -56,6 +56,17 @@ const EVENT_KEYWORDS = [
   'gala',
 ];
 
+const TIKERAMA_AGENDA_CATEGORIES = {
+  ALL: [],
+  CONCERT: ['concert', 'live', 'show', 'spectacle', 'festival', 'gala'],
+  FESTIVAL: ['festival'],
+  NIGHTLIFE: ['soiree', 'night', 'club', 'dj', 'party'],
+  CULTURE: ['culture', 'theatre', 'cinema', 'art', 'exposition', 'spectacle'],
+  COMEDY: ['humour', 'comedie', 'stand up', 'stand-up'],
+  BUSINESS: ['conference', 'business', 'networking', 'formation', 'atelier'],
+  FOOD: ['brunch', 'diner', 'dejeuner', 'degustation', 'restaurant'],
+};
+
 const normalizeText = (value = '') => String(value)
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
@@ -155,6 +166,32 @@ const extractPriceLabel = (text = '', offers) => {
 const eventTypeFor = (title = '', description = '') => {
   const text = normalizeText(`${title} ${description}`).toLowerCase();
   return /(concert|festival|live|show|spectacle|gala)/.test(text) ? 'LIVE_MUSIC' : 'EVENT';
+};
+
+const matchesCategory = (candidate = {}, category = 'ALL') => {
+  const normalizedCategory = String(category || 'ALL').trim().toUpperCase();
+  const keywords = TIKERAMA_AGENDA_CATEGORIES[normalizedCategory] || [];
+  if (!keywords.length) return true;
+  const text = normalizeText([
+    candidate.title,
+    candidate.description,
+    candidate.venueName,
+    candidate.address,
+    candidate.url,
+  ].filter(Boolean).join(' ')).toLowerCase();
+  return keywords.some(keyword => text.includes(keyword));
+};
+
+const matchesCity = (candidate = {}, city = '') => {
+  const normalizedCity = normalizeText(city).toLowerCase();
+  if (!normalizedCity) return true;
+  const text = normalizeText([
+    candidate.city,
+    candidate.address,
+    candidate.venueName,
+    candidate.locationText,
+  ].filter(Boolean).join(' ')).toLowerCase();
+  return text.includes(normalizedCity);
 };
 
 const isIvoryCoastEvent = (candidate = {}) => {
@@ -269,6 +306,103 @@ const parseEventDetail = async (url, { requestTimeoutMs = 12000 } = {}) => {
   return { ...candidate, city: city || DEFAULT_CITY };
 };
 
+const toAdminCandidate = (event) => ({
+  external_id: `external_tikerama_${shortHash(event.url)}`,
+  source: TIKERAMA_SOURCE,
+  title: event.title,
+  description: event.description || 'Evenement reference depuis TIKERAMA.',
+  image: event.image || DEFAULT_IMAGE,
+  photo_url: event.image || DEFAULT_IMAGE,
+  start_date: event.startDate.toISOString(),
+  end_date: event.endDate.toISOString(),
+  starts_at: event.startDate.toISOString(),
+  expires_at: event.endDate.toISOString(),
+  venue_name: event.venueName || 'TIKERAMA',
+  address: event.address || event.city || DEFAULT_CITY,
+  city: event.city || DEFAULT_CITY,
+  country: COTE_D_IVOIRE,
+  price_label: event.priceLabel || null,
+  source_url: event.url,
+  external_ticket_url: event.ticketUrl || event.url,
+  event_type: event.eventType || eventTypeFor(event.title, event.description),
+});
+
+const fromAdminCandidate = (candidate = {}) => {
+  const url = absoluteUrl(candidate.source_url || candidate.url || candidate.external_ticket_url);
+  const startDate = parseDate(candidate.start_date || candidate.starts_at);
+  const endDate = parseDate(candidate.end_date || candidate.expires_at) ||
+    (startDate ? new Date(startDate.getTime() + 12 * 60 * 60 * 1000) : null);
+  const title = normalizeText(candidate.title);
+  const description = normalizeText(candidate.description || '').slice(0, 500);
+  const venueName = normalizeText(candidate.venue_name || candidate.venueName || 'TIKERAMA');
+  const address = normalizeText(candidate.address || candidate.city || DEFAULT_CITY);
+  const city = pickCity(`${candidate.city || ''} ${address}`) || normalizeText(candidate.city || DEFAULT_CITY);
+
+  if (!url || !startDate || !endDate || !title) return null;
+  if (!url.startsWith(`${TIKERAMA_BASE_URL}/`)) return null;
+
+  const event = {
+    url,
+    title,
+    description,
+    image: absoluteUrl(candidate.image || candidate.photo_url) || DEFAULT_IMAGE,
+    startDate,
+    endDate,
+    venueName,
+    address,
+    city: city || DEFAULT_CITY,
+    locationText: `${candidate.city || ''} ${address} ${candidate.country || ''}`,
+    priceLabel: candidate.price_label || null,
+    ticketUrl: absoluteUrl(candidate.external_ticket_url || candidate.source_url || url) || url,
+    eventType: ['EVENT', 'PARTY', 'FLASH_OFFER', 'NETWORKING', 'LIVE_MUSIC'].includes(candidate.event_type)
+      ? candidate.event_type
+      : eventTypeFor(title, description),
+  };
+
+  if (!isIvoryCoastEvent(event)) return null;
+  if (event.endDate.getTime() < Date.now() - 12 * 60 * 60 * 1000) return null;
+  return event;
+};
+
+const searchTikeramaAgendaCandidates = async ({
+  city = DEFAULT_CITY,
+  category = 'ALL',
+  maxEvents = TIKERAMA_IMPORT_LIMIT,
+  maxListingPaths = LISTING_PATHS.length,
+  requestTimeoutMs = 12000,
+} = {}) => {
+  if (process.env.TIKERAMA_AGENDA_ENABLED === 'false') {
+    return { skipped: true, reason: 'disabled', candidates: [] };
+  }
+
+  const limit = Math.max(1, Math.min(TIKERAMA_IMPORT_LIMIT, Number(maxEvents || TIKERAMA_IMPORT_LIMIT)));
+  const links = await getListingLinks({ maxListingPaths, requestTimeoutMs });
+  const candidates = [];
+  const errors = [];
+
+  for (const link of links) {
+    if (candidates.length >= limit) break;
+    try {
+      const event = await parseEventDetail(link, { requestTimeoutMs });
+      if (!event) continue;
+      if (!matchesCity(event, city)) continue;
+      if (!matchesCategory(event, category)) continue;
+      candidates.push(toAdminCandidate(event));
+    } catch (error) {
+      errors.push({ url: link, message: error.message });
+      console.warn('[tikerama] candidate_fetch_failed', link, error.message);
+    }
+  }
+
+  return {
+    candidates,
+    candidate_count: candidates.length,
+    scanned_count: links.length,
+    error_count: errors.length,
+    sample_errors: errors.slice(0, 3),
+  };
+};
+
 const upsertEvent = async (event) => {
   const now = new Date().toISOString();
   const venueId = `external_tikerama_${slugify(event.city)}_${shortHash(event.venueName)}`;
@@ -317,6 +451,33 @@ const upsertEvent = async (event) => {
   }, { merge: true });
 
   return eventId;
+};
+
+const importSelectedTikeramaAgendaEvents = async ({ candidates = [] } = {}) => {
+  const rows = Array.isArray(candidates) ? candidates.slice(0, TIKERAMA_IMPORT_LIMIT) : [];
+  const imported = [];
+  const skipped = [];
+
+  for (const row of rows) {
+    const event = fromAdminCandidate(row);
+    if (!event) {
+      skipped.push({ external_id: row?.external_id || null, reason: 'invalid_candidate' });
+      continue;
+    }
+    try {
+      imported.push(await upsertEvent(event));
+    } catch (error) {
+      skipped.push({ external_id: row?.external_id || null, reason: error.message });
+      console.warn('[tikerama] selected_import_failed', row?.external_id || row?.source_url, error.message);
+    }
+  }
+
+  return {
+    imported_count: imported.length,
+    skipped_count: skipped.length,
+    imported,
+    skipped,
+  };
 };
 
 const shouldSync = async (force) => {
@@ -378,5 +539,8 @@ const syncTikeramaAgendaIfNeeded = async ({
 
 module.exports = {
   syncTikeramaAgendaIfNeeded,
+  searchTikeramaAgendaCandidates,
+  importSelectedTikeramaAgendaEvents,
+  TIKERAMA_AGENDA_CATEGORIES,
   TIKERAMA_SOURCE,
 };

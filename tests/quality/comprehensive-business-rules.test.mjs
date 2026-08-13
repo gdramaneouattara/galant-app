@@ -215,9 +215,14 @@ test('Rules: Guide Google photos are referenced, sized and attributed without St
   assert.match(nativeVenueDetail, /Photo Google Places/);
 });
 
-test('Rules: Agenda imports TIKERAMA Cote dIvoire events without copying media', async () => {
+test('Rules: Agenda imports TIKERAMA Cote dIvoire events through admin curation without copying media', async () => {
   const service = await read('server/src/services/tikeramaAgendaService.js');
   const venueController = await read('server/src/controllers/venueController.js');
+  const adminController = await read('server/src/controllers/adminController.js');
+  const adminRoutes = await read('server/src/routes/adminRoutes.js');
+  const adminLayout = await read('web/src/pages/admin/AdminLayout.tsx');
+  const adminAgendaSeeder = await read('web/src/pages/admin/AdminAgendaSeeder.tsx');
+  const app = await read('web/src/App.tsx');
   const webAgenda = await read('web/src/pages/AgendaPage.tsx');
   const nativeAgenda = await read('src/screens/agenda/AgendaScreen.tsx');
 
@@ -229,6 +234,9 @@ test('Rules: Agenda imports TIKERAMA Cote dIvoire events without copying media',
   assert.match(service, /return \{ \.\.\.candidate, city: city \|\| DEFAULT_CITY \}/);
   assert.match(service, /external_ticket_url/);
   assert.match(service, /source_label:\s*'Billetterie via TIKERAMA'/);
+  assert.match(service, /searchTikeramaAgendaCandidates/);
+  assert.match(service, /importSelectedTikeramaAgendaEvents/);
+  assert.match(service, /TIKERAMA_AGENDA_CATEGORIES/);
   assert.match(service, /maxEvents/);
   assert.match(service, /maxListingPaths/);
   assert.match(service, /requestTimeoutMs/);
@@ -236,10 +244,16 @@ test('Rules: Agenda imports TIKERAMA Cote dIvoire events without copying media',
   assert.match(service, /venues/);
   assert.doesNotMatch(service, /bucket\(/);
   assert.doesNotMatch(service, /uploadBytes/);
-  assert.match(venueController, /syncTikeramaAgendaIfNeeded/);
-  assert.match(venueController, /await syncTikeramaAgendaIfNeeded/);
-  assert.match(venueController, /maxEvents:\s*forceExternalRefresh \? undefined : 4/);
+  assert.doesNotMatch(venueController, /syncTikeramaAgendaIfNeeded/);
   assert.doesNotMatch(venueController, /const externalSync = syncTikeramaAgendaIfNeeded/);
+  assert.match(adminController, /searchTikeramaAgenda/);
+  assert.match(adminController, /importTikeramaAgenda/);
+  assert.match(adminRoutes, /\/agenda\/tikerama\/search/);
+  assert.match(adminRoutes, /\/agenda\/tikerama\/import/);
+  assert.match(adminLayout, /\/admin\/agenda-seeder/);
+  assert.match(adminAgendaSeeder, /Rechercher sur Tikerama/);
+  assert.match(adminAgendaSeeder, /selectedCandidates/);
+  assert.match(app, /AdminAgendaSeeder/);
   assert.match(webAgenda, /BILLETTERIE TIKERAMA/);
   assert.match(webAgenda, /openExternalEvent/);
   assert.match(nativeAgenda, /Billetterie TIKERAMA/);
