@@ -297,7 +297,7 @@ const DiscoverPage: React.FC = () => {
         {/* Boutons de vue & filtre alignés à droite */}
         <div className="flex shrink-0 gap-2">
           <button
-            onClick={() => navigate('/notifications')}
+            onClick={() => navigate('/notifications', { state: { from: '/' } })}
             className={`${headerActionBaseClass} ${headerActionIdleClass}`}
             title="Notifications"
             aria-label="Notifications"

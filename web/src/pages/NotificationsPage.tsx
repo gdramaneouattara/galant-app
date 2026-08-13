@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Archive,
   Bell,
@@ -74,7 +74,8 @@ const formatDate = (value?: string) => {
 
 const NotificationsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const location = useLocation();
+  const { user, profile, loading: authLoading } = useAuth();
   const [notifications, setNotifications] = useState<GalantNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<NotificationType>('ALL');
@@ -83,6 +84,7 @@ const NotificationsPage: React.FC = () => {
   const [rosesInboxCount, setRosesInboxCount] = useState(0);
 
   const likesQuickCount = Number(profile?.likes_count || 0);
+  const returnPath = typeof location.state?.from === 'string' ? location.state.from : '/profile';
 
   const loadNotifications = async () => {
     try {
@@ -100,11 +102,30 @@ const NotificationsPage: React.FC = () => {
   };
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      setNotifications([]);
+      setLoading(false);
+      return;
+    }
     void loadNotifications();
-  }, [filter, unreadOnly]);
+  }, [filter, unreadOnly, authLoading, user?.uid]);
 
   useEffect(() => {
     let cancelled = false;
+
+    if (authLoading) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!user) {
+      setRosesInboxCount(0);
+      return () => {
+        cancelled = true;
+      };
+    }
 
     apiRequest<any[]>('/api/super-likes/received', { requireAuth: true })
       .then((rows) => {
@@ -119,7 +140,7 @@ const NotificationsPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [authLoading, user?.uid]);
 
   const unreadCount = useMemo(() => notifications.filter((item) => item.is_read !== true).length, [notifications]);
 
@@ -156,7 +177,7 @@ const NotificationsPage: React.FC = () => {
     <div className="mx-auto max-w-4xl px-4 pb-24">
       <div className="mb-8 flex items-start gap-4">
         <button
-          onClick={() => navigate('/profile')}
+          onClick={() => navigate(returnPath)}
           className="mt-1 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-slate-900 text-slate-300 transition hover:text-white"
           aria-label="Retour"
         >
