@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useMatchmaking } from '@shared/hooks/useMatchmaking';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIcon, SlidersHorizontal, Sparkles, RefreshCw, ChevronRight, Crown, Gem, MessageCircle, CirclePlay, LayoutGrid, Bell } from 'lucide-react';
+import { ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIcon, SlidersHorizontal, Sparkles, RefreshCw, ChevronRight, Crown, Gem, MessageCircle, CirclePlay, LayoutGrid, Bell, ShoppingBag } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
 import FilterModal from '../components/FilterModal';
@@ -259,17 +259,7 @@ const DiscoverPage: React.FC = () => {
   return (
     <div className="max-w-2xl mx-auto pb-10 px-4 relative">
       {/* Header avec Filtre à droite */}
-      <div className="flex justify-between items-start gap-3 mb-6 pt-2">
-        <div className="min-w-0 flex-1">
-          <h2 className="text-2xl sm:text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white leading-none truncate">
-            {t('discover') || "Découvrir"}
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 font-black mt-1.5 text-[8px] sm:text-[9px] uppercase tracking-[0.18em] truncate">
-            {t('discover_subtitle') || "Découvre de nouvelles personnes"}
-          </p>
-        </div>
-
-        {/* Boutons de vue & filtre alignés à droite */}
+      <div className="mb-6 flex justify-end pt-2">
         <div className="flex shrink-0 gap-2">
           <button
             onClick={() => navigate('/stories')}
@@ -278,6 +268,15 @@ const DiscoverPage: React.FC = () => {
             aria-label="Stories"
           >
             <CirclePlay size={18} />
+          </button>
+
+          <button
+            onClick={() => navigate('/store')}
+            className={`${headerActionBaseClass} ${headerActionIdleClass}`}
+            title="Store"
+            aria-label="Store"
+          >
+            <ShoppingBag size={18} />
           </button>
 
           <button
