@@ -99,6 +99,17 @@ test('Rules: Discovery header exposes notifications with compact title and grid/
   assert.match(webDiscover, /px-1 sm:px-3/);
   assert.match(webDiscover, /border-4 border-white/);
   assert.match(webDiscover, /flex shrink-0 gap-2/);
+  const storeActionIndex = webDiscover.indexOf("navigate('/store')");
+  const storiesActionIndex = webDiscover.indexOf("navigate('/stories')");
+  const galleryActionIndex = webDiscover.indexOf('onClick={handleGridTransition}');
+  const notificationsActionIndex = webDiscover.indexOf("navigate('/notifications'");
+  const filterActionIndex = webDiscover.indexOf('setIsFilterOpen(true)');
+
+  assert.ok(storeActionIndex > -1);
+  assert.ok(storiesActionIndex > storeActionIndex);
+  assert.ok(galleryActionIndex > storiesActionIndex);
+  assert.ok(notificationsActionIndex > galleryActionIndex);
+  assert.ok(filterActionIndex > notificationsActionIndex);
 });
 
 test('Rules: Sentinel fake call is wired on web and mobile', async () => {
