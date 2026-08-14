@@ -95,6 +95,9 @@ test('Rules: Discovery header exposes notifications with compact title and grid/
   assert.match(webDiscover, /navigate\('\/notifications',\s*\{\s*state:\s*\{\s*from:\s*'\/'\s*\}\s*\}\)/);
   assert.doesNotMatch(webDiscover, /discover_subtitle/);
   assert.doesNotMatch(webDiscover, /text-2xl sm:text-3xl/);
+  assert.match(webDiscover, /max-w-3xl/);
+  assert.match(webDiscover, /px-1 sm:px-3/);
+  assert.match(webDiscover, /border-4 border-white/);
   assert.match(webDiscover, /flex shrink-0 gap-2/);
 });
 
