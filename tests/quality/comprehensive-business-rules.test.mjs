@@ -60,8 +60,10 @@ test('Rules: Stories move into discovery and Apps replaces the stories tab', asy
   assert.match(navigator, /AppsTab/);
   assert.match(navigator, /AppsScreen/);
   assert.match(webApp, /\/apps/);
-  assert.match(webDiscover, /\/api\/statuses/);
-  assert.match(webDiscover, /initialStatusId/);
+  assert.match(webDiscover, /CirclePlay/);
+  assert.match(webDiscover, /navigate\('\/stories'\)/);
+  assert.doesNotMatch(webDiscover, /storyBubbles/);
+  assert.doesNotMatch(webDiscover, /initialStatusId/);
 });
 
 test('Rules: Discovery header exposes notifications with compact title and grid/filter actions', async () => {
@@ -85,6 +87,7 @@ test('Rules: Discovery header exposes notifications with compact title and grid/
   assert.match(nativeHome, /subtitle:\s*\{\s*fontSize:\s*10/);
 
   assert.match(webDiscover, /Bell/);
+  assert.match(webDiscover, /CirclePlay/);
   assert.match(webDiscover, /notificationUnreadCount/);
   assert.match(webDiscover, /\/api\/notifications\/unread-count/);
   assert.match(webDiscover, /navigate\('\/notifications',\s*\{\s*state:\s*\{\s*from:\s*'\/'\s*\}\s*\}\)/);
