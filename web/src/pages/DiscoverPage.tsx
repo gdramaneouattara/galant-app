@@ -262,6 +262,15 @@ const DiscoverPage: React.FC = () => {
       <div className="mb-6 flex justify-end pt-2">
         <div className="flex shrink-0 gap-2">
           <button
+            onClick={() => navigate('/store')}
+            className={`${headerActionBaseClass} ${headerActionIdleClass}`}
+            title="Store"
+            aria-label="Store"
+          >
+            <ShoppingBag size={18} />
+          </button>
+
+          <button
             onClick={() => navigate('/stories')}
             className={`${headerActionBaseClass} ${headerActionIdleClass}`}
             title="Stories"
@@ -270,14 +279,16 @@ const DiscoverPage: React.FC = () => {
             <CirclePlay size={18} />
           </button>
 
-          <button
-            onClick={() => navigate('/store')}
-            className={`${headerActionBaseClass} ${headerActionIdleClass}`}
-            title="Store"
-            aria-label="Store"
-          >
-            <ShoppingBag size={18} />
-          </button>
+          <FeatureHighlight id="discover_grid" type="GOLD">
+            <button
+              onClick={handleGridTransition}
+              className={`${headerActionBaseClass} ${headerActionIdleClass}`}
+              title="Vue Grille"
+              aria-label="Vue Grille"
+            >
+              <LayoutGrid size={18} />
+            </button>
+          </FeatureHighlight>
 
           <button
             onClick={() => navigate('/notifications', { state: { from: '/' } })}
@@ -292,17 +303,6 @@ const DiscoverPage: React.FC = () => {
               </span>
             )}
           </button>
-
-          <FeatureHighlight id="discover_grid" type="GOLD">
-            <button
-              onClick={handleGridTransition}
-              className={`${headerActionBaseClass} ${headerActionIdleClass}`}
-              title="Vue Grille"
-              aria-label="Vue Grille"
-            >
-              <LayoutGrid size={18} />
-            </button>
-          </FeatureHighlight>
 
           <button
             onClick={() => setIsFilterOpen(true)}
