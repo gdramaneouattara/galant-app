@@ -88,10 +88,13 @@ test('Rules: Discovery header exposes notifications with compact title and grid/
 
   assert.match(webDiscover, /Bell/);
   assert.match(webDiscover, /CirclePlay/);
+  assert.match(webDiscover, /ShoppingBag/);
+  assert.match(webDiscover, /navigate\('\/store'\)/);
   assert.match(webDiscover, /notificationUnreadCount/);
   assert.match(webDiscover, /\/api\/notifications\/unread-count/);
   assert.match(webDiscover, /navigate\('\/notifications',\s*\{\s*state:\s*\{\s*from:\s*'\/'\s*\}\s*\}\)/);
-  assert.match(webDiscover, /text-2xl sm:text-3xl/);
+  assert.doesNotMatch(webDiscover, /discover_subtitle/);
+  assert.doesNotMatch(webDiscover, /text-2xl sm:text-3xl/);
   assert.match(webDiscover, /flex shrink-0 gap-2/);
 });
 
