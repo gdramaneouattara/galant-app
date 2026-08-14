@@ -257,7 +257,7 @@ const DiscoverPage: React.FC = () => {
   const headerActionActiveClass = "bg-amber-500/10 border-amber-500/40 text-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.15)]";
 
   return (
-    <div className="max-w-2xl mx-auto pb-10 px-4 relative">
+    <div className="max-w-3xl mx-auto pb-10 px-1 sm:px-3 relative">
       {/* Header avec Filtre à droite */}
       <div className="mb-6 flex justify-end pt-2">
         <div className="flex shrink-0 gap-2">
@@ -325,7 +325,7 @@ const DiscoverPage: React.FC = () => {
             style={{ x, rotate }}
             whileDrag={{ scale: 1.05, cursor: 'grabbing' }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-            className="relative aspect-[3/4.2] w-full rounded-[3.5rem] overflow-hidden shadow-[0_40px_80px_-15px_rgba(0,0,0,0.15)] border-8 border-white group bg-slate-100 touch-none"
+            className="relative aspect-[3/4.2] w-full rounded-[3.5rem] overflow-hidden shadow-[0_40px_80px_-15px_rgba(0,0,0,0.15)] border-4 border-white group bg-slate-100 touch-none"
           >
             <div onClick={() => openDetail(currentProfile)} className="w-full h-full cursor-pointer">
               <OptimizedImage
