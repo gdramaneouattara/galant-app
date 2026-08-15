@@ -12,24 +12,19 @@ import { useAuth } from '../context/AuthContext';
 import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
 import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
+import { getRelationshipGoalLabel } from '../components/GoalModal';
 
-const GENDER_LABELS: Record<string, string> = {
-  MALE: 'Homme',
-  FEMALE: 'Femme',
-  OTHER: 'Autre',
-};
-
-const RELATIONSHIP_GOAL_LABELS: Record<string, string> = {
-  SERIOUS: 'Amour sérieux',
-  FRIENDSHIP: 'Amitié',
-  CASUAL: 'On verra bien',
+const GENDER_LABELS: Record<string, { fr: string; en: string }> = {
+  MALE: { fr: 'Homme', en: 'Man' },
+  FEMALE: { fr: 'Femme', en: 'Woman' },
+  OTHER: { fr: 'Autre', en: 'Other' },
 };
 
 const ProfileDetailPage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { t, profile: myProfile } = useAuth();
+  const { t, profile: myProfile, language } = useAuth();
 
   const [profile, setProfile] = useState<any>(location.state?.profile || null);
   const [loading, setLoading] = useState(!profile);
@@ -131,8 +126,8 @@ const ProfileDetailPage: React.FC = () => {
 
   if (!profile) return (
     <div className="text-center py-20">
-      <p className="text-slate-400 font-bold">Profil introuvable.</p>
-      <button onClick={handleBack} className="mt-4 text-primary font-black">Retour</button>
+      <p className="text-slate-400 font-bold">{language === 'en' ? 'Profile not found.' : 'Profil introuvable.'}</p>
+      <button onClick={handleBack} className="mt-4 text-primary font-black">{language === 'en' ? 'Back' : 'Retour'}</button>
     </div>
   );
 
@@ -192,35 +187,35 @@ const ProfileDetailPage: React.FC = () => {
                 {profile.distance_km && <span> • {profile.distance_km.toFixed(1)} km</span>}
               </div>
               <div className="inline-block bg-rose-50 dark:bg-rose-900/20 text-primary px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter transition-colors">
-                🌹 {profile.roses_count || 0} roses recues
+                🌹 {profile.roses_count || 0} {language === 'en' ? 'roses received' : 'roses recues'}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl space-y-1 transition-colors">
                 <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige flex items-center gap-1 transition-colors">
-                  <UserIcon size={12} /> Genre
+                  <UserIcon size={12} /> {language === 'en' ? 'Gender' : 'Genre'}
                 </span>
-                <p className="font-bold text-slate-700 dark:text-slate-300 transition-colors">{GENDER_LABELS[profile.gender] || profile.gender || 'Non renseigné'}</p>
+                <p className="font-bold text-slate-700 dark:text-slate-300 transition-colors">{GENDER_LABELS[profile.gender]?.[language] || profile.gender || (language === 'en' ? 'Not provided' : 'Non renseigne')}</p>
               </div>
               <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl space-y-1 transition-colors">
                 <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige flex items-center gap-1 transition-colors">
-                  <Target size={12} /> Objectif
+                  <Target size={12} /> {language === 'en' ? 'Goal' : 'Objectif'}
                 </span>
-                <p className="font-bold text-slate-700 dark:text-slate-300 transition-colors">{RELATIONSHIP_GOAL_LABELS[profile.relationship_goal] || 'En recherche'}</p>
+                <p className="font-bold text-slate-700 dark:text-slate-300 transition-colors">{getRelationshipGoalLabel(profile.relationship_goal, language)}</p>
               </div>
             </div>
 
             <div className="space-y-3">
-              <h3 className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige transition-colors">À propos</h3>
+              <h3 className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige transition-colors">{language === 'en' ? 'About' : 'A propos'}</h3>
               <p className="text-slate-600 dark:text-slate-400 font-medium leading-relaxed italic transition-colors">
-                "{profile.bio || 'Ce membre préfère garder une part de mystère...'}"
+                "{profile.bio || (language === 'en' ? 'This member prefers to keep a little mystery...' : 'Ce membre prefere garder une part de mystere...')}"
               </p>
             </div>
 
             {profile.interests?.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige transition-colors">Centres d'intérêt</h3>
+                <h3 className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige transition-colors">{language === 'en' ? 'Interests' : 'Centres d interet'}</h3>
                 <div className="flex flex-wrap gap-2">
                   {profile.interests.map((it: string) => (
                     <span key={it} className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-4 py-2 rounded-xl text-xs font-bold transition-colors">
@@ -239,7 +234,7 @@ const ProfileDetailPage: React.FC = () => {
                 className="bg-primary text-white py-5 rounded-2xl font-medium text-sm uppercase tracking-prestige flex items-center justify-center gap-3 shadow-lg shadow-red-100 dark:shadow-none hover:scale-[1.02] active:scale-95 transition-all"
               >
                 {liking ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Heart size={20} fill="currentColor" />}
-                Envoyer un Like
+                {language === 'en' ? 'Send a Like' : 'Envoyer un Like'}
               </button>
 
               <button
@@ -248,7 +243,7 @@ const ProfileDetailPage: React.FC = () => {
                 className="bg-white dark:bg-slate-800 border-2 border-primary text-primary dark:text-white py-5 rounded-2xl font-medium text-sm uppercase tracking-prestige flex items-center justify-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all active:scale-95"
               >
                 {superLiking ? <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div> : <span className="text-xl">🌹</span>}
-                Offrir un bouquet
+                {language === 'en' ? 'Offer a bouquet' : 'Offrir un bouquet'}
               </button>
 
               <button
@@ -256,7 +251,7 @@ const ProfileDetailPage: React.FC = () => {
                 className="bg-blue-600 text-white py-5 rounded-2xl font-medium text-sm uppercase tracking-prestige flex items-center justify-center gap-3 shadow-lg shadow-blue-100 dark:shadow-none hover:scale-[1.02] active:scale-95 transition-all"
               >
                 <MessageCircle size={20} />
-                Message Direct
+                {language === 'en' ? 'Direct Message' : 'Message Direct'}
               </button>
             </div>
           </div>

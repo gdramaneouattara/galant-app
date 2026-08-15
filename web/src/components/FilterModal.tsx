@@ -2,6 +2,7 @@ import React from 'react';
 import { X, CheckCircle, ShieldCheck, Gem } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showAlert } from '@shared/lib/ui-bridge';
+import { useAuth } from '../context/AuthContext';
 
 interface Props {
   isOpen: boolean;
@@ -11,14 +12,59 @@ interface Props {
   is_premium: boolean;
 }
 
+const copy = {
+  fr: {
+    premiumTitle: 'Privilege Premium',
+    standingLocked: 'Les filtres de standing sont reserves aux membres Premium.',
+    scoreLocked: 'Le filtrage par score de galanterie est une option Premium.',
+    title: 'Filtres de recherche',
+    see: 'Je veux voir',
+    men: 'Hommes',
+    women: 'Femmes',
+    all: 'Tous',
+    age: 'Age',
+    to: 'a',
+    standing: 'Criteres de standing',
+    premiumOnly: 'Membres Premium uniquement',
+    premiumOnlySub: 'Badge obligatoire',
+    verifiedOnly: 'Profils certifies uniquement',
+    verifiedOnlySub: "L'elite verifiee par Galant",
+    minScore: 'Score minimum',
+    apply: 'Appliquer les filtres',
+    close: 'Fermer'
+  },
+  en: {
+    premiumTitle: 'Premium privilege',
+    standingLocked: 'Standing filters are reserved for Premium members.',
+    scoreLocked: 'Galantry score filtering is a Premium option.',
+    title: 'Search filters',
+    see: 'I want to see',
+    men: 'Men',
+    women: 'Women',
+    all: 'All',
+    age: 'Age',
+    to: 'to',
+    standing: 'Standing criteria',
+    premiumOnly: 'Premium members only',
+    premiumOnlySub: 'Badge required',
+    verifiedOnly: 'Certified profiles only',
+    verifiedOnlySub: 'The elite verified by Galant',
+    minScore: 'Minimum score',
+    apply: 'Apply filters',
+    close: 'Close'
+  }
+};
+
 const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is_premium }) => {
   const navigate = useNavigate();
+  const { language } = useAuth();
+  const c = copy[language] || copy.fr;
 
   if (!isOpen) return null;
 
   const handlePremiumFilter = (key: string) => {
     if (!is_premium) {
-      showAlert('Privilège Premium 💎', 'Les filtres de standing sont réservés aux membres Premium.');
+      showAlert(c.premiumTitle, c.standingLocked);
       onClose();
       navigate('/premium');
       return;
@@ -28,7 +74,7 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is
 
   const handleScoreFilter = (score: number) => {
     if (score > 0 && !is_premium) {
-      showAlert('Privilège Premium 💎', 'Le filtrage par score de galanterie est une option Premium.');
+      showAlert(c.premiumTitle, c.scoreLocked);
       onClose();
       navigate('/premium');
       return;
@@ -40,21 +86,20 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is
     <div className="fixed inset-0 z-[120] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="p-8 border-b border-slate-50 flex justify-between items-center">
-          <h3 className="text-2xl font-black italic">Filtres de recherche</h3>
-          <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-full text-slate-300">
+          <h3 className="text-2xl font-black italic">{c.title}</h3>
+          <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-full text-slate-300" aria-label={c.close}>
             <X size={24} />
           </button>
         </div>
 
         <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto no-scrollbar">
-          {/* Genre */}
           <div className="space-y-4">
-            <p className="text-xs font-black uppercase text-slate-400 tracking-widest">Je veux voir</p>
+            <p className="text-xs font-black uppercase text-slate-400 tracking-widest">{c.see}</p>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { id: 'MALE', label: 'Hommes' },
-                { id: 'FEMALE', label: 'Femmes' },
-                { id: 'ALL', label: 'Tous' }
+                { id: 'MALE', label: c.men },
+                { id: 'FEMALE', label: c.women },
+                { id: 'ALL', label: c.all }
               ].map(g => (
                 <button
                   key={g.id}
@@ -69,29 +114,27 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is
             </div>
           </div>
 
-          {/* Âge */}
           <div className="space-y-4">
-            <p className="text-xs font-black uppercase text-slate-400 tracking-widest">Âge : {filters.minAge} - {filters.maxAge} ans</p>
+            <p className="text-xs font-black uppercase text-slate-400 tracking-widest">{c.age} : {filters.minAge} - {filters.maxAge}</p>
             <div className="flex items-center gap-4">
-               <input
-                 type="number"
-                 value={filters.minAge}
-                 onChange={e => setFilters({...filters, minAge: parseInt(e.target.value)})}
-                 className="w-full bg-slate-50 border-none p-4 rounded-2xl text-center font-bold"
-               />
-               <span className="font-black text-slate-200">à</span>
-               <input
-                 type="number"
-                 value={filters.maxAge}
-                 onChange={e => setFilters({...filters, maxAge: parseInt(e.target.value)})}
-                 className="w-full bg-slate-50 border-none p-4 rounded-2xl text-center font-bold"
-               />
+              <input
+                type="number"
+                value={filters.minAge}
+                onChange={e => setFilters({ ...filters, minAge: parseInt(e.target.value) })}
+                className="w-full bg-slate-50 border-none p-4 rounded-2xl text-center font-bold"
+              />
+              <span className="font-black text-slate-200">{c.to}</span>
+              <input
+                type="number"
+                value={filters.maxAge}
+                onChange={e => setFilters({ ...filters, maxAge: parseInt(e.target.value) })}
+                className="w-full bg-slate-50 border-none p-4 rounded-2xl text-center font-bold"
+              />
             </div>
           </div>
 
-          {/* Standing Premium */}
           <div className="space-y-4 pt-4 border-t border-slate-50">
-            <p className="text-xs font-black uppercase text-primary tracking-widest">Critères de standing 💎</p>
+            <p className="text-xs font-black uppercase text-primary tracking-widest">{c.standing}</p>
 
             <button
               onClick={() => handlePremiumFilter('premiumOnly')}
@@ -101,11 +144,11 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is
             >
               <div className="flex items-center gap-4">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${filters.premiumOnly ? 'bg-primary text-white' : 'bg-slate-50 text-slate-400'}`}>
-                   <Gem size={20} />
+                  <Gem size={20} />
                 </div>
                 <div>
-                  <p className="font-black text-sm text-slate-900 leading-none">Membres Premium uniquement</p>
-                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">Badge 💎 obligatoire</p>
+                  <p className="font-black text-sm text-slate-900 leading-none">{c.premiumOnly}</p>
+                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">{c.premiumOnlySub}</p>
                 </div>
               </div>
               <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center ${filters.premiumOnly ? 'bg-primary border-primary' : 'border-slate-200'}`}>
@@ -121,11 +164,11 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is
             >
               <div className="flex items-center gap-4">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${filters.verifiedOnly ? 'bg-blue-500 text-white' : 'bg-slate-50 text-slate-400'}`}>
-                   <ShieldCheck size={20} />
+                  <ShieldCheck size={20} />
                 </div>
                 <div>
-                  <p className="font-black text-sm text-slate-900 leading-none">Profils Certifiés uniquement</p>
-                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">L'élite vérifiée par Galant</p>
+                  <p className="font-black text-sm text-slate-900 leading-none">{c.verifiedOnly}</p>
+                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">{c.verifiedOnlySub}</p>
                 </div>
               </div>
               <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center ${filters.verifiedOnly ? 'bg-blue-500 border-blue-500' : 'border-slate-200'}`}>
@@ -134,9 +177,8 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is
             </button>
           </div>
 
-          {/* Score */}
           <div className="space-y-4">
-            <p className="text-xs font-black uppercase text-slate-400 tracking-widest">Score minimum : {filters.minScore || 'Tous'}</p>
+            <p className="text-xs font-black uppercase text-slate-400 tracking-widest">{c.minScore} : {filters.minScore || c.all}</p>
             <div className="grid grid-cols-4 gap-2">
               {[0, 4, 4.5, 4.8].map(s => (
                 <button
@@ -146,7 +188,7 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is
                     filters.minScore === s ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-500'
                   }`}
                 >
-                  {s === 0 ? 'TOUS' : `${s}+`}
+                  {s === 0 ? c.all.toUpperCase() : `${s}+`}
                 </button>
               ))}
             </div>
@@ -158,7 +200,7 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is
             onClick={onClose}
             className="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-slate-200 hover:bg-black transition-all active:scale-95"
           >
-            Appliquer les filtres
+            {c.apply}
           </button>
         </div>
       </div>

@@ -12,13 +12,54 @@ import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 const DiscoverPage: React.FC = () => {
-  const { user, profile: myProfile, loading: authLoading, t } = useAuth();
+  const { user, profile: myProfile, loading: authLoading, t, language } = useAuth();
   const { suggestions, loading, fetchSuggestions, handleSwipe } = useMatchmaking();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
-  const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean; type: 'SUPER_LIKE' | 'DIRECT_MESSAGE'; userName: string; targetId: string } | null>(null);
+  const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean; type: 'SUPER_LIKE' | 'DIRECT_MESSAGE' | 'DISCOVER_GRID_UNLOCK'; userName: string; targetId: string } | null>(null);
   const navigate = useNavigate();
+  const labels = language === 'en'
+    ? {
+        galleryAccess: 'Gallery Access',
+        loading: 'Charm is working...',
+        welcome: 'Welcome',
+        welcomeBody: 'Let beautiful stories bloom. Offer a rose and start an exceptional encounter.',
+        createAccount: 'Create an account',
+        login: 'Already a member? Log in',
+        grid: 'Grid View',
+        filters: 'Filters',
+        elite: 'Elite',
+        distance: (km: number) => `${km.toFixed(1)} km away`,
+        charmScore: 'Charm Score',
+        affinities: 'Affinities',
+        common: 'common',
+        status: 'Status',
+        classic: 'Classic',
+        noMore: 'End of discovery',
+        noMoreBody: 'Come back later for new sparks.',
+        reload: 'Reload charm'
+      }
+    : {
+        galleryAccess: 'Acces Galerie',
+        loading: 'Le charme opere...',
+        welcome: 'Bienvenue',
+        welcomeBody: "Faites eclore de belles histoires. Offrez une rose, commencez une rencontre d'exception.",
+        createAccount: 'Creer un compte',
+        login: 'Deja membre ? Se connecter',
+        grid: 'Vue Grille',
+        filters: 'Filtres',
+        elite: 'Elite',
+        distance: (km: number) => `A ${km.toFixed(1)} km`,
+        charmScore: 'Score de Charme',
+        affinities: 'Affinites',
+        common: 'communs',
+        status: 'Status',
+        classic: 'Classique',
+        noMore: 'Fin de la decouverte',
+        noMoreBody: 'Revenez plus tard pour de nouvelles etincelles.',
+        reload: 'Relancer le charme'
+      };
 
   // Motion Values for Swipe
   const x = useMotionValue(0);
@@ -184,7 +225,7 @@ const DiscoverPage: React.FC = () => {
     if (hasAccess) {
       navigate('/discover-grid');
     } else {
-      setPurchaseModal({ isOpen: true, type: 'DISCOVER_GRID_UNLOCK', userName: 'Accès Galerie', targetId: 'grid_unlock' });
+      setPurchaseModal({ isOpen: true, type: 'DISCOVER_GRID_UNLOCK', userName: labels.galleryAccess, targetId: 'grid_unlock' });
     }
   };
 
@@ -198,7 +239,7 @@ const DiscoverPage: React.FC = () => {
           </div>
         </div>
         <p className="mt-8 text-slate-400 font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">
-          Le charme opère...
+          {labels.loading}
         </p>
       </div>
     );
@@ -220,13 +261,13 @@ const DiscoverPage: React.FC = () => {
 
           <div className="space-y-4">
             <h2 className="text-5xl font-black text-white italic tracking-tighter">
-              Bienvenue
+              {labels.welcome}
             </h2>
             <div className="h-1.5 w-14 bg-primary mx-auto rounded-full"></div>
           </div>
 
           <p className="text-white/90 font-medium leading-relaxed text-sm px-4">
-            Faites éclore de belles histoires. Offrez une rose, commencez une rencontre d'exception.
+            {labels.welcomeBody}
           </p>
 
           <div className="space-y-6 pt-2">
@@ -234,14 +275,14 @@ const DiscoverPage: React.FC = () => {
               to="/auth"
               className="block w-full bg-[#ef4444] text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.1em] hover:scale-[1.03] active:scale-95 transition-all shadow-xl shadow-red-500/40"
             >
-              CRÉER UN COMPTE
+              {labels.createAccount}
             </Link>
 
             <Link
               to="/auth"
               className="block text-white/50 hover:text-white font-black text-[10px] uppercase tracking-widest transition-colors"
             >
-              DÉJÀ MEMBRE ? SE CONNECTER
+              {labels.login}
             </Link>
           </div>
         </div>
@@ -281,8 +322,8 @@ const DiscoverPage: React.FC = () => {
           <button
             onClick={handleGridTransition}
             className={`${headerActionBaseClass} ${headerActionIdleClass}`}
-            title="Vue Grille"
-            aria-label="Vue Grille"
+            title={labels.grid}
+            aria-label={labels.grid}
           >
             <LayoutGrid size={18} />
           </button>
@@ -304,8 +345,8 @@ const DiscoverPage: React.FC = () => {
           <button
             onClick={() => setIsFilterOpen(true)}
             className={`${headerActionBaseClass} group ${isFilterActive ? headerActionActiveClass : headerActionIdleClass}`}
-            title="Filtres"
-            aria-label="Filtres"
+            title={labels.filters}
+            aria-label={labels.filters}
           >
             <SlidersHorizontal size={18} className={isFilterActive ? 'animate-pulse' : 'group-hover:rotate-12 transition-transform'} />
           </button>
@@ -371,7 +412,7 @@ const DiscoverPage: React.FC = () => {
                   {currentProfile.galanterie_score >= 4.5 && (
                     <div className="bg-rose-500/30 backdrop-blur-md px-3 py-1 rounded-full border border-rose-500/20 flex items-center gap-1">
                       <Gem size={12} className="text-rose-400" />
-                      <span className="text-[10px] font-bold uppercase tracking-prestige text-rose-100">Élite</span>
+                      <span className="text-[10px] font-bold uppercase tracking-prestige text-rose-100">{labels.elite}</span>
                     </div>
                   )}
                 </div>
@@ -383,14 +424,14 @@ const DiscoverPage: React.FC = () => {
                   </div>
                   {currentProfile.distance_km && (
                     <span className="text-[10px] bg-white/5 px-3 py-2 rounded-xl border border-white/5 uppercase tracking-widest">
-                      À {currentProfile.distance_km.toFixed(1)} km
+                      {labels.distance(currentProfile.distance_km)}
                     </span>
                   )}
                 </div>
 
                 <div className="flex gap-2">
                   <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-2xl p-3 flex-1 min-w-0">
-                    <p className="text-[7px] font-black text-white/40 uppercase tracking-[0.2em] mb-1 truncate">Score de Charme</p>
+                    <p className="text-[7px] font-black text-white/40 uppercase tracking-[0.2em] mb-1 truncate">{labels.charmScore}</p>
                     <div className="flex items-baseline gap-1">
                       <span className="text-xl font-black text-white">{Math.round(currentProfile.score || 50)}</span>
                       <span className="text-[8px] font-bold text-primary">pts</span>
@@ -398,17 +439,17 @@ const DiscoverPage: React.FC = () => {
                   </div>
                   {(currentProfile.common_interests_count || 0) > 0 ? (
                     <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-2xl p-3 flex-1 min-w-0">
-                      <p className="text-[7px] font-black text-white/40 uppercase tracking-[0.2em] mb-1 truncate">Affinités</p>
+                      <p className="text-[7px] font-black text-white/40 uppercase tracking-[0.2em] mb-1 truncate">{labels.affinities}</p>
                       <p className="text-[10px] font-black text-white truncate uppercase tracking-widest flex items-center gap-1.5">
                         <Sparkles size={10} className="text-primary" />
-                        {currentProfile.common_interests_count} communs
+                        {currentProfile.common_interests_count} {labels.common}
                       </p>
                     </div>
                   ) : (
                     <div className="bg-white/10 backdrop-blur-lg border border-white/10 rounded-2xl p-3 flex-1 min-w-0">
-                      <p className="text-[7px] font-black text-white/40 uppercase tracking-[0.2em] mb-1 truncate">Status</p>
+                      <p className="text-[7px] font-black text-white/40 uppercase tracking-[0.2em] mb-1 truncate">{labels.status}</p>
                       <p className="text-[10px] font-black text-white truncate uppercase tracking-widest">
-                        {currentProfile.is_premium ? t('premium_member') : 'Classique'}
+                        {currentProfile.is_premium ? t('premium_member') : labels.classic}
                       </p>
                     </div>
                   )}
@@ -454,14 +495,14 @@ const DiscoverPage: React.FC = () => {
             <RefreshCw size={48} />
           </div>
           <div>
-            <p className="text-2xl font-black text-slate-900 dark:text-white mb-2 transition-colors">{t('no_more_profiles') || "Fin de la découverte"}</p>
-            <p className="text-slate-400 dark:text-slate-500 font-medium transition-colors">Revenez plus tard pour de nouvelles étincelles.</p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white mb-2 transition-colors">{t('no_more_profiles') || labels.noMore}</p>
+            <p className="text-slate-400 dark:text-slate-500 font-medium transition-colors">{labels.noMoreBody}</p>
           </div>
           <button
             onClick={() => loadSuggestions()}
             className="w-full bg-primary text-white font-black text-xs uppercase tracking-[0.2em] py-5 rounded-2xl shadow-xl shadow-red-500/20 hover:scale-105 transition-all active:scale-95"
           >
-            {t('reload') || "Relancer le charme"}
+            {t('reload') || labels.reload}
           </button>
         </div>
       )}

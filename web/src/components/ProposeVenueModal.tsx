@@ -11,6 +11,31 @@ interface Props {
   venue: any;
 }
 
+const copy = {
+  fr: {
+    title: 'Proposer ce lieu',
+    search: 'Rechercher un match...',
+    empty: 'Aucun match trouve.',
+    sentTitle: 'Proposition envoyee',
+    sentBody: (name: string) => `Votre suggestion a ete envoyee a ${name}.`,
+    message: (venueName: string) => `Je nous propose un rendez-vous a ${venueName} !`,
+    error: 'Erreur',
+    footer: 'Votre match pourra ouvrir la fiche et donner son avis dans le chat.',
+    close: 'Fermer'
+  },
+  en: {
+    title: 'Suggest this place',
+    search: 'Search a match...',
+    empty: 'No match found.',
+    sentTitle: 'Suggestion sent',
+    sentBody: (name: string) => `Your suggestion was sent to ${name}.`,
+    message: (venueName: string) => `I suggest we meet at ${venueName}!`,
+    error: 'Error',
+    footer: 'Your match can open the venue card and share an opinion in chat.',
+    close: 'Close'
+  }
+};
+
 const buildVenueSuggestionPayload = (venue: any) => ({
   id: venue.id,
   name: venue.name,
@@ -27,9 +52,10 @@ const buildVenueSuggestionPayload = (venue: any) => ({
 });
 
 const ProposeVenueModal: React.FC<Props> = ({ isOpen, onClose, venue }) => {
-  const { user, matches, users } = useAuth();
+  const { user, matches, users, language } = useAuth();
   const [search, setSearch] = useState('');
   const [sendingId, setSendingId] = useState<string | null>(null);
+  const c = copy[language] || copy.fr;
 
   const activeMatches = useMemo(() => {
     if (!user) return [];
@@ -55,7 +81,7 @@ const ProposeVenueModal: React.FC<Props> = ({ isOpen, onClose, venue }) => {
         body: JSON.stringify({
           matchId,
           recipientId: otherUserId,
-          content: `Je nous propose un rendez-vous à ${venue.name} !`,
+          content: c.message(venue.name),
           messageType: 'VENUE_SUGGESTION',
           metadata: {
             venue: buildVenueSuggestionPayload(venue)
@@ -63,10 +89,10 @@ const ProposeVenueModal: React.FC<Props> = ({ isOpen, onClose, venue }) => {
         })
       });
 
-      showAlert('Proposition envoyée', `Votre suggestion a été envoyée à ${otherUserName}.`);
+      showAlert(c.sentTitle, c.sentBody(otherUserName));
       onClose();
     } catch (error: any) {
-      showAlert('Erreur', error.message);
+      showAlert(c.error, error.message);
     } finally {
       setSendingId(null);
     }
@@ -77,8 +103,8 @@ const ProposeVenueModal: React.FC<Props> = ({ isOpen, onClose, venue }) => {
       <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh] border border-slate-100 dark:border-white/10">
         <div className="p-8 border-b border-slate-50 dark:border-white/10 space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-xl font-serif italic text-slate-900 dark:text-white">Proposer ce lieu</h3>
-            <button onClick={onClose} className="p-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-full text-slate-300">
+            <h3 className="text-xl font-serif italic text-slate-900 dark:text-white">{c.title}</h3>
+            <button onClick={onClose} className="p-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-full text-slate-300" aria-label={c.close}>
               <X size={20} />
             </button>
           </div>
@@ -98,7 +124,7 @@ const ProposeVenueModal: React.FC<Props> = ({ isOpen, onClose, venue }) => {
               type="text"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Rechercher un match..."
+              placeholder={c.search}
               className="w-full bg-slate-50 dark:bg-white/5 border-none px-10 py-3 rounded-xl outline-none text-sm font-medium text-slate-900 dark:text-white"
             />
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
@@ -108,7 +134,7 @@ const ProposeVenueModal: React.FC<Props> = ({ isOpen, onClose, venue }) => {
         <div className="flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar">
           {activeMatches.length === 0 ? (
             <div className="py-10 text-center text-slate-300 font-bold italic">
-              Aucun match trouvé.
+              {c.empty}
             </div>
           ) : (
             activeMatches.map(({ match, user: otherUser }) => (
@@ -134,7 +160,7 @@ const ProposeVenueModal: React.FC<Props> = ({ isOpen, onClose, venue }) => {
 
         <div className="p-6 bg-slate-50/50 dark:bg-white/5 border-t border-slate-50 dark:border-white/10">
           <p className="text-[10px] text-center text-slate-400 font-bold uppercase tracking-widest">
-            Votre match pourra ouvrir la fiche et donner son avis dans le chat.
+            {c.footer}
           </p>
         </div>
       </div>

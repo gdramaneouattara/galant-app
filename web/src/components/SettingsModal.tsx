@@ -20,6 +20,29 @@ const SettingsModal: React.FC<Props> = ({
   deletingAccount = false,
 }) => {
   const { language, setLanguage, themePreference, setThemePreference, t } = useAuth();
+  const labels = language === 'en'
+    ? {
+        settings: 'Settings',
+        appearance: 'Appearance',
+        light: 'Light',
+        dark: 'Dark',
+        system: 'System',
+        privacy: 'Privacy & data',
+        preparing: 'Preparing...',
+        deleting: 'Deleting...',
+        close: 'Close'
+      }
+    : {
+        settings: 'Parametres',
+        appearance: 'Apparence',
+        light: 'Clair',
+        dark: 'Sombre',
+        system: 'Systeme',
+        privacy: 'Confidentialite & donnees',
+        preparing: 'Preparation...',
+        deleting: 'Suppression...',
+        close: 'Fermer'
+      };
 
   if (!isOpen) return null;
 
@@ -27,21 +50,20 @@ const SettingsModal: React.FC<Props> = ({
     <div className="fixed inset-0 z-[120] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
       <div className="bg-white dark:bg-slate-900 w-full max-w-md max-h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-transparent dark:border-white/10 transition-colors flex flex-col">
         <div className="p-8 border-b border-slate-50 dark:border-white/5 flex justify-between items-center">
-          <h3 className="text-2xl font-black italic text-slate-900 dark:text-white">Paramètres</h3>
-          <button onClick={onClose} className="p-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-full text-slate-300">
+          <h3 className="text-2xl font-black italic text-slate-900 dark:text-white">{labels.settings}</h3>
+          <button onClick={onClose} className="p-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-full text-slate-300" aria-label={labels.close}>
             <X size={24} />
           </button>
         </div>
 
         <div className="p-8 space-y-8 overflow-y-auto">
-          {/* Apparence */}
           <div className="space-y-4">
-            <p className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">Apparence</p>
+            <p className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">{labels.appearance}</p>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { id: 'light', label: 'Clair', icon: Sun },
-                { id: 'dark', label: 'Sombre', icon: Moon },
-                { id: 'system', label: 'Système', icon: Monitor },
+                { id: 'light', label: labels.light, icon: Sun },
+                { id: 'dark', label: labels.dark, icon: Moon },
+                { id: 'system', label: labels.system, icon: Monitor },
               ].map(opt => (
                 <button
                   key={opt.id}
@@ -59,12 +81,11 @@ const SettingsModal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Langue */}
           <div className="space-y-4">
             <p className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">{t('language')}</p>
             <div className="grid grid-cols-2 gap-4">
               {[
-                { id: 'fr', label: 'Français' },
+                { id: 'fr', label: 'Francais' },
                 { id: 'en', label: 'English' }
               ].map(lang => (
                 <button
@@ -88,9 +109,8 @@ const SettingsModal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Confidentialite & donnees */}
           <div className="space-y-4">
-            <p className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">Confidentialite & donnees</p>
+            <p className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">{labels.privacy}</p>
             <div className="space-y-3">
               <button
                 onClick={onExportData}
@@ -101,7 +121,7 @@ const SettingsModal: React.FC<Props> = ({
                   <FileText size={20} />
                 </div>
                 <span className="flex-1 font-black text-sm uppercase tracking-tight text-slate-700 dark:text-slate-300">
-                  {exportingData ? 'Preparation...' : t('download_my_data')}
+                  {exportingData ? labels.preparing : t('download_my_data')}
                 </span>
               </button>
 
@@ -114,7 +134,7 @@ const SettingsModal: React.FC<Props> = ({
                   <Trash2 size={20} />
                 </div>
                 <span className="flex-1 font-black text-sm uppercase tracking-tight text-red-600">
-                  {deletingAccount ? 'Suppression...' : t('delete_my_account')}
+                  {deletingAccount ? labels.deleting : t('delete_my_account')}
                 </span>
               </button>
             </div>
@@ -126,7 +146,7 @@ const SettingsModal: React.FC<Props> = ({
             onClick={onClose}
             className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-slate-200 dark:shadow-none hover:bg-black dark:hover:bg-slate-200 transition-all active:scale-95"
           >
-            Fermer
+            {labels.close}
           </button>
         </div>
       </div>

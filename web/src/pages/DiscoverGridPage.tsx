@@ -35,11 +35,40 @@ type DiscoverSuggestion = {
 };
 
 const DiscoverGridPage: React.FC = () => {
-  const { user, profile: myProfile, loading: authLoading, t } = useAuth();
+  const { user, profile: myProfile, loading: authLoading, t, language } = useAuth();
   const navigate = useNavigate();
   const [profiles, setProfiles] = useState<DiscoverSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const labels = language === 'en'
+    ? {
+        quotaTitle: 'Quota used',
+        quotaBody: 'Your Gallery exploration quota is finished.',
+        loading: 'Elegance is getting ready...',
+        title: 'The Gallery',
+        subtitle: 'Browse profiles efficiently',
+        remaining: (count: number) => `${count} profiles remaining`,
+        swipeView: 'Swipe View',
+        search: 'Search a member, a city...',
+        empty: 'No profile matches your search',
+        reset: 'Reset search',
+        city: 'City',
+        distance: (km: number) => `${km.toFixed(1)} km away`
+      }
+    : {
+        quotaTitle: 'Quota epuise',
+        quotaBody: "Votre quota d'exploration Galerie est termine.",
+        loading: "L'elegance se prepare...",
+        title: 'La Galerie',
+        subtitle: 'Parcourez les profils avec efficacite',
+        remaining: (count: number) => `${count} profils restants`,
+        swipeView: 'Vue Swipe',
+        search: 'Rechercher un membre, une ville...',
+        empty: 'Aucun profil ne correspond a votre recherche',
+        reset: 'Reinitialiser la recherche',
+        city: 'Ville',
+        distance: (km: number) => `A ${km.toFixed(1)} km`
+      };
 
   useEffect(() => {
     if (myProfile && !myProfile.is_premium && (myProfile.grid_consultations_remaining || 0) <= 0) {
@@ -61,7 +90,7 @@ const DiscoverGridPage: React.FC = () => {
     } catch (e: any) {
       console.error('Error fetching grid suggestions', e);
       if (e.message?.includes('quota_exceeded')) {
-        showAlert('Quota épuisé', "Votre quota d'exploration Galerie est terminé.");
+        showAlert(labels.quotaTitle, labels.quotaBody);
         navigate('/');
       }
       setProfiles([]);
@@ -83,7 +112,7 @@ const DiscoverGridPage: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center py-40">
         <RefreshCw className="animate-spin text-primary" size={48} />
-        <p className="mt-8 text-slate-400 font-serif italic tracking-tighter text-xl">L'élégance se prépare...</p>
+        <p className="mt-8 text-slate-400 font-serif italic tracking-tighter text-xl">{labels.loading}</p>
       </div>
     );
   }
@@ -94,17 +123,17 @@ const DiscoverGridPage: React.FC = () => {
       <div className="flex justify-between items-start pt-2">
         <div>
           <h2 className="text-4xl font-serif italic tracking-tighter text-slate-900 dark:text-white leading-none">
-            La Galerie
+            {labels.title}
           </h2>
           <div className="flex items-center gap-3 mt-2">
             <p className="text-slate-500 dark:text-slate-400 font-medium text-[10px] uppercase tracking-prestige">
-              Parcourez les profils avec efficacité
+              {labels.subtitle}
             </p>
             {!myProfile?.is_premium && myProfile?.grid_consultations_remaining !== undefined && (
               <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2">
                 <Sparkles size={10} className="text-amber-500" />
                 <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">
-                  {Math.max(0, myProfile.grid_consultations_remaining)} profils restants
+                  {labels.remaining(Math.max(0, myProfile.grid_consultations_remaining))}
                 </span>
               </div>
             )}
@@ -115,7 +144,7 @@ const DiscoverGridPage: React.FC = () => {
           <button
             onClick={() => navigate('/')}
             className="w-12 h-12 rounded-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 shadow-xl flex items-center justify-center text-slate-400 hover:text-primary transition-all active:scale-95"
-            title="Vue Swipe"
+            title={labels.swipeView}
           >
             <LayoutList size={20} />
           </button>
@@ -129,7 +158,7 @@ const DiscoverGridPage: React.FC = () => {
         </div>
         <input
           type="text"
-          placeholder="Rechercher un membre, une ville..."
+          placeholder={labels.search}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 rounded-[2rem] py-5 pl-14 pr-6 font-medium text-sm shadow-xl shadow-slate-200/50 dark:shadow-none focus:outline-none focus:border-primary/30 transition-all dark:text-white"
@@ -142,12 +171,12 @@ const DiscoverGridPage: React.FC = () => {
           <div className="w-20 h-20 bg-slate-50 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto text-slate-200 dark:text-slate-700">
             <Search size={40} />
           </div>
-          <p className="text-xl font-serif italic text-slate-900 dark:text-white">Aucun profil ne correspond à votre recherche</p>
+          <p className="text-xl font-serif italic text-slate-900 dark:text-white">{labels.empty}</p>
           <button
             onClick={() => { setSearchQuery(''); fetchSuggestions(''); }}
             className="text-primary font-bold uppercase tracking-prestige text-[10px]"
           >
-            Réinitialiser la recherche
+            {labels.reset}
           </button>
         </div>
       ) : (
@@ -186,11 +215,11 @@ const DiscoverGridPage: React.FC = () => {
                 </p>
                 <div className="flex items-center gap-1 mt-1 opacity-80">
                   <MapPin size={10} className="text-primary" />
-                  <span className="text-[9px] font-bold uppercase tracking-widest truncate">{profile.city || 'Ville'}</span>
+                  <span className="text-[9px] font-bold uppercase tracking-widest truncate">{profile.city || labels.city}</span>
                 </div>
                 {profile.distance_km !== null && (
                   <p className="text-[8px] font-black text-amber-400 uppercase tracking-widest mt-1">
-                    À {profile.distance_km.toFixed(1)} km
+                    {labels.distance(profile.distance_km)}
                   </p>
                 )}
               </div>

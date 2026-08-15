@@ -14,14 +14,14 @@ import { apiRequest } from '@shared/lib/api';
 import { useNavigate } from 'react-router-dom';
 import PassportModal from '../components/PassportModal';
 import SettingsModal from '../components/SettingsModal';
-import GoalModal, { RELATIONSHIP_GOALS } from '../components/GoalModal';
+import GoalModal, { getRelationshipGoalLabel } from '../components/GoalModal';
 import { hasAdminProfileAccess } from '../lib/adminAccess';
 import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 import { uploadImageVariantsWeb } from '../lib/imageUploadVariants';
 
 const ProfilePage: React.FC = () => {
-  const { user, profile, logout, t } = useAuth();
+  const { user, profile, logout, t, language } = useAuth();
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(profile?.name || '');
@@ -38,6 +38,43 @@ const ProfilePage: React.FC = () => {
   const [hasAdminAccess, setHasAdminAccess] = useState(false);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const maxProfilePhotos = profile?.is_premium || profile?.is_vip ? 6 : 3;
+  const labels = language === 'en'
+    ? {
+        preparing: 'Preparing your elegance...',
+        profileNotFound: 'Profile not found',
+        login: 'Log in',
+        addPhoto: 'Add a photo',
+        cityMissing: 'City not set',
+        received: 'Received',
+        adminSubtitle: 'Open the admin dashboard',
+        storeSubtitle: 'Subscriptions, Roses & Boosts',
+        inviteTitle: 'Invite a Friend',
+        inviteSubtitle: 'Earn Roses to use for free',
+        goal: 'I am looking for...',
+        travelMode: 'Travel Mode',
+        changeCity: 'Change city',
+        certification: 'Certification',
+        bioPlaceholder: 'Describe your elegance...',
+        emptyBio: 'No bio yet. Tap the edit icon to introduce yourself.'
+      }
+    : {
+        preparing: 'Preparation de votre elegance...',
+        profileNotFound: 'Profil non trouve',
+        login: 'Se connecter',
+        addPhoto: 'Ajouter une photo',
+        cityMissing: 'Ville non renseignee',
+        received: 'Recues',
+        adminSubtitle: 'Ouvrir le dashboard administrateur',
+        storeSubtitle: 'Abonnements, Roses & Boosts',
+        inviteTitle: 'Inviter un Ami',
+        inviteSubtitle: 'Gagnez des Roses a consommer gratuitement',
+        goal: 'Je cherche...',
+        travelMode: 'Mode Voyage',
+        changeCity: 'Changez de ville',
+        certification: 'Certification',
+        bioPlaceholder: 'Decrivez votre elegance...',
+        emptyBio: "Aucune bio redigee pour le moment. Cliquez sur l'icone editer pour vous presenter."
+      };
 
   useEffect(() => {
     let cancelled = false;
@@ -91,7 +128,7 @@ const ProfilePage: React.FC = () => {
     return (
       <div className="max-w-2xl mx-auto py-20 text-center">
         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Préparation de votre élégance...</p>
+        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">{labels.preparing}</p>
       </div>
     );
   }
@@ -103,13 +140,13 @@ const ProfilePage: React.FC = () => {
           <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300 dark:text-slate-700">
             <User size={40} />
           </div>
-          <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Profil non trouvé</h2>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">{labels.profileNotFound}</h2>
           <p className="text-slate-500 dark:text-slate-400 font-medium mb-8">{t('login_required_profile')}</p>
           <button
             onClick={() => navigate('/auth')}
             className="w-full bg-primary text-white py-4 rounded-2xl font-black shadow-xl shadow-primary/20 hover:scale-105 transition-transform"
           >
-            Se connecter
+            {labels.login}
           </button>
         </div>
       </div>
@@ -275,7 +312,7 @@ const ProfilePage: React.FC = () => {
       <div className="relative mb-12 transition-colors">
         <div className="h-64 rounded-[3rem] overflow-hidden shadow-2xl border-4 border-white dark:border-slate-800 transition-colors">
           <OptimizedImage
-            src={optimizedPhotoUrl(profile.photos?.[0], profile.photo_variants, 'medium') || 'https://placehold.co/1200x400?text=Ajouter+une+photo'}
+            src={optimizedPhotoUrl(profile.photos?.[0], profile.photo_variants, 'medium') || `https://placehold.co/1200x400?text=${encodeURIComponent(labels.addPhoto)}`}
             className="w-full h-full object-cover"
             alt=""
             eager
@@ -318,7 +355,7 @@ const ProfilePage: React.FC = () => {
             )}
             <div className="flex items-center gap-2 text-white/90 font-medium text-[10px] md:text-xs uppercase tracking-prestige mt-1">
               <MapPin size={12} className="text-primary" />
-              <span>{(profile.city || 'Ville non renseignée').toUpperCase()}</span>
+              <span>{(profile.city || labels.cityMissing).toUpperCase()}</span>
             </div>
           </div>
 
@@ -333,7 +370,7 @@ const ProfilePage: React.FC = () => {
             </div>
             <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl shadow-xl flex flex-col items-center min-w-[75px] border border-white/50 dark:border-white/10 transition-all">
               <span className="text-lg font-black text-amber-600 leading-none">{profile.roses_count || 0}</span>
-              <span className="text-[7px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige mt-1">Recues</span>
+              <span className="text-[7px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige mt-1">{labels.received}</span>
             </div>
           </div>
         </div>
@@ -349,7 +386,7 @@ const ProfilePage: React.FC = () => {
           </div>
           <div className="flex-1">
             <p className="text-sm font-black uppercase tracking-tight">Admin</p>
-            <p className="text-[10px] font-bold text-white/70">Ouvrir le dashboard administrateur</p>
+            <p className="text-[10px] font-bold text-white/70">{labels.adminSubtitle}</p>
           </div>
           <ChevronRight size={16} className="text-white/60" />
         </button>
@@ -366,7 +403,7 @@ const ProfilePage: React.FC = () => {
         </div>
         <div className="flex-1">
           <h3 className="text-xl font-serif italic tracking-tighter uppercase leading-none mb-1">Store Galant</h3>
-          <p className="text-[10px] font-black uppercase tracking-prestige text-white/80">Abonnements, Roses & Boosts</p>
+          <p className="text-[10px] font-black uppercase tracking-prestige text-white/80">{labels.storeSubtitle}</p>
         </div>
         <div className="bg-white/20 p-2 rounded-full backdrop-blur-sm group-hover:translate-x-1 transition-transform">
           <ChevronRight size={20} />
@@ -408,11 +445,11 @@ const ProfilePage: React.FC = () => {
                 onChange={(e) => setBio(e.target.value)}
                 rows={5}
                 className="w-full p-6 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none outline-none focus:ring-2 focus:ring-primary/10 font-medium text-slate-700 dark:text-slate-200 leading-relaxed text-lg transition-colors"
-                placeholder="Décrivez votre élégance..."
+                placeholder={labels.bioPlaceholder}
               />
             ) : (
               <p className="text-slate-600 dark:text-slate-400 font-medium leading-relaxed text-lg italic transition-colors">
-                {profile.bio || "Aucune bio rédigée pour le moment. Cliquez sur l'icône éditer pour vous présenter."}
+                {profile.bio || labels.emptyBio}
               </p>
             )}
           </div>
@@ -429,8 +466,8 @@ const ProfilePage: React.FC = () => {
                 <Share2 size={32} />
               </div>
               <div className="text-left">
-                <p className="text-lg font-serif italic uppercase tracking-tighter leading-none mb-1">Inviter un Ami 🌹</p>
-                <p className="text-sm font-bold text-slate-400 dark:text-slate-500">Gagnez des Roses a consommer gratuitement</p>
+                <p className="text-lg font-serif italic uppercase tracking-tighter leading-none mb-1">{labels.inviteTitle} 🌹</p>
+                <p className="text-sm font-bold text-slate-400 dark:text-slate-500">{labels.inviteSubtitle}</p>
               </div>
             </div>
             <div className="bg-white/10 p-3 rounded-full group-hover:bg-primary transition-colors">
@@ -451,9 +488,9 @@ const ProfilePage: React.FC = () => {
                 <Heart size={24} />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">Je cherche...</p>
+                <p className="text-sm font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">{labels.goal}</p>
                 <p className="text-[10px] font-bold text-slate-400">
-                  {RELATIONSHIP_GOALS.find(g => g.id === profile.relationship_goal)?.label || 'Définir mon objectif'}
+                  {getRelationshipGoalLabel(profile.relationship_goal, language)}
                 </p>
               </div>
               <ChevronRight size={16} className="text-slate-200 dark:text-slate-700" />
@@ -468,9 +505,9 @@ const ProfilePage: React.FC = () => {
                 <Plane size={24} />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">Mode Voyage</p>
+                <p className="text-sm font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">{labels.travelMode}</p>
                 <p className="text-[10px] font-bold text-slate-400">
-                  {profile.passport_city ? profile.passport_city : 'Changez de ville'}
+                  {profile.passport_city ? profile.passport_city : labels.changeCity}
                 </p>
               </div>
               <ChevronRight size={16} className="text-slate-200 dark:text-slate-700" />
@@ -486,7 +523,7 @@ const ProfilePage: React.FC = () => {
                   <ShieldCheck size={24} />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-serif italic tracking-tighter text-blue-900 dark:text-blue-400 uppercase">Certification</p>
+                  <p className="text-sm font-serif italic tracking-tighter text-blue-900 dark:text-blue-400 uppercase">{labels.certification}</p>
                   <p className="text-[10px] font-bold text-blue-400">{t('become_certified_member')}</p>
                 </div>
                 <ChevronRight size={16} className="text-blue-200" />

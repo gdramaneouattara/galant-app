@@ -2,6 +2,7 @@ import React from 'react';
 import { X, CreditCard, MessageCircle, Heart, LayoutGrid } from 'lucide-react';
 import { useSubscription } from '@shared/hooks/useSubscription';
 import { showAlert } from '@shared/lib/ui-bridge';
+import { useAuth } from '../context/AuthContext';
 
 interface Props {
   isOpen: boolean;
@@ -12,21 +13,58 @@ interface Props {
   onSuccess: () => void;
 }
 
+const copy = {
+  fr: {
+    error: 'Erreur',
+    galleryTarget: 'Acces Galerie',
+    likesTarget: 'Boite de Likes',
+    roses: 'Offrir des Roses',
+    likes: 'Debloquer les Likes',
+    gallery: 'Acces Galerie',
+    dm: 'Message prive',
+    likesBody: "Accedez a l'integralite de vos likes recus pendant 2 heures et trouvez votre match immediatement.",
+    galleryBody: 'Basculez sur la vue en grille pour parcourir tous les profils avec une efficacite maximale et sans limite.',
+    dmPrefix: 'Debloquez une discussion directe avec',
+    price: 'Tarif unique',
+    pay: 'Payer par Carte ou Mobile Money',
+    secured: 'Transaction securisee par Paystack'
+  },
+  en: {
+    error: 'Error',
+    galleryTarget: 'Gallery Access',
+    likesTarget: 'Likes Inbox',
+    roses: 'Send Roses',
+    likes: 'Unlock Likes',
+    gallery: 'Gallery Access',
+    dm: 'Private message',
+    likesBody: 'Access all your received likes for 2 hours and find your match immediately.',
+    galleryBody: 'Switch to grid view to browse all profiles efficiently and without limits.',
+    dmPrefix: 'Unlock a direct conversation with',
+    price: 'Single price',
+    pay: 'Pay by Card or Mobile Money',
+    secured: 'Secure transaction by Paystack'
+  }
+};
+
 const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targetId, userName, onSuccess }) => {
   const { purchaseWithPaystack, purchaseLoading } = useSubscription();
+  const { language } = useAuth();
+  const c = copy[language] || copy.fr;
 
   if (!isOpen) return null;
 
   const handlePurchase = async () => {
     try {
       const amount = type === 'LIKES_INBOX_2H' || type === 'DISCOVER_GRID_UNLOCK' ? 1000 : 500;
-      const ok = await purchaseWithPaystack(type, amount, targetId, { targetName: userName || (type === 'DISCOVER_GRID_UNLOCK' ? 'Accès Galerie' : 'Boite de Likes') });
+      const ok = await purchaseWithPaystack(type, amount, targetId, {
+        targetName: userName || (type === 'DISCOVER_GRID_UNLOCK' ? c.galleryTarget : c.likesTarget)
+      });
       if (ok) {
         onSuccess();
         onClose();
       }
     } catch (error: any) {
-      showAlert('Erreur', error.message);
+      showAlert(c.error, error.message);
     }
   };
 
@@ -34,12 +72,14 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
   const isLikesInbox = type === 'LIKES_INBOX_2H';
   const isGridUnlock = type === 'DISCOVER_GRID_UNLOCK';
 
+  const title = isSuperLike ? c.roses : isLikesInbox ? c.likes : isGridUnlock ? c.gallery : c.dm;
+
   return (
     <div className="fixed inset-0 z-[220] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
       <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-transparent dark:border-white/5">
         <div className="p-8 text-center space-y-6">
           <div className="flex justify-end">
-            <button onClick={onClose} className="p-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-full text-slate-300">
+            <button onClick={onClose} className="p-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-full text-slate-300" aria-label="Close">
               <X size={20} />
             </button>
           </div>
@@ -58,23 +98,20 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
 
           <div className="space-y-2">
             <h3 className="text-2xl font-black italic text-slate-900 dark:text-white">
-              {isSuperLike ? 'Offrir des Roses' :
-               isLikesInbox ? 'Debloquer les Likes' :
-               isGridUnlock ? 'Accès Galerie' :
-               'Message prive'}
+              {title}
             </h3>
             <p className="text-slate-500 dark:text-slate-400 text-sm font-medium leading-relaxed">
               {isLikesInbox
-                ? "Accedez a l'integralite de vos likes recus pendant 2 heures et trouvez votre match immediatement."
+                ? c.likesBody
                 : isGridUnlock
-                ? "Basculez sur la vue en grille pour parcourir tous les profils avec une efficacité maximale et sans limite."
-                : <>Debloquez une discussion directe avec <span className="text-slate-900 dark:text-white font-bold">{userName}</span>.</>
+                ? c.galleryBody
+                : <>{c.dmPrefix} <span className="text-slate-900 dark:text-white font-bold">{userName}</span>.</>
               }
             </p>
           </div>
 
           <div className="bg-slate-50 dark:bg-white/5 p-4 rounded-2xl">
-            <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Tarif unique</span>
+            <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{c.price}</span>
             <p className="text-2xl font-black text-slate-900 dark:text-white">{isLikesInbox || isGridUnlock ? '1 000' : '500'} F CFA</p>
           </div>
 
@@ -88,13 +125,13 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
             ) : (
               <>
                 <CreditCard size={18} />
-                Payer par Carte ou Mobile Money
+                {c.pay}
               </>
             )}
           </button>
 
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
-            Transaction securisee par Paystack
+            {c.secured}
           </p>
         </div>
       </div>

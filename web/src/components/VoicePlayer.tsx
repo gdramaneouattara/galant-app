@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Music, Lock } from 'lucide-react';
 import { apiRequest } from '@shared/lib/api';
+import { useAuth } from '../context/AuthContext';
 
 interface VoicePlayerProps {
   messageId: string;
@@ -13,12 +14,31 @@ interface VoicePlayerProps {
   onPlayed?: () => void;
 }
 
+const copy = {
+  fr: {
+    expired: 'Serenade expiree',
+    serenade: 'Serenade vocale',
+    playing: 'Lecture...',
+    ready: 'Pret',
+    oneListen: 'Ecoute unique'
+  },
+  en: {
+    expired: 'Serenade expired',
+    serenade: 'Voice serenade',
+    playing: 'Playing...',
+    ready: 'Ready',
+    oneListen: 'One listen only'
+  }
+};
+
 const VoicePlayer: React.FC<VoicePlayerProps> = ({ messageId, matchId, venueChatId, url, isSerenade, isMine, playedAt, onPlayed }) => {
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playedMarkRef = useRef(false);
+  const { language } = useAuth();
+  const c = copy[language] || copy.fr;
 
   const isExpired = isSerenade && !!playedAt && !isMine && !playing;
 
@@ -63,7 +83,6 @@ const VoicePlayer: React.FC<VoicePlayerProps> = ({ messageId, matchId, venueChat
     const onEnded = async () => {
       setPlaying(false);
       setProgress(100);
-
       void markPlayed();
     };
 
@@ -86,7 +105,7 @@ const VoicePlayer: React.FC<VoicePlayerProps> = ({ messageId, matchId, venueChat
         <div className="w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400">
           <Lock size={18} />
         </div>
-        <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Sérénade expirée</p>
+        <p className="text-xs font-bold uppercase tracking-widest text-slate-400">{c.expired}</p>
       </div>
     );
   }
@@ -96,7 +115,7 @@ const VoicePlayer: React.FC<VoicePlayerProps> = ({ messageId, matchId, venueChat
       {isSerenade && (
         <div className="flex items-center gap-2 mb-2">
           <Music size={12} className="text-primary" />
-          <span className="text-[9px] font-black uppercase tracking-prestige text-primary">Sérénade Vocale</span>
+          <span className="text-[9px] font-black uppercase tracking-prestige text-primary">{c.serenade}</span>
         </div>
       )}
 
@@ -106,6 +125,7 @@ const VoicePlayer: React.FC<VoicePlayerProps> = ({ messageId, matchId, venueChat
           className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
             playing ? 'bg-primary text-white scale-95' : 'bg-white dark:bg-slate-700 text-primary shadow-sm hover:scale-105'
           }`}
+          aria-label={playing ? c.playing : c.ready}
         >
           {playing ? <Pause size={18} fill="currentColor" /> : <Play size={18} className="ml-1" fill="currentColor" />}
         </button>
@@ -118,8 +138,8 @@ const VoicePlayer: React.FC<VoicePlayerProps> = ({ messageId, matchId, venueChat
             />
           </div>
           <div className="flex justify-between text-[8px] font-bold text-slate-400 uppercase tracking-widest">
-            <span>{playing ? 'Lecture...' : 'Prêt'}</span>
-            {isSerenade && !isMine && <span>Écoute unique</span>}
+            <span>{playing ? c.playing : c.ready}</span>
+            {isSerenade && !isMine && <span>{c.oneListen}</span>}
           </div>
         </div>
       </div>
