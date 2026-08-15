@@ -120,9 +120,14 @@ const AuthButton: React.FC = () => {
 
 const LanguageSwitcher = () => {
   const { language, setLanguage } = useAuth();
+  const nextLanguage = language === 'fr' ? 'en' : 'fr';
+  const label = language === 'fr' ? 'Switch to English' : 'Passer en français';
+
   return (
     <button
-      onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')}
+      onClick={() => setLanguage(nextLanguage)}
+      title={label}
+      aria-label={label}
       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/20 transition-all font-black text-[10px] uppercase tracking-wider"
     >
       <Languages size={14} />
