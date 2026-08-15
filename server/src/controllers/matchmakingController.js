@@ -142,6 +142,19 @@ const mergeProfilesById = (primary, fallback) => {
   return [...rowsById.values()];
 };
 
+const encodeGridCursor = (offset) => Buffer.from(JSON.stringify({ offset }), 'utf8').toString('base64url');
+
+const decodeGridCursor = (cursor) => {
+  if (!cursor) return 0;
+  try {
+    const payload = JSON.parse(Buffer.from(String(cursor), 'base64url').toString('utf8'));
+    const offset = Number(payload?.offset);
+    return Number.isFinite(offset) && offset > 0 ? Math.floor(offset) : 0;
+  } catch {
+    return 0;
+  }
+};
+
 const getSuggestions = async (req, res) => {
   const me = req.user;
   const {
@@ -159,6 +172,7 @@ const getSuggestions = async (req, res) => {
   } = req.query;
 
   const isGridMode = String(isGrid).toLowerCase() === 'true';
+  const paginationOffset = isGridMode ? decodeGridCursor(req.query.cursor) : 0;
   const includeSelf = String(req.query.includeSelf || '').toLowerCase() === 'true';
   const meGender = String(me?.gender || '').toUpperCase();
   const meGoal = String(me?.relationship_goal || '').toUpperCase();
@@ -189,7 +203,9 @@ const getSuggestions = async (req, res) => {
     ? Math.max(1, parseFloat(maxDistanceKm))
     : null;
   const effectiveMaxDistance = maxDistance || 100;
-  const safeLimit = Math.max(1, Math.min(100, parseInt(limit, 10) || 40));
+  const safeLimit = Math.max(1, Math.min(isGridMode ? 12 : 100, parseInt(limit, 10) || (isGridMode ? 12 : 40)));
+  const selectionLimit = isGridMode ? paginationOffset + safeLimit + 1 : safeLimit;
+  const candidateReadTarget = isGridMode ? Math.min(500, Math.max(selectionLimit * 8, safeLimit * 8)) : safeLimit * 8;
   const desiredGenders = getDesiredGenders({ me, forcedOppositeGender, gender });
 
   try {
@@ -235,12 +251,12 @@ const getSuggestions = async (req, res) => {
         latitude: myLat,
         longitude: myLon,
         radiusKm: effectiveMaxDistance,
-        maxDocs: safeLimit * 8
+        maxDocs: candidateReadTarget
       });
     }
 
-    if (!canUseGeohash || candidates.length < safeLimit) {
-      const snapshot = await broadQuery.limit(canUseGeohash ? safeLimit * 8 : 500).get();
+    if (!canUseGeohash || candidates.length < selectionLimit) {
+      const snapshot = await broadQuery.limit(canUseGeohash ? candidateReadTarget : 500).get();
       const fallbackCandidates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       candidates = mergeProfilesById(candidates, fallbackCandidates);
     }
@@ -361,7 +377,7 @@ const getSuggestions = async (req, res) => {
 
     const suggestions = searchQuery
       ? assessedSuggestions
-      : selectWithLocationFallback(assessedSuggestions, safeLimit);
+      : selectWithLocationFallback(assessedSuggestions, selectionLimit);
 
     if (includeSelf && me.boosted_until && new Date(me.boosted_until) > new Date()) {
        const selfScore = (me.is_vip ? 200 : (me.is_premium ? 50 : 0)) + 15 + 500;
@@ -371,23 +387,97 @@ const getSuggestions = async (req, res) => {
     }
 
     const rankedSuggestions = suggestions.sort((a, b) => b.score - a.score);
-    const sliced = rankedSuggestions.slice(0, safeLimit);
-
-    // Decrement Quota if non-premium
-    if (isGridMode && !me.is_premium && sliced.length > 0) {
-      await db.collection('profiles').doc(me.id).update({
-        grid_consultations_remaining: FieldValue.increment(-sliced.length)
-      });
-    }
+    const sliced = rankedSuggestions.slice(paginationOffset, paginationOffset + safeLimit);
+    const nextOffset = paginationOffset + sliced.length;
+    const nextCursor = isGridMode && rankedSuggestions.length > nextOffset
+      ? encodeGridCursor(nextOffset)
+      : null;
 
     const selfRank = sliced.findIndex((profile) => profile?.id === me.id) + 1;
     res.json({
       suggestions: sliced,
-      current_user_rank: selfRank > 0 ? selfRank : null
+      current_user_rank: selfRank > 0 ? selfRank : null,
+      next_cursor: nextCursor,
+      grid_remaining: isGridMode && !me.is_premium ? Math.max(0, me.grid_consultations_remaining || 0) : null
     });
 
   } catch (error) {
     console.error('getSuggestions error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const markGridProfilesViewed = async (req, res) => {
+  const me = req.user;
+  const profileIds = [...new Set((Array.isArray(req.body?.profileIds) ? req.body.profileIds : [])
+    .map(id => String(id || '').trim())
+    .filter(id => id && id !== me.id))]
+    .slice(0, 12);
+
+  if (!profileIds.length) {
+    return res.json({
+      success: true,
+      consumed: 0,
+      remaining: Math.max(0, me.grid_consultations_remaining || 0)
+    });
+  }
+
+  if (me.is_premium) {
+    return res.json({ success: true, consumed: 0, remaining: null });
+  }
+
+  try {
+    const profileRef = db.collection('profiles').doc(me.id);
+    const viewRefs = profileIds.map(profileId => (
+      db.collection('grid_profile_views').doc(`${me.id}_${profileId}`)
+    ));
+
+    const result = await db.runTransaction(async (transaction) => {
+      const profileDoc = await transaction.get(profileRef);
+      if (!profileDoc.exists) throw new Error('profile_not_found');
+
+      const remaining = Math.max(0, Number(profileDoc.data().grid_consultations_remaining || 0));
+      if (remaining <= 0) return { consumed: 0, remaining: 0, exhausted: true };
+
+      const viewDocs = await Promise.all(viewRefs.map(ref => transaction.get(ref)));
+      const newViewIndexes = viewDocs
+        .map((doc, index) => doc.exists ? null : index)
+        .filter(index => index !== null)
+        .slice(0, remaining);
+
+      if (newViewIndexes.length === 0) {
+        return { consumed: 0, remaining, exhausted: false };
+      }
+
+      const now = new Date().toISOString();
+      newViewIndexes.forEach(index => {
+        transaction.create(viewRefs[index], {
+          user_id: me.id,
+          profile_id: profileIds[index],
+          source: 'DISCOVER_GRID',
+          viewed_at: now,
+          created_at: now
+        });
+      });
+      transaction.update(profileRef, {
+        grid_consultations_remaining: FieldValue.increment(-newViewIndexes.length),
+        updated_at: now
+      });
+
+      return {
+        consumed: newViewIndexes.length,
+        remaining: Math.max(0, remaining - newViewIndexes.length),
+        exhausted: remaining - newViewIndexes.length <= 0
+      };
+    });
+
+    if (result.exhausted && result.consumed === 0) {
+      return res.status(403).json({ error: 'grid_quota_exceeded', remaining: 0 });
+    }
+
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('markGridProfilesViewed error:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -836,6 +926,6 @@ const getLikesQuota = async (req, res) => {
 };
 
 module.exports = {
-  getSuggestions, getVisibilityInsight, handleSwipe, unmatch,
+  getSuggestions, markGridProfilesViewed, getVisibilityInsight, handleSwipe, unmatch,
   getSuperLikesReceived, getLikesReceived, getLikesQuota, respondToSuperLike
 };

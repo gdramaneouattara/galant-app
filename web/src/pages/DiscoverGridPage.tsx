@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
   ShieldCheck,
@@ -8,8 +8,6 @@ import {
   RefreshCw,
   Crown,
   Gem,
-  LayoutGrid,
-  ChevronLeft,
   LayoutList
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -34,12 +32,39 @@ type DiscoverSuggestion = {
   galanterie_score?: number;
 };
 
+type GridResponse = {
+  suggestions: DiscoverSuggestion[];
+  next_cursor?: string | null;
+  grid_remaining?: number | null;
+};
+
+type GridCache = {
+  profiles: DiscoverSuggestion[];
+  nextCursor: string | null;
+  remainingQuota: number | null;
+  cachedAt: number;
+};
+
+const GRID_PAGE_SIZE = 12;
+const GRID_CACHE_TTL_MS = 90 * 60 * 1000;
+const GRID_CACHE_PREFIX = 'galant:discover-grid:v3';
+
 const DiscoverGridPage: React.FC = () => {
-  const { user, profile: myProfile, loading: authLoading, t, language } = useAuth();
+  const { user, profile: myProfile, loading: authLoading, language } = useAuth();
   const navigate = useNavigate();
   const [profiles, setProfiles] = useState<DiscoverSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [remainingQuota, setRemainingQuota] = useState<number | null>(myProfile?.grid_consultations_remaining ?? null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const cardNodesRef = useRef<Map<string, Element>>(new Map());
+  const viewedIdsRef = useRef<Set<string>>(new Set());
+  const pendingViewedIdsRef = useRef<Set<string>>(new Set());
+  const flushTimerRef = useRef<number | null>(null);
+  const initialLoadKeyRef = useRef<string | null>(null);
+
   const labels = language === 'en'
     ? {
         quotaTitle: 'Quota used',
@@ -52,6 +77,9 @@ const DiscoverGridPage: React.FC = () => {
         search: 'Search a member, a city...',
         empty: 'No profile matches your search',
         reset: 'Reset search',
+        loadMore: 'Load 12 more',
+        loadingMore: 'Loading...',
+        noMore: 'No more profiles',
         city: 'City',
         distance: (km: number) => `${km.toFixed(1)} km away`
       }
@@ -66,46 +94,198 @@ const DiscoverGridPage: React.FC = () => {
         search: 'Rechercher un membre, une ville...',
         empty: 'Aucun profil ne correspond a votre recherche',
         reset: 'Reinitialiser la recherche',
+        loadMore: 'Charger 12 profils',
+        loadingMore: 'Chargement...',
+        noMore: 'Fin de la galerie',
         city: 'Ville',
         distance: (km: number) => `A ${km.toFixed(1)} km`
       };
 
-  useEffect(() => {
-    if (myProfile && !myProfile.is_premium && (myProfile.grid_consultations_remaining || 0) <= 0) {
-      navigate('/');
-    }
-  }, [myProfile, navigate]);
+  const getCacheKey = useCallback((query: string) => {
+    if (!user?.uid) return null;
+    const normalizedQuery = query.trim().toLowerCase() || 'default';
+    return `${GRID_CACHE_PREFIX}:${user.uid}:${normalizedQuery}`;
+  }, [user?.uid]);
 
-  const fetchSuggestions = useCallback(async (q = '') => {
-    if (!user || authLoading) return;
+  const readCache = useCallback((query: string): GridCache | null => {
+    const key = getCacheKey(query);
+    if (!key) return null;
     try {
-      setLoading(true);
-      const safeQ = q.trim();
-      const searchParam = safeQ ? `&search=${encodeURIComponent(safeQ)}` : '';
-      const res = await apiRequest<{ suggestions: DiscoverSuggestion[] }>(
-        `/api/matchmaking/suggestions?limit=80&isGrid=true${searchParam}`,
-        { requireAuth: true }
-      );
-      setProfiles(res.suggestions || []);
+      const raw = window.localStorage.getItem(key);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as GridCache;
+      if (!parsed?.cachedAt || Date.now() - parsed.cachedAt > GRID_CACHE_TTL_MS) {
+        window.localStorage.removeItem(key);
+        return null;
+      }
+      if (!Array.isArray(parsed.profiles)) return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  }, [getCacheKey]);
+
+  const writeCache = useCallback((query: string, cache: Omit<GridCache, 'cachedAt'>) => {
+    const key = getCacheKey(query);
+    if (!key) return;
+    try {
+      window.localStorage.setItem(key, JSON.stringify({ ...cache, cachedAt: Date.now() }));
+    } catch {
+      // Storage can be unavailable in private browsing; the gallery still works without cache.
+    }
+  }, [getCacheKey]);
+
+  useEffect(() => {
+    setRemainingQuota(myProfile?.grid_consultations_remaining ?? null);
+  }, [myProfile?.grid_consultations_remaining]);
+
+  const flushViewedProfiles = useCallback(async () => {
+    if (myProfile?.is_premium) {
+      pendingViewedIdsRef.current.clear();
+      return;
+    }
+
+    const ids = [...pendingViewedIdsRef.current].slice(0, GRID_PAGE_SIZE);
+    pendingViewedIdsRef.current.clear();
+    if (!ids.length) return;
+
+    try {
+      const res = await apiRequest<{ remaining?: number | null }>('/api/matchmaking/grid-views', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({ profileIds: ids })
+      });
+      if (typeof res.remaining === 'number') setRemainingQuota(Math.max(0, res.remaining));
     } catch (e: any) {
-      console.error('Error fetching grid suggestions', e);
-      if (e.message?.includes('quota_exceeded')) {
-        showAlert(labels.quotaTitle, labels.quotaBody);
-        navigate('/');
+      if (String(e?.message || '').includes('grid_quota_exceeded')) {
+        setRemainingQuota(0);
+      }
+    }
+  }, [myProfile?.is_premium]);
+
+  const markProfileVisible = useCallback((profileId: string) => {
+    if (!profileId || myProfile?.is_premium || viewedIdsRef.current.has(profileId)) return;
+    viewedIdsRef.current.add(profileId);
+    pendingViewedIdsRef.current.add(profileId);
+
+    if (flushTimerRef.current) window.clearTimeout(flushTimerRef.current);
+    flushTimerRef.current = window.setTimeout(() => {
+      flushTimerRef.current = null;
+      void flushViewedProfiles();
+    }, 700);
+  }, [flushViewedProfiles, myProfile?.is_premium]);
+
+  useEffect(() => {
+    observerRef.current?.disconnect();
+    observerRef.current = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting || entry.intersectionRatio < 0.55) return;
+        const profileId = (entry.target as HTMLElement).dataset.profileId;
+        if (profileId) markProfileVisible(profileId);
+      });
+    }, { threshold: [0.55] });
+
+    cardNodesRef.current.forEach((node) => observerRef.current?.observe(node));
+
+    return () => {
+      observerRef.current?.disconnect();
+      observerRef.current = null;
+      if (flushTimerRef.current) {
+        window.clearTimeout(flushTimerRef.current);
+        flushTimerRef.current = null;
+      }
+      void flushViewedProfiles();
+    };
+  }, [flushViewedProfiles, markProfileVisible]);
+
+  const registerCard = useCallback((profileId: string, node: HTMLDivElement | null) => {
+    const previousNode = cardNodesRef.current.get(profileId);
+    if (previousNode) observerRef.current?.unobserve(previousNode);
+
+    if (!node) {
+      cardNodesRef.current.delete(profileId);
+      return;
+    }
+
+    node.dataset.profileId = profileId;
+    cardNodesRef.current.set(profileId, node);
+    observerRef.current?.observe(node);
+  }, []);
+
+  const fetchSuggestions = useCallback(async (q = '', options: { reset?: boolean } = {}) => {
+    if (!user || authLoading) return;
+    const reset = options.reset !== false;
+    const safeQ = q.trim();
+
+    if (reset) {
+      const cached = readCache(safeQ);
+      if (cached) {
+        setProfiles(cached.profiles);
+        setNextCursor(cached.nextCursor);
+        if (typeof cached.remainingQuota === 'number') setRemainingQuota(cached.remainingQuota);
+        setLoading(false);
+        return;
       }
       setProfiles([]);
-    } finally {
-      setLoading(false);
+      setNextCursor(null);
+    } else if (!nextCursor) {
+      return;
     }
-  }, [user, authLoading, navigate]);
+
+    try {
+      if (reset) setLoading(true);
+      else setLoadingMore(true);
+
+      const searchParam = safeQ ? `&search=${encodeURIComponent(safeQ)}` : '';
+      const cursorParam = !reset && nextCursor ? `&cursor=${encodeURIComponent(nextCursor)}` : '';
+      const res = await apiRequest<GridResponse>(
+        `/api/matchmaking/suggestions?limit=${GRID_PAGE_SIZE}&isGrid=true${searchParam}${cursorParam}`,
+        { requireAuth: true }
+      );
+
+      const incoming = res.suggestions || [];
+      const newCursor = res.next_cursor || null;
+      setNextCursor(newCursor);
+      if (typeof res.grid_remaining === 'number') setRemainingQuota(Math.max(0, res.grid_remaining));
+
+      setProfiles((prev) => {
+        const base = reset ? [] : prev;
+        const knownIds = new Set(base.map(profile => profile.id));
+        const merged = [
+          ...base,
+          ...incoming.filter(profile => !knownIds.has(profile.id))
+        ];
+        writeCache(safeQ, {
+          profiles: merged,
+          nextCursor: newCursor,
+          remainingQuota: typeof res.grid_remaining === 'number' ? Math.max(0, res.grid_remaining) : remainingQuota
+        });
+        return merged;
+      });
+    } catch (e: any) {
+      console.error('Error fetching grid suggestions', e);
+      if (e.message?.includes('quota_exceeded') || e.message?.includes('grid_quota_exceeded')) {
+        showAlert(labels.quotaTitle, labels.quotaBody);
+      }
+      if (reset) setProfiles([]);
+    } finally {
+      if (reset) setLoading(false);
+      else setLoadingMore(false);
+    }
+  }, [authLoading, labels.quotaBody, labels.quotaTitle, nextCursor, readCache, remainingQuota, user, writeCache]);
 
   useEffect(() => {
-    void fetchSuggestions();
-  }, [fetchSuggestions]);
+    if (!user?.uid || authLoading) return;
+    if (initialLoadKeyRef.current === user.uid) return;
+    initialLoadKeyRef.current = user.uid;
+    void fetchSuggestions('', { reset: true });
+  }, [authLoading, fetchSuggestions, user?.uid]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    void fetchSuggestions(searchQuery);
+    viewedIdsRef.current.clear();
+    pendingViewedIdsRef.current.clear();
+    void fetchSuggestions(searchQuery, { reset: true });
   };
 
   if (authLoading || (loading && profiles.length === 0)) {
@@ -133,7 +313,7 @@ const DiscoverGridPage: React.FC = () => {
               <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2">
                 <Sparkles size={10} className="text-amber-500" />
                 <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">
-                  {labels.remaining(Math.max(0, myProfile.grid_consultations_remaining))}
+                  {labels.remaining(Math.max(0, remainingQuota ?? myProfile.grid_consultations_remaining))}
                 </span>
               </div>
             )}
@@ -173,7 +353,7 @@ const DiscoverGridPage: React.FC = () => {
           </div>
           <p className="text-xl font-serif italic text-slate-900 dark:text-white">{labels.empty}</p>
           <button
-            onClick={() => { setSearchQuery(''); fetchSuggestions(''); }}
+            onClick={() => { setSearchQuery(''); fetchSuggestions('', { reset: true }); }}
             className="text-primary font-bold uppercase tracking-prestige text-[10px]"
           >
             {labels.reset}
@@ -181,8 +361,9 @@ const DiscoverGridPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-          {profiles.map((profile) => (
+          {profiles.map((profile, index) => (
             <div
+              ref={(node) => registerCard(profile.id, node)}
               key={profile.id}
               onClick={() => navigate(`/profile/${profile.id}`, { state: { profile } })}
               className="group relative aspect-[3/4] rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer hover:-translate-y-1 bg-slate-100 dark:bg-slate-800"
@@ -191,6 +372,7 @@ const DiscoverGridPage: React.FC = () => {
                 src={optimizedPhotoUrl(profile.photos?.[0], profile.photo_variants, 'thumb') || 'https://placehold.co/300x400'}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                 alt={profile.name}
+                eager={index < 6}
               />
 
               {/* Badges */}
@@ -225,6 +407,23 @@ const DiscoverGridPage: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {profiles.length > 0 && (
+        <div className="flex justify-center pt-2">
+          {nextCursor && (myProfile?.is_premium || (remainingQuota ?? 0) > 0) ? (
+            <button
+              type="button"
+              onClick={() => void fetchSuggestions(searchQuery, { reset: false })}
+              disabled={loadingMore}
+              className="rounded-2xl bg-slate-900 dark:bg-white px-6 py-4 text-xs font-black uppercase tracking-widest text-white dark:text-slate-900 shadow-xl transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-60"
+            >
+              {loadingMore ? labels.loadingMore : labels.loadMore}
+            </button>
+          ) : (
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{labels.noMore}</p>
+          )}
         </div>
       )}
     </div>
