@@ -61,7 +61,7 @@ const SettingsModal: React.FC<Props> = ({
 
           {/* Langue */}
           <div className="space-y-4">
-            <p className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">Langue</p>
+            <p className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">{t('language')}</p>
             <div className="grid grid-cols-2 gap-4">
               {[
                 { id: 'fr', label: 'Français' },

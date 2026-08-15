@@ -252,15 +252,15 @@ const DiscoverPage: React.FC = () => {
 
   const currentProfile = suggestions[0];
   const isFilterActive = filters.premiumOnly || filters.verifiedOnly || filters.minScore > 0 || filters.gender !== 'ALL' || filters.minAge !== 18 || filters.maxAge !== 50;
-  const headerActionBaseClass = "relative w-10 h-10 shrink-0 rounded-2xl border shadow-lg flex items-center justify-center transition-all active:scale-95";
+  const headerActionBaseClass = "relative mx-auto w-10 h-10 shrink-0 rounded-2xl border shadow-lg flex items-center justify-center transition-all active:scale-95";
   const headerActionIdleClass = "bg-white dark:bg-slate-900 border-slate-100 dark:border-white/5 text-slate-400 hover:text-primary";
   const headerActionActiveClass = "bg-amber-500/10 border-amber-500/40 text-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.15)]";
 
   return (
     <div className="max-w-3xl mx-auto pb-10 px-1 sm:px-3 relative">
-      {/* Header avec Filtre à droite */}
-      <div className="mb-6 flex justify-end pt-2">
-        <div className="flex shrink-0 gap-2">
+      {/* Header actions */}
+      <div className="mb-6 pt-2">
+        <div className="grid w-full grid-cols-5 items-center">
           <button
             onClick={() => navigate('/store')}
             className={`${headerActionBaseClass} ${headerActionIdleClass}`}

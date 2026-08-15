@@ -98,7 +98,8 @@ test('Rules: Discovery header exposes notifications with compact title and grid/
   assert.match(webDiscover, /max-w-3xl/);
   assert.match(webDiscover, /px-1 sm:px-3/);
   assert.match(webDiscover, /border-4 border-white/);
-  assert.match(webDiscover, /flex shrink-0 gap-2/);
+  assert.match(webDiscover, /grid w-full grid-cols-5 items-center/);
+  assert.match(webDiscover, /relative mx-auto w-10 h-10/);
   const storeActionIndex = webDiscover.indexOf("navigate('/store')");
   const storiesActionIndex = webDiscover.indexOf("navigate('/stories')");
   const galleryActionIndex = webDiscover.indexOf('onClick={handleGridTransition}');
@@ -737,6 +738,19 @@ test('Rules: Dark appearance is the default on web and native', async () => {
   assert.match(nativeAppContext, /useState<AppThemePreference>\('dark'\)/);
   assert.match(nativeApp, /activeTheme/);
   assert.match(nativeApp, /StatusBar style=\{activeTheme === 'dark' \? 'light' : 'dark'\}/);
+});
+
+test('Rules: Web language switcher persists and exposes FR EN accessibly', async () => {
+  const webApp = await read('web/src/App.tsx');
+  const webAuthContext = await read('web/src/context/AuthContext.tsx');
+  const settingsModal = await read('web/src/components/SettingsModal.tsx');
+
+  assert.match(webApp, /const nextLanguage = language === 'fr' \? 'en' : 'fr'/);
+  assert.match(webApp, /onClick=\{\(\) => setLanguage\(nextLanguage\)\}/);
+  assert.match(webApp, /aria-label=\{label\}/);
+  assert.match(webAuthContext, /localStorage\.setItem\('galant_lang', lang\)/);
+  assert.match(webAuthContext, /document\.documentElement\.lang = language/);
+  assert.match(settingsModal, /\{t\('language'\)\}/);
 });
 
 test('Rules: AppContext syncs is_vip', async () => {

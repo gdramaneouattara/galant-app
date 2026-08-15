@@ -67,6 +67,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return navigator.language.startsWith('fr') ? 'fr' : 'en';
   });
 
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
   const [themePreference, setThemePreferenceState] = useState<ThemePreference>(() => {
     const saved = localStorage.getItem('galant_theme');
     if (saved === 'light' || saved === 'dark' || saved === 'system') return saved;
