@@ -8,7 +8,6 @@ import FilterModal from '../components/FilterModal';
 import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
 import { apiRequest } from '@shared/lib/api';
 import logoImg from '../assets/galant-logo-web.png';
-import FeatureHighlight from '../components/FeatureHighlight';
 import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
@@ -279,16 +278,14 @@ const DiscoverPage: React.FC = () => {
             <CirclePlay size={18} />
           </button>
 
-          <FeatureHighlight id="discover_grid" type="GOLD">
-            <button
-              onClick={handleGridTransition}
-              className={`${headerActionBaseClass} ${headerActionIdleClass}`}
-              title="Vue Grille"
-              aria-label="Vue Grille"
-            >
-              <LayoutGrid size={18} />
-            </button>
-          </FeatureHighlight>
+          <button
+            onClick={handleGridTransition}
+            className={`${headerActionBaseClass} ${headerActionIdleClass}`}
+            title="Vue Grille"
+            aria-label="Vue Grille"
+          >
+            <LayoutGrid size={18} />
+          </button>
 
           <button
             onClick={() => navigate('/notifications', { state: { from: '/' } })}
