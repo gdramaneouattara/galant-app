@@ -98,7 +98,8 @@ test('Rules: Discovery header exposes notifications with compact title and grid/
   assert.match(webDiscover, /max-w-3xl/);
   assert.match(webDiscover, /px-1 sm:px-3/);
   assert.match(webDiscover, /border-4 border-white/);
-  assert.match(webDiscover, /flex shrink-0 gap-2/);
+  assert.match(webDiscover, /grid w-full grid-cols-5 items-center/);
+  assert.match(webDiscover, /relative mx-auto w-10 h-10/);
   const storeActionIndex = webDiscover.indexOf("navigate('/store')");
   const storiesActionIndex = webDiscover.indexOf("navigate('/stories')");
   const galleryActionIndex = webDiscover.indexOf('onClick={handleGridTransition}');
