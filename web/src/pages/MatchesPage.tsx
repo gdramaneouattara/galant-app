@@ -1,39 +1,17 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, Gem, ChevronRight, MessageSquare, Search, Sparkles, Heart, Star } from 'lucide-react';
+import { ShieldCheck, Gem, ChevronRight, MessageSquare, Search, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { apiRequest } from '@shared/lib/api';
 import { db } from '../firebase';
 import { collection, doc, getDoc, getDocs, orderBy, query, where } from 'firebase/firestore';
 import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 const MatchesPage: React.FC = () => {
-  const { user, profile, matches, users, messages, loading, t } = useAuth();
+  const { user, matches, users, messages, loading, t } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [rosesInboxCount, setRosesInboxCount] = useState(0);
   const [venueChats, setVenueChats] = useState<any[]>([]);
-
-  const likesCount = profile?.likes_count || 0;
-
-  const fetchRosesInboxCount = useCallback(async () => {
-    if (!user) {
-      setRosesInboxCount(0);
-      return;
-    }
-
-    try {
-      const payload = await apiRequest<any[]>('/api/super-likes/received', { requireAuth: true });
-      setRosesInboxCount((payload || []).filter((row) => row.status === 'PENDING' || row.is_countable).length);
-    } catch {
-      setRosesInboxCount(0);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    void fetchRosesInboxCount();
-  }, [fetchRosesInboxCount]);
 
   const fetchVenueChats = useCallback(async () => {
     if (!user) {
@@ -134,31 +112,6 @@ const MatchesPage: React.FC = () => {
             className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl py-4 pl-12 pr-4 text-slate-700 dark:text-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
           />
         </div>
-      </div>
-
-      {/* Interest Notifications */}
-      <div className="grid grid-cols-2 gap-4">
-        <button
-          onClick={() => navigate('/likes')}
-          className="relative bg-gradient-to-br from-rose-500 to-rose-600 dark:from-rose-900 dark:to-rose-950 p-6 rounded-[2.5rem] shadow-xl shadow-rose-500/20 text-white text-left overflow-hidden group hover:scale-[1.02] transition-all"
-        >
-          <div className="absolute -right-4 -bottom-4 bg-white/10 w-24 h-24 rounded-full blur-2xl group-hover:bg-white/20 transition-all"></div>
-          <Heart size={24} className="mb-3 opacity-80 group-hover:scale-110 transition-transform" fill="currentColor" />
-          <p className="text-2xl font-extrabold tracking-tight leading-none">{likesCount}</p>
-          <p className="text-[10px] font-medium uppercase tracking-prestige mt-1 opacity-80">Likes Reçus</p>
-          {likesCount > 0 && <div className="absolute top-4 right-4 w-2 h-2 bg-white rounded-full animate-ping"></div>}
-        </button>
-
-        <button
-          onClick={() => navigate('/roses')}
-          className="relative bg-gradient-to-br from-amber-400 to-amber-600 dark:from-amber-900 dark:to-amber-950 p-6 rounded-[2.5rem] shadow-xl shadow-amber-500/20 text-white text-left overflow-hidden group hover:scale-[1.02] transition-all"
-        >
-          <div className="absolute -right-4 -bottom-4 bg-white/10 w-24 h-24 rounded-full blur-2xl group-hover:bg-white/20 transition-all"></div>
-          <div className="text-2xl mb-2 group-hover:rotate-12 transition-transform">🌹</div>
-          <p className="text-2xl font-extrabold tracking-tight leading-none">{rosesInboxCount}</p>
-          <p className="text-[10px] font-medium uppercase tracking-prestige mt-1 opacity-80">Roses à traiter</p>
-          {rosesInboxCount > 0 && <div className="absolute top-4 right-4 w-2 h-2 bg-white rounded-full animate-ping"></div>}
-        </button>
       </div>
 
       {/* Nouveaux Matches (Horizontal) */}

@@ -72,11 +72,16 @@ test('Rules: Web Stories are paginated and paid one-shot access is capped', asyn
   const usageService = await read('server/src/services/usageService.js');
 
   assert.match(webStories, /STORY_PAGE_SIZE = 10/);
-  assert.match(webStories, /\/api\/statuses\?limit=\$\{STORY_PAGE_SIZE\}&offset=\$\{offset\}/);
+  assert.match(webStories, /\/api\/statuses\?limit=\$\{STORY_PAGE_SIZE\}&offset=\$\{offset\}&pageInfo=true/);
+  assert.match(webStories, /nextStatusesOffsetRef/);
+  assert.match(webStories, /data\.nextOffset/);
+  assert.match(webStories, /data\.hasMore/);
   assert.match(webStories, /IntersectionObserver/);
   assert.match(webStories, /fetchStatuses\(\{ append: true \}\)/);
   assert.match(webStories, /consulter 10 stories maximum/);
   assert.match(statusController, /STORY_PAGE_LIMIT = 10/);
+  assert.match(statusController, /STORY_LEGACY_LIMIT = 35/);
+  assert.match(statusController, /wantsPaginationInfo/);
   assert.match(statusController, /STORY_PURCHASE_VIEW_LIMIT = 10/);
   assert.match(statusController, /hasStorySubscriptionAccess/);
   assert.match(statusController, /hasStoryPurchaseAccess/);
@@ -403,6 +408,9 @@ test('Rules: Internal notification center is wired across server, web and native
   assert.match(notificationController, /legacyEventToNotification/);
   assert.match(notificationController, /collectNotificationDocs/);
   assert.match(notificationController, /commitUpdatesInChunks/);
+  assert.match(notificationController, /parseTypeList/);
+  assert.match(notificationController, /excludeTypes/);
+  assert.match(notificationController, /excludedTypes\.has\(item\.type\)/);
   assert.match(notificationController, /LEGACY_PREFIX = 'legacy_event_'/);
   assert.match(notificationController, /offset/);
   assert.doesNotMatch(notificationController, /where\('event_type'/);
@@ -444,6 +452,10 @@ test('Rules: Internal notification center is wired across server, web and native
   assert.match(webNotifications, /\/api\/super-likes\/received/);
   assert.match(webNotifications, /likesQuickCount/);
   assert.match(webNotifications, /rosesInboxCount/);
+  assert.match(webNotifications, /QUICK_BOX_TYPES/);
+  assert.match(webNotifications, /excludeTypes/);
+  assert.match(webNotifications, /Journal d’activité/);
+  assert.match(webNotifications, /Historique/);
   assert.match(webNotifications, /loading:\s*authLoading/);
   assert.match(webNotifications, /if \(authLoading\) return/);
   assert.match(webNotifications, /\[authLoading,\s*user\?\.uid\]/);
@@ -536,12 +548,18 @@ test('Rules: User-facing counters and commerce avoid Firestore composite index t
     venueController,
     usageService,
     subscriptionService,
-    statusController,
     notificationService,
   ]) {
     assert.doesNotMatch(file, /\.where\([^)\n]+\)\s*\.\s*orderBy\(/);
     assert.doesNotMatch(file, /\.where\([^)\n]+\)\s*\.\s*where\(/);
   }
+
+  const statusControllerWithoutAllowedExpiryOrdering = statusController.replace(
+    /\.where\('expires_at', '>', now\)\s*\.\s*orderBy\('expires_at', 'desc'\)/g,
+    ''
+  );
+  assert.doesNotMatch(statusControllerWithoutAllowedExpiryOrdering, /\.where\([^)\n]+\)\s*\.\s*orderBy\(/);
+  assert.doesNotMatch(statusController, /\.where\([^)\n]+\)\s*\.\s*where\(/);
 
   assert.match(matchmakingController, /incomingSuperLikesSnapshot/);
   assert.match(matchmakingController, /filter\(row => row\.is_super_like === true\)/);
@@ -718,7 +736,10 @@ test('Rules: Cost controls limit reads and cache expensive external calls', asyn
   const deployWorkflow = await read('.github/workflows/deploy-server.yml');
 
   assert.match(statusController, /clampLimit/);
-  assert.match(statusController, /\.limit\(Math\.min\(\(offset \+ effectiveLimit\) \* 2, hasFullAccess \? 140 : 30\)\)/);
+  assert.match(statusController, /\.orderBy\('expires_at', 'desc'\)/);
+  assert.match(statusController, /\.offset\(nextOffset\)/);
+  assert.match(statusController, /hasMore/);
+  assert.match(statusController, /nextOffset/);
   assert.match(venueController, /clampLimit/);
   assert.match(venueController, /query = query\.limit\(city \? safeLimit \* 3 : safeLimit\)/);
   assert.match(venueController, /attendanceDoc = await db\.collection\('event_attendance'\)\.doc\(`\$\{ev\.id\}_\$\{meId\}`\)\.get\(\)/);

@@ -38,6 +38,12 @@ interface Status {
   };
 }
 
+type StatusesPageResponse = Status[] | {
+  statuses?: Status[];
+  hasMore?: boolean;
+  nextOffset?: number;
+};
+
 const StoriesPage: React.FC = () => {
   const { user, profile, t, language } = useAuth();
   const navigate = useNavigate();
@@ -70,7 +76,7 @@ const StoriesPage: React.FC = () => {
   const [storyUploadUnlocked, setStoryUploadUnlocked] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const statusesCountRef = useRef(0);
+  const nextStatusesOffsetRef = useRef(0);
   const initialActionHandledRef = useRef(false);
 
   const canPublishForFree = !!profile?.is_premium || !!profile?.is_vip;
@@ -133,15 +139,19 @@ const StoriesPage: React.FC = () => {
       if (append) setLoadingMore(true);
       else setLoading(true);
 
-      const offset = append ? statusesCountRef.current : 0;
-      const data = await apiRequest<Status[]>(`/api/statuses?limit=${STORY_PAGE_SIZE}&offset=${offset}`, { requireAuth: true });
-      const nextStatuses = data || [];
+      const offset = append ? nextStatusesOffsetRef.current : 0;
+      const data = await apiRequest<StatusesPageResponse>(`/api/statuses?limit=${STORY_PAGE_SIZE}&offset=${offset}&pageInfo=true`, { requireAuth: true });
+      const isPagedResponse = !Array.isArray(data);
+      const nextStatuses = Array.isArray(data) ? data : (data.statuses || []);
+      nextStatusesOffsetRef.current = isPagedResponse && typeof data.nextOffset === 'number'
+        ? data.nextOffset
+        : offset + nextStatuses.length;
       setStatuses((current) => {
         if (!append) return nextStatuses;
         const seen = new Set(current.map((item) => item.id));
         return [...current, ...nextStatuses.filter((item) => !seen.has(item.id))];
       });
-      setHasMoreStories(nextStatuses.length === STORY_PAGE_SIZE);
+      setHasMoreStories(isPagedResponse ? !!data.hasMore : nextStatuses.length === STORY_PAGE_SIZE);
       setLocked(false);
       resolveMediaUrls(nextStatuses);
     } catch (e: any) {
@@ -155,10 +165,6 @@ const StoriesPage: React.FC = () => {
       setLoadingMore(false);
     }
   }, [resolveMediaUrls]);
-
-  useEffect(() => {
-    statusesCountRef.current = statuses.length;
-  }, [statuses.length]);
 
   useEffect(() => {
     if (user) void fetchStatuses();

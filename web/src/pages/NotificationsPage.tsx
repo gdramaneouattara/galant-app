@@ -7,6 +7,7 @@ import {
   CheckCheck,
   ChevronLeft,
   CreditCard,
+  Flower2,
   Heart,
   MessageSquare,
   ShieldCheck,
@@ -54,10 +55,13 @@ const FILTERS: Array<{ id: NotificationType; label: { fr: string; en: string } }
   { id: 'ADMIN', label: { fr: 'Admin', en: 'Admin' } },
 ];
 
+const QUICK_BOX_TYPES: NotificationType[] = ['LIKE_RECEIVED', 'ROSE_RECEIVED'];
+
 const iconForType = (type: NotificationType) => {
   if (type === 'MESSAGE') return MessageSquare;
   if (type === 'LIKE_RECEIVED') return Heart;
-  if (type === 'ROSE_RECEIVED' || type === 'STORY_LIKED' || type === 'MATCH_CREATED') return Sparkles;
+  if (type === 'ROSE_RECEIVED') return Flower2;
+  if (type === 'STORY_LIKED' || type === 'MATCH_CREATED') return Sparkles;
   if (type === 'PAYMENT_SUCCESS' || type === 'PAYMENT_FAILED') return CreditCard;
   if (type === 'SECURITY' || type === 'ADMIN') return ShieldCheck;
   if (type === 'PARTNER') return Store;
@@ -98,7 +102,9 @@ const NotificationsPage: React.FC = () => {
         likesTitle: 'Likes received',
         likesSub: 'View your admirers',
         rosesTitle: 'Roses received',
-        rosesSub: 'Super Likes to handle',
+        rosesSub: 'Roses to handle',
+        journal: 'Activity log',
+        history: 'History',
         unread: 'Unread',
         emptyTitle: 'No notifications',
         emptyBody: 'Important updates will appear here.',
@@ -116,7 +122,9 @@ const NotificationsPage: React.FC = () => {
         likesTitle: 'Likes reçus',
         likesSub: 'Voir vos admirateurs',
         rosesTitle: 'Roses reçues',
-        rosesSub: 'Super Likes à traiter',
+        rosesSub: 'Roses à traiter',
+        journal: 'Journal d’activité',
+        history: 'Historique',
         unread: 'Non lues',
         emptyTitle: 'Aucune notification',
         emptyBody: 'Les informations importantes apparaîtront ici.',
@@ -128,6 +136,7 @@ const NotificationsPage: React.FC = () => {
       setLoading(true);
       const params = new URLSearchParams({ limit: '80' });
       if (filter !== 'ALL') params.set('type', filter);
+      if (filter === 'ALL') params.set('excludeTypes', QUICK_BOX_TYPES.join(','));
       if (unreadOnly) params.set('unreadOnly', 'true');
       const payload = await apiRequest<{ notifications: GalantNotification[] }>(`/api/notifications?${params.toString()}`, { requireAuth: true });
       setNotifications(payload.notifications || []);
@@ -194,7 +203,11 @@ const NotificationsPage: React.FC = () => {
   const markAllAsRead = async () => {
     try {
       setMarkingAll(true);
-      await apiRequest('/api/notifications/read-all', { method: 'POST', requireAuth: true });
+      const params = new URLSearchParams();
+      if (filter !== 'ALL') params.set('type', filter);
+      if (filter === 'ALL') params.set('excludeTypes', QUICK_BOX_TYPES.join(','));
+      const query = params.toString();
+      await apiRequest(`/api/notifications/read-all${query ? `?${query}` : ''}`, { method: 'POST', requireAuth: true });
       setNotifications((prev) => prev.map((item) => ({ ...item, is_read: true })));
     } catch (error: any) {
       showAlert(labels.error, error.message || labels.actionError);
@@ -260,7 +273,7 @@ const NotificationsPage: React.FC = () => {
         >
           <div className="mb-4 flex items-center justify-between">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-500/10">
-              <Sparkles size={20} />
+              <Flower2 size={20} />
             </div>
             <span className="min-w-8 rounded-full bg-amber-500 px-2 py-1 text-center text-xs font-black text-white">
               {rosesInboxCount > 99 ? '99+' : rosesInboxCount}
@@ -296,6 +309,16 @@ const NotificationsPage: React.FC = () => {
       </div>
 
       <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[10px] font-black uppercase tracking-prestige text-slate-400">
+            {filter === 'ALL' ? labels.journal : `${labels.history} ${FILTERS.find((item) => item.id === filter)?.label[language] || ''}`}
+          </p>
+          {unreadCount > 0 && (
+            <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-black text-primary">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </div>
         {loading ? (
           <div className="flex min-h-[240px] items-center justify-center rounded-[2rem] border border-white/10 bg-slate-900/60">
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
