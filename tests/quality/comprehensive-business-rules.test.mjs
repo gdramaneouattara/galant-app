@@ -408,6 +408,9 @@ test('Rules: Internal notification center is wired across server, web and native
   assert.match(notificationController, /legacyEventToNotification/);
   assert.match(notificationController, /collectNotificationDocs/);
   assert.match(notificationController, /commitUpdatesInChunks/);
+  assert.match(notificationController, /parseTypeList/);
+  assert.match(notificationController, /excludeTypes/);
+  assert.match(notificationController, /excludedTypes\.has\(item\.type\)/);
   assert.match(notificationController, /LEGACY_PREFIX = 'legacy_event_'/);
   assert.match(notificationController, /offset/);
   assert.doesNotMatch(notificationController, /where\('event_type'/);
@@ -449,6 +452,10 @@ test('Rules: Internal notification center is wired across server, web and native
   assert.match(webNotifications, /\/api\/super-likes\/received/);
   assert.match(webNotifications, /likesQuickCount/);
   assert.match(webNotifications, /rosesInboxCount/);
+  assert.match(webNotifications, /QUICK_BOX_TYPES/);
+  assert.match(webNotifications, /excludeTypes/);
+  assert.match(webNotifications, /Journal d’activité/);
+  assert.match(webNotifications, /Historique/);
   assert.match(webNotifications, /loading:\s*authLoading/);
   assert.match(webNotifications, /if \(authLoading\) return/);
   assert.match(webNotifications, /\[authLoading,\s*user\?\.uid\]/);

@@ -6,9 +6,17 @@ const QUERY_PAGE_SIZE = 100;
 const WRITE_BATCH_SIZE = 450;
 const LEGACY_PREFIX = 'legacy_event_';
 
-const filterNotification = (item, { type, unreadOnly }) => (
+const parseTypeList = (value) => (
+  String(value || '')
+    .split(',')
+    .map((entry) => entry.trim().toUpperCase())
+    .filter(Boolean)
+);
+
+const filterNotification = (item, { type, unreadOnly, excludedTypes = new Set() }) => (
   !item.archived_at &&
   (type === 'ALL' || item.type === type) &&
+  !excludedTypes.has(item.type) &&
   (!unreadOnly || item.is_read !== true)
 );
 
@@ -82,8 +90,9 @@ const getNotifications = async (req, res) => {
   try {
     const type = String(req.query.type || 'ALL').trim().toUpperCase();
     const unreadOnly = String(req.query.unreadOnly || '').toLowerCase() === 'true';
+    const excludedTypes = new Set(type === 'ALL' ? parseTypeList(req.query.excludeTypes) : []);
 
-    const predicate = (item) => filterNotification(item, { type, unreadOnly });
+    const predicate = (item) => filterNotification(item, { type, unreadOnly, excludedTypes });
     const [nextNotifications, legacyNotifications] = await Promise.all([
       collectNotificationDocs({
         query: db.collection('notifications')
@@ -175,6 +184,9 @@ const markAsRead = async (req, res) => {
 const markAllAsRead = async (req, res) => {
   try {
     const now = new Date().toISOString();
+    const type = String(req.query.type || 'ALL').trim().toUpperCase();
+    const excludedTypes = new Set(type === 'ALL' ? parseTypeList(req.query.excludeTypes) : []);
+    const shouldMark = (item) => filterNotification(item, { type, unreadOnly: true, excludedTypes });
     let processed = 0;
     let notificationOffset = 0;
 
@@ -189,7 +201,7 @@ const markAllAsRead = async (req, res) => {
 
       const unreadDocs = notificationSnapshot.docs.filter((doc) => {
         const item = doc.data();
-        return item.is_read !== true && !item.archived_at;
+        return shouldMark(item);
       });
 
       if (unreadDocs.length > 0) {
@@ -215,7 +227,8 @@ const markAllAsRead = async (req, res) => {
 
       const unreadDocs = eventSnapshot.docs.filter((doc) => {
         const item = doc.data();
-        return item.is_read !== true && item.metadata?.is_read !== true && !item.metadata?.archived_at;
+        if (!isLegacyNotificationEvent(item)) return false;
+        return shouldMark(legacyEventToNotification(doc));
       });
 
       if (unreadDocs.length > 0) {
