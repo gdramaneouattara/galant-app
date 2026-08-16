@@ -109,4 +109,29 @@ const hasUnusedStoryPurchase = async (userId) => {
   }
 };
 
-module.exports = { hasDirectMessagePurchase, getDailyUsage, incrementUsage, consumeStoryPurchase, hasUnusedStoryPurchase };
+const hasStoryPurchaseAccess = async (userId) => {
+  if (!userId) return false;
+  try {
+    const now = Date.now();
+    const accessWindowMs = 24 * 3600 * 1000;
+    const snapshot = await db.collection('purchased_interactions')
+      .where('user_id', '==', userId)
+      .limit(80)
+      .get();
+
+    return snapshot.docs.some((row) => {
+      const item = row.data();
+      if (item.interaction_type !== 'STORY_UPLOAD') return false;
+      const status = String(item.status || '').toUpperCase();
+      if (status === 'UNUSED') return true;
+      if (status !== 'USED') return false;
+      const accessDate = new Date(item.consumed_at || item.created_at || 0).getTime();
+      return Number.isFinite(accessDate) && now - accessDate <= accessWindowMs;
+    });
+  } catch (error) {
+    console.error('Error checking story access purchase:', error);
+    return false;
+  }
+};
+
+module.exports = { hasDirectMessagePurchase, getDailyUsage, incrementUsage, consumeStoryPurchase, hasUnusedStoryPurchase, hasStoryPurchaseAccess };

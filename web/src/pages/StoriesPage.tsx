@@ -17,6 +17,8 @@ import { useSubscription } from '@shared/hooks/useSubscription';
 import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
+const STORY_PAGE_SIZE = 10;
+
 interface Status {
   id: string;
   user_id: string;
@@ -46,6 +48,8 @@ const StoriesPage: React.FC = () => {
 
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreStories, setHasMoreStories] = useState(false);
   const [locked, setLocked] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selectedStatusId, setSelectedStatusId] = useState<string | null>(null);
@@ -65,6 +69,8 @@ const StoriesPage: React.FC = () => {
   const [isPurchaseOpen, setIsPurchaseOpen] = useState(false);
   const [storyUploadUnlocked, setStoryUploadUnlocked] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const statusesCountRef = useRef(0);
   const initialActionHandledRef = useRef(false);
 
   const canPublishForFree = !!profile?.is_premium || !!profile?.is_vip;
@@ -76,8 +82,10 @@ const StoriesPage: React.FC = () => {
         share: 'Share a moment',
         back: 'Back',
         lockedTitle: 'Stories are reserved',
-        lockedBody: 'Stories viewing is reserved for Premium members, but free accounts can publish one story with a one-time 500 F payment.',
+        lockedBody: 'Stories viewing is reserved for Premium members. Free accounts can publish one story and view up to 10 stories with a one-time 500 F payment.',
         unlockStory: 'Publish one Story - 500 F',
+        loadMore: 'Load more stories',
+        loadingMore: 'Loading stories...',
         premium: 'Become Premium',
         myStory: 'My story',
       }
@@ -87,8 +95,10 @@ const StoriesPage: React.FC = () => {
         share: 'Partager un moment',
         back: 'Retour',
         lockedTitle: 'Stories réservées',
-        lockedBody: 'La consultation des Stories est réservée aux membres Premium, mais les comptes gratuits peuvent publier une story avec un paiement ponctuel de 500 F.',
+        lockedBody: 'La consultation des Stories est réservée aux membres Premium. Les comptes gratuits peuvent publier une story et consulter 10 stories maximum avec un paiement ponctuel de 500 F.',
         unlockStory: 'Publier une Story - 500 F',
+        loadMore: 'Charger plus de stories',
+        loadingMore: 'Chargement des stories...',
         premium: 'Devenir Premium',
         myStory: 'Ma story',
       };
@@ -118,26 +128,55 @@ const StoriesPage: React.FC = () => {
     });
   }, []);
 
-  const fetchStatuses = useCallback(async () => {
+  const fetchStatuses = useCallback(async ({ append = false } = {}) => {
     try {
-      const data = await apiRequest<Status[]>('/api/statuses', { requireAuth: true });
+      if (append) setLoadingMore(true);
+      else setLoading(true);
+
+      const offset = append ? statusesCountRef.current : 0;
+      const data = await apiRequest<Status[]>(`/api/statuses?limit=${STORY_PAGE_SIZE}&offset=${offset}`, { requireAuth: true });
       const nextStatuses = data || [];
-      setStatuses(nextStatuses);
+      setStatuses((current) => {
+        if (!append) return nextStatuses;
+        const seen = new Set(current.map((item) => item.id));
+        return [...current, ...nextStatuses.filter((item) => !seen.has(item.id))];
+      });
+      setHasMoreStories(nextStatuses.length === STORY_PAGE_SIZE);
       setLocked(false);
       resolveMediaUrls(nextStatuses);
     } catch (e: any) {
       if (String(e?.message || '').toLowerCase().includes('subscription_required')) {
         setLocked(true);
         setStatuses([]);
+        setHasMoreStories(false);
       }
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, [resolveMediaUrls]);
 
   useEffect(() => {
+    statusesCountRef.current = statuses.length;
+  }, [statuses.length]);
+
+  useEffect(() => {
     if (user) void fetchStatuses();
   }, [user, fetchStatuses]);
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node || !hasMoreStories || loadingMore || selectedStatusId) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        void fetchStatuses({ append: true });
+      }
+    }, { rootMargin: '240px 0px' });
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [fetchStatuses, hasMoreStories, loadingMore, selectedStatusId]);
 
   const refreshUploadAccess = useCallback(async () => {
     if (!user) return false;
@@ -249,7 +288,7 @@ const StoriesPage: React.FC = () => {
 
       showAlert(t('success'), t('story_published'));
       setStoryUploadUnlocked(false);
-      await fetchStatuses();
+      await fetchStatuses({ append: false });
     } catch {
       showAlert(t('error'), t('story_publish_failed'));
     } finally {
@@ -275,7 +314,7 @@ const StoriesPage: React.FC = () => {
         requireAuth: true,
       });
     } catch {
-      await fetchStatuses();
+      await fetchStatuses({ append: false });
     } finally {
       setLikeLoadingByStatusId((prev) => {
         const next = { ...prev };
@@ -358,6 +397,7 @@ const StoriesPage: React.FC = () => {
       setIsPurchaseOpen(false);
       setStoryUploadUnlocked(true);
       showAlert(t('purchase_success'), t('story_upload_unlocked'));
+      await fetchStatuses({ append: false });
       window.setTimeout(() => fileInputRef.current?.click(), 600);
     }
   };
@@ -590,6 +630,19 @@ const StoriesPage: React.FC = () => {
           );
         })}
       </div>
+
+      {hasMoreStories && (
+        <div ref={loadMoreRef} className="flex justify-center pt-2">
+          <button
+            type="button"
+            onClick={() => void fetchStatuses({ append: true })}
+            disabled={loadingMore}
+            className="rounded-2xl border border-white/10 bg-slate-900 px-5 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-slate-800 disabled:opacity-60"
+          >
+            {loadingMore ? labels.loadingMore : labels.loadMore}
+          </button>
+        </div>
+      )}
 
       {selectedStatus && (
         <div className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-2xl flex items-center justify-center p-0 md:p-10 animate-in fade-in duration-300">
