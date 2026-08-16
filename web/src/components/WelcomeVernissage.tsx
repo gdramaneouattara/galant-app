@@ -12,13 +12,13 @@ const STEPS = {
     {
       title: "Bienvenue dans l'Elite",
       subtitle: "L'UNIVERS GALANT",
-      description: "Vous venez de rejoindre un cercle restreint ou chaque rencontre est une promesse d'elegance et de distinction.",
+      description: "Vous venez de rejoindre un cercle restreint où chaque rencontre est une promesse d'élégance et de distinction.",
       icon: Sparkles,
       color: 'text-amber-500',
       bg: 'bg-amber-500/10'
     },
     {
-      title: 'La Galerie & Le Marche',
+      title: 'La Galerie & Le Marché',
       subtitle: 'DECOUVERTE & EFFICACITE',
       description: 'Parcourez les profils avec fluidite et comparez les meilleures offres du marche ivoirien pour vos cadeaux de prestige.',
       icon: LayoutGrid,
@@ -28,7 +28,7 @@ const STEPS = {
     {
       title: 'La Sentinelle',
       subtitle: 'VOTRE ANGE GARDIEN',
-      description: 'Profitez de vos moments en toute serenite. Notre module de securite veille sur vous et vos proches, en toute discretion.',
+      description: 'Profitez de vos moments en toute sérénité. Notre module de sécurité veille sur vous et vos proches, en toute discrétion.',
       icon: Shield,
       color: 'text-blue-500',
       bg: 'bg-blue-500/10'

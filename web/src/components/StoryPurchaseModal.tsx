@@ -14,11 +14,11 @@ const STORY_UPLOAD_PRICE = import.meta.env.VITE_STORY_UPLOAD_AMOUNT || '500';
 const copy = {
   fr: {
     title: 'Partager un moment',
-    body: 'Publiez une story visible pendant 24h par toute la communaute Galant.',
-    unit: 'par story publiee',
+    body: 'Publiez une story visible pendant 24h par toute la communauté Galant.',
+    unit: 'par story publiée',
     pay: 'Carte ou Mobile Money',
-    later: 'Peut-etre plus tard',
-    hint: 'Astuce : les membres Premium beneficient de publications illimitees et gratuites.'
+    later: 'Peut-être plus tard',
+    hint: 'Astuce : les membres Premium bénéficient de publications illimitées et gratuites.'
   },
   en: {
     title: 'Share a moment',

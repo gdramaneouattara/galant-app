@@ -33,13 +33,13 @@ const SettingsModal: React.FC<Props> = ({
         close: 'Close'
       }
     : {
-        settings: 'Parametres',
+        settings: 'Paramètres',
         appearance: 'Apparence',
         light: 'Clair',
         dark: 'Sombre',
-        system: 'Systeme',
-        privacy: 'Confidentialite & donnees',
-        preparing: 'Preparation...',
+        system: 'Système',
+        privacy: 'Confidentialité & données',
+        preparing: 'Préparation...',
         deleting: 'Suppression...',
         close: 'Fermer'
       };

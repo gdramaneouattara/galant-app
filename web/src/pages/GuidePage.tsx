@@ -45,7 +45,7 @@ const GuidePage: React.FC = () => {
         chatError: 'Unable to open the conversation.',
         loading: 'Selecting the best addresses...',
         eyebrow: 'Galant Experience',
-        title: 'The Privilege Guide',
+        title: 'The Privilège Guide',
         subtitle: 'Discover our exclusive selection of exceptional places for unforgettable dates.',
         certified: 'Certified Places',
         memberBenefits: 'Member Benefits',
@@ -58,7 +58,7 @@ const GuidePage: React.FC = () => {
         ],
         editorial: 'Galant Pick',
         elite: 'Certified Elite',
-        benefit: 'Member Privilege',
+        benefit: 'Member Privilège',
         propose: 'Suggest',
         concierge: 'Concierge Access',
         partnerTitle: 'Your venue deserves excellence',
@@ -73,9 +73,9 @@ const GuidePage: React.FC = () => {
         chatError: 'Impossible d ouvrir la discussion.',
         loading: 'Selection des meilleures adresses...',
         eyebrow: 'Experience Galante',
-        title: 'Le Guide Privilege',
+        title: 'Le Guide Privilège',
         subtitle: "Decouvrez notre selection exclusive de lieux d'exception pour des rendez-vous inoubliables.",
-        certified: 'Lieux Certifies',
+        certified: 'Lieux Certifiés',
         memberBenefits: 'Avantages Membres',
         search: 'Rechercher un lieu, une ville...',
         categories: [
@@ -85,13 +85,13 @@ const GuidePage: React.FC = () => {
           { id: 'HOTEL', label: 'Hotels', icon: Star }
         ],
         editorial: 'Conseil Galant',
-        elite: 'Elite Certifie',
-        benefit: 'Privilege Membre',
+        elite: 'Elite Certifié',
+        benefit: 'Privilège Membre',
         propose: 'Proposer',
-        concierge: 'Acces Conciergerie',
+        concierge: 'Accès Conciergerie',
         partnerTitle: "Votre lieu merite l'excellence",
-        partnerBody: 'Rejoignez le cercle restreint des etablissements certifies Galant.',
-        partnerCta: 'Inscrire mon etablissement',
+        partnerBody: 'Rejoignez le cercle restreint des établissements certifies Galant.',
+        partnerCta: 'Inscrire mon établissement',
         partnerFallback: 'ce partenaire'
       };
 

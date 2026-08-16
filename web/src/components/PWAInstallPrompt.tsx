@@ -163,8 +163,8 @@ const PWAInstallPrompt: React.FC = () => {
             </p>
             <p className="text-[10px] font-medium leading-relaxed text-slate-400">
               Si Chrome affiche seulement <span className="text-white font-bold">Ouvrir Galant</span>, l'app est
-              deja installee par le navigateur : recherchez Galant dans la liste des applications, puis maintenez son
-              icone pour la remettre sur l'ecran d'accueil.
+              déjà installee par le navigateur : recherchez Galant dans la liste des applications, puis maintenez son
+              icône pour la remettre sur l'ecran d'accueil.
             </p>
             <button
               onClick={collapseHelp}

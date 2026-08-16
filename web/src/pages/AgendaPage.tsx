@@ -71,7 +71,7 @@ const AgendaPage: React.FC = () => {
       }
     : {
         confirmedTitle: 'Inscription confirmee',
-        confirmedBody: 'Votre place est reservee. Preparez votre plus belle tenue !',
+        confirmedBody: 'Votre place est réservée. Preparez votre plus belle tenue !',
         linkCopied: 'Lien copie',
         linkCopiedBody: 'La sortie a ete copiee.',
         loading: "Consultation de l'Agenda Royal...",
@@ -96,8 +96,8 @@ const AgendaPage: React.FC = () => {
         ticketing: 'BILLETTERIE TIKERAMA',
         attending: "J'Y SERAI",
         reserve: 'RESERVER MA PLACE',
-        eliteTitle: "Accedez a l'Elite Galante",
-        eliteBody: 'Les membres Premium beneficient d invitations prioritaires et de places garanties dans les lieux les plus convoites.',
+        eliteTitle: "Accédez a l'Elite Galante",
+        eliteBody: 'Les membres Premium bénéficient d invitations prioritaires et de places garanties dans les lieux les plus convoites.',
         becomePremium: 'Devenir Premium'
       };
 

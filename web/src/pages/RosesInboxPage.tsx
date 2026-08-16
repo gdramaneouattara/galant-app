@@ -58,12 +58,12 @@ const RosesInboxPage: React.FC = () => {
     : {
         loadError: 'Impossible de charger la boite des roses.',
         opening: 'Ouverture de la boite...',
-        retry: 'Reessayer',
-        emptyPending: 'Aucune rose a traiter pour le moment.',
+        retry: 'Réessayer',
+        emptyPending: 'Aucune rose à traiter pour le moment.',
         emptyHistory: 'Aucune rose dans l historique.',
         unavailable: 'Certaines roses comptabilisees ne sont plus disponibles car le profil expediteur est incomplet, suspendu ou supprime.',
         cityMissing: 'Ville non renseignee',
-        roseReceived: 'Rose recue',
+        roseReceived: 'Rose reçue',
         note: 'Note',
         noNote: 'A envoye une rose sans message.',
         profile: 'Fiche',
@@ -71,8 +71,8 @@ const RosesInboxPage: React.FC = () => {
         ignore: 'Ignorer',
         accept: 'Accepter',
         chat: 'Discuter',
-        subtitle: 'Roses recues, separees des likes et des messages',
-        pending: 'A traiter',
+        subtitle: 'Roses reçues, séparées des likes et des messages',
+        pending: 'À traiter',
         history: 'Historique',
         openProfile: (name: string) => `Ouvrir la fiche de ${name}`
       };

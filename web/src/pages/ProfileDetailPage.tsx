@@ -187,7 +187,7 @@ const ProfileDetailPage: React.FC = () => {
                 {profile.distance_km && <span> • {profile.distance_km.toFixed(1)} km</span>}
               </div>
               <div className="inline-block bg-rose-50 dark:bg-rose-900/20 text-primary px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter transition-colors">
-                🌹 {profile.roses_count || 0} {language === 'en' ? 'roses received' : 'roses recues'}
+                🌹 {profile.roses_count || 0} {language === 'en' ? 'roses received' : 'roses reçues'}
               </div>
             </div>
 
@@ -215,7 +215,7 @@ const ProfileDetailPage: React.FC = () => {
 
             {profile.interests?.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige transition-colors">{language === 'en' ? 'Interests' : 'Centres d interet'}</h3>
+                <h3 className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige transition-colors">{language === 'en' ? 'Interests' : 'Centres d intérêt'}</h3>
                 <div className="flex flex-wrap gap-2">
                   {profile.interests.map((it: string) => (
                     <span key={it} className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-4 py-2 rounded-xl text-xs font-bold transition-colors">

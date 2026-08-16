@@ -67,18 +67,18 @@ const AuthPage: React.FC = () => {
     : {
         email: 'Adresse Email',
         password: 'Mot de passe',
-        forgotPassword: 'Mot de passe oublie ?',
+        forgotPassword: 'Mot de passe oublié ?',
         acceptTerms: "J'accepte les",
         terms: 'CGU',
-        privacy: 'Politique de confidentialite',
+        privacy: 'Politique de confidentialité',
         and: 'et la',
         wait: 'Patientez...',
         sendLink: 'Envoyer le lien',
         or: 'OU',
         switchToSignup: "Pas encore membre ? S'inscrire",
-        switchToLogin: 'Deja un compte ? Se connecter',
+        switchToLogin: 'Déjà un compte ? Se connecter',
         useAnotherEmail: 'Utiliser une autre adresse email',
-        partnerQuestion: 'Vous etes un etablissement ?',
+        partnerQuestion: 'Vous êtes un établissement ?',
         partnerCta: 'Devenez Partenaire Galant'
       };
 

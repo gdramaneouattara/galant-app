@@ -51,7 +51,7 @@ const StorePage: React.FC = () => {
         subscribe: 'Subscribe',
         recommended: 'Recommended',
         choosePrivilege: 'Choose Privilege',
-        aLaCarte: 'A la Carte',
+        aLaCarte: 'À la Carte',
         rosesVisibility: 'Rose Balance & Visibility',
         immediate: 'Instant action',
         destinyBoosts: 'Destiny Accelerators',
@@ -77,32 +77,32 @@ const StorePage: React.FC = () => {
         security: 'All transactions are SSL encrypted and processed by Paystack. Orange Money, MTN MoMo, Moov Money and Wave are accepted.'
       }
     : {
-        alreadyTitle: 'Deja disponible',
-        alreadyBody: 'Partenaires autour de moi est deja inclus dans votre acces.',
+        alreadyTitle: 'Déjà disponible',
+        alreadyBody: 'Partenaires autour de moi est déjà inclus dans votre accès.',
         error: 'Erreur',
-        subtitle: 'Privileges & Exclusivites',
+        subtitle: 'Privilèges & Exclusivités',
         statusLabel: 'Votre Statut Actuel',
-        privilegeMember: 'Membre Privilege',
+        privilegeMember: 'Membre Privilège',
         classicMember: 'Membre Classique',
         active: 'Actif',
         subscriptions: 'Abonnements',
         oneMonth: '1 mois',
         threeMonths: '3 mois',
         perMonth: '/ mois',
-        standardFeatures: ['Swipes illimites', 'Badge Membre Certifie', 'Voir qui vous a like'],
+        standardFeatures: ['Swipes illimités', 'Badge Membre Certifié', 'Voir qui vous a liké'],
         privilegeFeatures: ['Tout le mode Standard', 'Mode Invisible discret', '3 Roses offertes / mois'],
         processing: 'Traitement...',
         subscribe: "S'abonner",
-        recommended: 'Recommande',
-        choosePrivilege: 'Choisir le Privilege',
-        aLaCarte: 'A la Carte',
-        rosesVisibility: 'Solde de Roses & Visibilite',
-        immediate: 'Action Immediate',
-        destinyBoosts: 'Accelerateurs de Destin',
-        passes: 'Pass & Deblocages',
+        recommended: 'Recommandé',
+        choosePrivilege: 'Choisir le Privilège',
+        aLaCarte: 'À la Carte',
+        rosesVisibility: 'Solde de Roses & Visibilité',
+        immediate: 'Action Immédiate',
+        destinyBoosts: 'Accélérateurs de Destin',
+        passes: 'Pass & Déblocages',
         included: 'Inclus',
         rosePacks: [
-          { id: 'ROSE_1', type: 'ROSE_PACK' as PurchaseType, label: '1 Rose a consommer', price: 500, icon: '🌹' },
+          { id: 'ROSE_1', type: 'ROSE_PACK' as PurchaseType, label: '1 Rose à consommer', price: 500, icon: '🌹' },
           { id: 'ROSE_5', type: 'ROSE_PACK' as PurchaseType, label: 'Pack 5 Roses', price: 2500, icon: '✨' },
           { id: 'ROSE_10', type: 'ROSE_PACK' as PurchaseType, label: 'Pack 10 Roses', price: 5000, icon: '🔥' },
           { id: 'GOLDEN_ROSE', type: 'GOLDEN_ROSE' as PurchaseType, label: "Rose d'Or (3h)", price: 2500, icon: '🏆' },
@@ -113,12 +113,12 @@ const StorePage: React.FC = () => {
           { id: '7D', label: 'Boost 7 Jours', price: 5000, color: 'text-primary', icon: Star },
         ],
         unlocks: [
-          { id: 'DISCOVER_GRID_UNLOCK', type: 'DISCOVER_GRID_UNLOCK' as PurchaseType, label: 'Acces Galerie', sub: 'Quota 100 profils', price: 1000, icon: LayoutGrid, color: 'text-indigo-500' },
-          { id: 'LIKES_INBOX_2H', type: 'LIKES_INBOX_2H' as PurchaseType, label: 'Debloquer les Likes', sub: 'Pendant 2 heures', price: 1000, icon: Heart, color: 'text-rose-500' },
+          { id: 'DISCOVER_GRID_UNLOCK', type: 'DISCOVER_GRID_UNLOCK' as PurchaseType, label: 'Accès Galerie', sub: 'Quota 100 profils', price: 1000, icon: LayoutGrid, color: 'text-indigo-500' },
+          { id: 'LIKES_INBOX_2H', type: 'LIKES_INBOX_2H' as PurchaseType, label: 'Débloquer les Likes', sub: 'Pendant 2 heures', price: 1000, icon: Heart, color: 'text-rose-500' },
           { id: 'STORY_UPLOAD', type: 'STORY_UPLOAD' as PurchaseType, label: 'Publier une Story', sub: 'Publication ponctuelle', price: 500, icon: Camera, color: 'text-amber-500' },
           { id: 'PARTNER_DISCOVERY_UNLOCK', type: 'PARTNER_DISCOVERY_UNLOCK' as PurchaseType, label: 'Partenaires autour de moi', sub: 'Recherche Google directe', price: 500, icon: MapPinned, color: 'text-emerald-500' },
         ],
-        security: 'Toutes vos transactions sont securisees par cryptage SSL et traitees par Paystack. Orange Money, MTN MoMo, Moov Money et Wave sont acceptes.'
+        security: 'Toutes vos transactions sont sécurisées par cryptage SSL et traitées par Paystack. Orange Money, MTN MoMo, Moov Money et Wave sont acceptés.'
       };
 
   const handlePurchase = async (type: PurchaseType, id: string, amount: number) => {
@@ -229,7 +229,7 @@ const StorePage: React.FC = () => {
             </div>
             <div className="space-y-4 relative z-10">
               <div className="flex justify-between items-start">
-                <h4 className="text-xl font-serif italic tracking-tighter uppercase text-white leading-none">Privilege</h4>
+                <h4 className="text-xl font-serif italic tracking-tighter uppercase text-white leading-none">Privilège</h4>
                 <div className="bg-white/10 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest text-amber-400">{labels.threeMonths}</div>
               </div>
               <div className="flex items-baseline gap-1">

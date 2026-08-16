@@ -170,7 +170,7 @@ const PremiumPage: React.FC = () => {
                   {[
                     'Tous les avantages de Standard',
                     'Mode Invisible (Inconito total) 🎭',
-                    '3 Roses a consommer offertes chaque mois',
+                    '3 Roses à consommer offertes chaque mois',
                     'Priorité absolue sur le support'
                   ].map((f, i) => (
                     <li key={i} className="flex items-start gap-3 text-sm font-bold text-slate-300 leading-tight">
@@ -218,9 +218,9 @@ const PremiumPage: React.FC = () => {
 
             <div className="space-y-4 relative z-10">
               {[
-                { id: 'ROSE_1', type: 'ROSE_PACK' as PurchaseType, label: '1 Rose a consommer', sub: 'Solde disponible', price: 500, icon: '🌹' },
-                { id: 'ROSE_5', type: 'ROSE_PACK' as PurchaseType, label: 'Pack Decouverte', sub: '5 Roses a consommer', price: 2500, icon: '✨' },
-                { id: 'ROSE_10', type: 'ROSE_PACK' as PurchaseType, label: 'Pack Passion', sub: '10 Roses a consommer', price: 5000, icon: '🔥' },
+                { id: 'ROSE_1', type: 'ROSE_PACK' as PurchaseType, label: '1 Rose à consommer', sub: 'Solde disponible', price: 500, icon: '🌹' },
+                { id: 'ROSE_5', type: 'ROSE_PACK' as PurchaseType, label: 'Pack Découverte', sub: '5 Roses à consommer', price: 2500, icon: '✨' },
+                { id: 'ROSE_10', type: 'ROSE_PACK' as PurchaseType, label: 'Pack Passion', sub: '10 Roses à consommer', price: 5000, icon: '🔥' },
                 { id: 'GOLDEN_ROSE', type: 'GOLDEN_ROSE' as PurchaseType, label: 'Rose d Or visibilite', sub: 'Boost prioritaire 3h', price: 2500, icon: '🏆' },
               ].map((pack) => (
                 <button

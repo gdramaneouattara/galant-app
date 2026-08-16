@@ -14,7 +14,7 @@ interface Props {
 
 const copy = {
   fr: {
-    premiumTitle: 'Privilege Premium',
+    premiumTitle: 'Privilège Premium',
     standingLocked: 'Les filtres de standing sont reserves aux membres Premium.',
     scoreLocked: 'Le filtrage par score de galanterie est une option Premium.',
     title: 'Filtres de recherche',

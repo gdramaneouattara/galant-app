@@ -84,16 +84,16 @@ const DiscoverGridPage: React.FC = () => {
         distance: (km: number) => `${km.toFixed(1)} km away`
       }
     : {
-        quotaTitle: 'Quota epuise',
-        quotaBody: "Votre quota d'exploration Galerie est termine.",
-        loading: "L'elegance se prepare...",
+        quotaTitle: 'Quota épuisé',
+        quotaBody: "Votre quota d'exploration Galerie est terminé.",
+        loading: "L'élégance se prépare...",
         title: 'La Galerie',
-        subtitle: 'Parcourez les profils avec efficacite',
+        subtitle: 'Parcourez les profils avec efficacité',
         remaining: (count: number) => `${count} profils restants`,
         swipeView: 'Vue Swipe',
         search: 'Rechercher un membre, une ville...',
-        empty: 'Aucun profil ne correspond a votre recherche',
-        reset: 'Reinitialiser la recherche',
+        empty: 'Aucun profil ne correspond à votre recherche',
+        reset: 'Réinitialiser la recherche',
         loadMore: 'Charger 12 profils',
         loadingMore: 'Chargement...',
         noMore: 'Fin de la galerie',

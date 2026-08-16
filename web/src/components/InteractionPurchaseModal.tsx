@@ -16,18 +16,18 @@ interface Props {
 const copy = {
   fr: {
     error: 'Erreur',
-    galleryTarget: 'Acces Galerie',
+    galleryTarget: 'Accès Galerie',
     likesTarget: 'Boite de Likes',
     roses: 'Offrir des Roses',
-    likes: 'Debloquer les Likes',
-    gallery: 'Acces Galerie',
-    dm: 'Message prive',
-    likesBody: "Accedez a l'integralite de vos likes recus pendant 2 heures et trouvez votre match immediatement.",
-    galleryBody: 'Basculez sur la vue en grille pour parcourir tous les profils avec une efficacite maximale et sans limite.',
-    dmPrefix: 'Debloquez une discussion directe avec',
+    likes: 'Débloquer les Likes',
+    gallery: 'Accès Galerie',
+    dm: 'Message privé',
+    likesBody: "Accédez à l'intégralité de vos likes reçus pendant 2 heures et trouvez votre match immédiatement.",
+    galleryBody: 'Basculez sur la vue en grille pour parcourir tous les profils avec une efficacité maximale et sans limite.',
+    dmPrefix: 'Débloquez une discussion directe avec',
     price: 'Tarif unique',
     pay: 'Payer par Carte ou Mobile Money',
-    secured: 'Transaction securisee par Paystack'
+    secured: 'Transaction sécurisée par Paystack'
   },
   en: {
     error: 'Error',

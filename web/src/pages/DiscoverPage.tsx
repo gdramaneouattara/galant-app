@@ -41,12 +41,12 @@ const DiscoverPage: React.FC = () => {
         reload: 'Reload charm'
       }
     : {
-        galleryAccess: 'Acces Galerie',
+        galleryAccess: 'Accès Galerie',
         loading: 'Le charme opere...',
         welcome: 'Bienvenue',
         welcomeBody: "Faites eclore de belles histoires. Offrez une rose, commencez une rencontre d'exception.",
         createAccount: 'Creer un compte',
-        login: 'Deja membre ? Se connecter',
+        login: 'Déjà membre ? Se connecter',
         grid: 'Vue Grille',
         filters: 'Filtres',
         elite: 'Elite',

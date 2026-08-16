@@ -46,8 +46,8 @@ const LikesInboxPage: React.FC = () => {
         likeBack: 'Like back'
       }
     : {
-        unlock2h: 'Acces 2h (1 000 F)',
-        empty: 'Aucun like recu pour le moment. Soyez plus actif !',
+        unlock2h: 'Accès 2h (1 000 F)',
+        empty: 'Aucun like reçu pour le moment. Soyez plus actif !',
         chat: 'Discuter',
         liked: 'Like envoye',
         likeBack: 'Liker en retour'

@@ -83,11 +83,11 @@ const StoriesPage: React.FC = () => {
       }
     : {
         title: 'Galant Stories',
-        subtitle: 'Les moments de la communaute',
+        subtitle: 'Les moments de la communauté',
         share: 'Partager un moment',
         back: 'Retour',
-        lockedTitle: 'Stories reservees',
-        lockedBody: 'La consultation des Stories est reservee aux membres Premium, mais les comptes gratuits peuvent publier une story avec un paiement ponctuel de 500 F.',
+        lockedTitle: 'Stories réservées',
+        lockedBody: 'La consultation des Stories est réservée aux membres Premium, mais les comptes gratuits peuvent publier une story avec un paiement ponctuel de 500 F.',
         unlockStory: 'Publier une Story - 500 F',
         premium: 'Devenir Premium',
         myStory: 'Ma story',
@@ -675,7 +675,7 @@ const StoriesPage: React.FC = () => {
             <div className="absolute bottom-8 sm:bottom-12 left-6 right-6 sm:left-10 sm:right-10 flex items-end gap-4 z-50">
               <div className="flex-1 bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl p-5 min-w-0">
                 <p className="text-white text-sm sm:text-base font-medium leading-relaxed italic">
-                  {selectedStatus.content || "Vivre l'instant present avec elegance..."}
+                  {selectedStatus.content || "Vivre l'instant présent avec élégance..."}
                 </p>
               </div>
 

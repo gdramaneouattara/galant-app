@@ -57,9 +57,9 @@ const copy = {
     searchCity: 'Chercher cette ville',
     nearMe: 'Me geolocaliser',
     payTitle: 'Fonctionnalite payante',
-    payBody: 'Les membres Premium y accedent directement. Les comptes gratuits peuvent debloquer cette recherche pour 500 F CFA.',
-    unlock: 'Debloquer pour 500 F',
-    empty: 'Aucune adresse trouvee pour cette recherche.',
+    payBody: 'Les membres Premium y accèdent directement. Les comptes gratuits peuvent débloquer cette recherche pour 500 F CFA.',
+    unlock: 'Débloquer pour 500 F',
+    empty: 'Aucune adresse trouvée pour cette recherche.',
     maps: 'Ouvrir Maps',
     call: 'Appeler',
     categories: {
@@ -114,7 +114,7 @@ const PartnerDiscoveryPage: React.FC = () => {
     const ok = await purchaseWithPaystack('PARTNER_DISCOVERY_UNLOCK', 500, 'partner_discovery', {
       targetName: 'Partenaires autour de moi'
     });
-    if (ok) showAlert('Succes', 'Recherche partenaires debloquee.');
+    if (ok) showAlert('Succès', 'Recherche partenaires débloquée.');
   };
 
   const fetchDiscovery = async (params: Record<string, string | number>) => {
@@ -164,7 +164,7 @@ const PartnerDiscoveryPage: React.FC = () => {
           category
         });
       },
-      () => showAlert('Erreur', 'Impossible de recuperer votre position.'),
+      () => showAlert('Erreur', 'Impossible de récupérer votre position.'),
       { enableHighAccuracy: true, timeout: 12000 }
     );
   };

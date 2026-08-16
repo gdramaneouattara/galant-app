@@ -58,7 +58,7 @@ const ProfilePage: React.FC = () => {
         emptyBio: 'No bio yet. Tap the edit icon to introduce yourself.'
       }
     : {
-        preparing: 'Preparation de votre elegance...',
+        preparing: 'Préparation de votre élégance...',
         profileNotFound: 'Profil non trouve',
         login: 'Se connecter',
         addPhoto: 'Ajouter une photo',
@@ -67,13 +67,13 @@ const ProfilePage: React.FC = () => {
         adminSubtitle: 'Ouvrir le dashboard administrateur',
         storeSubtitle: 'Abonnements, Roses & Boosts',
         inviteTitle: 'Inviter un Ami',
-        inviteSubtitle: 'Gagnez des Roses a consommer gratuitement',
+        inviteSubtitle: 'Gagnez des Roses à consommer gratuitement',
         goal: 'Je cherche...',
         travelMode: 'Mode Voyage',
         changeCity: 'Changez de ville',
         certification: 'Certification',
-        bioPlaceholder: 'Decrivez votre elegance...',
-        emptyBio: "Aucune bio redigee pour le moment. Cliquez sur l'icone editer pour vous presenter."
+        bioPlaceholder: 'Décrivez votre élégance...',
+        emptyBio: "Aucune bio rédigée pour le moment. Cliquez sur l'icône éditer pour vous présenter."
       };
 
   useEffect(() => {

@@ -156,7 +156,7 @@ const MatchesPage: React.FC = () => {
           <div className="absolute -right-4 -bottom-4 bg-white/10 w-24 h-24 rounded-full blur-2xl group-hover:bg-white/20 transition-all"></div>
           <div className="text-2xl mb-2 group-hover:rotate-12 transition-transform">🌹</div>
           <p className="text-2xl font-extrabold tracking-tight leading-none">{rosesInboxCount}</p>
-          <p className="text-[10px] font-medium uppercase tracking-prestige mt-1 opacity-80">Roses a traiter</p>
+          <p className="text-[10px] font-medium uppercase tracking-prestige mt-1 opacity-80">Roses à traiter</p>
           {rosesInboxCount > 0 && <div className="absolute top-4 right-4 w-2 h-2 bg-white rounded-full animate-ping"></div>}
         </button>
       </div>
@@ -249,7 +249,7 @@ const MatchesPage: React.FC = () => {
                       {chat.venues?.name}
                     </span>
                     <p className="text-sm truncate font-medium text-slate-500 dark:text-slate-400">
-                      {chat.venues?.benefit_description || 'Conversation avec un etablissement partenaire'}
+                      {chat.venues?.benefit_description || 'Conversation avec un établissement partenaire'}
                     </p>
                   </div>
 

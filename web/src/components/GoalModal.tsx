@@ -7,14 +7,14 @@ export type RelationshipGoalId = 'SERIOUS' | 'FRIENDSHIP' | 'CASUAL';
 export const RELATIONSHIP_GOALS = [
   {
     id: 'SERIOUS' as RelationshipGoalId,
-    label: { fr: 'Amour serieux', en: 'Serious love' },
+    label: { fr: 'Amour sérieux', en: 'Serious love' },
     icon: Heart,
     color: 'text-primary',
     bg: 'bg-rose-50'
   },
   {
     id: 'FRIENDSHIP' as RelationshipGoalId,
-    label: { fr: 'Amitie', en: 'Friendship' },
+    label: { fr: 'Amitié', en: 'Friendship' },
     icon: Users,
     color: 'text-blue-500',
     bg: 'bg-blue-50'
@@ -30,7 +30,7 @@ export const RELATIONSHIP_GOALS = [
 
 export const getRelationshipGoalLabel = (goalId?: string | null, language: 'fr' | 'en' = 'fr') => {
   const goal = RELATIONSHIP_GOALS.find((item) => item.id === goalId);
-  return goal?.label[language] || (language === 'en' ? 'Set my goal' : 'Definir mon objectif');
+  return goal?.label[language] || (language === 'en' ? 'Set my goal' : 'Définir mon objectif');
 };
 
 interface Props {
@@ -43,7 +43,7 @@ interface Props {
 const copy = {
   fr: {
     title: 'Que cherchez-vous ?',
-    selected: 'Selectionne',
+    selected: 'Sélectionné',
     choose: 'Cliquer pour choisir',
     close: 'Fermer'
   },
