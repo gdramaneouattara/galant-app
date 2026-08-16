@@ -75,7 +75,7 @@ test('Rules: Web Stories are paginated and paid one-shot access is capped', asyn
   assert.match(webStories, /\/api\/statuses\?limit=\$\{STORY_PAGE_SIZE\}&offset=\$\{offset\}/);
   assert.match(webStories, /IntersectionObserver/);
   assert.match(webStories, /fetchStatuses\(\{ append: true \}\)/);
-  assert.match(webStories, /jusqu.+10 stories/);
+  assert.match(webStories, /consulter 10 stories maximum/);
   assert.match(statusController, /STORY_PAGE_LIMIT = 10/);
   assert.match(statusController, /STORY_PURCHASE_VIEW_LIMIT = 10/);
   assert.match(statusController, /hasStorySubscriptionAccess/);
