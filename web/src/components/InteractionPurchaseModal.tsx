@@ -23,7 +23,7 @@ const copy = {
     gallery: 'Accès Galerie',
     dm: 'Message privé',
     likesBody: "Accédez à l'intégralité de vos likes reçus pendant 2 heures et trouvez votre match immédiatement.",
-    galleryBody: 'Basculez sur la vue en grille pour parcourir tous les profils avec une efficacité maximale et sans limite.',
+    galleryBody: 'Basculez sur la vue en grille pour parcourir plus de profils avec une efficacité maximale.',
     dmPrefix: 'Débloquez une discussion directe avec',
     price: 'Tarif unique',
     pay: 'Payer par Carte ou Mobile Money',
