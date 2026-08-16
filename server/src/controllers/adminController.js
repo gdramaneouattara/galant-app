@@ -28,6 +28,15 @@ const chunkRows = (rows, size) => {
   return chunks;
 };
 
+const normalizeAdminText = (value = '') => String(value || '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, ' ')
+  .trim();
+
+const slugifyAdminText = (value = '') => normalizeAdminText(value).replace(/\s+/g, '_') || 'galant';
+
 const mergeRosePacks = (overrides = {}) => {
   const merged = {};
   const keys = new Set([...Object.keys(pricingDefaults.ROSE_PACKS), ...Object.keys(overrides || {})]);
@@ -689,6 +698,101 @@ const importTikeramaAgenda = async (req, res) => {
   }
 };
 
+const createAdminAgendaEvent = async (req, res) => {
+  const {
+    title,
+    description,
+    photoUrl,
+    photoVariants,
+    eventType,
+    startsAt,
+    expiresAt,
+    city,
+    venueName,
+    address,
+    priceLabel
+  } = req.body || {};
+
+  const cleanTitle = String(title || '').trim();
+  const cleanCity = String(city || 'Abidjan').trim();
+  const cleanVenueName = String(venueName || 'Agenda Galant').trim();
+  const cleanPhotoUrl = String(photoUrl || '').trim();
+  const startsAtDate = new Date(startsAt);
+  const expiresAtDate = new Date(expiresAt);
+
+  if (!cleanTitle) return res.status(400).json({ error: 'missing_title' });
+  if (!cleanPhotoUrl) return res.status(400).json({ error: 'missing_poster' });
+  if (Number.isNaN(startsAtDate.getTime()) || Number.isNaN(expiresAtDate.getTime())) {
+    return res.status(400).json({ error: 'invalid_dates' });
+  }
+  if (expiresAtDate <= startsAtDate) return res.status(400).json({ error: 'invalid_date_range' });
+
+  const safeEventType = ['EVENT', 'PARTY', 'FLASH_OFFER', 'NETWORKING', 'LIVE_MUSIC'].includes(String(eventType || '').toUpperCase())
+    ? String(eventType).toUpperCase()
+    : 'EVENT';
+  const now = new Date().toISOString();
+  const cityNormalized = normalizeAdminText(cleanCity);
+  const venueId = `admin_agenda_${slugifyAdminText(cleanCity)}_${slugifyAdminText(cleanVenueName).slice(0, 48)}`;
+
+  try {
+    const venueRef = db.collection('venues').doc(venueId);
+    await venueRef.set({
+      name: cleanVenueName,
+      description: 'Publication editoriale Galant.',
+      address: String(address || cleanCity).trim(),
+      city: cleanCity,
+      city_normalized: cityNormalized,
+      country: "Cote d'Ivoire",
+      venue_type: 'OTHER',
+      source: 'GALANT_ADMIN',
+      status: 'APPROVED',
+      is_editorial: true,
+      photo_url: cleanPhotoUrl,
+      photo_variants: cleanPhotoUrl && photoVariants?.[cleanPhotoUrl] ? { [cleanPhotoUrl]: photoVariants[cleanPhotoUrl] } : {},
+      updated_at: now,
+      created_at: now
+    }, { merge: true });
+
+    const eventData = {
+      venue_id: venueId,
+      title: cleanTitle,
+      description: String(description || 'Evenement selectionne par Galant.').trim(),
+      photo_url: cleanPhotoUrl,
+      photo_variants: cleanPhotoUrl && photoVariants?.[cleanPhotoUrl] ? { [cleanPhotoUrl]: photoVariants[cleanPhotoUrl] } : {},
+      poster_format: 'WIDE_16_9',
+      event_type: safeEventType,
+      starts_at: startsAtDate.toISOString(),
+      expires_at: expiresAtDate.toISOString(),
+      city: cleanCity,
+      city_normalized: cityNormalized,
+      attendees_count: 0,
+      source: 'GALANT_ADMIN',
+      source_label: 'Selection Galant',
+      is_external: false,
+      price_label: priceLabel ? String(priceLabel).trim() : null,
+      created_by_admin: req.user.id,
+      created_at: now,
+      updated_at: now
+    };
+    const ref = await db.collection('venue_events').add(eventData);
+
+    await appendAdminAuditLog({
+      adminId: req.user.id,
+      action: 'CREATE_ADMIN_AGENDA_EVENT',
+      metadata: {
+        eventId: ref.id,
+        title: cleanTitle,
+        city: cleanCity,
+        posterFormat: eventData.poster_format
+      }
+    });
+
+    res.json({ success: true, event: { id: ref.id, ...eventData } });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const getAdminAgendaEvents = async (req, res) => {
   const status = String(req.query?.status || 'UPCOMING').trim().toUpperCase();
   const safeLimit = Math.max(1, Math.min(100, parseInt(req.query?.limit || '50', 10)));
@@ -819,7 +923,7 @@ module.exports = {
   getKycRequests, reviewKyc, getBroadcastAudience, broadcastMessage, getCampaignHistory,
   getReports, resolveReport,
   getUsers, toggleUserStatus, getPricing, updatePricing, reconcileCounters, backfillGeohashes,
-  seedVenuesFromGoogle, searchTikeramaAgenda, importTikeramaAgenda,
+  seedVenuesFromGoogle, searchTikeramaAgenda, importTikeramaAgenda, createAdminAgendaEvent,
   getAdminAgendaEvents, deleteAdminAgendaEvent, cleanupAdminExpiredAgendaEvents,
   backfillMediaVariants, cleanupMediaOrphans
 };

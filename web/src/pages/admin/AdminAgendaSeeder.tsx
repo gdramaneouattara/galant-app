@@ -4,6 +4,7 @@ import {
   CalendarPlus,
   CheckCircle2,
   ExternalLink,
+  Image as ImageIcon,
   Loader2,
   MapPin,
   Music,
@@ -17,8 +18,13 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '@shared/lib/api';
 import { showAlert } from '@shared/lib/ui-bridge';
+import { uploadImageVariantsWeb } from '../../lib/imageUploadVariants';
+import OptimizedImage from '../../components/OptimizedImage';
+import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
+import { useAuth } from '../../context/AuthContext';
 
 type AgendaCategory = 'ALL' | 'CONCERT' | 'FESTIVAL' | 'NIGHTLIFE' | 'CULTURE' | 'COMEDY' | 'BUSINESS' | 'FOOD';
+type AdminAgendaEventType = 'EVENT' | 'PARTY' | 'FLASH_OFFER' | 'NETWORKING' | 'LIVE_MUSIC';
 
 type TikeramaCandidate = {
   external_id: string;
@@ -55,6 +61,8 @@ type PublishedAgendaEvent = {
 
 type PublishedStatus = 'UPCOMING' | 'EXPIRED' | 'ALL';
 
+type ImageVariantMap = Record<string, { full: string; medium: string; thumb: string }>;
+
 const AGENDA_CATEGORIES: Array<{
   id: AgendaCategory;
   label: string;
@@ -70,7 +78,30 @@ const AGENDA_CATEGORIES: Array<{
   { id: 'FOOD', label: 'Gastronomie', icon: Utensils }
 ];
 
+const ADMIN_EVENT_TYPES: Array<{ id: AdminAgendaEventType; label: string }> = [
+  { id: 'EVENT', label: 'Evenement' },
+  { id: 'PARTY', label: 'Soiree' },
+  { id: 'LIVE_MUSIC', label: 'Concert / Live' },
+  { id: 'NETWORKING', label: 'Networking' },
+  { id: 'FLASH_OFFER', label: 'Offre Flash' }
+];
+
+const getImageRatio = (file: File) => new Promise<number>((resolve, reject) => {
+  const url = URL.createObjectURL(file);
+  const image = new Image();
+  image.onload = () => {
+    URL.revokeObjectURL(url);
+    resolve(image.width / image.height);
+  };
+  image.onerror = () => {
+    URL.revokeObjectURL(url);
+    reject(new Error('invalid_image'));
+  };
+  image.src = url;
+});
+
 const AdminAgendaSeeder: React.FC = () => {
+  const { user } = useAuth();
   const [city, setCity] = useState('Abidjan');
   const [category, setCategory] = useState<AgendaCategory>('ALL');
   const [candidates, setCandidates] = useState<TikeramaCandidate[]>([]);
@@ -82,6 +113,21 @@ const AdminAgendaSeeder: React.FC = () => {
   const [publishedLoading, setPublishedLoading] = useState(false);
   const [cleanupLoading, setCleanupLoading] = useState(false);
   const [lastResult, setLastResult] = useState<{ imported: number; skipped: number } | null>(null);
+  const [posterUploading, setPosterUploading] = useState(false);
+  const [manualPublishing, setManualPublishing] = useState(false);
+  const [manualForm, setManualForm] = useState({
+    title: '',
+    description: '',
+    venueName: 'Agenda Galant',
+    city: 'Abidjan',
+    address: '',
+    eventType: 'EVENT' as AdminAgendaEventType,
+    startsAt: '',
+    expiresAt: '',
+    priceLabel: '',
+    photoUrl: '',
+    photoVariants: {} as ImageVariantMap
+  });
 
   const selectedCandidates = useMemo(
     () => candidates.filter((candidate) => selectedIds.includes(candidate.external_id)),
@@ -214,19 +260,247 @@ const AdminAgendaSeeder: React.FC = () => {
     }
   };
 
+  const handlePosterUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) {
+      showAlert('Format invalide', 'Selectionnez une image pour publier une affiche.');
+      return;
+    }
+
+    setPosterUploading(true);
+    try {
+      const ratio = await getImageRatio(file);
+      const expectedRatio = 16 / 9;
+      const tolerance = 0.08;
+      if (Math.abs(ratio - expectedRatio) > tolerance) {
+        showAlert('Affiche 16:9 requise', 'Utilisez une affiche horizontale au format 16:9 pour eviter les recadrages dans Agenda.');
+        return;
+      }
+
+      const { fullUrl, variants } = await uploadImageVariantsWeb(
+        file,
+        `events/admin/${user.uid}/${Date.now()}_poster.webp`
+      );
+      setManualForm((current) => ({
+        ...current,
+        photoUrl: fullUrl,
+        photoVariants: { [fullUrl]: variants }
+      }));
+      showAlert('Affiche chargee', "L'affiche 16:9 est prete a etre publiee.");
+    } catch (error: any) {
+      showAlert('Erreur', error.message || "Impossible de charger l'affiche.");
+    } finally {
+      setPosterUploading(false);
+    }
+  };
+
+  const handlePublishManualEvent = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (manualPublishing) return;
+    if (!manualForm.title.trim() || !manualForm.startsAt || !manualForm.expiresAt || !manualForm.photoUrl) {
+      showAlert('Champs requis', 'Ajoutez au minimum un titre, une affiche 16:9, une date de debut et une date de fin.');
+      return;
+    }
+
+    const startsAt = new Date(manualForm.startsAt);
+    const expiresAt = new Date(manualForm.expiresAt);
+    if (Number.isNaN(startsAt.getTime()) || Number.isNaN(expiresAt.getTime()) || expiresAt <= startsAt) {
+      showAlert('Dates invalides', 'La date de fin doit etre posterieure a la date de debut.');
+      return;
+    }
+
+    setManualPublishing(true);
+    try {
+      await apiRequest('/api/admin/agenda/events', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({
+          ...manualForm,
+          startsAt: startsAt.toISOString(),
+          expiresAt: expiresAt.toISOString()
+        })
+      });
+      await fetchPublishedEvents();
+      setManualForm((current) => ({
+        ...current,
+        title: '',
+        description: '',
+        address: '',
+        priceLabel: '',
+        startsAt: '',
+        expiresAt: '',
+        photoUrl: '',
+        photoVariants: {}
+      }));
+      showAlert('Agenda mis a jour', "L'affiche admin a ete publiee dans Agenda.");
+    } catch (error: any) {
+      showAlert('Erreur', error.message || "Impossible de publier l'affiche.");
+    } finally {
+      setManualPublishing(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div>
         <h2 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white sm:text-4xl">
-          Agenda Tikerama
+          Agenda Galant
         </h2>
         <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400 sm:text-lg">
-          Recherchez les evenements ivoiriens, selectionnez les meilleurs, puis publiez-les dans Agenda.
+          Publiez vos affiches 16:9 ou selectionnez des evenements ivoiriens depuis Tikerama.
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-6">
+          <div className="rounded-[3rem] border border-slate-100 bg-white p-8 shadow-xl dark:border-white/5 dark:bg-slate-900">
+            <div className="mb-6 flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <ImageIcon size={22} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white">Publier une affiche 16:9</h3>
+                <p className="mt-1 text-xs font-bold uppercase tracking-widest text-slate-400">
+                  Publication admin directe, separee de Tikerama.
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handlePublishManualEvent} className="grid gap-6 lg:grid-cols-[minmax(280px,380px)_1fr]">
+              <div className="space-y-3">
+                <label className="block text-xs font-black uppercase tracking-prestige text-slate-400">
+                  Affiche obligatoire
+                </label>
+                <div className="relative aspect-video overflow-hidden rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/5">
+                  {manualForm.photoUrl ? (
+                    <OptimizedImage
+                      src={optimizedPhotoUrl(manualForm.photoUrl, manualForm.photoVariants, 'medium')}
+                      className="h-full w-full object-cover"
+                      alt=""
+                    />
+                  ) : (
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-slate-400">
+                      <ImageIcon size={42} strokeWidth={1.2} />
+                      <span className="text-center text-[10px] font-black uppercase tracking-widest">
+                        Format horizontal 16:9
+                      </span>
+                    </div>
+                  )}
+                  <label className="absolute bottom-4 right-4 inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-primary shadow-lg transition-all hover:scale-105 active:scale-95 dark:bg-slate-800">
+                    {posterUploading ? <Loader2 className="animate-spin" size={14} /> : <ImageIcon size={14} />}
+                    Charger
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePosterUpload}
+                      disabled={posterUploading}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                <p className="text-xs font-medium leading-relaxed text-slate-400">
+                  L'image est compressee en variantes full, medium et thumb avant publication.
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2 md:col-span-2">
+                  <label className="ml-2 text-xs font-black uppercase tracking-prestige text-slate-400">Titre</label>
+                  <input
+                    value={manualForm.title}
+                    onChange={(event) => setManualForm((current) => ({ ...current, title: event.target.value }))}
+                    placeholder="Ex: Concert prestige, Brunch networking..."
+                    className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary/20 dark:bg-white/5 dark:text-white"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="ml-2 text-xs font-black uppercase tracking-prestige text-slate-400">Ville</label>
+                  <input
+                    value={manualForm.city}
+                    onChange={(event) => setManualForm((current) => ({ ...current, city: event.target.value }))}
+                    className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary/20 dark:bg-white/5 dark:text-white"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="ml-2 text-xs font-black uppercase tracking-prestige text-slate-400">Lieu</label>
+                  <input
+                    value={manualForm.venueName}
+                    onChange={(event) => setManualForm((current) => ({ ...current, venueName: event.target.value }))}
+                    placeholder="Nom du lieu"
+                    className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary/20 dark:bg-white/5 dark:text-white"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="ml-2 text-xs font-black uppercase tracking-prestige text-slate-400">Debut</label>
+                  <input
+                    type="datetime-local"
+                    value={manualForm.startsAt}
+                    onChange={(event) => setManualForm((current) => ({ ...current, startsAt: event.target.value }))}
+                    className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary/20 dark:bg-white/5 dark:text-white"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="ml-2 text-xs font-black uppercase tracking-prestige text-slate-400">Fin</label>
+                  <input
+                    type="datetime-local"
+                    value={manualForm.expiresAt}
+                    onChange={(event) => setManualForm((current) => ({ ...current, expiresAt: event.target.value }))}
+                    className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary/20 dark:bg-white/5 dark:text-white"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="ml-2 text-xs font-black uppercase tracking-prestige text-slate-400">Type</label>
+                  <select
+                    value={manualForm.eventType}
+                    onChange={(event) => setManualForm((current) => ({ ...current, eventType: event.target.value as AdminAgendaEventType }))}
+                    className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary/20 dark:bg-white/5 dark:text-white"
+                  >
+                    {ADMIN_EVENT_TYPES.map((item) => (
+                      <option key={item.id} value={item.id}>{item.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="ml-2 text-xs font-black uppercase tracking-prestige text-slate-400">Prix</label>
+                  <input
+                    value={manualForm.priceLabel}
+                    onChange={(event) => setManualForm((current) => ({ ...current, priceLabel: event.target.value }))}
+                    placeholder="Ex: Gratuit, 10 000 F"
+                    className="w-full rounded-2xl border-none bg-slate-50 px-5 py-4 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary/20 dark:bg-white/5 dark:text-white"
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <label className="ml-2 text-xs font-black uppercase tracking-prestige text-slate-400">Description</label>
+                  <textarea
+                    value={manualForm.description}
+                    onChange={(event) => setManualForm((current) => ({ ...current, description: event.target.value }))}
+                    rows={3}
+                    placeholder="Informations utiles pour les membres..."
+                    className="w-full resize-none rounded-2xl border-none bg-slate-50 px-5 py-4 font-medium text-slate-900 outline-none focus:ring-2 focus:ring-primary/20 dark:bg-white/5 dark:text-white"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={manualPublishing || posterUploading}
+                  className="md:col-span-2 flex w-full items-center justify-center gap-3 rounded-3xl bg-slate-950 py-5 text-xs font-black uppercase tracking-prestige text-white shadow-xl transition-all hover:scale-[1.01] active:scale-95 disabled:scale-100 disabled:opacity-40 dark:bg-white dark:text-slate-950"
+                >
+                  {manualPublishing ? <Loader2 className="animate-spin" size={18} /> : <CalendarPlus size={18} />}
+                  Publier dans Agenda
+                </button>
+              </div>
+            </form>
+          </div>
+
           <div className="rounded-[3rem] border border-slate-100 bg-white p-8 shadow-xl dark:border-white/5 dark:bg-slate-900">
             <form onSubmit={handleSearch} className="space-y-6">
               <div className="grid gap-4 md:grid-cols-[1fr_220px]">
