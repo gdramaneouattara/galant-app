@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
   CalendarPlus,
@@ -7,10 +7,12 @@ import {
   Loader2,
   MapPin,
   Music,
+  RefreshCw,
   Search,
   Sparkles,
   Theater,
   Ticket,
+  Trash2,
   Utensils
 } from 'lucide-react';
 import { apiRequest } from '@shared/lib/api';
@@ -37,6 +39,22 @@ type TikeramaCandidate = {
   event_type: 'EVENT' | 'PARTY' | 'FLASH_OFFER' | 'NETWORKING' | 'LIVE_MUSIC';
 };
 
+type PublishedAgendaEvent = {
+  id: string;
+  title: string;
+  starts_at: string;
+  expires_at: string;
+  event_type?: string;
+  source?: string;
+  status_label: 'UPCOMING' | 'EXPIRED';
+  venues?: {
+    name?: string | null;
+    city?: string | null;
+  } | null;
+};
+
+type PublishedStatus = 'UPCOMING' | 'EXPIRED' | 'ALL';
+
 const AGENDA_CATEGORIES: Array<{
   id: AgendaCategory;
   label: string;
@@ -59,6 +77,10 @@ const AdminAgendaSeeder: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
+  const [publishedStatus, setPublishedStatus] = useState<PublishedStatus>('UPCOMING');
+  const [publishedEvents, setPublishedEvents] = useState<PublishedAgendaEvent[]>([]);
+  const [publishedLoading, setPublishedLoading] = useState(false);
+  const [cleanupLoading, setCleanupLoading] = useState(false);
   const [lastResult, setLastResult] = useState<{ imported: number; skipped: number } | null>(null);
 
   const selectedCandidates = useMemo(
@@ -77,6 +99,25 @@ const AdminAgendaSeeder: React.FC = () => {
       current.length === candidates.length ? [] : candidates.map((candidate) => candidate.external_id)
     ));
   };
+
+  const fetchPublishedEvents = useCallback(async () => {
+    setPublishedLoading(true);
+    try {
+      const response = await apiRequest<{ events: PublishedAgendaEvent[] }>(
+        `/api/admin/agenda/events?status=${publishedStatus}`,
+        { requireAuth: true }
+      );
+      setPublishedEvents(response.events || []);
+    } catch (error: any) {
+      showAlert('Erreur', error.message || 'Impossible de charger les evenements publies.');
+    } finally {
+      setPublishedLoading(false);
+    }
+  }, [publishedStatus]);
+
+  useEffect(() => {
+    void fetchPublishedEvents();
+  }, [fetchPublishedEvents]);
 
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -128,11 +169,48 @@ const AdminAgendaSeeder: React.FC = () => {
         imported: response.imported_count || 0,
         skipped: response.skipped_count || 0
       });
+      void fetchPublishedEvents();
       showAlert('Agenda mis a jour', `${response.imported_count || 0} evenement(s) publie(s).`);
     } catch (error: any) {
       showAlert('Erreur', error.message || "Echec de l'import Agenda.");
     } finally {
       setImportLoading(false);
+    }
+  };
+
+  const handleDeletePublishedEvent = async (eventId: string) => {
+    if (!window.confirm('Supprimer cet evenement de Firestore ?')) return;
+
+    try {
+      await apiRequest(`/api/admin/agenda/events/${eventId}`, {
+        method: 'DELETE',
+        requireAuth: true
+      });
+      setPublishedEvents((current) => current.filter((event) => event.id !== eventId));
+      showAlert('Evenement supprime', "L'evenement a ete retire de Firestore.");
+    } catch (error: any) {
+      showAlert('Erreur', error.message || "Impossible de supprimer l'evenement.");
+    }
+  };
+
+  const handleCleanupExpiredEvents = async () => {
+    if (!window.confirm('Supprimer automatiquement tous les evenements expires de Firestore ?')) return;
+
+    setCleanupLoading(true);
+    try {
+      const response = await apiRequest<{ deletedCount: number; attendanceDeletedCount: number }>(
+        '/api/admin/agenda/events/cleanup-expired',
+        { method: 'POST', requireAuth: true }
+      );
+      await fetchPublishedEvents();
+      showAlert(
+        'Purge terminee',
+        `${response.deletedCount || 0} evenement(s) expire(s) et ${response.attendanceDeletedCount || 0} inscription(s) supprime(s).`
+      );
+    } catch (error: any) {
+      showAlert('Erreur', error.message || 'Impossible de purger les evenements expires.');
+    } finally {
+      setCleanupLoading(false);
     }
   };
 
@@ -310,6 +388,102 @@ const AdminAgendaSeeder: React.FC = () => {
               </div>
             </div>
           )}
+
+          <div className="space-y-4 rounded-[3rem] border border-slate-100 bg-white p-6 shadow-xl dark:border-white/5 dark:bg-slate-900">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white">Evenements publies</h3>
+                <p className="mt-1 text-xs font-bold uppercase tracking-widest text-slate-400">
+                  Les evenements expires disparaissent de l'Agenda et sont purges automatiquement.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleCleanupExpiredEvents()}
+                disabled={cleanupLoading}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-primary transition-all disabled:opacity-40 dark:border-red-500/20 dark:bg-red-500/10"
+              >
+                {cleanupLoading ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
+                Purger les expires
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: 'UPCOMING', label: 'A venir' },
+                { id: 'EXPIRED', label: 'Expires' },
+                { id: 'ALL', label: 'Tous' }
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setPublishedStatus(item.id as PublishedStatus)}
+                  className={`rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all ${
+                    publishedStatus === item.id
+                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                      : 'bg-slate-50 text-slate-400 hover:text-primary dark:bg-white/5'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => void fetchPublishedEvents()}
+                disabled={publishedLoading}
+                className="ml-auto inline-flex items-center gap-2 rounded-2xl border border-slate-100 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-all hover:text-primary disabled:opacity-40 dark:border-white/10"
+              >
+                <RefreshCw size={14} className={publishedLoading ? 'animate-spin' : ''} />
+                Actualiser
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {publishedLoading ? (
+                <div className="flex justify-center py-10 text-slate-400">
+                  <Loader2 className="animate-spin" size={24} />
+                </div>
+              ) : publishedEvents.length === 0 ? (
+                <div className="rounded-[2rem] border border-dashed border-slate-200 p-8 text-center text-sm font-bold text-slate-400 dark:border-white/10">
+                  Aucun evenement dans ce filtre.
+                </div>
+              ) : (
+                publishedEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    className="flex flex-col gap-3 rounded-[2rem] border border-slate-100 bg-slate-50 p-4 dark:border-white/5 dark:bg-white/5 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`rounded-full px-3 py-1 text-[8px] font-black uppercase tracking-widest ${
+                          event.status_label === 'EXPIRED'
+                            ? 'bg-red-100 text-primary dark:bg-red-500/10'
+                            : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
+                        }`}>
+                          {event.status_label === 'EXPIRED' ? 'Expire' : 'A venir'}
+                        </span>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                          {event.event_type || 'EVENT'} {event.source ? `- ${event.source}` : ''}
+                        </span>
+                      </div>
+                      <p className="mt-2 truncate text-sm font-black text-slate-900 dark:text-white">{event.title}</p>
+                      <p className="mt-1 text-xs font-bold text-slate-400">
+                        {event.venues?.name || 'Lieu non renseigne'} - {event.venues?.city || 'Ville non renseignee'} - {new Date(event.starts_at).toLocaleDateString('fr-FR')}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void handleDeletePublishedEvent(event.id)}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-primary shadow-sm transition-all hover:bg-red-50 dark:bg-slate-900 dark:hover:bg-red-500/10"
+                    >
+                      <Trash2 size={14} />
+                      Supprimer
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
 
         <aside className="space-y-6">

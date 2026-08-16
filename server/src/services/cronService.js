@@ -130,6 +130,61 @@ const processSecurityAlerts = async () => {
   }
 };
 
+const cleanupExpiredAgendaEvents = async () => {
+  console.log('[CRON] Starting expired agenda events cleanup...');
+  const now = new Date().toISOString();
+  let deletedCount = 0;
+  let attendanceDeletedCount = 0;
+
+  try {
+    const expiredSnap = await db.collection('venue_events')
+      .where('expires_at', '<=', now)
+      .limit(250)
+      .get();
+
+    if (expiredSnap.empty) {
+      console.log('[CRON] No expired agenda events found.');
+      return { deletedCount, attendanceDeletedCount };
+    }
+
+    let batch = db.batch();
+    let operations = 0;
+
+    const commitIfNeeded = async (force = false) => {
+      if (operations === 0 || (!force && operations < 450)) return;
+      await batch.commit();
+      batch = db.batch();
+      operations = 0;
+    };
+
+    for (const doc of expiredSnap.docs) {
+      const attendanceSnap = await db.collection('event_attendance')
+        .where('event_id', '==', doc.id)
+        .limit(250)
+        .get();
+
+      attendanceSnap.forEach((attendanceDoc) => {
+        batch.delete(attendanceDoc.ref);
+        operations++;
+        attendanceDeletedCount++;
+      });
+
+      batch.delete(doc.ref);
+      operations++;
+      deletedCount++;
+      await commitIfNeeded();
+    }
+
+    await commitIfNeeded(true);
+
+    console.log(`[CRON] Agenda cleanup finished. Deleted ${deletedCount} events and ${attendanceDeletedCount} attendance records.`);
+    return { deletedCount, attendanceDeletedCount };
+  } catch (error) {
+    console.error('[CRON] Error during agenda events cleanup:', error.message);
+    return { deletedCount, attendanceDeletedCount, error: error.message };
+  }
+};
+
 /**
  * Initializes all periodic background tasks.
  * Runs every hour.
@@ -140,6 +195,7 @@ const initCronJobs = () => {
   // Run once on startup
   cleanupExpiredStatuses();
   cleanupExpiredChatMedia();
+  cleanupExpiredAgendaEvents();
   reconcileAllCounters();
   processSecurityAlerts();
 
@@ -152,8 +208,9 @@ const initCronJobs = () => {
   setInterval(() => {
     cleanupExpiredStatuses();
     cleanupExpiredChatMedia();
+    cleanupExpiredAgendaEvents();
     reconcileAllCounters();
   }, 3600000);
 };
 
-module.exports = { cleanupExpiredStatuses, cleanupExpiredChatMedia, initCronJobs, processSecurityAlerts };
+module.exports = { cleanupExpiredStatuses, cleanupExpiredChatMedia, cleanupExpiredAgendaEvents, initCronJobs, processSecurityAlerts };

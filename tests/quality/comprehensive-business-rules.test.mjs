@@ -287,6 +287,7 @@ test('Rules: Guide Google photos are referenced, sized and attributed without St
 
 test('Rules: Agenda imports TIKERAMA Cote dIvoire events through admin curation without copying media', async () => {
   const service = await read('server/src/services/tikeramaAgendaService.js');
+  const cronService = await read('server/src/services/cronService.js');
   const venueController = await read('server/src/controllers/venueController.js');
   const adminController = await read('server/src/controllers/adminController.js');
   const adminRoutes = await read('server/src/routes/adminRoutes.js');
@@ -319,15 +320,31 @@ test('Rules: Agenda imports TIKERAMA Cote dIvoire events through admin curation 
   assert.match(service, /venues/);
   assert.doesNotMatch(service, /bucket\(/);
   assert.doesNotMatch(service, /uploadBytes/);
+  assert.match(cronService, /cleanupExpiredAgendaEvents/);
+  assert.match(cronService, /venue_events/);
+  assert.match(cronService, /event_attendance/);
+  assert.match(cronService, /where\('expires_at', '<=', now\)/);
+  assert.match(cronService, /batch\.delete\(doc\.ref\)/);
+  assert.match(venueController, /where\('expires_at', '>', now\)/);
+  assert.match(venueController, /maybeCleanupExpiredAgendaEvents/);
   assert.doesNotMatch(venueController, /syncTikeramaAgendaIfNeeded/);
   assert.doesNotMatch(venueController, /const externalSync = syncTikeramaAgendaIfNeeded/);
   assert.match(adminController, /searchTikeramaAgenda/);
   assert.match(adminController, /importTikeramaAgenda/);
+  assert.match(adminController, /getAdminAgendaEvents/);
+  assert.match(adminController, /deleteAdminAgendaEvent/);
+  assert.match(adminController, /cleanupAdminExpiredAgendaEvents/);
   assert.match(adminRoutes, /\/agenda\/tikerama\/search/);
   assert.match(adminRoutes, /\/agenda\/tikerama\/import/);
+  assert.match(adminRoutes, /\/agenda\/events/);
+  assert.match(adminRoutes, /\/agenda\/events\/:id/);
+  assert.match(adminRoutes, /\/agenda\/events\/cleanup-expired/);
   assert.match(adminLayout, /\/admin\/agenda-seeder/);
   assert.match(adminAgendaSeeder, /Rechercher sur Tikerama/);
   assert.match(adminAgendaSeeder, /selectedCandidates/);
+  assert.match(adminAgendaSeeder, /Evenements publies/);
+  assert.match(adminAgendaSeeder, /Purger les expires/);
+  assert.match(adminAgendaSeeder, /PublishedStatus = 'UPCOMING' \| 'EXPIRED' \| 'ALL'/);
   assert.match(app, /AdminAgendaSeeder/);
   assert.match(webAgenda, /BILLETTERIE TIKERAMA/);
   assert.match(webAgenda, /openExternalEvent/);

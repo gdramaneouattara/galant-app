@@ -11,6 +11,7 @@ const {
   importSelectedTikeramaAgendaEvents,
   TIKERAMA_AGENDA_CATEGORIES
 } = require('../services/tikeramaAgendaService');
+const { cleanupExpiredAgendaEvents } = require('../services/cronService');
 const pricingDefaults = require('../config/constants');
 
 const createNotificationSafely = (payload) => {
@@ -688,6 +689,93 @@ const importTikeramaAgenda = async (req, res) => {
   }
 };
 
+const getAdminAgendaEvents = async (req, res) => {
+  const status = String(req.query?.status || 'UPCOMING').trim().toUpperCase();
+  const safeLimit = Math.max(1, Math.min(100, parseInt(req.query?.limit || '50', 10)));
+  const now = new Date().toISOString();
+
+  try {
+    let snapshot;
+    if (status === 'EXPIRED') {
+      snapshot = await db.collection('venue_events').where('expires_at', '<=', now).limit(safeLimit).get();
+    } else if (status === 'ALL') {
+      snapshot = await db.collection('venue_events').limit(safeLimit).get();
+    } else {
+      snapshot = await db.collection('venue_events').where('expires_at', '>', now).limit(safeLimit).get();
+    }
+
+    const events = await Promise.all(snapshot.docs.map(async (doc) => {
+      const event = { id: doc.id, ...doc.data() };
+      let venue = null;
+      if (event.venue_id) {
+        const venueDoc = await db.collection('venues').doc(event.venue_id).get();
+        venue = venueDoc.exists ? { id: venueDoc.id, ...venueDoc.data() } : null;
+      }
+
+      return {
+        ...event,
+        status_label: String(event.expires_at || '') <= now ? 'EXPIRED' : 'UPCOMING',
+        venues: venue ? {
+          id: venue.id,
+          name: venue.name || null,
+          city: venue.city || null,
+          source: venue.source || null
+        } : null
+      };
+    }));
+
+    events.sort((left, right) => (
+      String(left.starts_at || left.expires_at || '').localeCompare(String(right.starts_at || right.expires_at || ''))
+    ));
+
+    res.json({ events, status, count: events.length });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const deleteAdminAgendaEvent = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const eventRef = db.collection('venue_events').doc(id);
+    const eventDoc = await eventRef.get();
+    if (!eventDoc.exists) return res.status(404).json({ error: 'event_not_found' });
+
+    const attendanceSnap = await db.collection('event_attendance').where('event_id', '==', id).get();
+    const batch = db.batch();
+    attendanceSnap.forEach((doc) => batch.delete(doc.ref));
+    batch.delete(eventRef);
+    await batch.commit();
+
+    await appendAdminAuditLog({
+      adminId: req.user.id,
+      action: 'DELETE_AGENDA_EVENT',
+      metadata: { eventId: id, attendanceDeleted: attendanceSnap.size }
+    });
+
+    res.json({ success: true, deletedEventId: id, attendanceDeleted: attendanceSnap.size });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const cleanupAdminExpiredAgendaEvents = async (req, res) => {
+  try {
+    const result = await cleanupExpiredAgendaEvents();
+
+    await appendAdminAuditLog({
+      adminId: req.user.id,
+      action: 'CLEANUP_EXPIRED_AGENDA_EVENTS',
+      metadata: result
+    });
+
+    res.json({ success: true, ...result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const backfillMediaVariants = async (req, res) => {
   try {
     const limit = Math.max(1, Math.min(1000, parseInt(req.body?.limit || req.query?.limit || '250', 10)));
@@ -732,5 +820,6 @@ module.exports = {
   getReports, resolveReport,
   getUsers, toggleUserStatus, getPricing, updatePricing, reconcileCounters, backfillGeohashes,
   seedVenuesFromGoogle, searchTikeramaAgenda, importTikeramaAgenda,
+  getAdminAgendaEvents, deleteAdminAgendaEvent, cleanupAdminExpiredAgendaEvents,
   backfillMediaVariants, cleanupMediaOrphans
 };
