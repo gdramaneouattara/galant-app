@@ -66,6 +66,28 @@ test('Rules: Stories move into discovery and Apps replaces the stories tab', asy
   assert.doesNotMatch(webDiscover, /initialStatusId/);
 });
 
+test('Rules: Web Stories are paginated and paid one-shot access is capped', async () => {
+  const webStories = await read('web/src/pages/StoriesPage.tsx');
+  const statusController = await read('server/src/controllers/statusController.js');
+  const usageService = await read('server/src/services/usageService.js');
+
+  assert.match(webStories, /STORY_PAGE_SIZE = 10/);
+  assert.match(webStories, /\/api\/statuses\?limit=\$\{STORY_PAGE_SIZE\}&offset=\$\{offset\}/);
+  assert.match(webStories, /IntersectionObserver/);
+  assert.match(webStories, /fetchStatuses\(\{ append: true \}\)/);
+  assert.match(webStories, /jusqu.+10 stories/);
+  assert.match(statusController, /STORY_PAGE_LIMIT = 10/);
+  assert.match(statusController, /STORY_PURCHASE_VIEW_LIMIT = 10/);
+  assert.match(statusController, /hasStorySubscriptionAccess/);
+  assert.match(statusController, /hasStoryPurchaseAccess/);
+  assert.doesNotMatch(statusController, /hasStandardAccess/);
+  assert.match(usageService, /hasStoryPurchaseAccess/);
+  assert.match(usageService, /status === 'UNUSED'/);
+  assert.match(usageService, /status !== 'USED'/);
+  assert.match(usageService, /accessWindowMs = 24 \* 3600 \* 1000/);
+  assert.match(usageService, /consumed_at \|\| item\.created_at/);
+});
+
 test('Rules: Discovery header exposes notifications with compact title and grid/filter actions', async () => {
   const nativeHome = await read('src/screens/home/HomeScreen.tsx');
   const nativeGrid = await read('src/screens/discover/DiscoverGridScreen.tsx');
@@ -696,7 +718,7 @@ test('Rules: Cost controls limit reads and cache expensive external calls', asyn
   const deployWorkflow = await read('.github/workflows/deploy-server.yml');
 
   assert.match(statusController, /clampLimit/);
-  assert.match(statusController, /\.limit\(safeLimit \* 2\)/);
+  assert.match(statusController, /\.limit\(Math\.min\(\(offset \+ effectiveLimit\) \* 2, hasFullAccess \? 140 : 30\)\)/);
   assert.match(venueController, /clampLimit/);
   assert.match(venueController, /query = query\.limit\(city \? safeLimit \* 3 : safeLimit\)/);
   assert.match(venueController, /attendanceDoc = await db\.collection\('event_attendance'\)\.doc\(`\$\{ev\.id\}_\$\{meId\}`\)\.get\(\)/);

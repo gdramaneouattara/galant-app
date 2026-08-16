@@ -1,8 +1,14 @@
 const { db, bucket } = require('../config/firebase');
-const { hasStandardAccess, hasInvisiblePremiumAccessForPlan, isHiddenByInvisibleMode } = require('../services/accessService');
-const { getDailyUsage, incrementUsage, consumeStoryPurchase, hasUnusedStoryPurchase } = require('../services/usageService');
+const { hasInvisiblePremiumAccessForPlan, isHiddenByInvisibleMode } = require('../services/accessService');
+const { getDailyUsage, incrementUsage, consumeStoryPurchase, hasUnusedStoryPurchase, hasStoryPurchaseAccess } = require('../services/usageService');
 const { createStoryLikeNotificationIfNeeded } = require('../services/notificationService');
 const { QUOTAS } = require('../config/constants');
+
+const STORY_PAGE_LIMIT = 10;
+const STORY_MAX_LIMIT = 60;
+const STORY_PURCHASE_VIEW_LIMIT = 10;
+
+const hasStorySubscriptionAccess = (profile) => !!(profile?.is_premium || profile?.is_vip);
 
 const toPublicProfile = (p) => {
   if (!p) return null;
@@ -29,15 +35,23 @@ const chunkArray = (items, size = 30) => {
   return chunks;
 };
 
-const clampLimit = (value, fallback = 35, max = 60) => {
+const clampLimit = (value, fallback = STORY_PAGE_LIMIT, max = STORY_MAX_LIMIT) => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.max(1, Math.min(max, Math.floor(parsed)));
 };
 
+const clampOffset = (value) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.max(0, Math.min(500, Math.floor(parsed)));
+};
+
 const getStatuses = async (req, res) => {
   const me = req.user;
-  if (!hasStandardAccess(me)) return res.status(403).json({ error: 'subscription_required' });
+  const hasFullAccess = hasStorySubscriptionAccess(me);
+  const hasPaidLimitedAccess = hasFullAccess ? false : await hasStoryPurchaseAccess(me.id);
+  if (!hasFullAccess && !hasPaidLimitedAccess) return res.status(403).json({ error: 'subscription_required' });
 
   try {
     if (String(me.gender || '').toUpperCase() === 'MALE' && req.subscription?.plan_id === 'QUARTERLY' && !!me.is_invisible) {
@@ -47,14 +61,22 @@ const getStatuses = async (req, res) => {
     }
 
     const now = new Date().toISOString();
-    const safeLimit = clampLimit(req.query.limit);
+    const requestedOffset = clampOffset(req.query.offset);
+    const offset = hasFullAccess ? requestedOffset : Math.min(requestedOffset, STORY_PURCHASE_VIEW_LIMIT);
+    const maxLimit = hasFullAccess ? STORY_MAX_LIMIT : STORY_PURCHASE_VIEW_LIMIT;
+    const safeLimit = clampLimit(req.query.limit, STORY_PAGE_LIMIT, maxLimit);
+    const remainingLimitedStories = hasFullAccess ? safeLimit : Math.max(0, STORY_PURCHASE_VIEW_LIMIT - offset);
+    const effectiveLimit = Math.min(safeLimit, remainingLimitedStories);
+
+    if (effectiveLimit <= 0) return res.json([]);
+
     const snapshot = await db.collection('statuses')
       .where('expires_at', '>', now)
-      .limit(safeLimit * 2)
+      .limit(Math.min((offset + effectiveLimit) * 2, hasFullAccess ? 140 : 30))
       .get();
     let rows = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
       .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
-      .slice(0, safeLimit);
+      .slice(offset, offset + effectiveLimit);
 
     // Hydrate Profiles
     const authors = await Promise.all(rows.map(async row => {
@@ -118,8 +140,8 @@ const createStatus = async (req, res) => {
   const { mediaUrl, thumbnailUrl, type, content } = req.body;
   const me = req.user;
 
-  // 1. Check for Subscription/Trial
-  let hasAccess = hasStandardAccess(me);
+  // 1. Check for Premium or VIP story publishing access
+  let hasAccess = hasStorySubscriptionAccess(me);
 
   // 2. If no subscription, check for a one-time Story Purchase
   if (!hasAccess) {
@@ -149,12 +171,16 @@ const createStatus = async (req, res) => {
 
 const getUploadAccess = async (req, res) => {
   const me = req.user;
-  const canPublishForFree = hasStandardAccess(me);
+  const canPublishForFree = hasStorySubscriptionAccess(me);
   const hasPurchasedUpload = canPublishForFree ? false : await hasUnusedStoryPurchase(me.id);
+  const hasPurchasedViewAccess = canPublishForFree ? false : await hasStoryPurchaseAccess(me.id);
 
   res.json({
     canPublishForFree,
     hasPurchasedUpload,
+    hasPurchasedViewAccess,
+    canView: canPublishForFree || hasPurchasedViewAccess,
+    viewLimit: canPublishForFree ? STORY_MAX_LIMIT : (hasPurchasedViewAccess ? STORY_PURCHASE_VIEW_LIMIT : 0),
     canPublish: canPublishForFree || hasPurchasedUpload
   });
 };
