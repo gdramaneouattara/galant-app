@@ -146,7 +146,11 @@ test('Rules: Web discovery filters apply only after explicit confirmation', asyn
   const filterModal = await read('web/src/components/FilterModal.tsx');
 
   assert.match(webDiscover, /DEFAULT_DISCOVER_FILTERS/);
-  assert.match(webDiscover, /onApply=\{setFilters\}/);
+  assert.match(webDiscover, /const \[isApplyingFilters, setIsApplyingFilters\] = useState\(false\)/);
+  assert.match(webDiscover, /const handleApplyFilters = useCallback/);
+  assert.match(webDiscover, /setIsApplyingFilters\(true\)/);
+  assert.match(webDiscover, /authLoading \|\| isApplyingFilters \|\| \(loading && suggestions\.length === 0\)/);
+  assert.match(webDiscover, /onApply=\{handleApplyFilters\}/);
   assert.match(webDiscover, /defaultFilters=\{DEFAULT_DISCOVER_FILTERS\}/);
   assert.doesNotMatch(webDiscover, /setFilters=\{setFilters\}/);
 
