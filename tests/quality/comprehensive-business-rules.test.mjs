@@ -486,6 +486,50 @@ test('Rules: Internal notification center is wired across server, web and native
   assert.match(nativeNotifications, /openNotificationTarget/);
 });
 
+test('Rules: Admin-user support messaging is bidirectional on web', async () => {
+  const serverIndex = await read('server/src/index.js');
+  const supportRoutes = await read('server/src/routes/supportRoutes.js');
+  const adminRoutes = await read('server/src/routes/adminRoutes.js');
+  const supportController = await read('server/src/controllers/supportController.js');
+  const webApp = await read('web/src/App.tsx');
+  const webSupport = await read('web/src/pages/SupportPage.tsx');
+  const webAdminSupport = await read('web/src/pages/admin/AdminSupport.tsx');
+  const webNotifications = await read('web/src/pages/NotificationsPage.tsx');
+
+  assert.match(serverIndex, /\/api\/support/);
+  assert.match(supportRoutes, /\/thread/);
+  assert.match(supportRoutes, /\/messages/);
+  assert.match(supportRoutes, /\/read/);
+  assert.match(adminRoutes, /\/support\/threads/);
+  assert.match(adminRoutes, /\/support\/threads\/:threadId\/messages/);
+  assert.match(adminRoutes, /\/support\/threads\/:threadId\/reply/);
+  assert.match(adminRoutes, /\/support\/threads\/:threadId\/status/);
+  assert.match(supportController, /support_threads/);
+  assert.match(supportController, /sendUserSupportMessage/);
+  assert.match(supportController, /sendAdminSupportReply/);
+  assert.match(supportController, /notifyAdmins/);
+  assert.match(supportController, /notifyUser/);
+  assert.match(supportController, /NOTIFICATION_TYPES\.ADMIN/);
+  assert.match(supportController, /unread_for_admin:\s*FieldValue\.increment\(1\)/);
+  assert.match(supportController, /unread_for_user:\s*FieldValue\.increment\(1\)/);
+  assert.match(supportController, /targetRoute:\s*'\/support'/);
+  assert.match(supportController, /\/admin\/support\?thread=/);
+  assert.match(webApp, /SupportPage/);
+  assert.match(webApp, /path="\/support"/);
+  assert.match(webSupport, /\/api\/support\/thread/);
+  assert.match(webSupport, /\/api\/support\/messages/);
+  assert.match(webSupport, /\/api\/support\/read/);
+  assert.match(webSupport, /Ecrire a l'administration/);
+  assert.match(webAdminSupport, /\/api\/admin\/support\/threads/);
+  assert.match(webAdminSupport, /\/messages/);
+  assert.match(webAdminSupport, /\/reply/);
+  assert.match(webAdminSupport, /\/status/);
+  assert.match(webAdminSupport, /Support Inbox/);
+  assert.doesNotMatch(webAdminSupport, /Simulation de/);
+  assert.match(webNotifications, /navigate\('\/support'\)/);
+  assert.match(webNotifications, /supportTitle/);
+});
+
 test('Rules: Web profile Store groups subscriptions and global purchases', async () => {
   const webApp = await read('web/src/App.tsx');
   const webProfile = await read('web/src/pages/ProfilePage.tsx');

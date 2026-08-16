@@ -103,6 +103,8 @@ const NotificationsPage: React.FC = () => {
         likesSub: 'View your admirers',
         rosesTitle: 'Roses received',
         rosesSub: 'Roses to handle',
+        supportTitle: 'Write to support',
+        supportSub: 'Contact the Galant administration',
         journal: 'Activity log',
         history: 'History',
         unread: 'Unread',
@@ -123,6 +125,8 @@ const NotificationsPage: React.FC = () => {
         likesSub: 'Voir vos admirateurs',
         rosesTitle: 'Roses reçues',
         rosesSub: 'Roses à traiter',
+        supportTitle: 'Ecrire au support',
+        supportSub: "Contacter l'administration Galant",
         journal: 'Journal d’activité',
         history: 'Historique',
         unread: 'Non lues',
@@ -249,6 +253,19 @@ const NotificationsPage: React.FC = () => {
           {markingAll ? '...' : labels.allRead}
         </button>
       </div>
+
+      <button
+        onClick={() => navigate('/support')}
+        className="mb-6 flex w-full items-center gap-4 rounded-[1.5rem] border border-primary/20 bg-primary/10 p-4 text-left shadow-lg shadow-primary/5 transition hover:-translate-y-0.5 hover:bg-primary/15"
+      >
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white">
+          <MessageSquare size={20} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-black uppercase tracking-tight text-slate-950 dark:text-white">{labels.supportTitle}</p>
+          <p className="mt-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">{labels.supportSub}</p>
+        </div>
+      </button>
 
       <div className="mb-6 grid grid-cols-2 gap-3">
         <button

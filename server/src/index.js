@@ -39,6 +39,7 @@ try { const communityRoutes = require('./routes/communityRoutes'); app.use('/api
 try { const kycRoutes = require('./routes/kycRoutes'); app.use('/api/kyc', kycRoutes); } catch (e) { mountErrors['/api/kyc'] = e.message; console.error('❌ Failed /api/kyc', e.message); }
 try { const profileRoutes = require('./routes/profileRoutes'); app.use('/api/profiles', profileRoutes); } catch (e) { mountErrors['/api/profiles'] = e.message; console.error('❌ Failed /api/profiles', e.message); }
 try { const privacyRoutes = require('./routes/privacyRoutes'); app.use('/api/privacy', privacyRoutes); } catch (e) { mountErrors['/api/privacy'] = e.message; console.error('❌ Failed /api/privacy', e.message); }
+try { const supportRoutes = require('./routes/supportRoutes'); app.use('/api/support', supportRoutes); } catch (e) { mountErrors['/api/support'] = e.message; console.error('❌ Failed /api/support', e.message); }
 try { const notificationRoutes = require('./routes/notificationRoutes'); app.use('/api/notifications', notificationRoutes); } catch (e) { mountErrors['/api/notifications'] = e.message; console.error('❌ Failed /api/notifications', e.message); }
 try { const likeRoutes = require('./routes/likeRoutes'); app.use('/api/likes', likeRoutes); } catch (e) { mountErrors['/api/likes'] = e.message; console.error('❌ Failed /api/likes', e.message); }
 try { const superLikeRoutes = require('./routes/superLikeRoutes'); app.use('/api/super-likes', superLikeRoutes); } catch (e) { mountErrors['/api/super-likes'] = e.message; console.error('❌ Failed /api/super-likes', e.message); }
