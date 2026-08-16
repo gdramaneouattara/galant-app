@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Heart, Sparkles, MessageCircle, MapPin } from 'lucide-react';
+import { X, Heart, Flower2, MessageCircle, MapPin } from 'lucide-react';
 import OptimizedImage from './OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
@@ -126,8 +126,8 @@ const LikerProfileModal: React.FC<Props> = ({
               onClick={onSuperLike}
               className="w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 bg-white border-2 border-primary text-primary hover:bg-red-50 transition-all active:scale-95"
             >
-              <Sparkles size={18} />
-              Super Like payant
+              <Flower2 size={18} />
+              Rose payante
             </button>
 
             <button

@@ -7,6 +7,7 @@ import {
   CheckCheck,
   ChevronLeft,
   CreditCard,
+  Flower2,
   Heart,
   MessageSquare,
   ShieldCheck,
@@ -57,7 +58,8 @@ const FILTERS: Array<{ id: NotificationType; label: { fr: string; en: string } }
 const iconForType = (type: NotificationType) => {
   if (type === 'MESSAGE') return MessageSquare;
   if (type === 'LIKE_RECEIVED') return Heart;
-  if (type === 'ROSE_RECEIVED' || type === 'STORY_LIKED' || type === 'MATCH_CREATED') return Sparkles;
+  if (type === 'ROSE_RECEIVED') return Flower2;
+  if (type === 'STORY_LIKED' || type === 'MATCH_CREATED') return Sparkles;
   if (type === 'PAYMENT_SUCCESS' || type === 'PAYMENT_FAILED') return CreditCard;
   if (type === 'SECURITY' || type === 'ADMIN') return ShieldCheck;
   if (type === 'PARTNER') return Store;
@@ -98,7 +100,7 @@ const NotificationsPage: React.FC = () => {
         likesTitle: 'Likes received',
         likesSub: 'View your admirers',
         rosesTitle: 'Roses received',
-        rosesSub: 'Super Likes to handle',
+        rosesSub: 'Roses to handle',
         unread: 'Unread',
         emptyTitle: 'No notifications',
         emptyBody: 'Important updates will appear here.',
@@ -116,7 +118,7 @@ const NotificationsPage: React.FC = () => {
         likesTitle: 'Likes reçus',
         likesSub: 'Voir vos admirateurs',
         rosesTitle: 'Roses reçues',
-        rosesSub: 'Super Likes à traiter',
+        rosesSub: 'Roses à traiter',
         unread: 'Non lues',
         emptyTitle: 'Aucune notification',
         emptyBody: 'Les informations importantes apparaîtront ici.',
@@ -260,7 +262,7 @@ const NotificationsPage: React.FC = () => {
         >
           <div className="mb-4 flex items-center justify-between">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-500/10">
-              <Sparkles size={20} />
+              <Flower2 size={20} />
             </div>
             <span className="min-w-8 rounded-full bg-amber-500 px-2 py-1 text-center text-xs font-black text-white">
               {rosesInboxCount > 99 ? '99+' : rosesInboxCount}

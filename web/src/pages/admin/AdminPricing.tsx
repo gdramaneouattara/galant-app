@@ -96,7 +96,7 @@ const AdminPricing: React.FC = () => {
 
           <div className="space-y-4">
             {[
-              { id: 'SUPER_LIKE', label: 'Rose envoyee (Super Like)', icon: Heart },
+              { id: 'SUPER_LIKE', label: 'Rose envoyee', icon: Heart },
               { id: 'DIRECT_MESSAGE', label: 'Message Direct', icon: MessageSquare },
               { id: 'ROSE_NOTE_UNLOCK', label: 'Note Parfumée', icon: Sparkles },
               { id: 'GOLDEN_ROSE', label: 'Rose d Or visibilite (3h)', icon: Gem },
