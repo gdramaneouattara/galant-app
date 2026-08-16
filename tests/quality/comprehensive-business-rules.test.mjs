@@ -156,6 +156,8 @@ test('Rules: Web discovery filters apply only after explicit confirmation', asyn
 
   assert.match(filterModal, /const \[draftFilters, setDraftFilters\] = useState\(filters\)/);
   assert.match(filterModal, /if \(isOpen\)/);
+  assert.match(filterModal, /ChevronLeft/);
+  assert.match(filterModal, /aria-label=\{c\.back\}/);
   assert.match(filterModal, /onApply\(\{ \.\.\.draftFilters \}\)/);
   assert.match(filterModal, /onClick=\{handleApply\}/);
   assert.match(filterModal, /onClick=\{handleReset\}/);

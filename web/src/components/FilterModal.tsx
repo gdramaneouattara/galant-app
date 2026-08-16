@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, CheckCircle, ShieldCheck, Gem } from 'lucide-react';
+import { X, CheckCircle, ShieldCheck, Gem, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { useAuth } from '../context/AuthContext';
@@ -33,6 +33,7 @@ const copy = {
     minScore: 'Score minimum',
     apply: 'Appliquer les filtres',
     reset: 'Reinitialiser',
+    back: 'Retour',
     close: 'Fermer'
   },
   en: {
@@ -54,6 +55,7 @@ const copy = {
     minScore: 'Minimum score',
     apply: 'Apply filters',
     reset: 'Reset',
+    back: 'Back',
     close: 'Close'
   }
 };
@@ -107,8 +109,11 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, onApply, defau
   return (
     <div className="fixed inset-0 z-[120] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="p-8 border-b border-slate-50 flex justify-between items-center">
-          <h3 className="text-2xl font-black italic">{c.title}</h3>
+        <div className="p-8 border-b border-slate-50 grid grid-cols-[auto_1fr_auto] items-center gap-4">
+          <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-full text-slate-400" aria-label={c.back}>
+            <ChevronLeft size={26} />
+          </button>
+          <h3 className="min-w-0 truncate text-2xl font-black italic">{c.title}</h3>
           <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-full text-slate-300" aria-label={c.close}>
             <X size={24} />
           </button>
