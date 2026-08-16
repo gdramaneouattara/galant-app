@@ -6,6 +6,7 @@ const { createInternalNotification, NOTIFICATION_TYPES } = require('../services/
 const SUPPORT_COLLECTION = 'support_threads';
 const MESSAGE_LIMIT = 120;
 const THREAD_LIMIT = 120;
+const ADMIN_RECIPIENT_LIMIT = 20;
 
 const nowIso = () => new Date().toISOString();
 
@@ -30,7 +31,10 @@ const threadRefForUser = (userId) => db.collection(SUPPORT_COLLECTION).doc(userI
 const messageToPublic = (doc) => ({ id: doc.id, ...doc.data() });
 
 const getAdminRecipients = async () => {
-  const snapshot = await db.collection('profiles').get();
+  const snapshot = await db.collection('profiles')
+    .where('is_admin', '==', true)
+    .limit(ADMIN_RECIPIENT_LIMIT)
+    .get();
   return snapshot.docs
     .map((doc) => ({ id: doc.id, ...doc.data() }))
     .filter((profile) => hasAdminAccess(profile));
@@ -77,11 +81,11 @@ const getThreadMessages = async (threadId) => {
   const snapshot = await db.collection(SUPPORT_COLLECTION)
     .doc(threadId)
     .collection('messages')
-    .orderBy('created_at', 'asc')
+    .orderBy('created_at', 'desc')
     .limit(MESSAGE_LIMIT)
     .get();
 
-  return snapshot.docs.map(messageToPublic);
+  return snapshot.docs.map(messageToPublic).reverse();
 };
 
 const getMySupportThread = async (req, res) => {

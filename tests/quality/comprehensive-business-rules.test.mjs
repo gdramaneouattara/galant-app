@@ -531,6 +531,10 @@ test('Rules: Admin-user support messaging is bidirectional on web', async () => 
   assert.match(supportController, /notifyAdmins/);
   assert.match(supportController, /notifyUser/);
   assert.match(supportController, /NOTIFICATION_TYPES\.ADMIN/);
+  assert.match(supportController, /ADMIN_RECIPIENT_LIMIT/);
+  assert.match(supportController, /where\('is_admin', '==', true\)/);
+  assert.match(supportController, /orderBy\('created_at', 'desc'\)/);
+  assert.match(supportController, /map\(messageToPublic\)\.reverse\(\)/);
   assert.match(supportController, /unread_for_admin:\s*FieldValue\.increment\(1\)/);
   assert.match(supportController, /unread_for_user:\s*FieldValue\.increment\(1\)/);
   assert.match(supportController, /targetRoute:\s*'\/support'/);
@@ -546,6 +550,10 @@ test('Rules: Admin-user support messaging is bidirectional on web', async () => 
   assert.match(webAdminSupport, /\/reply/);
   assert.match(webAdminSupport, /\/status/);
   assert.match(webAdminSupport, /Support Inbox/);
+  assert.match(webAdminSupport, /selectedThreadIdRef/);
+  assert.match(webAdminSupport, /messageRequestRef/);
+  assert.match(webAdminSupport, /selectedThreadIdRef\.current !== threadId/);
+  assert.match(webAdminSupport, /setMessages\(\[\]\)/);
   assert.doesNotMatch(webAdminSupport, /Simulation de/);
   assert.match(webNotifications, /navigate\('\/support'\)/);
   assert.match(webNotifications, /supportTitle/);
