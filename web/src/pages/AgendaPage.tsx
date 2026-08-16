@@ -77,7 +77,7 @@ const AgendaPage: React.FC = () => {
         loading: "Consultation de l'Agenda Royal...",
         eyebrow: 'Evenements de Prestige',
         titlePrefix: 'Agenda',
-        subtitle: "Eclat, sorties exclusives et rencontres d'exception selectionnees pour vous.",
+        subtitle: "Éclat, sorties exclusives et rencontres d'exception sélectionnées pour vous.",
         filters: [
           { id: 'ALL', label: 'Tout' },
           { id: 'EVENT', label: 'Evenements' },

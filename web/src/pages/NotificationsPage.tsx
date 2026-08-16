@@ -111,7 +111,7 @@ const NotificationsPage: React.FC = () => {
         back: 'Retour',
         eyebrow: 'Centre interne',
         title: 'Notifications',
-        subtitle: 'Vos alertes, likes et roses reçues au meme endroit.',
+        subtitle: 'Vos alertes, likes et roses reçues au même endroit.',
         allRead: 'Tout lu',
         likesTitle: 'Likes reçus',
         likesSub: 'Voir vos admirateurs',
@@ -119,7 +119,7 @@ const NotificationsPage: React.FC = () => {
         rosesSub: 'Super Likes à traiter',
         unread: 'Non lues',
         emptyTitle: 'Aucune notification',
-        emptyBody: 'Les informations importantes apparaitront ici.',
+        emptyBody: 'Les informations importantes apparaîtront ici.',
         archive: 'Archiver'
       };
 
