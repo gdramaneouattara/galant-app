@@ -1,11 +1,37 @@
 import React from 'react';
 import { X, Heart, Users, Coffee, CheckCircle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+
+export type RelationshipGoalId = 'SERIOUS' | 'FRIENDSHIP' | 'CASUAL';
 
 export const RELATIONSHIP_GOALS = [
-  { id: 'SERIOUS', label: 'Amour sérieux', icon: Heart, color: 'text-primary', bg: 'bg-rose-50' },
-  { id: 'FRIENDSHIP', label: 'Amitié', icon: Users, color: 'text-blue-500', bg: 'bg-blue-50' },
-  { id: 'CASUAL', label: 'On verra bien', icon: Coffee, color: 'text-amber-500', bg: 'bg-amber-50' },
+  {
+    id: 'SERIOUS' as RelationshipGoalId,
+    label: { fr: 'Amour sérieux', en: 'Serious love' },
+    icon: Heart,
+    color: 'text-primary',
+    bg: 'bg-rose-50'
+  },
+  {
+    id: 'FRIENDSHIP' as RelationshipGoalId,
+    label: { fr: 'Amitié', en: 'Friendship' },
+    icon: Users,
+    color: 'text-blue-500',
+    bg: 'bg-blue-50'
+  },
+  {
+    id: 'CASUAL' as RelationshipGoalId,
+    label: { fr: 'On verra bien', en: 'Let us see' },
+    icon: Coffee,
+    color: 'text-amber-500',
+    bg: 'bg-amber-50'
+  },
 ];
+
+export const getRelationshipGoalLabel = (goalId?: string | null, language: 'fr' | 'en' = 'fr') => {
+  const goal = RELATIONSHIP_GOALS.find((item) => item.id === goalId);
+  return goal?.label[language] || (language === 'en' ? 'Set my goal' : 'Définir mon objectif');
+};
 
 interface Props {
   isOpen: boolean;
@@ -14,15 +40,33 @@ interface Props {
   onUpdateGoal: (goalId: string) => void;
 }
 
+const copy = {
+  fr: {
+    title: 'Que cherchez-vous ?',
+    selected: 'Sélectionné',
+    choose: 'Cliquer pour choisir',
+    close: 'Fermer'
+  },
+  en: {
+    title: 'What are you looking for?',
+    selected: 'Selected',
+    choose: 'Tap to choose',
+    close: 'Close'
+  }
+};
+
 const GoalModal: React.FC<Props> = ({ isOpen, onClose, currentGoalId, onUpdateGoal }) => {
+  const { language } = useAuth();
+  const c = copy[language] || copy.fr;
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[120] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
       <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-transparent dark:border-white/10">
         <div className="p-8 border-b border-slate-50 dark:border-white/5 flex justify-between items-center">
-          <h3 className="text-2xl font-black italic text-slate-900 dark:text-white">Que cherchez-vous ?</h3>
-          <button onClick={onClose} className="p-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-full text-slate-300">
+          <h3 className="text-2xl font-black italic text-slate-900 dark:text-white">{c.title}</h3>
+          <button onClick={onClose} className="p-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-full text-slate-300" aria-label={c.close}>
             <X size={24} />
           </button>
         </div>
@@ -47,10 +91,10 @@ const GoalModal: React.FC<Props> = ({ isOpen, onClose, currentGoalId, onUpdateGo
                 </div>
                 <div className="flex-1">
                   <p className={`font-black text-sm uppercase tracking-tight ${active ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>
-                    {goal.label}
+                    {goal.label[language]}
                   </p>
                   <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">
-                    {active ? 'Sélectionné' : 'Cliquer pour choisir'}
+                    {active ? c.selected : c.choose}
                   </p>
                 </div>
                 {active && <CheckCircle size={24} className="text-primary" />}
@@ -64,7 +108,7 @@ const GoalModal: React.FC<Props> = ({ isOpen, onClose, currentGoalId, onUpdateGo
             onClick={onClose}
             className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-slate-200 dark:shadow-none hover:bg-black dark:hover:bg-slate-200 transition-all active:scale-95"
           >
-            Fermer
+            {c.close}
           </button>
         </div>
       </div>

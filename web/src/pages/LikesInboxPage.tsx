@@ -27,7 +27,7 @@ interface LikeInboxRow {
 }
 
 const LikesInboxPage: React.FC = () => {
-  const { user, profile, t, reloadUser } = useAuth();
+  const { user, profile, t, reloadUser, language } = useAuth();
   const [likes, setLikes] = useState<LikeInboxRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [likingId, setLikingId] = useState<string | null>(null);
@@ -37,6 +37,21 @@ const LikesInboxPage: React.FC = () => {
   const isFemaleFreePlan = profile?.gender === 'FEMALE' && !profile?.is_premium;
   const isTemporarilyUnlocked = profile?.likes_unlocked_until && new Date(profile.likes_unlocked_until) > new Date();
   const canAccess = profile?.is_premium || isFemaleFreePlan || isTemporarilyUnlocked;
+  const labels = language === 'en'
+    ? {
+        unlock2h: '2h access (1,000 F)',
+        empty: 'No likes received yet. Be more active!',
+        chat: 'Chat',
+        liked: 'Like sent',
+        likeBack: 'Like back'
+      }
+    : {
+        unlock2h: 'Accès 2h (1 000 F)',
+        empty: 'Aucun like reçu pour le moment. Soyez plus actif !',
+        chat: 'Discuter',
+        liked: 'Like envoye',
+        likeBack: 'Liker en retour'
+      };
 
   const fetchLikes = useCallback(async () => {
     if (!canAccess) {
@@ -106,7 +121,7 @@ const LikesInboxPage: React.FC = () => {
             className="w-full py-5 rounded-2xl border-2 border-slate-100 dark:border-white/10 text-slate-700 dark:text-slate-300 font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-all"
           >
             <CreditCard size={18} />
-            Accès 2h (1 000 F)
+            {labels.unlock2h}
           </button>
         </div>
 
@@ -138,7 +153,7 @@ const LikesInboxPage: React.FC = () => {
       {likes.length === 0 ? (
         <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-[3rem] border-2 border-dashed border-slate-100 dark:border-white/5 transition-colors">
           <Heart size={48} className="mx-auto text-slate-200 dark:text-slate-800 mb-4 transition-colors" />
-          <p className="text-slate-400 dark:text-slate-500 font-bold transition-colors">Aucun like reçu pour le moment. Soyez plus actif !</p>
+          <p className="text-slate-400 dark:text-slate-500 font-bold transition-colors">{labels.empty}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -170,7 +185,7 @@ const LikesInboxPage: React.FC = () => {
                       className="flex-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 transition-colors"
                     >
                       <MessageCircle size={14} />
-                      Discuter
+                      {labels.chat}
                     </button>
                   ) : (
                     <button
@@ -187,7 +202,7 @@ const LikesInboxPage: React.FC = () => {
                       ) : (
                         <>
                           <Heart size={14} fill={row.liked_back ? 'none' : 'currentColor'} />
-                          {row.liked_back ? 'Like envoyé' : 'Liker en retour'}
+                          {row.liked_back ? labels.liked : labels.likeBack}
                         </>
                       )}
                     </button>

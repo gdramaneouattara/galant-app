@@ -89,7 +89,7 @@ const PartnerSignupPage: React.FC = () => {
                 type="email" required
                 value={form.email} onChange={e => setForm({...form, email: e.target.value})}
                 className="w-full bg-slate-50 dark:bg-slate-800 border-none px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 font-medium text-slate-900 dark:text-white transition-colors"
-                placeholder="contact@etablissement.com"
+                placeholder="contact@établissement.com"
               />
             </div>
           </div>

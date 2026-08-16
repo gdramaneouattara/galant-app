@@ -16,7 +16,7 @@ import { Eye, EyeOff, CheckSquare, Square, ArrowLeft, Mail, RefreshCw } from 'lu
 import logoImg from '../assets/galant-logo-web.png';
 
 const AuthPage: React.FC = () => {
-  const { user, reloadUser, t } = useAuth();
+  const { user, reloadUser, t, language } = useAuth();
   const [mode, setMode] = useState<'login' | 'signup' | 'reset' | 'verify'>('login');
   const [email, setEmail] = useState('');
 
@@ -46,6 +46,41 @@ const AuthPage: React.FC = () => {
   const [hasAcceptedLegal, setHasAcceptedLegal] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const labels = language === 'en'
+    ? {
+        email: 'Email address',
+        password: 'Password',
+        forgotPassword: 'Forgot password?',
+        acceptTerms: 'I accept the',
+        terms: 'Terms',
+        privacy: 'Privacy Policy',
+        and: 'and the',
+        wait: 'Please wait...',
+        sendLink: 'Send link',
+        or: 'OR',
+        switchToSignup: 'Not a member yet? Sign up',
+        switchToLogin: 'Already have an account? Log in',
+        useAnotherEmail: 'Use another email address',
+        partnerQuestion: 'Are you a venue?',
+        partnerCta: 'Become a Galant Partner'
+      }
+    : {
+        email: 'Adresse Email',
+        password: 'Mot de passe',
+        forgotPassword: 'Mot de passe oublié ?',
+        acceptTerms: "J'accepte les",
+        terms: 'CGU',
+        privacy: 'Politique de confidentialité',
+        and: 'et la',
+        wait: 'Patientez...',
+        sendLink: 'Envoyer le lien',
+        or: 'OU',
+        switchToSignup: "Pas encore membre ? S'inscrire",
+        switchToLogin: 'Déjà un compte ? Se connecter',
+        useAnotherEmail: 'Utiliser une autre adresse email',
+        partnerQuestion: 'Vous êtes un établissement ?',
+        partnerCta: 'Devenez Partenaire Galant'
+      };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -223,7 +258,7 @@ const AuthPage: React.FC = () => {
             <>
             <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1 transition-colors">Adresse Email</label>
+              <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1 transition-colors">{labels.email}</label>
               <input
                 type="email"
                 value={email}
@@ -236,7 +271,7 @@ const AuthPage: React.FC = () => {
 
             {mode !== 'reset' && (
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1 transition-colors">Mot de passe</label>
+                <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1 transition-colors">{labels.password}</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -260,7 +295,7 @@ const AuthPage: React.FC = () => {
                     onClick={() => setMode('reset')}
                     className="text-[11px] font-bold text-primary hover:underline ml-1 mt-1 block"
                   >
-                    Mot de passe oublié ?
+                    {labels.forgotPassword}
                   </button>
                 )}
               </div>
@@ -276,7 +311,7 @@ const AuthPage: React.FC = () => {
                   {hasAcceptedLegal ? <CheckSquare size={20} /> : <Square size={20} />}
                 </div>
                 <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest leading-relaxed transition-colors">
-                  J'accepte les <Link to="/cgu" className="text-primary hover:underline">CGU</Link> et la <Link to="/privacy" className="text-primary hover:underline">Politique de confidentialité</Link>.
+                  {labels.acceptTerms} <Link to="/cgu" className="text-primary hover:underline">{labels.terms}</Link> {labels.and} <Link to="/privacy" className="text-primary hover:underline">{labels.privacy}</Link>.
                 </p>
               </button>
             )}
@@ -288,9 +323,9 @@ const AuthPage: React.FC = () => {
               {loading ? (
                 <div className="flex items-center justify-center gap-2">
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Patientez...</span>
+                  <span>{labels.wait}</span>
                 </div>
-              ) : (mode === 'login' ? t('login') : mode === 'signup' ? t('continue') : 'Envoyer le lien')}
+              ) : (mode === 'login' ? t('login') : mode === 'signup' ? t('continue') : labels.sendLink)}
             </button>
           </form>
           </>
@@ -300,7 +335,7 @@ const AuthPage: React.FC = () => {
             <>
             <div className="mt-8 flex items-center gap-4">
               <div className="h-px bg-slate-100 dark:bg-white/10 flex-1 transition-colors"></div>
-              <span className="text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest transition-colors">OU</span>
+              <span className="text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest transition-colors">{labels.or}</span>
               <div className="h-px bg-slate-100 dark:bg-white/10 flex-1 transition-colors"></div>
             </div>
 
@@ -329,7 +364,7 @@ const AuthPage: React.FC = () => {
                 onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
                 className="text-slate-500 dark:text-slate-400 font-bold hover:text-primary transition-colors text-sm uppercase"
               >
-                {mode === 'login' ? "Pas encore membre ? S'inscrire" : "Déjà un compte ? Se connecter"}
+                {mode === 'login' ? labels.switchToSignup : labels.switchToLogin}
               </button>
             )}
             {mode === 'verify' && (
@@ -340,7 +375,7 @@ const AuthPage: React.FC = () => {
                 }}
                 className="text-slate-400 dark:text-slate-500 font-bold hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-[10px] uppercase tracking-widest"
               >
-                Utiliser une autre adresse email
+                {labels.useAnotherEmail}
               </button>
             )}
           </div>
@@ -350,8 +385,8 @@ const AuthPage: React.FC = () => {
               onClick={() => navigate('/partner-signup')}
               className="group flex flex-col items-center gap-2 mx-auto"
             >
-              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] group-hover:text-primary transition-colors">Vous êtes un établissement ?</span>
-              <span className="text-sm font-black italic text-slate-900 dark:text-white border-b-2 border-slate-900 dark:border-white group-hover:border-primary group-hover:text-primary transition-all">Devenez Partenaire Galant</span>
+              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] group-hover:text-primary transition-colors">{labels.partnerQuestion}</span>
+              <span className="text-sm font-black italic text-slate-900 dark:text-white border-b-2 border-slate-900 dark:border-white group-hover:border-primary group-hover:text-primary transition-all">{labels.partnerCta}</span>
             </button>
           </div>
         </div>

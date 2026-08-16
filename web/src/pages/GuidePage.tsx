@@ -8,6 +8,7 @@ import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
 import { showAlert } from '@shared/lib/ui-bridge';
 import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
+import { useAuth } from '../context/AuthContext';
 
 interface Venue {
   id: string;
@@ -26,6 +27,7 @@ interface Venue {
 const GuidePage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { language } = useAuth();
   const routeState = (location.state as any) || {};
   const initialGuideState = routeState.guideState || {};
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -35,6 +37,63 @@ const GuidePage: React.FC = () => {
   const [pendingVenueContact, setPendingVenueContact] = useState<Venue | null>(null);
   const [searchQuery, setSearchQuery] = useState(initialGuideState.searchQuery || '');
   const [activeCategory, setActiveCategory] = useState<'ALL' | 'RESTAURANT' | 'LOUNGE' | 'HOTEL'>(initialGuideState.activeCategory || 'ALL');
+  const labels = language === 'en'
+    ? {
+        editorialTitle: 'Guide Galant',
+        editorialBody: 'This place is an editorial recommendation. You can suggest it to a match or start a route.',
+        error: 'Error',
+        chatError: 'Unable to open the conversation.',
+        loading: 'Selecting the best addresses...',
+        eyebrow: 'Galant Experience',
+        title: 'The Privilège Guide',
+        subtitle: 'Discover our exclusive selection of exceptional places for unforgettable dates.',
+        certified: 'Certified Places',
+        memberBenefits: 'Member Benefits',
+        search: 'Search a place, a city...',
+        categories: [
+          { id: 'ALL', label: 'All', icon: Globe },
+          { id: 'RESTAURANT', label: 'Restaurants', icon: Utensils },
+          { id: 'LOUNGE', label: 'Lounges', icon: GlassWater },
+          { id: 'HOTEL', label: 'Hotels', icon: Star }
+        ],
+        editorial: 'Galant Pick',
+        elite: 'Certified Elite',
+        benefit: 'Member Privilège',
+        propose: 'Suggest',
+        concierge: 'Concierge Access',
+        partnerTitle: 'Your venue deserves excellence',
+        partnerBody: 'Join the select circle of Galant certified venues.',
+        partnerCta: 'List my venue',
+        partnerFallback: 'this partner'
+      }
+    : {
+        editorialTitle: 'Guide Galant',
+        editorialBody: 'Ce lieu est une recommandation editoriale. Vous pouvez le proposer a un match ou lancer un trajet.',
+        error: 'Erreur',
+        chatError: 'Impossible d ouvrir la discussion.',
+        loading: 'Selection des meilleures adresses...',
+        eyebrow: 'Experience Galante',
+        title: 'Le Guide Privilège',
+        subtitle: "Decouvrez notre selection exclusive de lieux d'exception pour des rendez-vous inoubliables.",
+        certified: 'Lieux Certifiés',
+        memberBenefits: 'Avantages Membres',
+        search: 'Rechercher un lieu, une ville...',
+        categories: [
+          { id: 'ALL', label: 'Tous', icon: Globe },
+          { id: 'RESTAURANT', label: 'Restaurants', icon: Utensils },
+          { id: 'LOUNGE', label: 'Lounges', icon: GlassWater },
+          { id: 'HOTEL', label: 'Hotels', icon: Star }
+        ],
+        editorial: 'Conseil Galant',
+        elite: 'Elite Certifié',
+        benefit: 'Privilège Membre',
+        propose: 'Proposer',
+        concierge: 'Accès Conciergerie',
+        partnerTitle: "Votre lieu merite l'excellence",
+        partnerBody: 'Rejoignez le cercle restreint des établissements certifies Galant.',
+        partnerCta: 'Inscrire mon établissement',
+        partnerFallback: 'ce partenaire'
+      };
 
   useEffect(() => {
     const fetchVenues = async () => {
@@ -122,7 +181,7 @@ const GuidePage: React.FC = () => {
 
   const handleContactVenue = async (venue: Venue) => {
     if (venue.is_editorial) {
-      showAlert('Guide Galant', 'Ce lieu est une recommandation editoriale. Vous pouvez le proposer a un match ou lancer un trajet.');
+      showAlert(labels.editorialTitle, labels.editorialBody);
       return;
     }
 
@@ -134,7 +193,7 @@ const GuidePage: React.FC = () => {
         setPendingVenueContact(venue);
         return;
       }
-      showAlert('Erreur', error.message || 'Impossible d ouvrir la discussion.');
+      showAlert(labels.error, error.message || labels.chatError);
     }
   };
 
@@ -147,7 +206,7 @@ const GuidePage: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center py-40">
         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-slate-400 dark:text-slate-500 font-medium uppercase tracking-prestige text-[10px]">Sélection des meilleures adresses...</p>
+        <p className="text-slate-400 dark:text-slate-500 font-medium uppercase tracking-prestige text-[10px]">{labels.loading}</p>
       </div>
     );
   }
@@ -172,26 +231,26 @@ const GuidePage: React.FC = () => {
               <Compass size={24} className="text-white animate-pulse" />
             </div>
             <span className="text-white/40 font-medium uppercase tracking-prestige text-[10px]">
-              Expérience Galante
+              {labels.eyebrow}
             </span>
           </div>
 
           <h2 className="text-5xl md:text-7xl font-serif italic tracking-tighter text-white leading-none">
-            Le Guide <span className="text-primary not-italic">Privilège</span>
+            {labels.title}
           </h2>
 
           <p className="text-slate-400 dark:text-slate-500 text-lg md:text-xl font-medium leading-relaxed">
-            Découvrez notre sélection exclusive de lieux d'exception pour des rendez-vous inoubliables.
+            {labels.subtitle}
           </p>
 
           <div className="flex flex-wrap gap-4 pt-4">
             <div className="bg-white/5 backdrop-blur-md border border-white/10 px-6 py-3 rounded-2xl flex items-center gap-3">
               <Trophy size={20} className="text-amber-500" />
-              <span className="text-white text-xs font-medium uppercase tracking-prestige">Lieux Certifiés</span>
+              <span className="text-white text-xs font-medium uppercase tracking-prestige">{labels.certified}</span>
             </div>
             <div className="bg-white/5 backdrop-blur-md border border-white/10 px-6 py-3 rounded-2xl flex items-center gap-3">
               <Sparkles size={20} className="text-primary" />
-              <span className="text-white text-xs font-medium uppercase tracking-prestige">Avantages Membres</span>
+              <span className="text-white text-xs font-medium uppercase tracking-prestige">{labels.memberBenefits}</span>
             </div>
           </div>
         </div>
@@ -203,7 +262,7 @@ const GuidePage: React.FC = () => {
           <Search size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-primary transition-colors" />
           <input
             type="text"
-            placeholder="Rechercher un lieu, une ville..."
+            placeholder={labels.search}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-white/5 rounded-2xl py-4 pl-14 pr-6 text-slate-700 dark:text-slate-200 font-bold focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all shadow-sm"
@@ -211,12 +270,7 @@ const GuidePage: React.FC = () => {
         </div>
 
         <div className="flex gap-2 p-1 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-white/5 shadow-sm overflow-x-auto no-scrollbar w-full md:w-auto">
-          {[
-            { id: 'ALL', label: 'Tous', icon: Globe },
-            { id: 'RESTAURANT', label: 'Restaurants', icon: Utensils },
-            { id: 'LOUNGE', label: 'Lounges', icon: GlassWater },
-            { id: 'HOTEL', label: 'Hotels', icon: Star }
-          ].map(cat => (
+          {labels.categories.map(cat => (
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id as any)}
@@ -262,7 +316,7 @@ const GuidePage: React.FC = () => {
                   venue.is_editorial ? 'bg-slate-950/80 dark:bg-black/80 text-white' : 'bg-primary text-white'
                 }`}>
                   {venue.is_editorial ? <Sparkles size={12} className="text-amber-400" /> : <Trophy size={12} className="text-amber-400" />}
-                  {venue.is_editorial ? 'Conseil Galant' : 'Élite Certifié'}
+                  {venue.is_editorial ? labels.editorial : labels.elite}
                 </div>
               </div>
 
@@ -284,7 +338,7 @@ const GuidePage: React.FC = () => {
                 <div className="bg-gradient-to-br from-rose-50 to-rose-100/30 dark:from-rose-900/10 dark:to-rose-900/5 p-5 rounded-[2rem] border border-rose-100 dark:border-rose-900/20 flex items-start gap-4 shadow-inner">
                   <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-xl shadow-sm flex items-center justify-center text-xl">🎁</div>
                   <div>
-                    <p className="text-[8px] font-medium text-rose-300 dark:text-rose-700 uppercase tracking-prestige mb-1">Privilège Membre</p>
+                    <p className="text-[8px] font-medium text-rose-300 dark:text-rose-700 uppercase tracking-prestige mb-1">{labels.benefit}</p>
                     <p className="text-xs font-black text-primary uppercase tracking-tight leading-tight">
                       {venue.benefit_description}
                     </p>
@@ -299,7 +353,7 @@ const GuidePage: React.FC = () => {
                     className="py-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-2 hover:bg-black dark:hover:bg-slate-100 transition-all shadow-xl shadow-slate-900/10 dark:shadow-none active:scale-95 group/btn"
                   >
                     <Send size={14} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
-                    Proposer
+                    {labels.propose}
                   </button>
                   <button
                     onClick={(event) => { event.stopPropagation(); handleYangoRide(venue); }}
@@ -315,7 +369,7 @@ const GuidePage: React.FC = () => {
                   className="w-full py-5 rounded-2xl bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/20 text-primary font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-3 hover:bg-primary dark:hover:bg-rose-500 hover:text-white transition-all group/chat active:scale-95 shadow-lg shadow-rose-500/5 dark:shadow-none"
                 >
                   <MessageCircle size={18} fill="currentColor" className="opacity-20 group-hover/chat:opacity-100 transition-opacity" />
-                  Accès Conciergerie
+                  {labels.concierge}
                 </button>
               </div>
             </div>
@@ -329,13 +383,13 @@ const GuidePage: React.FC = () => {
         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 bg-black/10 rounded-full blur-3xl"></div>
 
         <div className="relative z-10 max-w-2xl mx-auto space-y-6">
-          <h3 className="text-3xl md:text-5xl font-serif italic tracking-tighter text-white">Votre lieu mérite l'excellence</h3>
-          <p className="text-white/80 text-lg font-medium">Rejoignez le cercle restreint des établissements certifiés Galant.</p>
+          <h3 className="text-3xl md:text-5xl font-serif italic tracking-tighter text-white">{labels.partnerTitle}</h3>
+          <p className="text-white/80 text-lg font-medium">{labels.partnerBody}</p>
           <button
             onClick={() => navigate('/partner-signup')}
             className="bg-white text-amber-600 px-10 py-5 rounded-[2rem] font-medium text-sm uppercase tracking-prestige shadow-2xl hover:scale-105 active:scale-95 transition-all mt-4"
           >
-            Inscrire mon établissement
+            {labels.partnerCta}
           </button>
         </div>
       </div>
@@ -350,7 +404,7 @@ const GuidePage: React.FC = () => {
         onClose={() => setPendingVenueContact(null)}
         type="DIRECT_MESSAGE"
         targetId={pendingVenueContact?.id}
-        userName={pendingVenueContact?.name || 'ce partenaire'}
+        userName={pendingVenueContact?.name || labels.partnerFallback}
         onSuccess={() => {
           const venue = pendingVenueContact;
           setPendingVenueContact(null);

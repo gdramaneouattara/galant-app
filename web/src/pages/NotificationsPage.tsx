@@ -43,15 +43,15 @@ type GalantNotification = {
   created_at?: string;
 };
 
-const FILTERS: Array<{ id: NotificationType; label: string }> = [
-  { id: 'ALL', label: 'Toutes' },
-  { id: 'MESSAGE', label: 'Messages' },
-  { id: 'LIKE_RECEIVED', label: 'Likes' },
-  { id: 'ROSE_RECEIVED', label: 'Roses' },
-  { id: 'PAYMENT_SUCCESS', label: 'Paiements' },
-  { id: 'PARTNER', label: 'Partenaires' },
-  { id: 'AGENDA', label: 'Agenda' },
-  { id: 'ADMIN', label: 'Admin' },
+const FILTERS: Array<{ id: NotificationType; label: { fr: string; en: string } }> = [
+  { id: 'ALL', label: { fr: 'Toutes', en: 'All' } },
+  { id: 'MESSAGE', label: { fr: 'Messages', en: 'Messages' } },
+  { id: 'LIKE_RECEIVED', label: { fr: 'Likes', en: 'Likes' } },
+  { id: 'ROSE_RECEIVED', label: { fr: 'Roses', en: 'Roses' } },
+  { id: 'PAYMENT_SUCCESS', label: { fr: 'Paiements', en: 'Payments' } },
+  { id: 'PARTNER', label: { fr: 'Partenaires', en: 'Partners' } },
+  { id: 'AGENDA', label: { fr: 'Agenda', en: 'Agenda' } },
+  { id: 'ADMIN', label: { fr: 'Admin', en: 'Admin' } },
 ];
 
 const iconForType = (type: NotificationType) => {
@@ -65,17 +65,17 @@ const iconForType = (type: NotificationType) => {
   return Bell;
 };
 
-const formatDate = (value?: string) => {
+const formatDate = (value?: string, language: 'fr' | 'en' = 'fr') => {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleString(language === 'en' ? 'en-US' : 'fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 };
 
 const NotificationsPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, language } = useAuth();
   const [notifications, setNotifications] = useState<GalantNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<NotificationType>('ALL');
@@ -85,6 +85,43 @@ const NotificationsPage: React.FC = () => {
 
   const likesQuickCount = Number(profile?.likes_count || 0);
   const returnPath = typeof location.state?.from === 'string' ? location.state.from : '/profile';
+  const labels = language === 'en'
+    ? {
+        error: 'Error',
+        loadError: 'Unable to load notifications.',
+        actionError: 'Action unavailable.',
+        back: 'Back',
+        eyebrow: 'Internal center',
+        title: 'Notifications',
+        subtitle: 'Your alerts, likes and roses in one place.',
+        allRead: 'All read',
+        likesTitle: 'Likes received',
+        likesSub: 'View your admirers',
+        rosesTitle: 'Roses received',
+        rosesSub: 'Super Likes to handle',
+        unread: 'Unread',
+        emptyTitle: 'No notifications',
+        emptyBody: 'Important updates will appear here.',
+        archive: 'Archive'
+      }
+    : {
+        error: 'Erreur',
+        loadError: 'Impossible de charger les notifications.',
+        actionError: 'Action impossible.',
+        back: 'Retour',
+        eyebrow: 'Centre interne',
+        title: 'Notifications',
+        subtitle: 'Vos alertes, likes et roses reçues au même endroit.',
+        allRead: 'Tout lu',
+        likesTitle: 'Likes reçus',
+        likesSub: 'Voir vos admirateurs',
+        rosesTitle: 'Roses reçues',
+        rosesSub: 'Super Likes à traiter',
+        unread: 'Non lues',
+        emptyTitle: 'Aucune notification',
+        emptyBody: 'Les informations importantes apparaîtront ici.',
+        archive: 'Archiver'
+      };
 
   const loadNotifications = async () => {
     try {
@@ -95,7 +132,7 @@ const NotificationsPage: React.FC = () => {
       const payload = await apiRequest<{ notifications: GalantNotification[] }>(`/api/notifications?${params.toString()}`, { requireAuth: true });
       setNotifications(payload.notifications || []);
     } catch (error: any) {
-      showAlert('Erreur', error.message || 'Impossible de charger les notifications.');
+      showAlert(labels.error, error.message || labels.loadError);
     } finally {
       setLoading(false);
     }
@@ -160,7 +197,7 @@ const NotificationsPage: React.FC = () => {
       await apiRequest('/api/notifications/read-all', { method: 'POST', requireAuth: true });
       setNotifications((prev) => prev.map((item) => ({ ...item, is_read: true })));
     } catch (error: any) {
-      showAlert('Erreur', error.message || 'Action impossible.');
+      showAlert(labels.error, error.message || labels.actionError);
     } finally {
       setMarkingAll(false);
     }
@@ -179,15 +216,15 @@ const NotificationsPage: React.FC = () => {
         <button
           onClick={() => navigate(returnPath)}
           className="mt-1 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-slate-900 text-slate-300 transition hover:text-white"
-          aria-label="Retour"
+          aria-label={labels.back}
         >
           <ChevronLeft size={22} />
         </button>
         <div className="flex-1">
-          <p className="text-[10px] font-black uppercase tracking-prestige text-primary">Centre interne</p>
-          <h1 className="text-3xl font-black text-slate-950 dark:text-white">Notifications</h1>
+          <p className="text-[10px] font-black uppercase tracking-prestige text-primary">{labels.eyebrow}</p>
+          <h1 className="text-3xl font-black text-slate-950 dark:text-white">{labels.title}</h1>
           <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">
-            Vos alertes, likes et roses recues au meme endroit.
+            {labels.subtitle}
           </p>
         </div>
         <button
@@ -196,7 +233,7 @@ const NotificationsPage: React.FC = () => {
           className="hidden items-center gap-2 rounded-2xl bg-primary px-4 py-3 text-xs font-black uppercase tracking-tight text-white shadow-lg shadow-primary/20 transition disabled:opacity-40 sm:flex"
         >
           <CheckCheck size={16} />
-          {markingAll ? '...' : 'Tout lu'}
+          {markingAll ? '...' : labels.allRead}
         </button>
       </div>
 
@@ -213,8 +250,8 @@ const NotificationsPage: React.FC = () => {
               {likesQuickCount > 99 ? '99+' : likesQuickCount}
             </span>
           </div>
-          <p className="text-sm font-black uppercase tracking-tight text-slate-950 dark:text-white">Likes recus</p>
-          <p className="mt-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">Voir vos admirateurs</p>
+          <p className="text-sm font-black uppercase tracking-tight text-slate-950 dark:text-white">{labels.likesTitle}</p>
+          <p className="mt-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">{labels.likesSub}</p>
         </button>
 
         <button
@@ -229,8 +266,8 @@ const NotificationsPage: React.FC = () => {
               {rosesInboxCount > 99 ? '99+' : rosesInboxCount}
             </span>
           </div>
-          <p className="text-sm font-black uppercase tracking-tight text-slate-950 dark:text-white">Roses recues</p>
-          <p className="mt-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">Super Likes a traiter</p>
+          <p className="text-sm font-black uppercase tracking-tight text-slate-950 dark:text-white">{labels.rosesTitle}</p>
+          <p className="mt-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">{labels.rosesSub}</p>
         </button>
       </div>
 
@@ -245,7 +282,7 @@ const NotificationsPage: React.FC = () => {
                 : 'bg-white text-slate-500 dark:bg-slate-900 dark:text-slate-400 border border-slate-100 dark:border-white/10'
             }`}
           >
-            {item.label}
+            {item.label[language]}
           </button>
         ))}
         <button
@@ -254,7 +291,7 @@ const NotificationsPage: React.FC = () => {
             unreadOnly ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950' : 'bg-white text-slate-500 dark:bg-slate-900 dark:text-slate-400 border border-slate-100 dark:border-white/10'
           }`}
         >
-          Non lues
+          {labels.unread}
         </button>
       </div>
 
@@ -266,8 +303,8 @@ const NotificationsPage: React.FC = () => {
         ) : notifications.length === 0 ? (
           <div className="rounded-[2rem] border border-white/10 bg-slate-900 p-10 text-center">
             <Bell className="mx-auto mb-4 text-slate-600" size={42} />
-            <p className="font-black text-white">Aucune notification</p>
-            <p className="mt-2 text-sm font-bold text-slate-500">Les informations importantes apparaitront ici.</p>
+            <p className="font-black text-white">{labels.emptyTitle}</p>
+            <p className="mt-2 text-sm font-bold text-slate-500">{labels.emptyBody}</p>
           </div>
         ) : notifications.map((item) => {
           const Icon = iconForType(item.type);
@@ -291,7 +328,7 @@ const NotificationsPage: React.FC = () => {
                     {unread && <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />}
                   </div>
                   <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">{item.message}</p>
-                  <p className="mt-2 text-[10px] font-black uppercase tracking-prestige text-slate-400">{formatDate(item.created_at)}</p>
+                  <p className="mt-2 text-[10px] font-black uppercase tracking-prestige text-slate-400">{formatDate(item.created_at, language)}</p>
                 </div>
               </button>
               <div className="mt-3 flex justify-end">
@@ -300,7 +337,7 @@ const NotificationsPage: React.FC = () => {
                   className="flex items-center gap-2 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-tight text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-white/5 dark:hover:text-white"
                 >
                   <Archive size={14} />
-                  Archiver
+                  {labels.archive}
                 </button>
               </div>
             </article>

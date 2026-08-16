@@ -416,7 +416,7 @@ test('Rules: Internal notification center is wired across server, web and native
   assert.match(webNotifications, /returnPath/);
   assert.match(webNotifications, /location\.state\?\.from/);
   assert.match(webNotifications, /navigate\(returnPath\)/);
-  assert.match(webNotifications, /Vos alertes, likes et roses recues au meme endroit/);
+  assert.match(webNotifications, /Vos alertes, likes et roses reçues au même endroit/);
   assert.match(webNotifications, /navigate\('\/likes'\)/);
   assert.match(webNotifications, /navigate\('\/roses'\)/);
   assert.match(webNotifications, /\/api\/super-likes\/received/);

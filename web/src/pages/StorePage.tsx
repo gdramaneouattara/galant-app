@@ -25,16 +25,105 @@ import { getBoostStatus } from '@shared/lib/boostStatus';
 
 const StorePage: React.FC = () => {
   const navigate = useNavigate();
-  const { profile, t } = useAuth();
+  const { profile, t, language } = useAuth();
   const { purchaseWithPaystack, purchaseLoading } = useSubscription();
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const boostStatus = getBoostStatus(profile?.boosted_until);
   const hasPartnerDiscoveryAccess = !!(profile?.is_premium || profile?.is_vip || profile?.partner_discovery_unlocked);
+  const labels = language === 'en'
+    ? {
+        alreadyTitle: 'Already available',
+        alreadyBody: 'Partners around me is already included in your access.',
+        error: 'Error',
+        subtitle: 'Privileges & Exclusives',
+        statusLabel: 'Your current status',
+        privilegeMember: 'Privilege Member',
+        classicMember: 'Classic Member',
+        active: 'Active',
+        subscriptions: 'Subscriptions',
+        oneMonth: '1 month',
+        threeMonths: '3 months',
+        perMonth: '/ month',
+        standardFeatures: ['Unlimited swipes', 'Certified Member badge', 'See who liked you'],
+        privilegeFeatures: ['Everything in Standard', 'Discreet invisible mode', '3 free Roses / month'],
+        processing: 'Processing...',
+        subscribe: 'Subscribe',
+        recommended: 'Recommended',
+        choosePrivilege: 'Choose Privilege',
+        aLaCarte: 'À la Carte',
+        rosesVisibility: 'Rose Balance & Visibility',
+        immediate: 'Instant action',
+        destinyBoosts: 'Destiny Accelerators',
+        passes: 'Passes & Unlocks',
+        included: 'Included',
+        rosePacks: [
+          { id: 'ROSE_1', type: 'ROSE_PACK' as PurchaseType, label: '1 Rose to use', price: 500, icon: '🌹' },
+          { id: 'ROSE_5', type: 'ROSE_PACK' as PurchaseType, label: 'Pack of 5 Roses', price: 2500, icon: '✨' },
+          { id: 'ROSE_10', type: 'ROSE_PACK' as PurchaseType, label: 'Pack of 10 Roses', price: 5000, icon: '🔥' },
+          { id: 'GOLDEN_ROSE', type: 'GOLDEN_ROSE' as PurchaseType, label: 'Golden Rose (3h)', price: 2500, icon: '🏆' },
+        ],
+        boosts: [
+          { id: '1D', label: '1 Day Boost', price: 1000, color: 'text-indigo-500', icon: Flame },
+          { id: '3D', label: '3 Day Boost', price: 2500, color: 'text-purple-600', icon: Rocket },
+          { id: '7D', label: '7 Day Boost', price: 5000, color: 'text-primary', icon: Star },
+        ],
+        unlocks: [
+          { id: 'DISCOVER_GRID_UNLOCK', type: 'DISCOVER_GRID_UNLOCK' as PurchaseType, label: 'Gallery Access', sub: '100 profile quota', price: 1000, icon: LayoutGrid, color: 'text-indigo-500' },
+          { id: 'LIKES_INBOX_2H', type: 'LIKES_INBOX_2H' as PurchaseType, label: 'Unlock Likes', sub: 'For 2 hours', price: 1000, icon: Heart, color: 'text-rose-500' },
+          { id: 'STORY_UPLOAD', type: 'STORY_UPLOAD' as PurchaseType, label: 'Post a Story', sub: 'One-time post', price: 500, icon: Camera, color: 'text-amber-500' },
+          { id: 'PARTNER_DISCOVERY_UNLOCK', type: 'PARTNER_DISCOVERY_UNLOCK' as PurchaseType, label: 'Partners around me', sub: 'Direct Google search', price: 500, icon: MapPinned, color: 'text-emerald-500' },
+        ],
+        security: 'All transactions are SSL encrypted and processed by Paystack. Orange Money, MTN MoMo, Moov Money and Wave are accepted.'
+      }
+    : {
+        alreadyTitle: 'Déjà disponible',
+        alreadyBody: 'Partenaires autour de moi est déjà inclus dans votre accès.',
+        error: 'Erreur',
+        subtitle: 'Privilèges & Exclusivités',
+        statusLabel: 'Votre Statut Actuel',
+        privilegeMember: 'Membre Privilège',
+        classicMember: 'Membre Classique',
+        active: 'Actif',
+        subscriptions: 'Abonnements',
+        oneMonth: '1 mois',
+        threeMonths: '3 mois',
+        perMonth: '/ mois',
+        standardFeatures: ['Swipes illimités', 'Badge Membre Certifié', 'Voir qui vous a liké'],
+        privilegeFeatures: ['Tout le mode Standard', 'Mode Invisible discret', '3 Roses offertes / mois'],
+        processing: 'Traitement...',
+        subscribe: "S'abonner",
+        recommended: 'Recommandé',
+        choosePrivilege: 'Choisir le Privilège',
+        aLaCarte: 'À la Carte',
+        rosesVisibility: 'Solde de Roses & Visibilité',
+        immediate: 'Action Immédiate',
+        destinyBoosts: 'Accélérateurs de Destin',
+        passes: 'Pass & Déblocages',
+        included: 'Inclus',
+        rosePacks: [
+          { id: 'ROSE_1', type: 'ROSE_PACK' as PurchaseType, label: '1 Rose à consommer', price: 500, icon: '🌹' },
+          { id: 'ROSE_5', type: 'ROSE_PACK' as PurchaseType, label: 'Pack 5 Roses', price: 2500, icon: '✨' },
+          { id: 'ROSE_10', type: 'ROSE_PACK' as PurchaseType, label: 'Pack 10 Roses', price: 5000, icon: '🔥' },
+          { id: 'GOLDEN_ROSE', type: 'GOLDEN_ROSE' as PurchaseType, label: "Rose d'Or (3h)", price: 2500, icon: '🏆' },
+        ],
+        boosts: [
+          { id: '1D', label: 'Boost 1 Jour', price: 1000, color: 'text-indigo-500', icon: Flame },
+          { id: '3D', label: 'Boost 3 Jours', price: 2500, color: 'text-purple-600', icon: Rocket },
+          { id: '7D', label: 'Boost 7 Jours', price: 5000, color: 'text-primary', icon: Star },
+        ],
+        unlocks: [
+          { id: 'DISCOVER_GRID_UNLOCK', type: 'DISCOVER_GRID_UNLOCK' as PurchaseType, label: 'Accès Galerie', sub: 'Quota 100 profils', price: 1000, icon: LayoutGrid, color: 'text-indigo-500' },
+          { id: 'LIKES_INBOX_2H', type: 'LIKES_INBOX_2H' as PurchaseType, label: 'Débloquer les Likes', sub: 'Pendant 2 heures', price: 1000, icon: Heart, color: 'text-rose-500' },
+          { id: 'STORY_UPLOAD', type: 'STORY_UPLOAD' as PurchaseType, label: 'Publier une Story', sub: 'Publication ponctuelle', price: 500, icon: Camera, color: 'text-amber-500' },
+          { id: 'PARTNER_DISCOVERY_UNLOCK', type: 'PARTNER_DISCOVERY_UNLOCK' as PurchaseType, label: 'Partenaires autour de moi', sub: 'Recherche Google directe', price: 500, icon: MapPinned, color: 'text-emerald-500' },
+        ],
+        security: 'Toutes vos transactions sont sécurisées par cryptage SSL et traitées par Paystack. Orange Money, MTN MoMo, Moov Money et Wave sont acceptés.'
+      };
 
   const handlePurchase = async (type: PurchaseType, id: string, amount: number) => {
     if (type === 'PARTNER_DISCOVERY_UNLOCK' && hasPartnerDiscoveryAccess) {
-      showAlert('Deja disponible', 'Partenaires autour de moi est deja inclus dans votre acces.');
+      showAlert(labels.alreadyTitle, labels.alreadyBody);
       return;
     }
 
@@ -45,7 +134,7 @@ const StorePage: React.FC = () => {
         showAlert(t('success'), t('purchase_activated'));
       }
     } catch (error: any) {
-      showAlert('Erreur', error.message);
+      showAlert(labels.error, error.message);
     } finally {
       setLoadingId(null);
     }
@@ -63,7 +152,7 @@ const StorePage: React.FC = () => {
         </button>
         <div>
           <h2 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white">Store Galant</h2>
-          <p className="text-slate-500 dark:text-slate-400 font-medium uppercase tracking-prestige text-[10px]">Privilèges & Exclusivités</p>
+          <p className="text-slate-500 dark:text-slate-400 font-medium uppercase tracking-prestige text-[10px]">{labels.subtitle}</p>
         </div>
       </div>
 
@@ -75,9 +164,9 @@ const StorePage: React.FC = () => {
             <Award size={32} />
           </div>
           <div>
-            <p className="text-xs font-medium uppercase tracking-prestige text-slate-400 mb-1">Votre Statut Actuel</p>
+            <p className="text-xs font-medium uppercase tracking-prestige text-slate-400 mb-1">{labels.statusLabel}</p>
             <h3 className="text-2xl font-serif italic tracking-tighter uppercase leading-none">
-              {profile?.is_premium ? 'Membre Privilège' : 'Membre Classique'}
+              {profile?.is_premium ? labels.privilegeMember : labels.classicMember}
             </h3>
           </div>
         </div>
@@ -88,7 +177,7 @@ const StorePage: React.FC = () => {
           </div>
           {boostStatus.active && (
             <div className="bg-white/5 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/10 flex flex-col items-center">
-              <span className="text-xl font-black text-secondary leading-none">Actif</span>
+              <span className="text-xl font-black text-secondary leading-none">{labels.active}</span>
               <span className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mt-1">Boost</span>
             </div>
           )}
@@ -101,7 +190,7 @@ const StorePage: React.FC = () => {
           <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center text-amber-600">
             <Crown size={20} fill="currentColor" />
           </div>
-          <h3 className="text-2xl font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">Abonnements</h3>
+          <h3 className="text-2xl font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">{labels.subscriptions}</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -110,14 +199,14 @@ const StorePage: React.FC = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-start">
                 <h4 className="text-xl font-serif italic tracking-tighter uppercase text-slate-900 dark:text-white leading-none">Standard</h4>
-                <div className="bg-slate-50 dark:bg-white/5 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest text-slate-400">1 MOIS</div>
+                <div className="bg-slate-50 dark:bg-white/5 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest text-slate-400">{labels.oneMonth}</div>
               </div>
               <div className="flex items-baseline gap-1">
                 <span className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">5 000 F</span>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">/ mois</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{labels.perMonth}</span>
               </div>
               <ul className="space-y-3">
-                {['Swipes illimités', 'Badge Membre Certifié', 'Voir qui vous a liké'].map((f, i) => (
+                {labels.standardFeatures.map((f, i) => (
                   <li key={i} className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
                     <CheckCircle2 size={14} className="text-green-500" /> {f}
                   </li>
@@ -129,26 +218,26 @@ const StorePage: React.FC = () => {
               disabled={!!loadingId || purchaseLoading}
               className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-prestige hover:scale-[1.02] active:scale-95 transition-all shadow-xl"
             >
-              {loadingId === 'MONTHLY' ? 'Traitement...' : 'S\'abonner'}
+              {loadingId === 'MONTHLY' ? labels.processing : labels.subscribe}
             </button>
           </div>
 
           {/* Plan Privilège */}
           <div className="bg-slate-950 p-8 rounded-[3rem] border-2 border-primary/30 shadow-2xl space-y-6 flex flex-col justify-between relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4">
-              <div className="bg-primary text-white px-3 py-1 rounded-lg text-[7px] font-black uppercase tracking-widest animate-pulse">RECOMMANDÉ</div>
+              <div className="bg-primary text-white px-3 py-1 rounded-lg text-[7px] font-black uppercase tracking-widest animate-pulse">{labels.recommended}</div>
             </div>
             <div className="space-y-4 relative z-10">
               <div className="flex justify-between items-start">
                 <h4 className="text-xl font-serif italic tracking-tighter uppercase text-white leading-none">Privilège</h4>
-                <div className="bg-white/10 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest text-amber-400">3 MOIS</div>
+                <div className="bg-white/10 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest text-amber-400">{labels.threeMonths}</div>
               </div>
               <div className="flex items-baseline gap-1">
                 <span className="text-4xl font-black text-white tracking-tighter">10 000 F</span>
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">/ 3 mois</span>
               </div>
               <ul className="space-y-3">
-                {['Tout le mode Standard', 'Mode Invisible discret', '3 Roses offertes / mois'].map((f, i) => (
+                {labels.privilegeFeatures.map((f, i) => (
                   <li key={i} className="flex items-center gap-2 text-xs font-medium text-slate-300">
                     <CheckCircle2 size={14} className="text-primary" /> {f}
                   </li>
@@ -160,7 +249,7 @@ const StorePage: React.FC = () => {
               disabled={!!loadingId || purchaseLoading}
               className="w-full py-4 bg-primary text-white rounded-2xl font-black text-[10px] uppercase tracking-prestige hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-red-500/20"
             >
-              {loadingId === 'QUARTERLY' ? 'Traitement...' : 'Choisir le Privilège'}
+              {loadingId === 'QUARTERLY' ? labels.processing : labels.choosePrivilege}
             </button>
           </div>
         </div>
@@ -172,20 +261,15 @@ const StorePage: React.FC = () => {
           <div className="w-10 h-10 bg-rose-50 dark:bg-rose-900/20 rounded-xl flex items-center justify-center text-primary">
             <Zap size={20} fill="currentColor" />
           </div>
-          <h3 className="text-2xl font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">À la Carte</h3>
+          <h3 className="text-2xl font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">{labels.aLaCarte}</h3>
         </div>
 
         <div className="space-y-12">
           {/* Roses & Visibilité */}
           <div className="space-y-4">
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Solde de Roses & Visibilité</h4>
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">{labels.rosesVisibility}</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {[
-                { id: 'ROSE_1', type: 'ROSE_PACK' as PurchaseType, label: '1 Rose à consommer', price: 500, icon: '🌹' },
-                { id: 'ROSE_5', type: 'ROSE_PACK' as PurchaseType, label: 'Pack 5 Roses', price: 2500, icon: '✨' },
-                { id: 'ROSE_10', type: 'ROSE_PACK' as PurchaseType, label: 'Pack 10 Roses', price: 5000, icon: '🔥' },
-                { id: 'GOLDEN_ROSE', type: 'GOLDEN_ROSE' as PurchaseType, label: 'Rose d\'Or (3h)', price: 2500, icon: '🏆' },
-              ].map((pack) => (
+              {labels.rosePacks.map((pack) => (
                 <button
                   key={pack.id}
                   onClick={() => handlePurchase(pack.type, pack.id, pack.price)}
@@ -198,7 +282,7 @@ const StorePage: React.FC = () => {
                     </div>
                     <div className="text-left min-w-0">
                       <p className="text-sm font-black text-slate-900 dark:text-white leading-none truncate">{pack.label}</p>
-                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">Action Immédiate</p>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">{labels.immediate}</p>
                     </div>
                   </div>
                   <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2 rounded-xl text-[10px] font-black">{pack.price} F</div>
@@ -209,13 +293,9 @@ const StorePage: React.FC = () => {
 
           {/* Boosts */}
           <div className="space-y-4">
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Accélérateurs de Destin</h4>
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">{labels.destinyBoosts}</h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { id: '1D', label: 'Boost 1 Jour', price: 1000, color: 'text-indigo-500', icon: Flame },
-                { id: '3D', label: 'Boost 3 Jours', price: 2500, color: 'text-purple-600', icon: Rocket },
-                { id: '7D', label: 'Boost 7 Jours', price: 5000, color: 'text-primary', icon: Star },
-              ].map((boost) => (
+              {labels.boosts.map((boost) => (
                 <button
                   key={boost.id}
                   onClick={() => handlePurchase('BOOST', boost.id, boost.price)}
@@ -236,14 +316,9 @@ const StorePage: React.FC = () => {
 
           {/* Déblocages Spéciaux */}
           <div className="space-y-4">
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Pass & Déblocages</h4>
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">{labels.passes}</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {[
-                { id: 'DISCOVER_GRID_UNLOCK', type: 'DISCOVER_GRID_UNLOCK' as PurchaseType, label: 'Accès Galerie', sub: 'Quota 100 profils', price: 1000, icon: LayoutGrid, color: 'text-indigo-500' },
-                { id: 'LIKES_INBOX_2H', type: 'LIKES_INBOX_2H' as PurchaseType, label: 'Débloquer les Likes', sub: 'Pendant 2 heures', price: 1000, icon: Heart, color: 'text-rose-500' },
-                { id: 'STORY_UPLOAD', type: 'STORY_UPLOAD' as PurchaseType, label: 'Publier une Story', sub: 'Publication ponctuelle', price: 500, icon: Camera, color: 'text-amber-500' },
-                { id: 'PARTNER_DISCOVERY_UNLOCK', type: 'PARTNER_DISCOVERY_UNLOCK' as PurchaseType, label: 'Partenaires autour de moi', sub: 'Recherche Google directe', price: 500, icon: MapPinned, color: 'text-emerald-500' },
-              ].map((item) => {
+              {labels.unlocks.map((item) => {
                 const alreadyGranted = item.type === 'PARTNER_DISCOVERY_UNLOCK' && hasPartnerDiscoveryAccess;
                 const disabled = !!loadingId || purchaseLoading || alreadyGranted;
                 return (
@@ -265,7 +340,7 @@ const StorePage: React.FC = () => {
                     </div>
                   </div>
                   <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2 rounded-xl text-[10px] font-black">
-                    {alreadyGranted ? 'Inclus' : `${item.price} F`}
+                    {alreadyGranted ? labels.included : `${item.price} F`}
                   </div>
                 </button>
               );
@@ -279,8 +354,7 @@ const StorePage: React.FC = () => {
       <div className="max-w-md mx-auto p-8 bg-slate-50 dark:bg-white/5 rounded-[3rem] border border-slate-100 dark:border-white/10 flex flex-col items-center gap-4 text-center">
         <ShieldCheck className="text-emerald-500" size={32} />
         <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 leading-relaxed uppercase tracking-wider">
-          Toutes vos transactions sont sécurisées par cryptage SSL et traitées par Paystack.
-          Acceptation Orange Money, MTN MoMo, Moov Money et Wave.
+          {labels.security}
         </p>
       </div>
     </div>

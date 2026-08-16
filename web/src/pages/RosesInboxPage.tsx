@@ -19,7 +19,7 @@ const STATUS_PRIORITY: Record<string, number> = {
 };
 
 const RosesInboxPage: React.FC = () => {
-  const { user, profile, t } = useAuth();
+  const { user, profile, t, language } = useAuth();
   const navigate = useNavigate();
   const { handleSwipe } = useMatchmaking();
 
@@ -33,6 +33,49 @@ const RosesInboxPage: React.FC = () => {
   const [likedUserIds, setLikedUserIds] = useState<Set<string>>(new Set());
   const [superLikedUserIds, setSuperLikedUserIds] = useState<Set<string>>(new Set());
   const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const labels = language === 'en'
+    ? {
+        loadError: 'Unable to load the roses inbox.',
+        opening: 'Opening the inbox...',
+        retry: 'Retry',
+        emptyPending: 'No rose to handle right now.',
+        emptyHistory: 'No rose in history.',
+        unavailable: 'Some counted roses are no longer available because the sender profile is incomplete, suspended or deleted.',
+        cityMissing: 'City not set',
+        roseReceived: 'Rose received',
+        note: 'Note',
+        noNote: 'Sent a rose without a message.',
+        profile: 'Profile',
+        likeBack: 'Like back',
+        ignore: 'Ignore',
+        accept: 'Accept',
+        chat: 'Chat',
+        subtitle: 'Roses received, separated from likes and messages',
+        pending: 'To handle',
+        history: 'History',
+        openProfile: (name: string) => `Open ${name}'s profile`
+      }
+    : {
+        loadError: 'Impossible de charger la boite des roses.',
+        opening: 'Ouverture de la boite...',
+        retry: 'Réessayer',
+        emptyPending: 'Aucune rose à traiter pour le moment.',
+        emptyHistory: 'Aucune rose dans l historique.',
+        unavailable: 'Certaines roses comptabilisees ne sont plus disponibles car le profil expediteur est incomplet, suspendu ou supprime.',
+        cityMissing: 'Ville non renseignee',
+        roseReceived: 'Rose reçue',
+        note: 'Note',
+        noNote: 'A envoye une rose sans message.',
+        profile: 'Fiche',
+        likeBack: 'Liker en retour',
+        ignore: 'Ignorer',
+        accept: 'Accepter',
+        chat: 'Discuter',
+        subtitle: 'Roses reçues, séparées des likes et des messages',
+        pending: 'À traiter',
+        history: 'Historique',
+        openProfile: (name: string) => `Ouvrir la fiche de ${name}`
+      };
 
   const fetchSuperLikes = useCallback(async () => {
     try {
@@ -47,11 +90,11 @@ const RosesInboxPage: React.FC = () => {
       setSuperLikes(rows);
       setLikedUserIds(new Set(rows.filter((row) => row.liked_back || row.is_matched).map((row) => row.user.id)));
     } catch (err: any) {
-      setError(err?.message || 'Impossible de charger la boite des roses.');
+      setError(err?.message || labels.loadError);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [labels.loadError]);
 
   useEffect(() => {
     if (user) void fetchSuperLikes();
@@ -152,7 +195,7 @@ const RosesInboxPage: React.FC = () => {
       return (
         <div className="flex flex-col items-center justify-center py-24 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-white/5 transition-colors">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
-          <p className="mt-4 text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest text-[10px] transition-colors">Ouverture de la boite...</p>
+          <p className="mt-4 text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest text-[10px] transition-colors">{labels.opening}</p>
         </div>
       );
     }
@@ -162,7 +205,7 @@ const RosesInboxPage: React.FC = () => {
         <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-[2rem] border border-red-100 dark:border-red-900/30 transition-colors">
           <p className="text-red-600 dark:text-red-400 font-black transition-colors">{error}</p>
           <button onClick={() => void fetchSuperLikes()} className="mt-4 text-primary font-black text-xs uppercase tracking-widest">
-            Reessayer
+            {labels.retry}
           </button>
         </div>
       );
@@ -173,11 +216,11 @@ const RosesInboxPage: React.FC = () => {
         <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-[2rem] border-2 border-dashed border-slate-100 dark:border-white/5 px-6 transition-colors">
           <Star size={48} className="mx-auto text-slate-200 dark:text-slate-800 mb-4 transition-colors" />
           <p className="text-slate-400 dark:text-slate-500 font-bold transition-colors">
-            {activeTab === 'PENDING' ? 'Aucune rose a traiter pour le moment.' : 'Aucune rose dans l historique.'}
+            {activeTab === 'PENDING' ? labels.emptyPending : labels.emptyHistory}
           </p>
           {unavailableHint && (
             <p className="text-slate-500 dark:text-slate-600 text-xs mt-3 max-w-md mx-auto transition-colors">
-              Certaines roses comptabilisees ne sont plus disponibles car le profil expediteur est incomplet, suspendu ou supprime.
+              {labels.unavailable}
             </p>
           )}
         </div>
@@ -202,7 +245,7 @@ const RosesInboxPage: React.FC = () => {
                 <button
                   onClick={() => setSelectedRose(row)}
                   className="relative w-20 h-24 flex-shrink-0 rounded-2xl overflow-hidden shadow-md"
-                  aria-label={`Ouvrir la fiche de ${row.user.name}`}
+                  aria-label={labels.openProfile(row.user.name)}
                 >
                   <OptimizedImage
                     src={optimizedPhotoUrl(row.user.photos?.[0], row.user.photo_variants, 'thumb') || 'https://placehold.co/200x300?text=?'}
@@ -221,11 +264,11 @@ const RosesInboxPage: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-1 text-slate-400 dark:text-slate-500 text-xs font-bold uppercase mb-3 transition-colors">
                     <MapPin size={12} />
-                    <span className="truncate">{row.user.city || 'Ville non renseignee'}</span>
+                    <span className="truncate">{row.user.city || labels.cityMissing}</span>
                   </div>
                   <div className="flex items-center gap-2 bg-rose-50 dark:bg-rose-900/20 px-3 py-1.5 rounded-xl w-fit transition-colors">
                     <Star size={12} className="text-primary" fill="currentColor" />
-                    <span className="text-[10px] font-extrabold text-primary uppercase tracking-tight">Rose recue</span>
+                    <span className="text-[10px] font-extrabold text-primary uppercase tracking-tight">{labels.roseReceived}</span>
                   </div>
                 </div>
               </div>
@@ -241,10 +284,10 @@ const RosesInboxPage: React.FC = () => {
 
               <div className="bg-slate-50 dark:bg-white/5 rounded-2xl p-4 relative transition-colors">
                 <div className="absolute -top-3 left-4 bg-primary text-white text-[8px] font-black px-2 py-1 rounded-md uppercase tracking-[0.2em]">
-                  Note
+                  {labels.note}
                 </div>
                 <p className="text-sm font-medium text-slate-700 dark:text-slate-300 italic leading-relaxed transition-colors">
-                  "{row.note || 'A envoye une rose sans message.'}"
+                  "{row.note || labels.noNote}"
                 </p>
               </div>
 
@@ -253,7 +296,7 @@ const RosesInboxPage: React.FC = () => {
                   onClick={() => setSelectedRose(row)}
                   className="px-4 py-3 rounded-2xl bg-white dark:bg-white/5 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 font-black text-[10px] uppercase tracking-widest transition-all"
                 >
-                  Fiche
+                  {labels.profile}
                 </button>
 
                 <button
@@ -262,7 +305,7 @@ const RosesInboxPage: React.FC = () => {
                   className={`w-11 h-11 rounded-2xl flex items-center justify-center text-white transition-all disabled:opacity-60 ${
                     likedUserIds.has(row.user.id) || row.liked_back || row.is_matched ? 'bg-emerald-600' : 'bg-primary'
                   }`}
-                  aria-label="Liker en retour"
+                  aria-label={labels.likeBack}
                 >
                   <Heart size={17} fill="currentColor" />
                 </button>
@@ -275,7 +318,7 @@ const RosesInboxPage: React.FC = () => {
                       className="flex-1 min-w-[96px] bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 transition-all disabled:opacity-60"
                     >
                       <X size={14} className="inline mr-1" />
-                      Ignorer
+                      {labels.ignore}
                     </button>
                     <button
                       onClick={() => void handleRespond(row, 'ACCEPT')}
@@ -283,7 +326,7 @@ const RosesInboxPage: React.FC = () => {
                       className="flex-[2] min-w-[140px] bg-primary text-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-red-200 dark:shadow-none hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
                     >
                       <Check size={16} strokeWidth={3} />
-                      Accepter
+                      {labels.accept}
                     </button>
                   </>
                 ) : row.status === 'ACCEPTED' ? (
@@ -292,7 +335,7 @@ const RosesInboxPage: React.FC = () => {
                     className="flex-1 min-w-[180px] bg-emerald-600 text-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2"
                   >
                     <MessageCircle size={16} />
-                    Discuter
+                    {labels.chat}
                   </button>
                 ) : null}
               </div>
@@ -311,7 +354,7 @@ const RosesInboxPage: React.FC = () => {
         </button>
         <div className="min-w-0">
           <h2 className="text-3xl font-black dark:text-white truncate">{t('rose_box')}</h2>
-          <p className="text-slate-500 font-medium">Roses recues, separees des likes et des messages</p>
+          <p className="text-slate-500 font-medium">{labels.subtitle}</p>
         </div>
       </div>
 
@@ -323,7 +366,7 @@ const RosesInboxPage: React.FC = () => {
           }`}
         >
           <p className="text-2xl font-black">{pendingRows.length}</p>
-          <p className="text-[10px] font-black uppercase tracking-widest opacity-80">A traiter</p>
+          <p className="text-[10px] font-black uppercase tracking-widest opacity-80">{labels.pending}</p>
         </button>
         <button
           onClick={() => setActiveTab('HISTORY')}
@@ -332,7 +375,7 @@ const RosesInboxPage: React.FC = () => {
           }`}
         >
           <p className="text-2xl font-black">{historyRows.length}</p>
-          <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Historique</p>
+          <p className="text-[10px] font-black uppercase tracking-widest opacity-80">{labels.history}</p>
         </button>
       </div>
 

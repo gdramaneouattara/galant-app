@@ -33,10 +33,73 @@ interface AgendaEvent {
 }
 
 const AgendaPage: React.FC = () => {
-  const { t } = useAuth();
+  const { t, language } = useAuth();
   const [events, setEvents] = useState<AgendaEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'ALL' | 'EVENT' | 'PARTY' | 'FLASH_OFFER' | 'NETWORKING' | 'LIVE_MUSIC'>('ALL');
+  const labels = language === 'en'
+    ? {
+        confirmedTitle: 'Registration confirmed',
+        confirmedBody: 'Your place is reserved. Prepare your finest outfit!',
+        linkCopied: 'Link copied',
+        linkCopiedBody: 'The outing was copied.',
+        loading: 'Checking the Royal Agenda...',
+        eyebrow: 'Prestige Events',
+        titlePrefix: 'Agenda',
+        subtitle: 'Exclusive outings, elegant moments and exceptional encounters selected for you.',
+        filters: [
+          { id: 'ALL', label: 'All' },
+          { id: 'EVENT', label: 'Events' },
+          { id: 'PARTY', label: 'Parties' },
+          { id: 'FLASH_OFFER', label: 'Flash Offers' },
+          { id: 'NETWORKING', label: 'Networking' },
+          { id: 'LIVE_MUSIC', label: 'Live Music' }
+        ],
+        cityFilter: 'Filter by city',
+        emptyTitle: 'No event planned',
+        emptyBody: 'Come back soon to discover the next Galant Circle outings.',
+        refresh: 'Refresh',
+        cityMissing: 'City not set',
+        officialSource: 'Official source',
+        hostVenue: 'Host venue',
+        ticketing: 'TIKERAMA TICKETS',
+        attending: 'I WILL GO',
+        reserve: 'RESERVE MY PLACE',
+        eliteTitle: 'Access the Galant Elite',
+        eliteBody: 'Premium members get priority invitations and guaranteed places in the most coveted venues.',
+        becomePremium: 'Become Premium'
+      }
+    : {
+        confirmedTitle: 'Inscription confirmee',
+        confirmedBody: 'Votre place est réservée. Preparez votre plus belle tenue !',
+        linkCopied: 'Lien copie',
+        linkCopiedBody: 'La sortie a ete copiee.',
+        loading: "Consultation de l'Agenda Royal...",
+        eyebrow: 'Evenements de Prestige',
+        titlePrefix: 'Agenda',
+        subtitle: "Éclat, sorties exclusives et rencontres d'exception sélectionnées pour vous.",
+        filters: [
+          { id: 'ALL', label: 'Tout' },
+          { id: 'EVENT', label: 'Evenements' },
+          { id: 'PARTY', label: 'Soirees' },
+          { id: 'FLASH_OFFER', label: 'Offres Flash' },
+          { id: 'NETWORKING', label: 'Networking' },
+          { id: 'LIVE_MUSIC', label: 'Live Music' }
+        ],
+        cityFilter: 'Filtrer par ville',
+        emptyTitle: 'Aucun evenement prevu',
+        emptyBody: 'Revenez bientot pour decouvrir les prochaines sorties du Cercle Galant.',
+        refresh: 'Rafraichir',
+        cityMissing: 'Ville non definie',
+        officialSource: 'Source officielle',
+        hostVenue: 'Etablissement Hote',
+        ticketing: 'BILLETTERIE TIKERAMA',
+        attending: "J'Y SERAI",
+        reserve: 'RESERVER MA PLACE',
+        eliteTitle: "Accédez a l'Elite Galante",
+        eliteBody: 'Les membres Premium bénéficient d invitations prioritaires et de places garanties dans les lieux les plus convoites.',
+        becomePremium: 'Devenir Premium'
+      };
 
   const fetchEvents = async () => {
     try {
@@ -74,7 +137,7 @@ const AgendaPage: React.FC = () => {
       }));
 
       if (!isCurrentlyAttending) {
-        showAlert('Inscription confirmée', 'Votre place est réservée. Préparez votre plus belle tenue ! ✨');
+        showAlert(labels.confirmedTitle, `${labels.confirmedBody} ✨`);
       }
     } catch (e) {
       console.error(e);
@@ -89,7 +152,7 @@ const AgendaPage: React.FC = () => {
         await navigator.share({ title: event.title, text, url });
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(`${text} ${url}`);
-        showAlert('Lien copie', 'La sortie a ete copiee.');
+        showAlert(labels.linkCopied, labels.linkCopiedBody);
       }
     } catch {}
   };
@@ -114,7 +177,7 @@ const AgendaPage: React.FC = () => {
             <Calendar className="text-primary/40 animate-pulse" size={32} />
           </div>
         </div>
-        <p className="text-slate-400 dark:text-slate-500 font-black uppercase tracking-[0.3em] text-[10px]">Consultation de l'Agenda Royal...</p>
+        <p className="text-slate-400 dark:text-slate-500 font-black uppercase tracking-[0.3em] text-[10px]">{labels.loading}</p>
       </div>
     );
   }
@@ -138,16 +201,16 @@ const AgendaPage: React.FC = () => {
               <Sparkles size={24} className="text-amber-400 animate-pulse" />
             </div>
             <span className="text-amber-400/80 font-medium uppercase tracking-prestige text-[10px]">
-              Événements de Prestige
+              {labels.eyebrow}
             </span>
           </div>
 
           <h2 className="text-5xl md:text-7xl font-serif italic tracking-tighter text-white leading-none">
-            Agenda <span className="text-primary not-italic">Galant</span>
+            {labels.titlePrefix} <span className="text-primary not-italic">Galant</span>
           </h2>
 
           <p className="text-slate-400 text-lg md:text-xl font-medium leading-relaxed max-w-md">
-            Éclat, sorties exclusives et rencontres d'exception sélectionnées pour vous.
+            {labels.subtitle}
           </p>
         </div>
       </div>
@@ -155,14 +218,7 @@ const AgendaPage: React.FC = () => {
       {/* Modern Filter Section */}
       <div className="flex flex-col lg:flex-row gap-6 items-center justify-between sticky top-24 z-40">
         <div className="flex gap-2 p-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2rem] border border-slate-200 dark:border-white/10 shadow-xl shadow-slate-200/40 dark:shadow-none w-full lg:w-auto overflow-x-auto no-scrollbar">
-          {[
-            { id: 'ALL', label: 'Tout' },
-            { id: 'EVENT', label: 'Evenements' },
-            { id: 'PARTY', label: 'Soirées' },
-            { id: 'FLASH_OFFER', label: 'Offres Flash' },
-            { id: 'NETWORKING', label: 'Networking' },
-            { id: 'LIVE_MUSIC', label: 'Live Music' }
-          ].map(cat => (
+          {labels.filters.map(cat => (
             <button
               key={cat.id}
               onClick={() => setFilter(cat.id as any)}
@@ -177,7 +233,7 @@ const AgendaPage: React.FC = () => {
 
         <div className="hidden lg:flex items-center gap-3 text-slate-400 dark:text-slate-500 font-medium text-xs uppercase tracking-prestige bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl px-6 py-4 rounded-[2rem] border border-slate-200 dark:border-white/10 shadow-xl dark:shadow-none">
            <Filter size={16} className="text-primary" />
-           <span>Filtrer par ville</span>
+           <span>{labels.cityFilter}</span>
            <div className="w-[1px] h-4 bg-slate-200 dark:bg-white/10 mx-2"></div>
            <span className="text-slate-900 dark:text-white">Douala, Yaoundé</span>
         </div>
@@ -189,14 +245,14 @@ const AgendaPage: React.FC = () => {
             <Calendar size={48} />
           </div>
           <div>
-            <p className="text-2xl font-black text-slate-900 dark:text-white mb-2">Aucun événement prévu</p>
-            <p className="text-slate-400 dark:text-slate-500 font-medium max-w-sm mx-auto">Revenez bientôt pour découvrir les prochaines sorties du Cercle Galant.</p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white mb-2">{labels.emptyTitle}</p>
+            <p className="text-slate-400 dark:text-slate-500 font-medium max-w-sm mx-auto">{labels.emptyBody}</p>
           </div>
           <button
             onClick={fetchEvents}
             className="bg-primary text-white font-black text-xs uppercase tracking-[0.2em] px-10 py-5 rounded-2xl shadow-xl shadow-red-500/20 hover:scale-105 active:scale-95 transition-all"
           >
-            Rafraîchir
+            {labels.refresh}
           </button>
         </div>
       ) : (
@@ -240,7 +296,7 @@ const AgendaPage: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 font-medium text-[10px] uppercase tracking-prestige">
                     <MapPin size={12} className="text-primary" />
-                    <span>{event.venues?.city || 'Ville non définie'}</span>
+                    <span>{event.venues?.city || labels.cityMissing}</span>
                   </div>
                   <h3 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white leading-none group-hover:text-primary transition-colors">
                     {event.title}
@@ -256,7 +312,7 @@ const AgendaPage: React.FC = () => {
                 <div className="bg-slate-50/50 dark:bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 border border-slate-100/50 dark:border-white/5">
                   <OptimizedImage src={optimizedPhotoUrl(event.venues?.photo_url, event.venues?.photo_variants, 'thumb')} className="w-10 h-10 rounded-xl shadow-sm border border-white dark:border-slate-700" alt="" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1">{isExternalEvent ? 'Source officielle' : 'Établissement Hôte'}</p>
+                    <p className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1">{isExternalEvent ? labels.officialSource : labels.hostVenue}</p>
                     <p className="text-sm font-black text-slate-800 dark:text-slate-200 truncate">{event.venues?.name}</p>
                   </div>
                   <ChevronRight size={16} className="text-slate-300 dark:text-slate-700" />
@@ -309,7 +365,7 @@ const AgendaPage: React.FC = () => {
                     }`}
                   >
                     {isExternalEvent ? <ExternalLink size={18} /> : event.is_attending ? <CheckCircle size={18} fill="currentColor" className="opacity-40" /> : <Ticket size={18} />}
-                    {isExternalEvent ? 'BILLETTERIE TIKERAMA' : event.is_attending ? 'J\'Y SERAI' : 'RÉSERVER MA PLACE'}
+                    {isExternalEvent ? labels.ticketing : event.is_attending ? labels.attending : labels.reserve}
                   </button>
 
                   <button onClick={() => void handleShareEvent(event)} className="w-16 py-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-white/10 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5 transition-all flex items-center justify-center">
@@ -335,13 +391,13 @@ const AgendaPage: React.FC = () => {
             </div>
           </div>
           <div className="space-y-4">
-            <h3 className="text-3xl md:text-5xl font-serif italic tracking-tighter text-white">Accédez à l'Élite Galante</h3>
+            <h3 className="text-3xl md:text-5xl font-serif italic tracking-tighter text-white">{labels.eliteTitle}</h3>
             <p className="text-slate-400 text-lg font-medium leading-relaxed">
-              Les membres Premium bénéficient d'invitations prioritaires et de places garanties dans les lieux les plus convoités.
+              {labels.eliteBody}
             </p>
           </div>
           <button className="bg-primary text-white px-12 py-5 rounded-[2rem] font-medium text-xs uppercase tracking-prestige shadow-2xl shadow-red-500/20 hover:scale-105 active:scale-95 transition-all">
-            Devenir Premium
+            {labels.becomePremium}
           </button>
         </div>
       </div>

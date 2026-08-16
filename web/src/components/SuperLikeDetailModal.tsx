@@ -84,7 +84,7 @@ const SuperLikeDetailModal: React.FC<Props> = ({
       <div className="bg-white w-full sm:max-w-lg max-h-[92vh] sm:max-h-[90vh] rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-6 fade-in duration-200">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div className="min-w-0">
-            <p className="text-[10px] font-black text-primary uppercase tracking-widest">Rose recue</p>
+            <p className="text-[10px] font-black text-primary uppercase tracking-widest">Rose reçue</p>
             <h3 className="text-xl font-black text-slate-950 truncate">
               {row.user.name}{typeof row.user.age === 'number' ? `, ${row.user.age}` : ''}
             </h3>
@@ -164,7 +164,7 @@ const SuperLikeDetailModal: React.FC<Props> = ({
               } ${isSuperLiking ? 'opacity-65' : ''}`}
             >
               <Star size={18} fill="currentColor" />
-              {isSuperLiked ? 'Rose envoyee' : 'Envoyer une rose'}
+              {isSuperLiked ? 'Rose envoyée' : 'Envoyer une rose'}
             </button>
 
             {status === 'PENDING' && (

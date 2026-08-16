@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ref, getDownloadURL } from 'firebase/storage';
-import { Plus, Heart, X, Play, Film, Lock, Share2, Users, Crown, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Heart, X, Play, Film, Lock, Share2, Users, Crown, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '@shared/lib/api';
 import { fbStorage } from '../firebase';
@@ -37,7 +37,7 @@ interface Status {
 }
 
 const StoriesPage: React.FC = () => {
-  const { user, profile, t } = useAuth();
+  const { user, profile, t, language } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const routeState = location.state as { initialStatusId?: string; openComposer?: boolean } | null;
@@ -69,6 +69,37 @@ const StoriesPage: React.FC = () => {
 
   const canPublishForFree = !!profile?.is_premium || !!profile?.is_vip;
   const canPublishNow = canPublishForFree || storyUploadUnlocked;
+  const labels = language === 'en'
+    ? {
+        title: 'Galant Stories',
+        subtitle: 'Community moments',
+        share: 'Share a moment',
+        back: 'Back',
+        lockedTitle: 'Stories are reserved',
+        lockedBody: 'Stories viewing is reserved for Premium members, but free accounts can publish one story with a one-time 500 F payment.',
+        unlockStory: 'Publish one Story - 500 F',
+        premium: 'Become Premium',
+        myStory: 'My story',
+      }
+    : {
+        title: 'Galant Stories',
+        subtitle: 'Les moments de la communauté',
+        share: 'Partager un moment',
+        back: 'Retour',
+        lockedTitle: 'Stories réservées',
+        lockedBody: 'La consultation des Stories est réservée aux membres Premium, mais les comptes gratuits peuvent publier une story avec un paiement ponctuel de 500 F.',
+        unlockStory: 'Publier une Story - 500 F',
+        premium: 'Devenir Premium',
+        myStory: 'Ma story',
+      };
+
+  const handleBack = () => {
+    if ((window.history.state?.idx ?? 0) > 0) {
+      navigate(-1);
+      return;
+    }
+    navigate('/');
+  };
 
   const resolveMediaUrls = useCallback((items: Status[]) => {
     items.forEach((status) => {
@@ -380,19 +411,58 @@ const StoriesPage: React.FC = () => {
 
   if (locked) {
     return (
-      <div className="max-w-md mx-auto text-center py-16 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl dark:shadow-none border border-slate-100 dark:border-white/10 p-8 space-y-8 transition-colors">
-        <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-primary rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-red-500/10 dark:shadow-none transition-colors">
-          <Lock size={40} />
+      <div className="max-w-3xl mx-auto pb-20 px-4 space-y-6">
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept="image/*,video/*"
+          onChange={handleFileUpload}
+          disabled={uploading}
+        />
+
+        <button
+          type="button"
+          onClick={handleBack}
+          className="inline-flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-4 py-3 text-xs font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:text-primary"
+          aria-label={labels.back}
+        >
+          <ArrowLeft size={18} />
+          {labels.back}
+        </button>
+
+        <div className="text-center py-14 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl dark:shadow-none border border-slate-100 dark:border-white/10 p-8 space-y-8 transition-colors">
+          <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-primary rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-red-500/10 dark:shadow-none transition-colors">
+            <Lock size={40} />
+          </div>
+          <div>
+            <h2 className="text-3xl font-black mb-2 tracking-tight text-slate-900 dark:text-white transition-colors">{labels.lockedTitle}</h2>
+            <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed transition-colors">
+              {labels.lockedBody}
+            </p>
+          </div>
+
+          <div className="grid gap-3">
+            <button
+              type="button"
+              onClick={() => void openStoryPicker()}
+              disabled={uploading || purchaseLoading}
+              className="block w-full bg-primary text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-red-500/20 hover:scale-[1.02] transition-all active:scale-95 disabled:opacity-60"
+            >
+              {uploading ? t('loading') : labels.unlockStory}
+            </button>
+            <Link to="/premium" className="block w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-slate-900/10 hover:scale-[1.02] transition-all active:scale-95">
+              {labels.premium}
+            </Link>
+          </div>
         </div>
-        <div>
-          <h2 className="text-3xl font-black mb-2 tracking-tight text-slate-900 dark:text-white transition-colors">Stories exclusives</h2>
-          <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed transition-colors">
-            Passez a Premium pour decouvrir les moments de vie de la communaute Galant et partager les votres.
-          </p>
-        </div>
-        <Link to="/premium" className="block w-full bg-primary text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-red-500/20 hover:scale-105 transition-all active:scale-95">
-          Devenir Premium
-        </Link>
+
+        <StoryPurchaseModal
+          isOpen={isPurchaseOpen}
+          onClose={() => setIsPurchaseOpen(false)}
+          onPurchase={handleStoryPurchase}
+          loading={purchaseLoading}
+        />
       </div>
     );
   }
@@ -408,25 +478,37 @@ const StoriesPage: React.FC = () => {
         disabled={uploading}
       />
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-        <div>
-          <h2 className="text-4xl sm:text-5xl font-serif italic tracking-tighter text-slate-900 dark:text-white leading-none mb-3 transition-colors">
-            Galant <span className="text-primary italic">Stories</span>
-          </h2>
-          <p className="text-slate-400 dark:text-slate-500 font-medium uppercase tracking-prestige text-sm transition-colors">
-            Les moments de la communaute
-          </p>
-        </div>
-
+      <div className="flex flex-col gap-5">
         <button
           type="button"
-          onClick={() => void openStoryPicker()}
-          disabled={uploading}
-          className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 sm:px-8 py-4 rounded-2xl shadow-2xl shadow-slate-900/20 dark:shadow-none hover:scale-[1.03] active:scale-95 transition-all flex items-center gap-3 font-medium text-xs uppercase tracking-prestige disabled:opacity-60"
+          onClick={handleBack}
+          className="inline-flex w-fit items-center gap-3 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-4 py-3 text-xs font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 shadow-sm transition-all hover:text-primary"
+          aria-label={labels.back}
         >
-          {uploading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white dark:border-slate-900/30 dark:border-t-slate-900 rounded-full animate-spin" /> : <Plus size={20} />}
-          Partager un moment
+          <ArrowLeft size={18} />
+          {labels.back}
         </button>
+
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+          <div>
+          <h2 className="text-4xl sm:text-5xl font-serif italic tracking-tighter text-slate-900 dark:text-white leading-none mb-3 transition-colors">
+            {labels.title.split(' ')[0]} <span className="text-primary italic">{labels.title.split(' ').slice(1).join(' ') || 'Stories'}</span>
+          </h2>
+          <p className="text-slate-400 dark:text-slate-500 font-medium uppercase tracking-prestige text-sm transition-colors">
+            {labels.subtitle}
+          </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void openStoryPicker()}
+            disabled={uploading}
+            className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 sm:px-8 py-4 rounded-2xl shadow-2xl shadow-slate-900/20 dark:shadow-none hover:scale-[1.03] active:scale-95 transition-all flex items-center gap-3 font-medium text-xs uppercase tracking-prestige disabled:opacity-60"
+          >
+            {uploading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white dark:border-slate-900/30 dark:border-t-slate-900 rounded-full animate-spin" /> : <Plus size={20} />}
+            {labels.share}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
@@ -439,7 +521,7 @@ const StoriesPage: React.FC = () => {
           <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 shadow-xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
             {uploading ? <div className="w-5 h-5 border-2 border-primary/20 border-t-primary rounded-full animate-spin" /> : <Plus size={28} />}
           </div>
-          <p className="text-[10px] font-medium uppercase tracking-prestige text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors">{t('my_story')}</p>
+          <p className="text-[10px] font-medium uppercase tracking-prestige text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors">{labels.myStory}</p>
         </button>
 
         {statuses.map((status) => {
@@ -513,6 +595,15 @@ const StoriesPage: React.FC = () => {
         <div className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-2xl flex items-center justify-center p-0 md:p-10 animate-in fade-in duration-300">
           <button
             onClick={() => setSelectedStatusId(null)}
+            className="absolute top-6 left-6 md:top-10 md:left-10 inline-flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-xs font-black uppercase tracking-widest text-white/70 backdrop-blur-xl border border-white/10 hover:text-white hover:bg-white/15 transition-all z-[110]"
+            aria-label={labels.back}
+          >
+            <ArrowLeft size={20} />
+            {labels.back}
+          </button>
+
+          <button
+            onClick={() => setSelectedStatusId(null)}
             className="absolute top-6 right-6 md:top-10 md:right-10 text-white/50 hover:text-white transition-all z-[110]"
             aria-label="Fermer"
           >
@@ -584,7 +675,7 @@ const StoriesPage: React.FC = () => {
             <div className="absolute bottom-8 sm:bottom-12 left-6 right-6 sm:left-10 sm:right-10 flex items-end gap-4 z-50">
               <div className="flex-1 bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl p-5 min-w-0">
                 <p className="text-white text-sm sm:text-base font-medium leading-relaxed italic">
-                  {selectedStatus.content || "Vivre l'instant present avec elegance..."}
+                  {selectedStatus.content || "Vivre l'instant présent avec élégance..."}
                 </p>
               </div>
 

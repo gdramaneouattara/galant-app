@@ -90,7 +90,7 @@ const VenueDetailPage: React.FC = () => {
       window.location.href = `tel:${venue.phone_number}`;
       return;
     }
-    showAlert('Guide Galant', 'Aucun numero direct disponible pour ce lieu.');
+    showAlert('Guide Galant', 'Aucun numéro direct disponible pour ce lieu.');
   };
 
   const handleBack = () => {
@@ -220,7 +220,7 @@ const VenueDetailPage: React.FC = () => {
         <div className="space-y-4">
           <h3 className="text-xs font-black uppercase tracking-prestige text-slate-400">A propos</h3>
           <p className="text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-            {venue.description || 'Cet etablissement vous accueille dans un cadre adapte a une sortie Galant.'}
+            {venue.description || 'Cet établissement vous accueille dans un cadre adapte a une sortie Galant.'}
           </p>
 
           <div className="flex flex-wrap gap-2 pt-2">
