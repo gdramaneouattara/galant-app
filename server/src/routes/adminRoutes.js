@@ -9,6 +9,12 @@ const {
   seedVenuesFromGoogle, searchTikeramaAgenda, importTikeramaAgenda,
   backfillMediaVariants, cleanupMediaOrphans
 } = require('../controllers/adminController');
+const {
+  getAdminSupportThreads,
+  getAdminSupportMessages,
+  sendAdminSupportReply,
+  updateAdminSupportThreadStatus,
+} = require('../controllers/supportController');
 
 router.use(requireAuth);
 router.use(requireAdmin);
@@ -38,6 +44,10 @@ router.post('/users/:id/toggle-status', toggleUserStatus);
 router.get('/messages/audience', getBroadcastAudience);
 router.post('/messages/broadcast', broadcastMessage);
 router.get('/messages/history', getCampaignHistory);
+router.get('/support/threads', getAdminSupportThreads);
+router.get('/support/threads/:threadId/messages', getAdminSupportMessages);
+router.post('/support/threads/:threadId/reply', sendAdminSupportReply);
+router.post('/support/threads/:threadId/status', updateAdminSupportThreadStatus);
 
 router.get('/pricing', getPricing);
 router.post('/pricing', updatePricing);

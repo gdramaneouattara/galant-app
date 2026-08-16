@@ -24,6 +24,7 @@ const DiscoverPage: React.FC = () => {
   const { user, profile: myProfile, loading: authLoading, t, language } = useAuth();
   const { suggestions, loading, fetchSuggestions, handleSwipe } = useMatchmaking();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isApplyingFilters, setIsApplyingFilters] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean; type: 'SUPER_LIKE' | 'DIRECT_MESSAGE' | 'DISCOVER_GRID_UNLOCK'; userName: string; targetId: string } | null>(null);
@@ -88,6 +89,8 @@ const DiscoverPage: React.FC = () => {
       await fetchSuggestions(filters);
     } catch (e) {
       console.error("Error loading suggestions", e);
+    } finally {
+      setIsApplyingFilters(false);
     }
   }, [user, myProfile, authLoading, fetchSuggestions, filters]);
 
@@ -222,6 +225,17 @@ const DiscoverPage: React.FC = () => {
     navigate(`/profile/${profile.id}`, { state: { profile } });
   };
 
+  const handleApplyFilters = useCallback((nextFilters: typeof DEFAULT_DISCOVER_FILTERS) => {
+    const filtersChanged = JSON.stringify(nextFilters) !== JSON.stringify(filters);
+    x.set(0);
+    setHasMore(true);
+    setIsApplyingFilters(true);
+    setFilters(nextFilters);
+    if (!filtersChanged) {
+      void loadSuggestions();
+    }
+  }, [filters, loadSuggestions, x]);
+
   const handleGridTransition = () => {
     const hasAccess = myProfile?.is_premium || (myProfile?.grid_consultations_remaining || 0) > 0;
     if (hasAccess) {
@@ -231,7 +245,7 @@ const DiscoverPage: React.FC = () => {
     }
   };
 
-  if (authLoading || (loading && suggestions.length === 0)) {
+  if (authLoading || isApplyingFilters || (loading && suggestions.length === 0)) {
     return (
       <div className="flex flex-col items-center justify-center py-40">
         <div className="relative">
@@ -512,7 +526,7 @@ const DiscoverPage: React.FC = () => {
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
         filters={filters}
-        onApply={setFilters}
+        onApply={handleApplyFilters}
         defaultFilters={DEFAULT_DISCOVER_FILTERS}
         is_premium={!!myProfile?.is_premium}
       />

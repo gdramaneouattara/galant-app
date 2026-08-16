@@ -58,6 +58,7 @@ const LikesInboxPage = lazy(() => import('./pages/LikesInboxPage'));
 const RosesInboxPage = lazy(() => import('./pages/RosesInboxPage'));
 const BoostPage = lazy(() => import('./pages/BoostPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const SupportPage = lazy(() => import('./pages/SupportPage'));
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AdminPricing = lazy(() => import('./pages/admin/AdminPricing'));
@@ -287,6 +288,7 @@ const AppContent: React.FC = () => {
             <Route path="/roses" element={<RosesInboxPage />} />
             <Route path="/boost" element={<BoostPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/support" element={<SupportPage />} />
             <Route path="/chat/:matchId" element={<ChatPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/profile/:id" element={<ProfileDetailPage />} />

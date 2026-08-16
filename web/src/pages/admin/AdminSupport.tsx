@@ -1,147 +1,302 @@
-import React, { useState } from 'react';
-import { Search, Send, ShieldCheck, Gem, User, MoreVertical, CheckCircle2, Clock, MessageSquare } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { CheckCircle2, Clock, Loader2, MessageSquare, RefreshCw, Search, Send, ShieldCheck, User } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { apiRequest } from '@shared/lib/api';
+import { showAlert } from '@shared/lib/ui-bridge';
+
+type SupportThread = {
+  id: string;
+  user_id: string;
+  user?: {
+    name?: string;
+    email?: string | null;
+    photo?: string | null;
+    role?: string;
+    is_premium?: boolean;
+    is_partner?: boolean;
+  };
+  subject?: string;
+  status?: 'OPEN' | 'CLOSED';
+  last_message?: string;
+  last_message_at?: string;
+  last_sender_role?: 'USER' | 'ADMIN';
+  unread_for_admin?: number;
+};
+
+type SupportMessage = {
+  id: string;
+  sender_role: 'USER' | 'ADMIN';
+  sender_name?: string;
+  message: string;
+  created_at?: string;
+};
+
+const formatDate = (value?: string) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+};
 
 const AdminSupport: React.FC = () => {
-  const [selectedChat, setSelectedChat] = useState<any>(null);
-  const [msg, setMsg] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedThread = searchParams.get('thread') || '';
+  const [threads, setThreads] = useState<SupportThread[]>([]);
+  const [selectedThreadId, setSelectedThreadId] = useState<string>(requestedThread);
+  const [messages, setMessages] = useState<SupportMessage[]>([]);
+  const [reply, setReply] = useState('');
+  const [loadingThreads, setLoadingThreads] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [query, setQuery] = useState('');
 
-  // Simulation de données de support
-  const supportChats = [
-    { id: '1', user: { name: 'Marc E.', role: 'Premium', status: 'verified', avatar: 'https://placehold.co/100', gender: 'MALE', score: 4.8 }, lastMsg: 'Bonjour, j\'ai un souci avec mon paiement...', time: '14:20', unread: true },
-    { id: '2', user: { name: 'Hotel de la Falaise', role: 'Partner', status: 'verified', avatar: 'https://placehold.co/100', gender: 'BUSINESS', score: 5.0 }, lastMsg: 'Comment puis-je booster ma visibilité ce weekend ?', time: 'Hier', unread: false },
-    { id: '3', user: { name: 'Sophie T.', role: 'User', status: 'pending', avatar: 'https://placehold.co/100', gender: 'FEMALE', score: 3.5 }, lastMsg: 'Mon KYC est toujours en attente.', time: 'Lun', unread: false },
-  ];
+  const selectedThread = useMemo(
+    () => threads.find((thread) => thread.id === selectedThreadId) || null,
+    [threads, selectedThreadId]
+  );
+
+  const filteredThreads = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return threads;
+    return threads.filter((thread) => (
+      `${thread.user?.name || ''} ${thread.user?.email || ''} ${thread.subject || ''} ${thread.last_message || ''}`
+        .toLowerCase()
+        .includes(needle)
+    ));
+  }, [query, threads]);
+
+  const loadThreads = async () => {
+    try {
+      setLoadingThreads(true);
+      const payload = await apiRequest<{ threads: SupportThread[] }>('/api/admin/support/threads', { requireAuth: true });
+      const rows = payload.threads || [];
+      setThreads(rows);
+      if (!selectedThreadId && rows.length > 0) setSelectedThreadId(rows[0].id);
+    } catch (error: any) {
+      showAlert('Erreur', error.message || 'Impossible de charger le support.');
+    } finally {
+      setLoadingThreads(false);
+    }
+  };
+
+  const loadMessages = async (threadId: string) => {
+    if (!threadId) return;
+    try {
+      setLoadingMessages(true);
+      const payload = await apiRequest<{ thread: SupportThread; messages: SupportMessage[] }>(
+        `/api/admin/support/threads/${encodeURIComponent(threadId)}/messages`,
+        { requireAuth: true }
+      );
+      setMessages(payload.messages || []);
+      setThreads((current) => current.map((thread) => (
+        thread.id === threadId ? { ...thread, ...payload.thread, unread_for_admin: 0 } : thread
+      )));
+    } catch (error: any) {
+      showAlert('Erreur', error.message || 'Impossible de charger la conversation.');
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadThreads();
+  }, []);
+
+  useEffect(() => {
+    if (requestedThread) setSelectedThreadId(requestedThread);
+  }, [requestedThread]);
+
+  useEffect(() => {
+    if (!selectedThreadId) return;
+    setSearchParams({ thread: selectedThreadId });
+    void loadMessages(selectedThreadId);
+  }, [selectedThreadId]);
+
+  const sendReply = async () => {
+    if (!selectedThreadId || !reply.trim()) return;
+    try {
+      setSending(true);
+      const payload = await apiRequest<{ thread: SupportThread; messages: SupportMessage[] }>(
+        `/api/admin/support/threads/${encodeURIComponent(selectedThreadId)}/reply`,
+        {
+          method: 'POST',
+          requireAuth: true,
+          body: JSON.stringify({ message: reply })
+        }
+      );
+      setReply('');
+      setMessages(payload.messages || []);
+      setThreads((current) => current.map((thread) => (
+        thread.id === selectedThreadId ? { ...thread, ...payload.thread } : thread
+      )));
+    } catch (error: any) {
+      showAlert('Erreur', error.message || 'Impossible d envoyer la reponse.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const updateStatus = async (status: 'OPEN' | 'CLOSED') => {
+    if (!selectedThreadId) return;
+    try {
+      const payload = await apiRequest<{ thread: SupportThread }>(
+        `/api/admin/support/threads/${encodeURIComponent(selectedThreadId)}/status`,
+        {
+          method: 'POST',
+          requireAuth: true,
+          body: JSON.stringify({ status })
+        }
+      );
+      setThreads((current) => current.map((thread) => (
+        thread.id === selectedThreadId ? { ...thread, ...payload.thread, status } : thread
+      )));
+    } catch (error: any) {
+      showAlert('Erreur', error.message || 'Impossible de modifier le statut.');
+    }
+  };
 
   return (
-    <div className="min-h-[calc(100vh-100px)] flex flex-col xl:flex-row gap-6 transition-colors">
-      {/* 1. Liste des Conversations Support */}
-      <div className="w-full xl:w-80 bg-white dark:bg-slate-900 rounded-[2rem] xl:rounded-[2.5rem] shadow-xl dark:shadow-none border border-slate-50 dark:border-white/5 flex flex-col overflow-hidden transition-colors">
-        <div className="p-6 border-b border-slate-50 dark:border-white/5 space-y-4">
-          <h3 className="text-xl font-black italic text-slate-900 dark:text-white transition-colors">Support Inbox</h3>
+    <div className="min-h-[calc(100vh-100px)] flex flex-col gap-6 transition-colors xl:flex-row">
+      <div className="flex w-full flex-col overflow-hidden rounded-[2rem] border border-slate-50 bg-white shadow-xl transition-colors dark:border-white/5 dark:bg-slate-900 xl:w-96">
+        <div className="space-y-4 border-b border-slate-50 p-6 dark:border-white/5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-xl font-black italic text-slate-900 transition-colors dark:text-white">Support Inbox</h3>
+              <p className="mt-1 text-[11px] font-bold uppercase tracking-prestige text-slate-400">Messages utilisateurs</p>
+            </div>
+            <button
+              onClick={() => void loadThreads()}
+              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-50 text-slate-400 transition hover:text-primary dark:bg-white/5"
+              aria-label="Rafraichir"
+            >
+              {loadingThreads ? <Loader2 className="animate-spin" size={18} /> : <RefreshCw size={18} />}
+            </button>
+          </div>
           <div className="relative">
             <input
               type="text"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
               placeholder="Rechercher un ticket..."
-              className="w-full bg-slate-50 dark:bg-slate-800 border-none px-10 py-3 rounded-xl outline-none text-sm font-medium text-slate-900 dark:text-white transition-colors"
+              className="w-full rounded-xl border-none bg-slate-50 px-10 py-3 text-sm font-medium text-slate-900 outline-none transition-colors dark:bg-slate-800 dark:text-white"
             />
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar">
-          {supportChats.map((chat) => (
-            <button
-              key={chat.id}
-              onClick={() => setSelectedChat(chat)}
-              className={`w-full flex items-center gap-3 p-4 rounded-2xl transition-all text-left ${
-                selectedChat?.id === chat.id ? 'bg-primary text-white shadow-lg shadow-red-200 dark:shadow-none' : 'hover:bg-slate-50 dark:hover:bg-white/5'
-              }`}
-            >
-              <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden flex-shrink-0">
-                <img src={chat.user.avatar} className="w-full h-full object-cover" alt="" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-sm truncate text-inherit transition-colors">{chat.user.name}</span>
-                  <span className={`text-[9px] font-black transition-colors ${selectedChat?.id === chat.id ? 'text-white/60' : 'text-slate-400 dark:text-slate-500'}`}>{chat.time}</span>
+        <div className="flex-1 space-y-2 overflow-y-auto p-4 no-scrollbar">
+          {loadingThreads ? (
+            <div className="flex min-h-[280px] items-center justify-center">
+              <Loader2 className="animate-spin text-primary" size={28} />
+            </div>
+          ) : filteredThreads.length === 0 ? (
+            <div className="flex min-h-[280px] flex-col items-center justify-center text-center text-slate-400">
+              <MessageSquare className="mb-3 opacity-30" size={52} />
+              <p className="text-sm font-bold">Aucun ticket support.</p>
+            </div>
+          ) : filteredThreads.map((thread) => {
+            const active = selectedThreadId === thread.id;
+            const unread = Number(thread.unread_for_admin || 0) > 0;
+            return (
+              <button
+                key={thread.id}
+                onClick={() => setSelectedThreadId(thread.id)}
+                className={`w-full rounded-2xl p-4 text-left transition-all ${
+                  active ? 'bg-primary text-white shadow-lg shadow-red-200 dark:shadow-none' : 'hover:bg-slate-50 dark:hover:bg-white/5'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full ${active ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800'}`}>
+                    {thread.user?.photo ? <img src={thread.user.photo} alt="" className="h-full w-full object-cover" /> : <User size={18} />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-sm font-black">{thread.user?.name || 'Utilisateur'}</p>
+                      <span className={`text-[9px] font-black ${active ? 'text-white/60' : 'text-slate-400'}`}>{formatDate(thread.last_message_at)}</span>
+                    </div>
+                    <p className={`mt-1 truncate text-xs font-bold ${active ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>{thread.subject || 'Support Galant'}</p>
+                    <p className={`mt-1 truncate text-xs ${active ? 'text-white/70' : 'text-slate-400'}`}>{thread.last_message}</p>
+                  </div>
+                  {unread && <span className="mt-1 min-w-5 rounded-full bg-primary px-1.5 py-0.5 text-center text-[10px] font-black text-white ring-4 ring-primary/10">{thread.unread_for_admin}</span>}
                 </div>
-                <p className={`text-xs truncate font-medium transition-colors ${selectedChat?.id === chat.id ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>{chat.lastMsg}</p>
-              </div>
-              {chat.unread && <div className="w-2 h-2 bg-primary rounded-full ring-4 ring-primary/10"></div>}
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* 2. Zone de Chat */}
-      <div className="min-h-[520px] flex-1 bg-white dark:bg-slate-900 rounded-[2rem] xl:rounded-[3rem] shadow-2xl dark:shadow-none border border-slate-50 dark:border-white/5 flex flex-col overflow-hidden transition-colors">
-        {selectedChat ? (
+      <div className="flex min-h-[620px] flex-1 flex-col overflow-hidden rounded-[2rem] border border-slate-50 bg-white shadow-2xl transition-colors dark:border-white/5 dark:bg-slate-900 xl:rounded-[3rem]">
+        {selectedThread ? (
           <>
-            <div className="p-6 border-b border-slate-50 dark:border-white/5 flex justify-between items-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm transition-colors">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-slate-100 dark:border-white/10 transition-colors">
-                  <img src={selectedChat.user.avatar} className="w-full h-full object-cover" alt="" />
+            <div className="flex items-center justify-between gap-4 border-b border-slate-50 bg-white/50 p-6 backdrop-blur-sm transition-colors dark:border-white/5 dark:bg-slate-900/50">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h4 className="truncate font-black text-slate-900 transition-colors dark:text-white">{selectedThread.user?.name || 'Utilisateur'}</h4>
+                  {selectedThread.user?.is_premium && <ShieldCheck size={16} className="text-amber-500" />}
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-black text-slate-900 dark:text-white transition-colors">{selectedChat.user.name}</h4>
-                    {selectedChat.user.status === 'verified' && <ShieldCheck size={16} className="text-blue-500" />}
-                  </div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 transition-colors">ID: #{selectedChat.id}12482</p>
-                </div>
+                <p className="mt-1 truncate text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                  {selectedThread.user?.email || selectedThread.id}
+                </p>
               </div>
               <div className="flex items-center gap-2">
-                <button className="p-3 bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-slate-500 rounded-2xl hover:text-primary transition-colors"><CheckCircle2 size={20} /></button>
-                <button className="p-3 bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-slate-500 rounded-2xl hover:text-primary transition-colors"><MoreVertical size={20} /></button>
+                <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase ${selectedThread.status === 'CLOSED' ? 'bg-slate-100 text-slate-500 dark:bg-white/5' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                  {selectedThread.status === 'CLOSED' ? 'Ferme' : 'Ouvert'}
+                </span>
+                <button
+                  onClick={() => void updateStatus(selectedThread.status === 'CLOSED' ? 'OPEN' : 'CLOSED')}
+                  className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-50 text-slate-400 transition hover:text-primary dark:bg-white/5"
+                  aria-label="Changer le statut"
+                >
+                  <CheckCircle2 size={18} />
+                </button>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-slate-50/30 dark:bg-slate-950/30 transition-colors">
-               <div className="flex justify-start">
-                 <div className="max-w-[70%] bg-white dark:bg-slate-800 p-4 rounded-3xl text-sm font-medium shadow-sm dark:shadow-none border border-slate-100 dark:border-white/5 rounded-tl-none transition-colors">
-                   <span className="text-slate-900 dark:text-white">{selectedChat.lastMsg}</span>
-                   <div className="text-[9px] mt-2 font-bold text-slate-400 dark:text-slate-500 transition-colors">{selectedChat.time}</div>
-                 </div>
-               </div>
-               <div className="flex justify-end">
-                 <div className="max-w-[70%] bg-primary text-white p-4 rounded-3xl text-sm font-medium shadow-lg shadow-red-200 dark:shadow-none rounded-tr-none">
-                   Bonjour Marc, je regarde cela tout de suite. Pouvez-vous me confirmer le montant de la transaction ?
-                   <div className="text-[9px] mt-2 font-bold text-white/60">14:22 • LU</div>
-                 </div>
-               </div>
+            <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50/30 p-6 transition-colors dark:bg-slate-950/30">
+              {loadingMessages ? (
+                <div className="flex h-full items-center justify-center">
+                  <Loader2 className="animate-spin text-primary" size={34} />
+                </div>
+              ) : messages.map((item) => {
+                const fromAdmin = item.sender_role === 'ADMIN';
+                return (
+                  <div key={item.id} className={`flex ${fromAdmin ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[78%] rounded-3xl p-4 text-sm font-medium shadow-sm transition-colors ${fromAdmin ? 'rounded-tr-none bg-primary text-white' : 'rounded-tl-none border border-slate-100 bg-white text-slate-900 dark:border-white/5 dark:bg-slate-800 dark:text-white'}`}>
+                      <p className="whitespace-pre-wrap leading-relaxed">{item.message}</p>
+                      <div className={`mt-2 flex items-center gap-1 text-[9px] font-bold ${fromAdmin ? 'text-white/60' : 'text-slate-400 dark:text-slate-500'}`}>
+                        <Clock size={10} />
+                        {formatDate(item.created_at)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
-            <div className="p-6 border-t border-slate-50 dark:border-white/5 flex gap-4 transition-colors">
-               <input
-                 value={msg}
-                 onChange={e => setMsg(e.target.value)}
-                 className="flex-1 bg-slate-50 dark:bg-slate-800 px-6 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 font-medium text-slate-900 dark:text-white transition-colors"
-                 placeholder="Répondre à l'utilisateur..."
-               />
-               <button className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg hover:bg-black dark:hover:bg-slate-100 transition-all">
-                 <Send size={20} />
-               </button>
+            <div className="flex gap-4 border-t border-slate-50 p-6 transition-colors dark:border-white/5">
+              <textarea
+                value={reply}
+                onChange={(event) => setReply(event.target.value)}
+                rows={2}
+                className="min-h-[56px] flex-1 resize-none rounded-2xl bg-slate-50 px-6 py-4 font-medium text-slate-900 outline-none transition-colors focus:ring-2 focus:ring-primary/10 dark:bg-slate-800 dark:text-white"
+                placeholder="Repondre a l'utilisateur..."
+              />
+              <button
+                onClick={sendReply}
+                disabled={sending || !reply.trim()}
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg transition-all hover:bg-black disabled:opacity-40 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+              >
+                {sending ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+              </button>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-300 dark:text-slate-700 gap-4 transition-colors">
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 text-slate-300 transition-colors dark:text-slate-700">
             <MessageSquare size={80} strokeWidth={1} className="opacity-20" />
-            <p className="font-bold italic transition-colors">Sélectionnez une discussion pour répondre.</p>
+            <p className="font-bold italic transition-colors">Selectionnez une discussion pour repondre.</p>
           </div>
         )}
       </div>
-
-      {/* 3. Fiche Utilisateur Contextuelle */}
-      {selectedChat && (
-        <div className="w-full xl:w-80 space-y-6 overflow-y-auto no-scrollbar transition-colors">
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-xl dark:shadow-none border border-slate-50 dark:border-white/5 space-y-6 transition-colors">
-            <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors">Fiche Client</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 transition-colors">Segment</span>
-                <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase ${selectedChat.user.role === 'Premium' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'}`}>
-                  {selectedChat.user.role}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 transition-colors">Score Galant</span>
-                <span className="flex items-center gap-1 font-black text-primary italic transition-colors">
-                  <Gem size={12} /> {selectedChat.user.score}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 transition-colors">Dernière activité</span>
-                <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1 transition-colors"><Clock size={12} /> À l'instant</span>
-              </div>
-            </div>
-
-            <div className="pt-4 space-y-2 transition-colors">
-               <button className="w-full py-3 rounded-xl bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white font-bold text-xs uppercase hover:bg-slate-100 dark:hover:bg-white/10 transition-all">Voir Profil Complet</button>
-               <button className="w-full py-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 font-bold text-xs uppercase hover:bg-red-100 dark:hover:bg-red-900/40 transition-all">Suspendre Compte</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
