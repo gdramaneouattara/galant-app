@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, CheckCircle, ShieldCheck, Gem } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showAlert } from '@shared/lib/ui-bridge';
@@ -8,7 +8,8 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   filters: any;
-  setFilters: (f: any) => void;
+  onApply: (f: any) => void;
+  defaultFilters: any;
   is_premium: boolean;
 }
 
@@ -31,6 +32,7 @@ const copy = {
     verifiedOnlySub: "L'elite verifiee par Galant",
     minScore: 'Score minimum',
     apply: 'Appliquer les filtres',
+    reset: 'Reinitialiser',
     close: 'Fermer'
   },
   en: {
@@ -51,14 +53,22 @@ const copy = {
     verifiedOnlySub: 'The elite verified by Galant',
     minScore: 'Minimum score',
     apply: 'Apply filters',
+    reset: 'Reset',
     close: 'Close'
   }
 };
 
-const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is_premium }) => {
+const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, onApply, defaultFilters, is_premium }) => {
   const navigate = useNavigate();
   const { language } = useAuth();
   const c = copy[language] || copy.fr;
+  const [draftFilters, setDraftFilters] = useState(filters);
+
+  useEffect(() => {
+    if (isOpen) {
+      setDraftFilters(filters);
+    }
+  }, [filters, isOpen]);
 
   if (!isOpen) return null;
 
@@ -69,7 +79,7 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is
       navigate('/premium');
       return;
     }
-    setFilters({ ...filters, [key]: !filters[key] });
+    setDraftFilters({ ...draftFilters, [key]: !draftFilters[key] });
   };
 
   const handleScoreFilter = (score: number) => {
@@ -79,7 +89,19 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is
       navigate('/premium');
       return;
     }
-    setFilters({ ...filters, minScore: score });
+    setDraftFilters({ ...draftFilters, minScore: score });
+  };
+
+  const handleApply = () => {
+    onApply({ ...draftFilters });
+    onClose();
+  };
+
+  const handleReset = () => {
+    const nextFilters = { ...defaultFilters };
+    setDraftFilters(nextFilters);
+    onApply(nextFilters);
+    onClose();
   };
 
   return (
@@ -103,9 +125,9 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is
               ].map(g => (
                 <button
                   key={g.id}
-                  onClick={() => setFilters({ ...filters, gender: g.id })}
+                  onClick={() => setDraftFilters({ ...draftFilters, gender: g.id })}
                   className={`py-3 rounded-2xl font-bold text-sm transition-all border ${
-                    filters.gender === g.id ? 'bg-primary text-white border-primary shadow-lg shadow-red-100' : 'bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100'
+                    draftFilters.gender === g.id ? 'bg-primary text-white border-primary shadow-lg shadow-red-100' : 'bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100'
                   }`}
                 >
                   {g.label}
@@ -115,19 +137,19 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is
           </div>
 
           <div className="space-y-4">
-            <p className="text-xs font-black uppercase text-slate-400 tracking-widest">{c.age} : {filters.minAge} - {filters.maxAge}</p>
+            <p className="text-xs font-black uppercase text-slate-400 tracking-widest">{c.age} : {draftFilters.minAge} - {draftFilters.maxAge}</p>
             <div className="flex items-center gap-4">
               <input
                 type="number"
-                value={filters.minAge}
-                onChange={e => setFilters({ ...filters, minAge: parseInt(e.target.value) })}
+                value={draftFilters.minAge}
+                onChange={e => setDraftFilters({ ...draftFilters, minAge: parseInt(e.target.value, 10) || defaultFilters.minAge })}
                 className="w-full bg-slate-50 border-none p-4 rounded-2xl text-center font-bold"
               />
               <span className="font-black text-slate-200">{c.to}</span>
               <input
                 type="number"
-                value={filters.maxAge}
-                onChange={e => setFilters({ ...filters, maxAge: parseInt(e.target.value) })}
+                value={draftFilters.maxAge}
+                onChange={e => setDraftFilters({ ...draftFilters, maxAge: parseInt(e.target.value, 10) || defaultFilters.maxAge })}
                 className="w-full bg-slate-50 border-none p-4 rounded-2xl text-center font-bold"
               />
             </div>
@@ -139,11 +161,11 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is
             <button
               onClick={() => handlePremiumFilter('premiumOnly')}
               className={`w-full p-6 rounded-[2rem] border-2 transition-all flex items-center justify-between text-left ${
-                filters.premiumOnly ? 'bg-primary/5 border-primary/20' : 'bg-white border-slate-100'
+                draftFilters.premiumOnly ? 'bg-primary/5 border-primary/20' : 'bg-white border-slate-100'
               }`}
             >
               <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${filters.premiumOnly ? 'bg-primary text-white' : 'bg-slate-50 text-slate-400'}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${draftFilters.premiumOnly ? 'bg-primary text-white' : 'bg-slate-50 text-slate-400'}`}>
                   <Gem size={20} />
                 </div>
                 <div>
@@ -151,19 +173,19 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is
                   <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">{c.premiumOnlySub}</p>
                 </div>
               </div>
-              <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center ${filters.premiumOnly ? 'bg-primary border-primary' : 'border-slate-200'}`}>
-                {filters.premiumOnly && <CheckCircle size={14} className="text-white" />}
+              <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center ${draftFilters.premiumOnly ? 'bg-primary border-primary' : 'border-slate-200'}`}>
+                {draftFilters.premiumOnly && <CheckCircle size={14} className="text-white" />}
               </div>
             </button>
 
             <button
               onClick={() => handlePremiumFilter('verifiedOnly')}
               className={`w-full p-6 rounded-[2rem] border-2 transition-all flex items-center justify-between text-left ${
-                filters.verifiedOnly ? 'bg-blue-50 border-blue-100' : 'bg-white border-slate-100'
+                draftFilters.verifiedOnly ? 'bg-blue-50 border-blue-100' : 'bg-white border-slate-100'
               }`}
             >
               <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${filters.verifiedOnly ? 'bg-blue-500 text-white' : 'bg-slate-50 text-slate-400'}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${draftFilters.verifiedOnly ? 'bg-blue-500 text-white' : 'bg-slate-50 text-slate-400'}`}>
                   <ShieldCheck size={20} />
                 </div>
                 <div>
@@ -171,21 +193,21 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is
                   <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">{c.verifiedOnlySub}</p>
                 </div>
               </div>
-              <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center ${filters.verifiedOnly ? 'bg-blue-500 border-blue-500' : 'border-slate-200'}`}>
-                {filters.verifiedOnly && <CheckCircle size={14} className="text-white" />}
+              <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center ${draftFilters.verifiedOnly ? 'bg-blue-500 border-blue-500' : 'border-slate-200'}`}>
+                {draftFilters.verifiedOnly && <CheckCircle size={14} className="text-white" />}
               </div>
             </button>
           </div>
 
           <div className="space-y-4">
-            <p className="text-xs font-black uppercase text-slate-400 tracking-widest">{c.minScore} : {filters.minScore || c.all}</p>
+            <p className="text-xs font-black uppercase text-slate-400 tracking-widest">{c.minScore} : {draftFilters.minScore || c.all}</p>
             <div className="grid grid-cols-4 gap-2">
               {[0, 4, 4.5, 4.8].map(s => (
                 <button
                   key={s}
                   onClick={() => handleScoreFilter(s)}
                   className={`py-3 rounded-xl font-black text-[10px] transition-all ${
-                    filters.minScore === s ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-500'
+                    draftFilters.minScore === s ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-500'
                   }`}
                 >
                   {s === 0 ? c.all.toUpperCase() : `${s}+`}
@@ -195,9 +217,15 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, setFilters, is
           </div>
         </div>
 
-        <div className="p-8 bg-slate-50 border-t border-slate-100">
+        <div className="p-8 bg-slate-50 border-t border-slate-100 grid grid-cols-[auto_1fr] gap-3">
           <button
-            onClick={onClose}
+            onClick={handleReset}
+            className="px-5 bg-white text-slate-500 py-5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest border border-slate-200 hover:bg-slate-100 transition-all active:scale-95"
+          >
+            {c.reset}
+          </button>
+          <button
+            onClick={handleApply}
             className="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-slate-200 hover:bg-black transition-all active:scale-95"
           >
             {c.apply}

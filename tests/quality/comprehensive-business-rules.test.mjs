@@ -141,6 +141,23 @@ test('Rules: Discovery header exposes notifications with compact title and grid/
   assert.ok(filterActionIndex > notificationsActionIndex);
 });
 
+test('Rules: Web discovery filters apply only after explicit confirmation', async () => {
+  const webDiscover = await read('web/src/pages/DiscoverPage.tsx');
+  const filterModal = await read('web/src/components/FilterModal.tsx');
+
+  assert.match(webDiscover, /DEFAULT_DISCOVER_FILTERS/);
+  assert.match(webDiscover, /onApply=\{setFilters\}/);
+  assert.match(webDiscover, /defaultFilters=\{DEFAULT_DISCOVER_FILTERS\}/);
+  assert.doesNotMatch(webDiscover, /setFilters=\{setFilters\}/);
+
+  assert.match(filterModal, /const \[draftFilters, setDraftFilters\] = useState\(filters\)/);
+  assert.match(filterModal, /if \(isOpen\)/);
+  assert.match(filterModal, /onApply\(\{ \.\.\.draftFilters \}\)/);
+  assert.match(filterModal, /onClick=\{handleApply\}/);
+  assert.match(filterModal, /onClick=\{handleReset\}/);
+  assert.doesNotMatch(filterModal, /\bsetFilters\b/);
+});
+
 test('Rules: Sentinel fake call is wired on web and mobile', async () => {
   const nativeApps = await read('src/screens/apps/AppsScreen.tsx');
   const nativeNavigator = await read('src/navigation/MainNavigator.tsx');

@@ -11,6 +11,15 @@ import logoImg from '../assets/galant-logo-web.png';
 import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
+const DEFAULT_DISCOVER_FILTERS = {
+  gender: 'ALL',
+  minAge: 18,
+  maxAge: 50,
+  premiumOnly: false,
+  verifiedOnly: false,
+  minScore: 0
+};
+
 const DiscoverPage: React.FC = () => {
   const { user, profile: myProfile, loading: authLoading, t, language } = useAuth();
   const { suggestions, loading, fetchSuggestions, handleSwipe } = useMatchmaking();
@@ -69,14 +78,7 @@ const DiscoverPage: React.FC = () => {
   const likeOpacity = useTransform(x, [50, 150], [0, 1]);
   const nopeOpacity = useTransform(x, [-150, -50], [1, 0]);
 
-  const [filters, setFilters] = useState({
-    gender: 'ALL',
-    minAge: 18,
-    maxAge: 50,
-    premiumOnly: false,
-    verifiedOnly: false,
-    minScore: 0
-  });
+  const [filters, setFilters] = useState(DEFAULT_DISCOVER_FILTERS);
 
   const loadSuggestions = useCallback(async () => {
     // Sécurité renforcée : On ne lance l'appel que si tout est prêt
@@ -510,7 +512,8 @@ const DiscoverPage: React.FC = () => {
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
         filters={filters}
-        setFilters={setFilters}
+        onApply={setFilters}
+        defaultFilters={DEFAULT_DISCOVER_FILTERS}
         is_premium={!!myProfile?.is_premium}
       />
 
