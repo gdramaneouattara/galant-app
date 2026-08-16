@@ -24,6 +24,7 @@ interface AgendaEvent {
   external_ticket_url?: string;
   price_label?: string | null;
   is_external?: boolean;
+  poster_format?: 'WIDE_16_9' | string;
   venues: {
     name: string;
     city: string;
@@ -259,13 +260,14 @@ const AgendaPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-10">
           {filteredEvents.map((event) => {
             const isExternalEvent = event.is_external || event.source === 'TIKERAMA' || !!event.external_ticket_url;
+            const isWidePoster = event.poster_format === 'WIDE_16_9';
             return (
             <div
               key={event.id}
-              className="group bg-white dark:bg-slate-900 rounded-[3.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.08)] dark:shadow-none border border-slate-100 dark:border-white/10 overflow-hidden flex flex-col md:flex-row transition-all duration-500 hover:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.12)] dark:hover:shadow-none hover:-translate-y-1"
+              className={`group bg-white dark:bg-slate-900 rounded-[3.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.08)] dark:shadow-none border border-slate-100 dark:border-white/10 overflow-hidden flex flex-col transition-all duration-500 hover:shadow-[0_50px_100px_-20px_rgba(0,0,0,0.12)] dark:hover:shadow-none hover:-translate-y-1 ${isWidePoster ? '' : 'md:flex-row'}`}
             >
               {/* Image Section - Half Width */}
-              <div className="relative w-full md:w-2/5 aspect-square md:aspect-auto overflow-hidden">
+              <div className={`relative w-full overflow-hidden ${isWidePoster ? 'aspect-video' : 'aspect-square md:w-2/5 md:aspect-auto'}`}>
                 <OptimizedImage
                   src={optimizedPhotoUrl(event.photo_url, event.photo_variants, 'medium') || 'https://placehold.co/600x800'}
                   className="w-full h-full object-cover transition-transform duration-[4000ms] group-hover:scale-110"

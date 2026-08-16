@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, Clock, Loader2, MessageSquare, RefreshCw, Search, Send, ShieldCheck, User } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { apiRequest } from '@shared/lib/api';
@@ -49,6 +49,12 @@ const AdminSupport: React.FC = () => {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
   const [query, setQuery] = useState('');
+  const selectedThreadIdRef = useRef(selectedThreadId);
+  const messageRequestRef = useRef(0);
+
+  useEffect(() => {
+    selectedThreadIdRef.current = selectedThreadId;
+  }, [selectedThreadId]);
 
   const selectedThread = useMemo(
     () => threads.find((thread) => thread.id === selectedThreadId) || null,
@@ -79,24 +85,31 @@ const AdminSupport: React.FC = () => {
     }
   };
 
-  const loadMessages = async (threadId: string) => {
+  const loadMessages = useCallback(async (threadId: string) => {
     if (!threadId) return;
+    const requestId = messageRequestRef.current + 1;
+    messageRequestRef.current = requestId;
     try {
       setLoadingMessages(true);
+      setMessages([]);
       const payload = await apiRequest<{ thread: SupportThread; messages: SupportMessage[] }>(
         `/api/admin/support/threads/${encodeURIComponent(threadId)}/messages`,
         { requireAuth: true }
       );
+      if (messageRequestRef.current !== requestId || selectedThreadIdRef.current !== threadId) return;
       setMessages(payload.messages || []);
       setThreads((current) => current.map((thread) => (
         thread.id === threadId ? { ...thread, ...payload.thread, unread_for_admin: 0 } : thread
       )));
     } catch (error: any) {
+      if (messageRequestRef.current !== requestId || selectedThreadIdRef.current !== threadId) return;
       showAlert('Erreur', error.message || 'Impossible de charger la conversation.');
     } finally {
-      setLoadingMessages(false);
+      if (messageRequestRef.current === requestId && selectedThreadIdRef.current === threadId) {
+        setLoadingMessages(false);
+      }
     }
-  };
+  }, []);
 
   useEffect(() => {
     void loadThreads();
@@ -114,20 +127,24 @@ const AdminSupport: React.FC = () => {
 
   const sendReply = async () => {
     if (!selectedThreadId || !reply.trim()) return;
+    const threadId = selectedThreadId;
+    const draftReply = reply;
     try {
       setSending(true);
       const payload = await apiRequest<{ thread: SupportThread; messages: SupportMessage[] }>(
-        `/api/admin/support/threads/${encodeURIComponent(selectedThreadId)}/reply`,
+        `/api/admin/support/threads/${encodeURIComponent(threadId)}/reply`,
         {
           method: 'POST',
           requireAuth: true,
-          body: JSON.stringify({ message: reply })
+          body: JSON.stringify({ message: draftReply })
         }
       );
-      setReply('');
-      setMessages(payload.messages || []);
+      if (selectedThreadIdRef.current === threadId) {
+        setReply('');
+        setMessages(payload.messages || []);
+      }
       setThreads((current) => current.map((thread) => (
-        thread.id === selectedThreadId ? { ...thread, ...payload.thread } : thread
+        thread.id === threadId ? { ...thread, ...payload.thread } : thread
       )));
     } catch (error: any) {
       showAlert('Erreur', error.message || 'Impossible d envoyer la reponse.');

@@ -7,6 +7,7 @@ const {
   getKycRequests, reviewKyc, getBroadcastAudience, broadcastMessage, getCampaignHistory,
   getReports, resolveReport, getUsers, toggleUserStatus, getPricing, updatePricing, reconcileCounters, backfillGeohashes,
   seedVenuesFromGoogle, searchTikeramaAgenda, importTikeramaAgenda,
+  createAdminAgendaEvent, getAdminAgendaEvents, deleteAdminAgendaEvent, cleanupAdminExpiredAgendaEvents,
   backfillMediaVariants, cleanupMediaOrphans
 } = require('../controllers/adminController');
 const {
@@ -24,6 +25,10 @@ router.get('/venues/pending', getPendingVenues);
 router.post('/venues/seed', seedVenuesFromGoogle);
 router.post('/agenda/tikerama/search', searchTikeramaAgenda);
 router.post('/agenda/tikerama/import', importTikeramaAgenda);
+router.post('/agenda/events', createAdminAgendaEvent);
+router.get('/agenda/events', getAdminAgendaEvents);
+router.delete('/agenda/events/:id', deleteAdminAgendaEvent);
+router.post('/agenda/events/cleanup-expired', cleanupAdminExpiredAgendaEvents);
 router.post('/venues/:id/approve', approveVenue);
 router.post('/venues/:id/reject', rejectVenue);
 router.post('/users/reconcile-profiles', reconcileProfiles);

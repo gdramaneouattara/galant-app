@@ -11,6 +11,7 @@ const {
   importSelectedTikeramaAgendaEvents,
   TIKERAMA_AGENDA_CATEGORIES
 } = require('../services/tikeramaAgendaService');
+const { cleanupExpiredAgendaEvents, deleteAgendaEventWithAttendance } = require('../services/cronService');
 const pricingDefaults = require('../config/constants');
 
 const createNotificationSafely = (payload) => {
@@ -26,6 +27,15 @@ const chunkRows = (rows, size) => {
   }
   return chunks;
 };
+
+const normalizeAdminText = (value = '') => String(value || '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, ' ')
+  .trim();
+
+const slugifyAdminText = (value = '') => normalizeAdminText(value).replace(/\s+/g, '_') || 'galant';
 
 const mergeRosePacks = (overrides = {}) => {
   const merged = {};
@@ -688,6 +698,184 @@ const importTikeramaAgenda = async (req, res) => {
   }
 };
 
+const createAdminAgendaEvent = async (req, res) => {
+  const {
+    title,
+    description,
+    photoUrl,
+    photoVariants,
+    eventType,
+    startsAt,
+    expiresAt,
+    city,
+    venueName,
+    address,
+    priceLabel
+  } = req.body || {};
+
+  const cleanTitle = String(title || '').trim();
+  const cleanCity = String(city || 'Abidjan').trim();
+  const cleanVenueName = String(venueName || 'Agenda Galant').trim();
+  const cleanPhotoUrl = String(photoUrl || '').trim();
+  const startsAtDate = new Date(startsAt);
+  const expiresAtDate = new Date(expiresAt);
+
+  if (!cleanTitle) return res.status(400).json({ error: 'missing_title' });
+  if (!cleanPhotoUrl) return res.status(400).json({ error: 'missing_poster' });
+  if (Number.isNaN(startsAtDate.getTime()) || Number.isNaN(expiresAtDate.getTime())) {
+    return res.status(400).json({ error: 'invalid_dates' });
+  }
+  if (expiresAtDate <= startsAtDate) return res.status(400).json({ error: 'invalid_date_range' });
+
+  const safeEventType = ['EVENT', 'PARTY', 'FLASH_OFFER', 'NETWORKING', 'LIVE_MUSIC'].includes(String(eventType || '').toUpperCase())
+    ? String(eventType).toUpperCase()
+    : 'EVENT';
+  const now = new Date().toISOString();
+  const cityNormalized = normalizeAdminText(cleanCity);
+  const venueId = `admin_agenda_${slugifyAdminText(cleanCity)}_${slugifyAdminText(cleanVenueName).slice(0, 48)}`;
+
+  try {
+    const venueRef = db.collection('venues').doc(venueId);
+    await venueRef.set({
+      name: cleanVenueName,
+      description: 'Publication editoriale Galant.',
+      address: String(address || cleanCity).trim(),
+      city: cleanCity,
+      city_normalized: cityNormalized,
+      country: "Cote d'Ivoire",
+      venue_type: 'OTHER',
+      source: 'GALANT_ADMIN',
+      status: 'APPROVED',
+      is_editorial: true,
+      photo_url: cleanPhotoUrl,
+      photo_variants: cleanPhotoUrl && photoVariants?.[cleanPhotoUrl] ? { [cleanPhotoUrl]: photoVariants[cleanPhotoUrl] } : {},
+      updated_at: now,
+      created_at: now
+    }, { merge: true });
+
+    const eventData = {
+      venue_id: venueId,
+      title: cleanTitle,
+      description: String(description || 'Evenement selectionne par Galant.').trim(),
+      photo_url: cleanPhotoUrl,
+      photo_variants: cleanPhotoUrl && photoVariants?.[cleanPhotoUrl] ? { [cleanPhotoUrl]: photoVariants[cleanPhotoUrl] } : {},
+      poster_format: 'WIDE_16_9',
+      event_type: safeEventType,
+      starts_at: startsAtDate.toISOString(),
+      expires_at: expiresAtDate.toISOString(),
+      city: cleanCity,
+      city_normalized: cityNormalized,
+      attendees_count: 0,
+      source: 'GALANT_ADMIN',
+      source_label: 'Selection Galant',
+      is_external: false,
+      price_label: priceLabel ? String(priceLabel).trim() : null,
+      created_by_admin: req.user.id,
+      created_at: now,
+      updated_at: now
+    };
+    const ref = await db.collection('venue_events').add(eventData);
+
+    await appendAdminAuditLog({
+      adminId: req.user.id,
+      action: 'CREATE_ADMIN_AGENDA_EVENT',
+      metadata: {
+        eventId: ref.id,
+        title: cleanTitle,
+        city: cleanCity,
+        posterFormat: eventData.poster_format
+      }
+    });
+
+    res.json({ success: true, event: { id: ref.id, ...eventData } });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getAdminAgendaEvents = async (req, res) => {
+  const status = String(req.query?.status || 'UPCOMING').trim().toUpperCase();
+  const safeLimit = Math.max(1, Math.min(100, parseInt(req.query?.limit || '50', 10)));
+  const now = new Date().toISOString();
+
+  try {
+    let snapshot;
+    if (status === 'EXPIRED') {
+      snapshot = await db.collection('venue_events').where('expires_at', '<=', now).limit(safeLimit).get();
+    } else if (status === 'ALL') {
+      snapshot = await db.collection('venue_events').limit(safeLimit).get();
+    } else {
+      snapshot = await db.collection('venue_events').where('expires_at', '>', now).limit(safeLimit).get();
+    }
+
+    const events = await Promise.all(snapshot.docs.map(async (doc) => {
+      const event = { id: doc.id, ...doc.data() };
+      let venue = null;
+      if (event.venue_id) {
+        const venueDoc = await db.collection('venues').doc(event.venue_id).get();
+        venue = venueDoc.exists ? { id: venueDoc.id, ...venueDoc.data() } : null;
+      }
+
+      return {
+        ...event,
+        status_label: String(event.expires_at || '') <= now ? 'EXPIRED' : 'UPCOMING',
+        venues: venue ? {
+          id: venue.id,
+          name: venue.name || null,
+          city: venue.city || null,
+          source: venue.source || null
+        } : null
+      };
+    }));
+
+    events.sort((left, right) => (
+      String(left.starts_at || left.expires_at || '').localeCompare(String(right.starts_at || right.expires_at || ''))
+    ));
+
+    res.json({ events, status, count: events.length });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const deleteAdminAgendaEvent = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const eventRef = db.collection('venue_events').doc(id);
+    const eventDoc = await eventRef.get();
+    if (!eventDoc.exists) return res.status(404).json({ error: 'event_not_found' });
+
+    const result = await deleteAgendaEventWithAttendance(eventRef);
+
+    await appendAdminAuditLog({
+      adminId: req.user.id,
+      action: 'DELETE_AGENDA_EVENT',
+      metadata: { eventId: id, attendanceDeleted: result.attendanceDeletedCount }
+    });
+
+    res.json({ success: true, deletedEventId: id, attendanceDeleted: result.attendanceDeletedCount });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const cleanupAdminExpiredAgendaEvents = async (req, res) => {
+  try {
+    const result = await cleanupExpiredAgendaEvents();
+
+    await appendAdminAuditLog({
+      adminId: req.user.id,
+      action: 'CLEANUP_EXPIRED_AGENDA_EVENTS',
+      metadata: result
+    });
+
+    res.json({ success: true, ...result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const backfillMediaVariants = async (req, res) => {
   try {
     const limit = Math.max(1, Math.min(1000, parseInt(req.body?.limit || req.query?.limit || '250', 10)));
@@ -731,6 +919,7 @@ module.exports = {
   getKycRequests, reviewKyc, getBroadcastAudience, broadcastMessage, getCampaignHistory,
   getReports, resolveReport,
   getUsers, toggleUserStatus, getPricing, updatePricing, reconcileCounters, backfillGeohashes,
-  seedVenuesFromGoogle, searchTikeramaAgenda, importTikeramaAgenda,
+  seedVenuesFromGoogle, searchTikeramaAgenda, importTikeramaAgenda, createAdminAgendaEvent,
+  getAdminAgendaEvents, deleteAdminAgendaEvent, cleanupAdminExpiredAgendaEvents,
   backfillMediaVariants, cleanupMediaOrphans
 };

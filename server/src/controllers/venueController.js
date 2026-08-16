@@ -10,8 +10,20 @@ const {
   GOOGLE_VENUE_PLACEHOLDER,
   normalizeCacheText
 } = require('../services/googleMapsService');
+const { cleanupExpiredAgendaEvents } = require('../services/cronService');
 
 const PARTNER_DISCOVERY_PRICE = 500;
+const AGENDA_CLEANUP_INTERVAL_MS = 30 * 60 * 1000;
+let lastAgendaCleanupAt = 0;
+
+const maybeCleanupExpiredAgendaEvents = () => {
+  const now = Date.now();
+  if (now - lastAgendaCleanupAt < AGENDA_CLEANUP_INTERVAL_MS) return;
+  lastAgendaCleanupAt = now;
+  void cleanupExpiredAgendaEvents().catch((error) => {
+    console.warn('[agenda] expired_cleanup_failed', error.message);
+  });
+};
 
 const createNotificationSafely = (payload) => {
   void createInternalNotification(payload).catch((error) => {
@@ -239,6 +251,8 @@ const getAgendaEvents = async (req, res) => {
   const meId = req.user.id;
   const now = new Date().toISOString();
   try {
+    maybeCleanupExpiredAgendaEvents();
+
     const safeLimit = clampLimit(req.query.limit, 50, 100);
 
     let query = db.collection('venue_events').where('expires_at', '>', now);

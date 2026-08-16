@@ -130,6 +130,72 @@ const processSecurityAlerts = async () => {
   }
 };
 
+const ATTENDANCE_DELETE_PAGE_LIMIT = 450;
+const EXPIRED_AGENDA_PAGE_LIMIT = 250;
+
+const deleteEventAttendanceRecords = async (eventId) => {
+  let attendanceDeletedCount = 0;
+
+  while (true) {
+    const attendanceSnap = await db.collection('event_attendance')
+      .where('event_id', '==', eventId)
+      .limit(ATTENDANCE_DELETE_PAGE_LIMIT)
+      .get();
+
+    if (attendanceSnap.empty) break;
+
+    const batch = db.batch();
+    attendanceSnap.forEach((attendanceDoc) => {
+      batch.delete(attendanceDoc.ref);
+    });
+    await batch.commit();
+    attendanceDeletedCount += attendanceSnap.size;
+
+    if (attendanceSnap.size < ATTENDANCE_DELETE_PAGE_LIMIT) break;
+  }
+
+  return attendanceDeletedCount;
+};
+
+const deleteAgendaEventWithAttendance = async (eventRef) => {
+  const attendanceDeletedCount = await deleteEventAttendanceRecords(eventRef.id);
+  const batch = db.batch();
+  batch.delete(eventRef);
+  await batch.commit();
+  return { deletedCount: 1, attendanceDeletedCount };
+};
+
+const cleanupExpiredAgendaEvents = async () => {
+  console.log('[CRON] Starting expired agenda events cleanup...');
+  const now = new Date().toISOString();
+  let deletedCount = 0;
+  let attendanceDeletedCount = 0;
+
+  try {
+    const expiredSnap = await db.collection('venue_events')
+      .where('expires_at', '<=', now)
+      .limit(EXPIRED_AGENDA_PAGE_LIMIT)
+      .get();
+
+    if (expiredSnap.empty) {
+      console.log('[CRON] No expired agenda events found.');
+      return { deletedCount, attendanceDeletedCount };
+    }
+
+    for (const doc of expiredSnap.docs) {
+      const result = await deleteAgendaEventWithAttendance(doc.ref);
+      deletedCount += result.deletedCount;
+      attendanceDeletedCount += result.attendanceDeletedCount;
+    }
+
+    console.log(`[CRON] Agenda cleanup finished. Deleted ${deletedCount} events and ${attendanceDeletedCount} attendance records.`);
+    return { deletedCount, attendanceDeletedCount };
+  } catch (error) {
+    console.error('[CRON] Error during agenda events cleanup:', error.message);
+    throw error;
+  }
+};
+
 /**
  * Initializes all periodic background tasks.
  * Runs every hour.
@@ -140,6 +206,9 @@ const initCronJobs = () => {
   // Run once on startup
   cleanupExpiredStatuses();
   cleanupExpiredChatMedia();
+  cleanupExpiredAgendaEvents().catch((error) => {
+    console.error('[CRON] Agenda cleanup startup failed:', error.message);
+  });
   reconcileAllCounters();
   processSecurityAlerts();
 
@@ -152,8 +221,18 @@ const initCronJobs = () => {
   setInterval(() => {
     cleanupExpiredStatuses();
     cleanupExpiredChatMedia();
+    cleanupExpiredAgendaEvents().catch((error) => {
+      console.error('[CRON] Agenda cleanup interval failed:', error.message);
+    });
     reconcileAllCounters();
   }, 3600000);
 };
 
-module.exports = { cleanupExpiredStatuses, cleanupExpiredChatMedia, initCronJobs, processSecurityAlerts };
+module.exports = {
+  cleanupExpiredStatuses,
+  cleanupExpiredChatMedia,
+  cleanupExpiredAgendaEvents,
+  deleteAgendaEventWithAttendance,
+  initCronJobs,
+  processSecurityAlerts
+};
