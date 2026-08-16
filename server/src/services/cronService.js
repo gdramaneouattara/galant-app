@@ -130,6 +130,41 @@ const processSecurityAlerts = async () => {
   }
 };
 
+const ATTENDANCE_DELETE_PAGE_LIMIT = 450;
+const EXPIRED_AGENDA_PAGE_LIMIT = 250;
+
+const deleteEventAttendanceRecords = async (eventId) => {
+  let attendanceDeletedCount = 0;
+
+  while (true) {
+    const attendanceSnap = await db.collection('event_attendance')
+      .where('event_id', '==', eventId)
+      .limit(ATTENDANCE_DELETE_PAGE_LIMIT)
+      .get();
+
+    if (attendanceSnap.empty) break;
+
+    const batch = db.batch();
+    attendanceSnap.forEach((attendanceDoc) => {
+      batch.delete(attendanceDoc.ref);
+    });
+    await batch.commit();
+    attendanceDeletedCount += attendanceSnap.size;
+
+    if (attendanceSnap.size < ATTENDANCE_DELETE_PAGE_LIMIT) break;
+  }
+
+  return attendanceDeletedCount;
+};
+
+const deleteAgendaEventWithAttendance = async (eventRef) => {
+  const attendanceDeletedCount = await deleteEventAttendanceRecords(eventRef.id);
+  const batch = db.batch();
+  batch.delete(eventRef);
+  await batch.commit();
+  return { deletedCount: 1, attendanceDeletedCount };
+};
+
 const cleanupExpiredAgendaEvents = async () => {
   console.log('[CRON] Starting expired agenda events cleanup...');
   const now = new Date().toISOString();
@@ -139,7 +174,7 @@ const cleanupExpiredAgendaEvents = async () => {
   try {
     const expiredSnap = await db.collection('venue_events')
       .where('expires_at', '<=', now)
-      .limit(250)
+      .limit(EXPIRED_AGENDA_PAGE_LIMIT)
       .get();
 
     if (expiredSnap.empty) {
@@ -147,41 +182,17 @@ const cleanupExpiredAgendaEvents = async () => {
       return { deletedCount, attendanceDeletedCount };
     }
 
-    let batch = db.batch();
-    let operations = 0;
-
-    const commitIfNeeded = async (force = false) => {
-      if (operations === 0 || (!force && operations < 450)) return;
-      await batch.commit();
-      batch = db.batch();
-      operations = 0;
-    };
-
     for (const doc of expiredSnap.docs) {
-      const attendanceSnap = await db.collection('event_attendance')
-        .where('event_id', '==', doc.id)
-        .limit(250)
-        .get();
-
-      attendanceSnap.forEach((attendanceDoc) => {
-        batch.delete(attendanceDoc.ref);
-        operations++;
-        attendanceDeletedCount++;
-      });
-
-      batch.delete(doc.ref);
-      operations++;
-      deletedCount++;
-      await commitIfNeeded();
+      const result = await deleteAgendaEventWithAttendance(doc.ref);
+      deletedCount += result.deletedCount;
+      attendanceDeletedCount += result.attendanceDeletedCount;
     }
-
-    await commitIfNeeded(true);
 
     console.log(`[CRON] Agenda cleanup finished. Deleted ${deletedCount} events and ${attendanceDeletedCount} attendance records.`);
     return { deletedCount, attendanceDeletedCount };
   } catch (error) {
     console.error('[CRON] Error during agenda events cleanup:', error.message);
-    return { deletedCount, attendanceDeletedCount, error: error.message };
+    throw error;
   }
 };
 
@@ -195,7 +206,9 @@ const initCronJobs = () => {
   // Run once on startup
   cleanupExpiredStatuses();
   cleanupExpiredChatMedia();
-  cleanupExpiredAgendaEvents();
+  cleanupExpiredAgendaEvents().catch((error) => {
+    console.error('[CRON] Agenda cleanup startup failed:', error.message);
+  });
   reconcileAllCounters();
   processSecurityAlerts();
 
@@ -208,9 +221,18 @@ const initCronJobs = () => {
   setInterval(() => {
     cleanupExpiredStatuses();
     cleanupExpiredChatMedia();
-    cleanupExpiredAgendaEvents();
+    cleanupExpiredAgendaEvents().catch((error) => {
+      console.error('[CRON] Agenda cleanup interval failed:', error.message);
+    });
     reconcileAllCounters();
   }, 3600000);
 };
 
-module.exports = { cleanupExpiredStatuses, cleanupExpiredChatMedia, cleanupExpiredAgendaEvents, initCronJobs, processSecurityAlerts };
+module.exports = {
+  cleanupExpiredStatuses,
+  cleanupExpiredChatMedia,
+  cleanupExpiredAgendaEvents,
+  deleteAgendaEventWithAttendance,
+  initCronJobs,
+  processSecurityAlerts
+};

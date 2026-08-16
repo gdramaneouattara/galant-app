@@ -11,7 +11,7 @@ const {
   importSelectedTikeramaAgendaEvents,
   TIKERAMA_AGENDA_CATEGORIES
 } = require('../services/tikeramaAgendaService');
-const { cleanupExpiredAgendaEvents } = require('../services/cronService');
+const { cleanupExpiredAgendaEvents, deleteAgendaEventWithAttendance } = require('../services/cronService');
 const pricingDefaults = require('../config/constants');
 
 const createNotificationSafely = (payload) => {
@@ -846,19 +846,15 @@ const deleteAdminAgendaEvent = async (req, res) => {
     const eventDoc = await eventRef.get();
     if (!eventDoc.exists) return res.status(404).json({ error: 'event_not_found' });
 
-    const attendanceSnap = await db.collection('event_attendance').where('event_id', '==', id).get();
-    const batch = db.batch();
-    attendanceSnap.forEach((doc) => batch.delete(doc.ref));
-    batch.delete(eventRef);
-    await batch.commit();
+    const result = await deleteAgendaEventWithAttendance(eventRef);
 
     await appendAdminAuditLog({
       adminId: req.user.id,
       action: 'DELETE_AGENDA_EVENT',
-      metadata: { eventId: id, attendanceDeleted: attendanceSnap.size }
+      metadata: { eventId: id, attendanceDeleted: result.attendanceDeletedCount }
     });
 
-    res.json({ success: true, deletedEventId: id, attendanceDeleted: attendanceSnap.size });
+    res.json({ success: true, deletedEventId: id, attendanceDeleted: result.attendanceDeletedCount });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

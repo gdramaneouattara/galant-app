@@ -7,6 +7,12 @@ const SUPPORT_COLLECTION = 'support_threads';
 const MESSAGE_LIMIT = 120;
 const THREAD_LIMIT = 120;
 const ADMIN_RECIPIENT_LIMIT = 20;
+const ADMIN_RECIPIENT_QUERIES = [
+  ['is_admin', true],
+  ['is_admin', 'true'],
+  ['isAdmin', true],
+  ['isAdmin', 'true'],
+];
 
 const nowIso = () => new Date().toISOString();
 
@@ -31,13 +37,22 @@ const threadRefForUser = (userId) => db.collection(SUPPORT_COLLECTION).doc(userI
 const messageToPublic = (doc) => ({ id: doc.id, ...doc.data() });
 
 const getAdminRecipients = async () => {
-  const snapshot = await db.collection('profiles')
-    .where('is_admin', '==', true)
-    .limit(ADMIN_RECIPIENT_LIMIT)
-    .get();
-  return snapshot.docs
-    .map((doc) => ({ id: doc.id, ...doc.data() }))
-    .filter((profile) => hasAdminAccess(profile));
+  const snapshots = await Promise.all(ADMIN_RECIPIENT_QUERIES.map(([field, value]) => (
+    db.collection('profiles')
+      .where(field, '==', value)
+      .limit(ADMIN_RECIPIENT_LIMIT)
+      .get()
+  )));
+
+  const admins = new Map();
+  snapshots.forEach((snapshot) => {
+    snapshot.docs.forEach((doc) => {
+      const profile = { id: doc.id, ...doc.data() };
+      if (hasAdminAccess(profile)) admins.set(doc.id, profile);
+    });
+  });
+
+  return [...admins.values()].slice(0, ADMIN_RECIPIENT_LIMIT);
 };
 
 const notifyAdmins = async ({ userId, userName, message }) => {
