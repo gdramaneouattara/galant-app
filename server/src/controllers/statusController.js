@@ -5,8 +5,11 @@ const { createStoryLikeNotificationIfNeeded } = require('../services/notificatio
 const { QUOTAS } = require('../config/constants');
 
 const STORY_PAGE_LIMIT = 10;
+const STORY_LEGACY_LIMIT = 35;
 const STORY_MAX_LIMIT = 60;
 const STORY_PURCHASE_VIEW_LIMIT = 10;
+const STORY_SCAN_BATCH_LIMIT = 30;
+const STORY_SCAN_MAX_DOCS = 180;
 
 const hasStorySubscriptionAccess = (profile) => !!(profile?.is_premium || profile?.is_vip);
 
@@ -47,6 +50,12 @@ const clampOffset = (value) => {
   return Math.max(0, Math.min(500, Math.floor(parsed)));
 };
 
+const wantsPaginationInfo = (query = {}) => (
+  query.pageInfo === 'true' ||
+  query.includePageInfo === 'true' ||
+  Object.prototype.hasOwnProperty.call(query, 'offset')
+);
+
 const getStatuses = async (req, res) => {
   const me = req.user;
   const hasFullAccess = hasStorySubscriptionAccess(me);
@@ -61,60 +70,93 @@ const getStatuses = async (req, res) => {
     }
 
     const now = new Date().toISOString();
+    const includePageInfo = wantsPaginationInfo(req.query);
     const requestedOffset = clampOffset(req.query.offset);
     const offset = hasFullAccess ? requestedOffset : Math.min(requestedOffset, STORY_PURCHASE_VIEW_LIMIT);
     const maxLimit = hasFullAccess ? STORY_MAX_LIMIT : STORY_PURCHASE_VIEW_LIMIT;
-    const safeLimit = clampLimit(req.query.limit, STORY_PAGE_LIMIT, maxLimit);
+    const fallbackLimit = includePageInfo ? STORY_PAGE_LIMIT : Math.min(STORY_LEGACY_LIMIT, maxLimit);
+    const safeLimit = clampLimit(req.query.limit, fallbackLimit, maxLimit);
     const remainingLimitedStories = hasFullAccess ? safeLimit : Math.max(0, STORY_PURCHASE_VIEW_LIMIT - offset);
     const effectiveLimit = Math.min(safeLimit, remainingLimitedStories);
 
-    if (effectiveLimit <= 0) return res.json([]);
-
-    const snapshot = await db.collection('statuses')
-      .where('expires_at', '>', now)
-      .limit(Math.min((offset + effectiveLimit) * 2, hasFullAccess ? 140 : 30))
-      .get();
-    let rows = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-      .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
-      .slice(offset, offset + effectiveLimit);
-
-    // Hydrate Profiles
-    const authors = await Promise.all(rows.map(async row => {
-      const profileDoc = await db.collection('profiles').doc(row.user_id).get();
-      return profileDoc.exists ? toPublicProfile({ id: profileDoc.id, ...profileDoc.data() }) : null;
-    }));
-
-    rows = rows.map((row, i) => ({ ...row, profiles: authors[i] })).filter(r => !!r.profiles);
-
-    // Filter Invisible
-    const invisibleEligibleBySubscription = new Set();
-    const hiddenAuthorIds = [...new Set(rows.filter(r => r.profiles.is_invisible && r.user_id !== me.id).map(r => r.user_id))];
-
-    if (hiddenAuthorIds.length > 0) {
-      for (let i = 0; i < hiddenAuthorIds.length; i += 30) {
-        const chunk = hiddenAuthorIds.slice(i, i + 30);
-        const subSnapshot = await db.collection('subscriptions')
-          .where('user_id', 'in', chunk)
-          .get();
-        subSnapshot.forEach(doc => {
-          const subscription = doc.data();
-          const isActive = subscription.status === 'active' &&
-            (!subscription.current_period_end || subscription.current_period_end > now);
-          const profile = rows.find(r => r.user_id === subscription.user_id)?.profiles;
-          if (isActive && profile && hasInvisiblePremiumAccessForPlan(profile, subscription.plan_id)) {
-            invisibleEligibleBySubscription.add(subscription.user_id);
-          }
-        });
-      }
+    if (effectiveLimit <= 0) {
+      return includePageInfo
+        ? res.json({ statuses: [], hasMore: false, nextOffset: offset })
+        : res.json([]);
     }
 
-    const filtered = rows.filter(r => {
-      if (r.user_id === me.id) return true;
-      return !isHiddenByInvisibleMode(r.profiles, invisibleEligibleBySubscription.has(r.user_id));
-    });
+    const filtered = [];
+    let nextOffset = offset;
+    let scannedDocs = 0;
+    let mayHaveMoreRawRows = false;
+
+    while (filtered.length <= effectiveLimit && scannedDocs < STORY_SCAN_MAX_DOCS) {
+      const batchSize = Math.min(STORY_SCAN_BATCH_LIMIT, Math.max(effectiveLimit * 2, STORY_PAGE_LIMIT));
+      const snapshot = await db.collection('statuses')
+        .where('expires_at', '>', now)
+        .orderBy('expires_at', 'desc')
+        .offset(nextOffset)
+        .limit(batchSize)
+        .get();
+
+      if (snapshot.empty) {
+        mayHaveMoreRawRows = false;
+        break;
+      }
+
+      nextOffset += snapshot.docs.length;
+      scannedDocs += snapshot.docs.length;
+      mayHaveMoreRawRows = snapshot.docs.length === batchSize;
+
+      let rows = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      // Hydrate Profiles before applying visibility rules so filtered rows can be backfilled.
+      const authors = await Promise.all(rows.map(async row => {
+        const profileDoc = await db.collection('profiles').doc(row.user_id).get();
+        if (!profileDoc.exists) return null;
+        const profile = { id: profileDoc.id, ...profileDoc.data() };
+        return { public: toPublicProfile(profile), internal: profile };
+      }));
+
+      rows = rows
+        .map((row, i) => authors[i] ? ({ ...row, profiles: authors[i].public, _profile: authors[i].internal }) : null)
+        .filter(Boolean);
+
+      // Filter Invisible
+      const invisibleEligibleBySubscription = new Set();
+      const hiddenAuthorIds = [...new Set(rows.filter(r => r._profile.is_invisible && r.user_id !== me.id).map(r => r.user_id))];
+
+      if (hiddenAuthorIds.length > 0) {
+        for (let i = 0; i < hiddenAuthorIds.length; i += 30) {
+          const chunk = hiddenAuthorIds.slice(i, i + 30);
+          const subSnapshot = await db.collection('subscriptions')
+            .where('user_id', 'in', chunk)
+            .get();
+          subSnapshot.forEach(doc => {
+            const subscription = doc.data();
+            const isActive = subscription.status === 'active' &&
+              (!subscription.current_period_end || subscription.current_period_end > now);
+            const profile = rows.find(r => r.user_id === subscription.user_id)?._profile;
+            if (isActive && profile && hasInvisiblePremiumAccessForPlan(profile, subscription.plan_id)) {
+              invisibleEligibleBySubscription.add(subscription.user_id);
+            }
+          });
+        }
+      }
+
+      filtered.push(...rows.filter(r => {
+        if (r.user_id === me.id) return true;
+        return !isHiddenByInvisibleMode(r._profile, invisibleEligibleBySubscription.has(r.user_id));
+      }).map(({ _profile, ...row }) => row));
+
+      if (!mayHaveMoreRawRows) break;
+    }
+
+    const visiblePage = filtered.slice(0, effectiveLimit);
+    const hasMore = hasFullAccess && (filtered.length > effectiveLimit || mayHaveMoreRawRows);
 
     // Likes hydration
-    const statusIds = filtered.map(r => r.id);
+    const statusIds = visiblePage.map(r => r.id);
     const likesCount = {};
     const likedByMe = new Set();
     for (const chunk of chunkArray(statusIds)) {
@@ -127,11 +169,17 @@ const getStatuses = async (req, res) => {
       });
     }
 
-    res.json(filtered.map(r => ({
+    const payload = visiblePage.map(r => ({
       ...r,
       likes_count: likesCount[r.id] || 0,
       liked_by_me: likedByMe.has(r.id)
-    })));
+    }));
+
+    if (includePageInfo) {
+      return res.json({ statuses: payload, hasMore, nextOffset });
+    }
+
+    res.json(payload);
 
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
