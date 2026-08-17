@@ -408,14 +408,21 @@ const DiscoverPage: React.FC = () => {
               {/* Overlays */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none"></div>
 
-              <div className="absolute top-8 right-8 flex flex-col gap-3 pointer-events-none">
+              <div className="absolute top-8 right-8 flex flex-col gap-3 z-30">
+                <button
+                  onClick={(e) => { e.stopPropagation(); navigate(`/profile/${currentProfile.id}`); }}
+                  className="w-12 h-12 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-2xl shadow-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group/btn"
+                  title="Voir le profil complet"
+                >
+                  <ChevronRight size={24} className="group-hover/btn:translate-x-0.5 transition-transform" />
+                </button>
                 {currentProfile.is_premium && (
-                  <div className="bg-amber-400 text-black w-12 h-12 rounded-2xl shadow-xl flex items-center justify-center animate-pulse">
+                  <div className="bg-amber-400 text-black w-12 h-12 rounded-2xl shadow-xl flex items-center justify-center animate-pulse pointer-events-none">
                     <Crown size={24} fill="currentColor" />
                   </div>
                 )}
                 {currentProfile.is_verified && (
-                  <div className="bg-blue-500 text-white w-12 h-12 rounded-2xl shadow-xl flex items-center justify-center">
+                  <div className="bg-blue-500 text-white w-12 h-12 rounded-2xl shadow-xl flex items-center justify-center pointer-events-none">
                     <ShieldCheck size={24} />
                   </div>
                 )}
