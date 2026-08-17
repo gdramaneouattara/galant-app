@@ -37,6 +37,19 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Guide & Partenaires
+    match /venues/{venueId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (request.auth.uid == resource.data.owner_id || isAdmin());
+    }
+
+    // Conversations Partenaires
+    match /venue_chats/{chatId} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.user_id || request.auth.uid == resource.data.partner_id || isAdmin());
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.user_id;
+      allow update, delete: if isAdmin();
+    }
+
     // KYC : Envoi par l'utilisateur, lecture par le propriétaire ou admin
     match /kyc_verifications/{kycId} {
       allow create: if request.auth != null && request.auth.uid == request.resource.data.user_id;
@@ -64,7 +77,10 @@ service cloud.firestore {
 
     // Tokens Push
     match /push_tokens/{tokenId} {
-      allow read, write: if request.auth != null && (request.auth.uid == resource.data.user_id || request.auth.uid == request.resource.data.user_id);
+      allow read: if request.auth != null && (request.auth.uid == resource.data.user_id || isAdmin());
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.user_id;
+      allow update: if request.auth != null && (request.auth.uid == resource.data.user_id || isAdmin());
+      allow delete: if request.auth != null && (request.auth.uid == resource.data.user_id || isAdmin());
     }
 
     // Par défaut : Bloquer tout le reste

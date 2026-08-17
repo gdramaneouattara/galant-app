@@ -47,6 +47,7 @@ const copy = {
     all: 'All',
     age: 'Age',
     to: 'to',
+    city: 'City',
     standing: 'Standing criteria',
     premiumOnly: 'Premium members only',
     premiumOnlySub: 'Badge required',
@@ -160,6 +161,17 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, onApply, defau
             </div>
           </div>
 
+          <div className="space-y-4">
+            <p className="text-xs font-black uppercase text-slate-400 tracking-widest">{c.city}</p>
+            <input
+              type="text"
+              value={draftFilters.city || ''}
+              onChange={e => setDraftFilters({ ...draftFilters, city: e.target.value })}
+              placeholder="Ex: Douala, Abidjan..."
+              className="w-full bg-slate-50 border-none p-4 rounded-2xl font-bold"
+            />
+          </div>
+
           <div className="space-y-4 pt-4 border-t border-slate-50">
             <p className="text-xs font-black uppercase text-primary tracking-widest">{c.standing}</p>
 
@@ -182,43 +194,6 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, onApply, defau
                 {draftFilters.premiumOnly && <CheckCircle size={14} className="text-white" />}
               </div>
             </button>
-
-            <button
-              onClick={() => handlePremiumFilter('verifiedOnly')}
-              className={`w-full p-6 rounded-[2rem] border-2 transition-all flex items-center justify-between text-left ${
-                draftFilters.verifiedOnly ? 'bg-blue-50 border-blue-100' : 'bg-white border-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${draftFilters.verifiedOnly ? 'bg-blue-500 text-white' : 'bg-slate-50 text-slate-400'}`}>
-                  <ShieldCheck size={20} />
-                </div>
-                <div>
-                  <p className="font-black text-sm text-slate-900 leading-none">{c.verifiedOnly}</p>
-                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">{c.verifiedOnlySub}</p>
-                </div>
-              </div>
-              <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center ${draftFilters.verifiedOnly ? 'bg-blue-500 border-blue-500' : 'border-slate-200'}`}>
-                {draftFilters.verifiedOnly && <CheckCircle size={14} className="text-white" />}
-              </div>
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            <p className="text-xs font-black uppercase text-slate-400 tracking-widest">{c.minScore} : {draftFilters.minScore || c.all}</p>
-            <div className="grid grid-cols-4 gap-2">
-              {[0, 4, 4.5, 4.8].map(s => (
-                <button
-                  key={s}
-                  onClick={() => handleScoreFilter(s)}
-                  className={`py-3 rounded-xl font-black text-[10px] transition-all ${
-                    draftFilters.minScore === s ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-500'
-                  }`}
-                >
-                  {s === 0 ? c.all.toUpperCase() : `${s}+`}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
 

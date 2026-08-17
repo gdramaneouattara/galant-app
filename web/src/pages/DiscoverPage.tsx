@@ -15,6 +15,7 @@ const DEFAULT_DISCOVER_FILTERS = {
   gender: 'ALL',
   minAge: 18,
   maxAge: 50,
+  city: '',
   premiumOnly: false,
   verifiedOnly: false,
   minScore: 0
