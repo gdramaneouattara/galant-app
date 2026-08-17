@@ -1,29 +1,23 @@
-# Simplification du Filtrage Découverte
+# Épuration de la Carte de Profil (Découverte)
 
-Ce plan vise à épurer les critères de recherche de l'écran Découverte en supprimant les filtres de score et de certification, tout en ajoutant un filtre par ville.
+Ce plan vise à simplifier radicalement les informations affichées sur les cartes de profil dans la section Découverte, en ne conservant que l'identité essentielle du membre.
 
 ## Proposed Changes
 
-### [Web Mobile] Interface de Filtrage
-
-#### [MODIFY] [FilterModal.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/FilterModal.tsx)
-- **Suppression** :
-    - Retirer le bouton "Profils certifiés uniquement".
-    - Retirer la section "Score minimum" (boutons 4+, 4.5+, etc.).
-- **Ajout** :
-    - Insérer un champ de saisie texte "Ville" juste après la section de l'âge.
-- **Traductions** :
-    - Ajouter `city: 'Ville'` (FR) et `city: 'City'` (EN) dans l'objet `copy`.
+### [Web Mobile] Interface Découverte
 
 #### [MODIFY] [DiscoverPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/DiscoverPage.tsx)
-- Mettre à jour l'état initial des filtres pour inclure `city: ''`.
-- S'assurer que le bouton de reset remet bien la ville à zéro.
+- Supprimer le bloc `div` contenant le **Score de Charme** et les **Affinités/Status**.
+- S'assurer que le nom, l'âge et la ville restent bien positionnés en bas de la photo.
+
+#### [MODIFY] [DiscoverGridPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/DiscoverGridPage.tsx)
+- Supprimer l'affichage du **Score de Charme** (ou Galanterie) sur les miniatures de la grille pour rester cohérent avec la vue Swipe.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Ouvrir les filtres sur la page **Découverte**.
-2.  Vérifier que les options de score et de certification ont disparu.
-3.  Vérifier la présence du champ "Ville" après l'âge.
-4.  Taper une ville (ex: "Douala") et appliquer : vérifier que les résultats sont mis à jour.
-5.  Tester le bouton "Réinitialiser" : vérifier que le champ ville se vide.
+1.  Ouvrir la page **Découverte** (Mode Swipe).
+2.  Vérifier que les deux encadrés gris en bas ("Score de charme" et "Status") ont disparu.
+3.  Vérifier que le nom, l'âge et la ville sont toujours lisibles sur le dégradé sombre.
+4.  Passer en **Mode Grille** (La Galerie).
+5.  Vérifier que les scores n'apparaissent plus sur les miniatures.

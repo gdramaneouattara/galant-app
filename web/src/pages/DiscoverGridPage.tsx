@@ -381,12 +381,6 @@ const DiscoverGridPage: React.FC = () => {
                 {profile.is_verified && <div className="bg-blue-500 text-white p-1.5 rounded-lg shadow-lg"><ShieldCheck size={14} /></div>}
               </div>
 
-              {profile.galanterie_score && profile.galanterie_score >= 4.5 && (
-                <div className="absolute top-3 right-3 bg-rose-500/80 backdrop-blur-md p-1.5 rounded-lg shadow-lg">
-                  <Gem size={14} className="text-white" />
-                </div>
-              )}
-
               {/* Overlay Gradient */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
 
@@ -399,11 +393,6 @@ const DiscoverGridPage: React.FC = () => {
                   <MapPin size={10} className="text-primary" />
                   <span className="text-[9px] font-bold uppercase tracking-widest truncate">{profile.city || labels.city}</span>
                 </div>
-                {profile.distance_km !== null && (
-                  <p className="text-[8px] font-black text-amber-400 uppercase tracking-widest mt-1">
-                    {labels.distance(profile.distance_km)}
-                  </p>
-                )}
               </div>
             </div>
           ))}
