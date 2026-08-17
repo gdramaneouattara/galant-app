@@ -7,7 +7,6 @@ import {
   CheckCheck,
   ChevronLeft,
   CreditCard,
-  Flower2,
   Heart,
   MessageSquare,
   ShieldCheck,
@@ -60,7 +59,7 @@ const QUICK_BOX_TYPES: NotificationType[] = ['LIKE_RECEIVED', 'ROSE_RECEIVED'];
 const iconForType = (type: NotificationType) => {
   if (type === 'MESSAGE') return MessageSquare;
   if (type === 'LIKE_RECEIVED') return Heart;
-  if (type === 'ROSE_RECEIVED') return Flower2;
+  if (type === 'ROSE_RECEIVED') return null; // Handled separately for prestige emoji
   if (type === 'STORY_LIKED' || type === 'MATCH_CREATED') return Sparkles;
   if (type === 'PAYMENT_SUCCESS' || type === 'PAYMENT_FAILED') return CreditCard;
   if (type === 'SECURITY' || type === 'ADMIN') return ShieldCheck;
@@ -289,8 +288,8 @@ const NotificationsPage: React.FC = () => {
           className="group rounded-[1.5rem] border border-amber-100 bg-white p-4 text-left shadow-lg shadow-amber-500/5 transition hover:-translate-y-0.5 hover:border-amber-300 dark:border-amber-500/10 dark:bg-slate-900"
         >
           <div className="mb-4 flex items-center justify-between">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-500/10">
-              <Flower2 size={20} />
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 dark:bg-amber-500/10 text-xl">
+              🌹
             </div>
             <span className="min-w-8 rounded-full bg-amber-500 px-2 py-1 text-center text-xs font-black text-white">
               {rosesInboxCount > 99 ? '99+' : rosesInboxCount}
@@ -359,8 +358,8 @@ const NotificationsPage: React.FC = () => {
               }`}
             >
               <button className="flex w-full items-start gap-4 text-left" onClick={() => void openNotification(item)}>
-                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${unread ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400'}`}>
-                  <Icon size={20} />
+                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${unread ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400'} ${item.type === 'ROSE_RECEIVED' ? 'text-xl' : ''}`}>
+                  {item.type === 'ROSE_RECEIVED' ? '🌹' : Icon && <Icon size={20} />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
