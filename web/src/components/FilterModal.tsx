@@ -109,18 +109,20 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, onApply, defau
 
   return (
     <div className="fixed inset-0 z-[120] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="p-8 border-b border-slate-50 grid grid-cols-[auto_1fr_auto] items-center gap-4">
+      <div className="bg-white w-full max-w-lg max-h-[90vh] rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
+        {/* Header - Fixed at top */}
+        <div className="p-6 border-b border-slate-50 grid grid-cols-[auto_1fr_auto] items-center gap-4 flex-shrink-0">
           <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-full text-slate-400" aria-label={c.back}>
-            <ChevronLeft size={26} />
+            <ChevronLeft size={24} />
           </button>
-          <h3 className="min-w-0 truncate text-2xl font-black italic">{c.title}</h3>
+          <h3 className="min-w-0 truncate text-xl font-black italic">{c.title}</h3>
           <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-full text-slate-300" aria-label={c.close}>
             <X size={24} />
           </button>
         </div>
 
-        <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto no-scrollbar">
+        {/* Content - Scrollable area */}
+        <div className="p-6 space-y-8 flex-1 overflow-y-auto no-scrollbar">
           <div className="space-y-4">
             <p className="text-xs font-black uppercase text-slate-400 tracking-widest">{c.see}</p>
             <div className="grid grid-cols-3 gap-3">
@@ -168,7 +170,7 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, onApply, defau
               value={draftFilters.city || ''}
               onChange={e => setDraftFilters({ ...draftFilters, city: e.target.value })}
               placeholder="Ex: Douala, Abidjan..."
-              className="w-full bg-slate-50 border-none p-4 rounded-2xl font-bold"
+              className="w-full bg-slate-50 border-none p-4 rounded-2xl font-bold text-slate-900"
             />
           </div>
 
@@ -197,16 +199,17 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, onApply, defau
           </div>
         </div>
 
-        <div className="p-8 bg-slate-50 border-t border-slate-100 grid grid-cols-[auto_1fr] gap-3">
+        {/* Footer - Fixed at bottom */}
+        <div className="p-6 bg-slate-50 border-t border-slate-100 grid grid-cols-[auto_1fr] gap-3 flex-shrink-0">
           <button
             onClick={handleReset}
-            className="px-5 bg-white text-slate-500 py-5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest border border-slate-200 hover:bg-slate-100 transition-all active:scale-95"
+            className="px-5 bg-white text-slate-500 py-4 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest border border-slate-200 hover:bg-slate-100 transition-all active:scale-95"
           >
             {c.reset}
           </button>
           <button
             onClick={handleApply}
-            className="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-slate-200 hover:bg-black transition-all active:scale-95"
+            className="w-full bg-slate-900 text-white py-4 rounded-[1.5rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-slate-200 hover:bg-black transition-all active:scale-95"
           >
             {c.apply}
           </button>

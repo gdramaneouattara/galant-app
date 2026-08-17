@@ -1,0 +1,26 @@
+{
+  "rules": {
+    "presence": {
+      "users": {
+        "$userId": {
+          ".read": "auth !== null",
+          ".write": "auth !== null && auth.uid === $userId"
+        }
+      }
+    },
+    "messages": {
+      "$matchId": {
+        ".read": "auth !== null && $matchId.contains(auth.uid)",
+        ".write": false
+      }
+    },
+    "venue_messages": {
+      "$venueChatId": {
+        ".read": "auth !== null",
+        ".write": false
+      }
+    },
+    ".read": false,
+    ".write": false
+  }
+}
