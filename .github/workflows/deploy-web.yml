@@ -8,29 +8,24 @@ on:
       - 'src/**'
       - '.github/workflows/deploy-web.yml'
 
-# Permissions nécessaires pour GitHub Pages via Actions
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Permet d'annuler les déploiements en cours si un nouveau est lancé
 concurrency:
   group: "pages"
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: 'npm'
@@ -55,14 +50,18 @@ jobs:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
           VITE_STORY_UPLOAD_AMOUNT: ${{ secrets.VITE_STORY_UPLOAD_AMOUNT }}
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v6
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:
           path: './web/dist'
 
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
