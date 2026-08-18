@@ -231,7 +231,7 @@ const GuidePage: React.FC = () => {
           </div>
         </div>
         <button
-          onClick={() => navigate('/apps')}
+          onClick={() => navigate('/partner-discovery')}
           className="bg-white dark:bg-primary text-slate-900 dark:text-white px-8 py-3.5 rounded-xl font-black text-[10px] uppercase tracking-prestige hover:scale-105 active:scale-95 transition-all shadow-xl whitespace-nowrap"
         >
           {labels.nearbyCta}
