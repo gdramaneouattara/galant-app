@@ -64,7 +64,10 @@ const GuidePage: React.FC = () => {
         partnerTitle: 'Your venue deserves excellence',
         partnerBody: 'Join the select circle of Galant certified venues.',
         partnerCta: 'List my venue',
-        partnerFallback: 'this partner'
+        partnerFallback: 'this partner',
+        nearbyTitle: 'Nearby?',
+        nearbyBody: 'Discover the most exclusive venues around your current location using our GPS tool.',
+        nearbyCta: 'Open GPS Tool'
       }
     : {
         editorialTitle: 'Guide Galant',
@@ -92,7 +95,10 @@ const GuidePage: React.FC = () => {
         partnerTitle: "Votre lieu merite l'excellence",
         partnerBody: 'Rejoignez le cercle restreint des établissements certifies Galant.',
         partnerCta: 'Inscrire mon établissement',
-        partnerFallback: 'ce partenaire'
+        partnerFallback: 'ce partenaire',
+        nearbyTitle: 'À proximité ?',
+        nearbyBody: 'Découvrez les adresses d\'exception à deux pas de vous en utilisant notre outil de détection GPS.',
+        nearbyCta: 'Ouvrir l\'outil GPS'
       };
 
   useEffect(() => {
@@ -213,6 +219,25 @@ const GuidePage: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto pb-20 px-4 space-y-12">
+      {/* Note de Conciergerie - Tout en haut */}
+      <div className="bg-slate-900 dark:bg-white/5 border border-white/10 p-5 rounded-[2rem] flex flex-col sm:flex-row items-center justify-between gap-6 shadow-2xl animate-in fade-in slide-in-from-top-4 duration-1000">
+        <div className="flex items-center gap-5 text-center sm:text-left">
+          <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary flex-shrink-0">
+             <MapPin size={28} />
+          </div>
+          <div>
+            <h4 className="text-white font-serif italic text-lg leading-none mb-1">{labels.nearbyTitle}</h4>
+            <p className="text-slate-400 text-xs font-medium leading-relaxed max-w-md">{labels.nearbyBody}</p>
+          </div>
+        </div>
+        <button
+          onClick={() => navigate('/apps')}
+          className="bg-white dark:bg-primary text-slate-900 dark:text-white px-8 py-3.5 rounded-xl font-black text-[10px] uppercase tracking-prestige hover:scale-105 active:scale-95 transition-all shadow-xl whitespace-nowrap"
+        >
+          {labels.nearbyCta}
+        </button>
+      </div>
+
       {/* Hero Header Ultra Premium */}
       <div className="relative rounded-[4rem] overflow-hidden shadow-2xl bg-slate-950 dark:bg-black min-h-[450px] flex items-center group">
         <div className="absolute inset-0">

@@ -1,37 +1,32 @@
-# Monétisation Dynamique des Filtres (Pass Temporaire)
+# Guide Galant : Conseil Conciergerie (Partenaires GPS)
 
-Ce plan vise à rendre l'accès aux filtres payant avec une durée configurable par l'administrateur, tout en informant clairement l'utilisateur du rapport prix/durée au moment de l'achat.
+Ce plan vise à informer les utilisateurs de l'existence de l'outil "Partenaires autour de moi" (onglet Apps) lorsqu'ils consultent le Guide, afin d'améliorer leur expérience de proximité.
 
 ## Proposed Changes
 
-### [Server] Configuration
+### [Web Mobile] Interface du Guide
 
-#### [MODIFY] [constants.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/config/constants.js)
-- Définir `DISCOVER_FILTERS_UNLOCK: 500` et `DISCOVER_FILTERS_DAYS: 3` par défaut.
-
-### [Web Mobile] Interface Utilisateur Dynamique
-
-#### [MODIFY] [InteractionPurchaseModal.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/InteractionPurchaseModal.tsx)
-- **Nettoyage texte** : Retirer la mention temporelle du paragraphe descriptif.
-- **Badge de Durée** : Ajouter l'affichage de la durée (ex: "Valable 3 jours") dans la zone de prix pour une clarté maximale.
-- **Logique** : Prévoir la réception de la durée en prop ou via une valeur par défaut synchronisée.
-
-#### [MODIFY] [StorePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/StorePage.tsx)
-- Mettre à jour la carte "Pass Filtres" pour afficher la durée de manière proéminente.
-
-### [Web Mobile] Espace Admin
-
-#### [MODIFY] [AdminPricing.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminPricing.tsx)
-- Ajouter les inputs pour `DISCOVER_FILTERS_UNLOCK` et `DISCOVER_FILTERS_DAYS`.
+#### [MODIFY] [GuidePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/GuidePage.tsx)
+- **Ajout d'une bannière informative** :
+    - Position : Juste en dessous de la barre de recherche et au-dessus de la grille des lieux.
+    - Design : Style "Conciergerie Privée" (fond sombre ou ambre léger, bordure raffinée).
+    - Icône : `MapPin` (Géo-localisation).
+- **Contenu du message (FR)** :
+    - Titre : *"À proximité ?"*
+    - Corps : *"Pour découvrir les établissements les plus proches de votre position actuelle, utilisez notre outil intelligent dans l'onglet Apps."*
+- **Action** :
+    - Bouton : *"Voir les Partenaires"*.
+    - Destination : Redirection vers `/apps`.
 
 ## User Review Required
 
 > [!TIP]
-> **Information Client** : En plaçant la durée juste à côté du prix (ex: "500 F | 3 Jours"), l'information est perçue comme une caractéristique technique du produit, ce qui est plus rassurant et clair qu'une phrase dans un long texte.
+> **Expérience Utilisateur** : Cette bannière agira comme un guide humain (un concierge) qui suggère une meilleure option à l'utilisateur, ce qui renforce le côté haut de gamme du service.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  **Admin** : Changer la durée à 7 jours dans les réglages.
-2.  **User** : Cliquer sur les filtres et vérifier que le modal affiche bien "Valable 7 jours" au niveau du bouton ou du prix.
-3.  **Achat** : Vérifier que le serveur calcule bien la date d'expiration en fonction de ce nouveau réglage.
+1.  Ouvrir le **Guide Galant**.
+2.  Vérifier que le message de conseil apparaît clairement entre la recherche et la liste des lieux.
+3.  Cliquer sur le bouton d'action et vérifier qu'il redirige bien vers la page **Apps**.
+4.  Vérifier que le message est bien traduit si l'utilisateur change la langue de l'app.
