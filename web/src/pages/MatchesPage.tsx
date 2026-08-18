@@ -90,10 +90,7 @@ const MatchesPage: React.FC = () => {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h2 className="text-4xl font-serif italic tracking-tighter text-slate-900 dark:text-white leading-none">
-              {t('messages')}
-            </h2>
-            <p className="text-slate-500 dark:text-slate-400 font-medium mt-2 text-lg">
+            <p className="text-slate-500 dark:text-slate-400 font-medium text-lg pt-4">
               {t('messages_subtitle') || 'Vos connexions élégantes'}
             </p>
           </div>

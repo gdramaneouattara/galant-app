@@ -1,29 +1,35 @@
-# Correction du Conflit Visuel : Barre de Recherche Statique
+# Correction de la navigation : Retour vers le Guide
 
-Ce plan vise à supprimer le comportement "collant" (sticky) de la barre de recherche dans le Guide, afin d'éviter qu'elle ne recouvre les photos et les titres des établissements lors du défilement.
+Ce plan vise à corriger le bouton "RETOUR" de la page d'inscription partenaire pour qu'il ramène l'utilisateur à sa page d'origine (notamment le Guide), au lieu de le renvoyer systématiquement vers la page de connexion.
 
 ## Proposed Changes
 
-### [Web Mobile] Interface du Guide
+### [Web Mobile] Navigation & Expérience
+
+#### [MODIFY] [PartnerSignupPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/PartnerSignupPage.tsx)
+- Importer `useLocation` de `react-router-dom`.
+- Utiliser `location.state?.from` pour déterminer la destination du bouton "RETOUR".
+- Utiliser `navigate(-1)` comme alternative ou un fallback vers `/auth`.
 
 #### [MODIFY] [GuidePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/GuidePage.tsx)
-- **Désactivation du mode Sticky** :
-    - Retirer la classe `sticky top-24 z-40` du conteneur de recherche et des catégories.
-    - Supprimer la classe `bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-lg` qui n'a plus d'utilité si la barre ne flotte plus au-dessus des images.
-- **Ajustement du Design** :
-    - Simplifier le conteneur pour qu'il soit un bloc standard intégré au flux de la page.
-    - S'assurer que les marges (`my-8` ou `space-y-8`) créent une séparation nette entre le Hero Header et la Grille.
+- Mettre à jour l'action du bouton "Inscrire mon établissement" pour passer l'URL actuelle (`/experiences`) dans le state de navigation.
+
+#### [MODIFY] [AppsPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/AppsPage.tsx)
+- Ajouter le state `{ from: '/apps' }` au lien vers l'inscription partenaire.
+
+#### [MODIFY] [AuthPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/AuthPage.tsx)
+- Ajouter le state `{ from: '/auth' }` lors de la navigation vers l'inscription partenaire.
 
 ## User Review Required
 
 > [!NOTE]
-> **Expérience Utilisateur** : En rendant la barre statique, l'utilisateur a une vue totalement dégagée sur les superbes photos des établissements. S'il veut refaire une recherche, il lui suffit de remonter légèrement en haut de la page, ce qui est le comportement standard des catalogues de luxe.
+> **Expérience Utilisateur** : Cette correction permet de conserver le contexte de navigation de l'utilisateur. S'il consultait le Guide et a voulu voir les conditions partenaires, il pourra y retourner exactement là où il en était.
 
 ## Verification Plan
 
 ### Manual Verification
 1.  Ouvrir le **Guide Galant**.
-2.  Faire défiler la page vers le bas.
-3.  Vérifier que la barre de recherche monte et disparaît normalement.
-4.  Vérifier que les photos des établissements (ex: Saakan) apparaissent maintenant en plein écran sans aucune superposition.
-5.  Confirmer que le bouton de bascule Guide/Agenda en haut de page (ExperiencesPage) reste, lui, bien accessible si nécessaire.
+2.  Cliquer sur "Inscrire mon établissement".
+3.  Sur la page d'inscription, cliquer sur le bouton "RETOUR".
+4.  Vérifier que l'on revient bien sur le **Guide** (et non sur la page de connexion).
+5.  Répéter le test depuis l'onglet **Apps**.

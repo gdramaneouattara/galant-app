@@ -6,6 +6,15 @@ import { useAuth } from '../context/AuthContext';
 
 const APPS = [
   {
+    titleKey: 'partner_discovery',
+    subtitleKey: 'partner_discovery_subtitle',
+    href: '/partner-discovery',
+    icon: MapPin,
+    color: 'text-rose-600',
+    bg: 'bg-rose-50 dark:bg-rose-600/10',
+    highlight: 'ROSE' as const,
+  },
+  {
     titleKey: 'market',
     subtitleKey: 'market_subtitle',
     href: '/market',
@@ -21,15 +30,6 @@ const APPS = [
     icon: Shield,
     color: 'text-blue-600',
     bg: 'bg-blue-50 dark:bg-blue-600/10',
-    highlight: 'ROSE' as const,
-  },
-  {
-    titleKey: 'partner_discovery',
-    subtitleKey: 'partner_discovery_subtitle',
-    href: '/partner-discovery',
-    icon: MapPin,
-    color: 'text-rose-600',
-    bg: 'bg-rose-50 dark:bg-rose-600/10',
     highlight: 'ROSE' as const,
   },
 ];
@@ -79,6 +79,7 @@ const AppsPage: React.FC = () => {
 
       <Link
         to="/partner-signup"
+        state={{ from: '/apps' }}
         className="flex items-center gap-4 rounded-2xl border border-dashed border-primary/30 dark:border-primary/20 bg-primary/5 dark:bg-primary/10 p-5 hover:bg-primary/10 transition-all"
       >
         <div className="w-12 h-12 rounded-2xl bg-primary text-white flex items-center justify-center">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { fbAuth } from '../firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { apiRequest } from '@shared/lib/api';
@@ -16,8 +16,11 @@ const VENUE_TYPES = [
 
 const PartnerSignupPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useAuth();
   const [loading, setLoading] = useState(false);
+
+  const from = location.state?.from || '/auth';
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -59,7 +62,7 @@ const PartnerSignupPage: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto py-10 px-4">
-      <button onClick={() => navigate('/auth')} className="mb-6 flex items-center gap-2 text-slate-400 dark:text-slate-500 font-bold text-sm hover:text-primary transition-colors">
+      <button onClick={() => navigate(from)} className="mb-6 flex items-center gap-2 text-slate-400 dark:text-slate-500 font-bold text-sm hover:text-primary transition-colors">
         <ChevronLeft size={20} /> RETOUR
       </button>
 
