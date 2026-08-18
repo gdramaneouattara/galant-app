@@ -421,7 +421,7 @@ const GuidePage: React.FC = () => {
           <h3 className="text-3xl md:text-5xl font-serif italic tracking-tighter text-white">{labels.partnerTitle}</h3>
           <p className="text-white/80 text-lg font-medium">{labels.partnerBody}</p>
           <button
-            onClick={() => navigate('/partner-signup')}
+            onClick={() => navigate('/partner-signup', { state: { from: '/experiences' } })}
             className="bg-white text-amber-600 px-10 py-5 rounded-[2rem] font-medium text-sm uppercase tracking-prestige shadow-2xl hover:scale-105 active:scale-95 transition-all mt-4"
           >
             {labels.partnerCta}

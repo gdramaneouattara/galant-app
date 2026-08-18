@@ -382,7 +382,7 @@ const AuthPage: React.FC = () => {
 
           <div className="mt-12 pt-8 border-t border-slate-100 dark:border-white/5 text-center transition-colors">
             <button
-              onClick={() => navigate('/partner-signup')}
+              onClick={() => navigate('/partner-signup', { state: { from: '/auth' } })}
               className="group flex flex-col items-center gap-2 mx-auto"
             >
               <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] group-hover:text-primary transition-colors">{labels.partnerQuestion}</span>
