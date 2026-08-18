@@ -53,7 +53,7 @@ const AdminLayout: React.FC = () => {
           </h1>
         </div>
 
-        <nav className="flex-1 px-4 space-y-2">
+        <nav className="flex-1 px-4 space-y-2 overflow-y-auto no-scrollbar pb-10">
           {menuItems.map((item) => (
             <Link
               key={item.path}

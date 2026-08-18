@@ -28,7 +28,8 @@ const DiscoverPage: React.FC = () => {
   const [isApplyingFilters, setIsApplyingFilters] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
-  const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean; type: 'SUPER_LIKE' | 'DIRECT_MESSAGE' | 'DISCOVER_GRID_UNLOCK'; userName: string; targetId: string } | null>(null);
+  const [pricing, setPricing] = useState<any>(null);
+  const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean; type: 'SUPER_LIKE' | 'DIRECT_MESSAGE' | 'DISCOVER_GRID_UNLOCK' | 'DISCOVER_FILTERS_UNLOCK'; userName: string; targetId: string } | null>(null);
   const navigate = useNavigate();
   const labels = language === 'en'
     ? {
@@ -138,6 +139,10 @@ const DiscoverPage: React.FC = () => {
     apiRequest<{ unreadCount: number }>('/api/notifications/unread-count', { requireAuth: true })
       .then((payload) => setNotificationUnreadCount(Math.max(0, Number(payload?.unreadCount || 0))))
       .catch(() => setNotificationUnreadCount(0));
+
+    apiRequest<any>('/api/admin/pricing', { requireAuth: true })
+      .then((data) => setPricing(data))
+      .catch(() => {});
   }, [user]);
 
   const onSwipe = async (direction: 'LEFT' | 'RIGHT') => {
@@ -523,6 +528,8 @@ const DiscoverPage: React.FC = () => {
         type={purchaseModal?.type || 'SUPER_LIKE'}
         targetId={purchaseModal?.targetId}
         userName={purchaseModal?.userName || ''}
+        durationDays={purchaseModal?.type === 'DISCOVER_FILTERS_UNLOCK' ? (pricing?.PRICES?.DISCOVER_FILTERS_DAYS || 3) : undefined}
+        price={purchaseModal?.type === 'DISCOVER_FILTERS_UNLOCK' ? (pricing?.PRICES?.DISCOVER_FILTERS_UNLOCK || 500) : undefined}
         onSuccess={handlePurchaseSuccess}
       />
     </div>

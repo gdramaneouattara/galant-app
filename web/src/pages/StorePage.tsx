@@ -29,6 +29,7 @@ const StorePage: React.FC = () => {
   const { profile, t, language } = useAuth();
   const { purchaseWithPaystack, purchaseLoading } = useSubscription();
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [pricing, setPricing] = useState<any>(null);
 
   const boostStatus = getBoostStatus(profile?.boosted_until);
   const hasPartnerDiscoveryAccess = !!(profile?.is_premium || profile?.is_vip || profile?.partner_discovery_unlocked);
@@ -69,13 +70,13 @@ const StorePage: React.FC = () => {
           { id: '3D', label: '3 Day Boost', price: 2500, color: 'text-purple-600', icon: Rocket },
           { id: '7D', label: '7 Day Boost', price: 5000, color: 'text-primary', icon: Star },
         ],
-        unlocks: [
-          { id: 'DISCOVER_GRID_UNLOCK', type: 'DISCOVER_GRID_UNLOCK' as PurchaseType, label: 'Gallery Access', sub: '100 profile quota', price: 1000, icon: LayoutGrid, color: 'text-indigo-500' },
-          { id: 'DISCOVER_FILTERS_UNLOCK', type: 'DISCOVER_FILTERS_UNLOCK' as PurchaseType, label: 'Filters Pass', sub: 'For 3 days', price: 500, icon: SlidersHorizontal, color: 'text-purple-500' },
-          { id: 'LIKES_INBOX_2H', type: 'LIKES_INBOX_2H' as PurchaseType, label: 'Unlock Likes', sub: 'For 2 hours', price: 1000, icon: Heart, color: 'text-rose-500' },
-          { id: 'STORY_UPLOAD', type: 'STORY_UPLOAD' as PurchaseType, label: 'Post a Story', sub: 'One-time post', price: 500, icon: Camera, color: 'text-amber-500' },
-          { id: 'PARTNER_DISCOVERY_UNLOCK', type: 'PARTNER_DISCOVERY_UNLOCK' as PurchaseType, label: 'Partners around me', sub: 'Direct Google search', price: 500, icon: MapPinned, color: 'text-emerald-500' },
-        ],
+          unlocks: [
+            { id: 'DISCOVER_GRID_UNLOCK', type: 'DISCOVER_GRID_UNLOCK' as PurchaseType, label: 'Gallery Access', sub: '100 profile quota', price: 1000, icon: LayoutGrid, color: 'text-indigo-500' },
+            { id: 'DISCOVER_FILTERS_UNLOCK', type: 'DISCOVER_FILTERS_UNLOCK' as PurchaseType, label: 'Filters Pass', sub: `For ${pricing?.PRICES?.DISCOVER_FILTERS_DAYS || 3} days`, price: pricing?.PRICES?.DISCOVER_FILTERS_UNLOCK || 500, icon: SlidersHorizontal, color: 'text-purple-500' },
+            { id: 'LIKES_INBOX_2H', type: 'LIKES_INBOX_2H' as PurchaseType, label: 'Unlock Likes', sub: 'For 2 hours', price: 1000, icon: Heart, color: 'text-rose-500' },
+            { id: 'STORY_UPLOAD', type: 'STORY_UPLOAD' as PurchaseType, label: 'Post a Story', sub: 'One-time post', price: 500, icon: Camera, color: 'text-amber-500' },
+            { id: 'PARTNER_DISCOVERY_UNLOCK', type: 'PARTNER_DISCOVERY_UNLOCK' as PurchaseType, label: 'Partners around me', sub: 'Direct Google search', price: 500, icon: MapPinned, color: 'text-emerald-500' },
+          ],
         security: 'All transactions are SSL encrypted and processed by Paystack. Orange Money, MTN MoMo, Moov Money and Wave are accepted.'
       }
     : {
@@ -114,15 +115,21 @@ const StorePage: React.FC = () => {
           { id: '3D', label: 'Boost 3 Jours', price: 2500, color: 'text-purple-600', icon: Rocket },
           { id: '7D', label: 'Boost 7 Jours', price: 5000, color: 'text-primary', icon: Star },
         ],
-        unlocks: [
-          { id: 'DISCOVER_GRID_UNLOCK', type: 'DISCOVER_GRID_UNLOCK' as PurchaseType, label: 'Accès Galerie', sub: 'Quota 100 profils', price: 1000, icon: LayoutGrid, color: 'text-indigo-500' },
-          { id: 'DISCOVER_FILTERS_UNLOCK', type: 'DISCOVER_FILTERS_UNLOCK' as PurchaseType, label: 'Pass Filtres', sub: 'Pendant 3 jours', price: 500, icon: SlidersHorizontal, color: 'text-purple-500' },
-          { id: 'LIKES_INBOX_2H', type: 'LIKES_INBOX_2H' as PurchaseType, label: 'Débloquer les Likes', sub: 'Pendant 2 heures', price: 1000, icon: Heart, color: 'text-rose-500' },
-          { id: 'STORY_UPLOAD', type: 'STORY_UPLOAD' as PurchaseType, label: 'Publier une Story', sub: 'Publication ponctuelle', price: 500, icon: Camera, color: 'text-amber-500' },
-          { id: 'PARTNER_DISCOVERY_UNLOCK', type: 'PARTNER_DISCOVERY_UNLOCK' as PurchaseType, label: 'Partenaires autour de moi', sub: 'Recherche Google directe', price: 500, icon: MapPinned, color: 'text-emerald-500' },
-        ],
+          unlocks: [
+            { id: 'DISCOVER_GRID_UNLOCK', type: 'DISCOVER_GRID_UNLOCK' as PurchaseType, label: 'Accès Galerie', sub: 'Quota 100 profils', price: 1000, icon: LayoutGrid, color: 'text-indigo-500' },
+            { id: 'DISCOVER_FILTERS_UNLOCK', type: 'DISCOVER_FILTERS_UNLOCK' as PurchaseType, label: 'Pass Filtres', sub: `Pendant ${pricing?.PRICES?.DISCOVER_FILTERS_DAYS || 3} jours`, price: pricing?.PRICES?.DISCOVER_FILTERS_UNLOCK || 500, icon: SlidersHorizontal, color: 'text-purple-500' },
+            { id: 'LIKES_INBOX_2H', type: 'LIKES_INBOX_2H' as PurchaseType, label: 'Débloquer les Likes', sub: 'Pendant 2 heures', price: 1000, icon: Heart, color: 'text-rose-500' },
+            { id: 'STORY_UPLOAD', type: 'STORY_UPLOAD' as PurchaseType, label: 'Publier une Story', sub: 'Publication ponctuelle', price: 500, icon: Camera, color: 'text-amber-500' },
+            { id: 'PARTNER_DISCOVERY_UNLOCK', type: 'PARTNER_DISCOVERY_UNLOCK' as PurchaseType, label: 'Partenaires autour de moi', sub: 'Recherche Google directe', price: 500, icon: MapPinned, color: 'text-emerald-500' },
+          ],
         security: 'Toutes vos transactions sont sécurisées par cryptage SSL et traitées par Paystack. Orange Money, MTN MoMo, Moov Money et Wave sont acceptés.'
       };
+
+  useEffect(() => {
+    apiRequest<any>('/api/admin/pricing', { requireAuth: true })
+      .then((data) => setPricing(data))
+      .catch(() => {});
+  }, []);
 
   const handlePurchase = async (type: PurchaseType, id: string, amount: number) => {
     if (type === 'PARTNER_DISCOVERY_UNLOCK' && hasPartnerDiscoveryAccess) {

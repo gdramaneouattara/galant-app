@@ -1,52 +1,37 @@
-# Monétisation des Filtres Découverte (Accès 3 jours)
+# Monétisation Dynamique des Filtres (Pass Temporaire)
 
-Ce plan vise à transformer les filtres de recherche en une fonctionnalité payante (500 F CFA pour 3 jours) ou réservée aux membres Premium, avec un contrôle total pour l'administrateur.
+Ce plan vise à rendre l'accès aux filtres payant avec une durée configurable par l'administrateur, tout en informant clairement l'utilisateur du rapport prix/durée au moment de l'achat.
 
 ## Proposed Changes
 
-### [Server] Configuration et Logique Métier
+### [Server] Configuration
 
 #### [MODIFY] [constants.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/config/constants.js)
-- Ajouter `DISCOVER_FILTERS_UNLOCK: 500` dans `PRICES`.
-- Ajouter `DISCOVER_FILTERS_DURATION_DAYS: 3` dans un nouvel objet `DURATIONS` (ou dans `PRICES` pour faciliter la gestion Admin).
+- Définir `DISCOVER_FILTERS_UNLOCK: 500` et `DISCOVER_FILTERS_DAYS: 3` par défaut.
 
-#### [MODIFY] [subscriptionService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/subscriptionService.js)
-- Implémenter le traitement de l'achat `DISCOVER_FILTERS_UNLOCK`.
-- Calculer la date d'expiration (`maintenant + X jours`).
-- Mettre à jour le profil avec `filters_unlocked_until`.
-
-### [Web Mobile] Interface Administrateur
-
-#### [MODIFY] [AdminPricing.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminPricing.tsx)
-- Ajouter deux nouveaux champs dans la section "Interactions" :
-    - **Prix du déblocage des filtres** (F CFA).
-    - **Durée du déblocage** (en jours).
-
-### [Web Mobile] Interface Utilisateur
+### [Web Mobile] Interface Utilisateur Dynamique
 
 #### [MODIFY] [InteractionPurchaseModal.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/InteractionPurchaseModal.tsx)
-- Ajouter le type d'achat `DISCOVER_FILTERS_UNLOCK`.
-- Personnaliser le texte : *"Ciblez vos rencontres avec précision par ville et par âge pendant 3 jours."*
-- Récupérer dynamiquement la durée et le prix depuis les paramètres (si possible) ou utiliser les constantes.
-
-#### [MODIFY] [DiscoverPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/DiscoverPage.tsx)
-- **Vérification d'accès** : Avant d'ouvrir les filtres, vérifier si :
-    - `profile.is_premium === true`
-    - OU `profile.filters_unlocked_until` est dans le futur.
-- **Redirection** : Si aucun accès, ouvrir le modal d'achat.
+- **Nettoyage texte** : Retirer la mention temporelle du paragraphe descriptif.
+- **Badge de Durée** : Ajouter l'affichage de la durée (ex: "Valable 3 jours") dans la zone de prix pour une clarté maximale.
+- **Logique** : Prévoir la réception de la durée en prop ou via une valeur par défaut synchronisée.
 
 #### [MODIFY] [StorePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/StorePage.tsx)
-- Ajouter l'option "Pass Filtres (3 jours)" dans la section des déblocages.
+- Mettre à jour la carte "Pass Filtres" pour afficher la durée de manière proéminente.
+
+### [Web Mobile] Espace Admin
+
+#### [MODIFY] [AdminPricing.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminPricing.tsx)
+- Ajouter les inputs pour `DISCOVER_FILTERS_UNLOCK` et `DISCOVER_FILTERS_DAYS`.
 
 ## User Review Required
 
-> [!NOTE]
-> **Expérience Utilisateur** : Le bouton de filtrage sur l'écran découverte affichera un petit cadenas 🔒 pour les membres non-premium n'ayant pas encore acheté l'accès, afin d'indiquer clairement que c'est un privilège.
+> [!TIP]
+> **Information Client** : En plaçant la durée juste à côté du prix (ex: "500 F | 3 Jours"), l'information est perçue comme une caractéristique technique du produit, ce qui est plus rassurant et clair qu'une phrase dans un long texte.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  **Admin** : Changer le prix à 600 F et la durée à 5 jours dans l'espace Admin. Enregistrer.
-2.  **Utilisateur Classique** : Tenter d'ouvrir les filtres. Vérifier que le prix affiché est bien 600 F et que le texte mentionne "5 jours".
-3.  **Achat** : Simuler l'achat. Vérifier que le champ `filters_unlocked_until` est bien mis à jour dans la base de données.
-4.  **Accès** : Vérifier que les filtres s'ouvrent normalement après l'achat.
+1.  **Admin** : Changer la durée à 7 jours dans les réglages.
+2.  **User** : Cliquer sur les filtres et vérifier que le modal affiche bien "Valable 7 jours" au niveau du bouton ou du prix.
+3.  **Achat** : Vérifier que le serveur calcule bien la date d'expiration en fonction de ce nouveau réglage.
