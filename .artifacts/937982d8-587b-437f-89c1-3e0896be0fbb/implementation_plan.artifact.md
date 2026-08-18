@@ -1,36 +1,52 @@
-# Modernisation et Fiabilisation du CI/CD (Outils GitHub 2026)
+# Monétisation des Filtres Découverte (Accès 3 jours)
 
-Ce plan vise à résoudre définitivement les erreurs de déploiement GitHub Pages en mettant à jour les outils vers leurs versions 2026 et en adoptant une structure de build plus robuste.
-
-## Diagnostic
-- **Avertissement Node.js 24** : L'action `actions/setup-node@v4` est officiellement obsolète. Il faut passer à la **v7** qui tourne nativement sous Node 24.
-- **Erreur "Multiple artifacts"** : C'est un bug connu de GitHub qui survient lorsqu'on clique sur "Re-run jobs". L'action de téléchargement crée des doublons de l'archive `github-pages`, ce qui bloque le déploiement.
-- **Solution** : Adopter la structure en **deux jobs séparés** (Build puis Deploy) recommandée par GitHub pour isoler proprement les étapes et éviter les collisions d'artefacts.
+Ce plan vise à transformer les filtres de recherche en une fonctionnalité payante (500 F CFA pour 3 jours) ou réservée aux membres Premium, avec un contrôle total pour l'administrateur.
 
 ## Proposed Changes
 
-### [CI/CD] Mise à jour vers les versions 2026
+### [Server] Configuration et Logique Métier
 
-#### [MODIFY] Tous les workflows (.github/workflows/)
-- `actions/setup-node@v4` -> **`@v7`** (Compatibilité Node 24 native)
-- `actions/checkout@v7` (Déjà à jour, mais vérification de la cohérence)
+#### [MODIFY] [constants.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/config/constants.js)
+- Ajouter `DISCOVER_FILTERS_UNLOCK: 500` dans `PRICES`.
+- Ajouter `DISCOVER_FILTERS_DURATION_DAYS: 3` dans un nouvel objet `DURATIONS` (ou dans `PRICES` pour faciliter la gestion Admin).
 
-#### [MODIFY] [deploy-web.yml](file:///.github/workflows/deploy-web.yml)
-- **Refonte Structurelle** : Séparation en deux jobs (`build` et `deploy`).
-- **Fiabilisation** : Utilisation des dernières versions des actions de Pages :
-    - `actions/upload-pages-artifact@v5`
-    - `actions/deploy-pages@v5`
-- **Sécurité** : Application stricte des permissions minimales requises.
+#### [MODIFY] [subscriptionService.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/services/subscriptionService.js)
+- Implémenter le traitement de l'achat `DISCOVER_FILTERS_UNLOCK`.
+- Calculer la date d'expiration (`maintenant + X jours`).
+- Mettre à jour le profil avec `filters_unlocked_until`.
+
+### [Web Mobile] Interface Administrateur
+
+#### [MODIFY] [AdminPricing.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminPricing.tsx)
+- Ajouter deux nouveaux champs dans la section "Interactions" :
+    - **Prix du déblocage des filtres** (F CFA).
+    - **Durée du déblocage** (en jours).
+
+### [Web Mobile] Interface Utilisateur
+
+#### [MODIFY] [InteractionPurchaseModal.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/InteractionPurchaseModal.tsx)
+- Ajouter le type d'achat `DISCOVER_FILTERS_UNLOCK`.
+- Personnaliser le texte : *"Ciblez vos rencontres avec précision par ville et par âge pendant 3 jours."*
+- Récupérer dynamiquement la durée et le prix depuis les paramètres (si possible) ou utiliser les constantes.
+
+#### [MODIFY] [DiscoverPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/DiscoverPage.tsx)
+- **Vérification d'accès** : Avant d'ouvrir les filtres, vérifier si :
+    - `profile.is_premium === true`
+    - OU `profile.filters_unlocked_until` est dans le futur.
+- **Redirection** : Si aucun accès, ouvrir le modal d'achat.
+
+#### [MODIFY] [StorePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/StorePage.tsx)
+- Ajouter l'option "Pass Filtres (3 jours)" dans la section des déblocages.
 
 ## User Review Required
 
-> [!IMPORTANT]
-> **Fresh Run** : Une fois ces modifications appliquées, ne cliquez pas sur "Re-run failed jobs". Faites un nouveau `git push`. Cela créera une **nouvelle exécution** avec un dossier d'artefacts vide, résolvant ainsi l'erreur de "Multiple artifacts".
+> [!NOTE]
+> **Expérience Utilisateur** : Le bouton de filtrage sur l'écran découverte affichera un petit cadenas 🔒 pour les membres non-premium n'ayant pas encore acheté l'accès, afin d'indiquer clairement que c'est un privilège.
 
 ## Verification Plan
 
-### Automated Verification
-1.  Faire un `git push origin staging`.
-2.  Vérifier dans GitHub Actions que l'étape "Setup Node.js" utilise bien la version **v7**.
-3.  Vérifier que les deux jobs (Build et Deploy) s'enchaînent correctement.
-4.  Confirmer que l'avertissement de dépréciation a disparu.
+### Manual Verification
+1.  **Admin** : Changer le prix à 600 F et la durée à 5 jours dans l'espace Admin. Enregistrer.
+2.  **Utilisateur Classique** : Tenter d'ouvrir les filtres. Vérifier que le prix affiché est bien 600 F et que le texte mentionne "5 jours".
+3.  **Achat** : Simuler l'achat. Vérifier que le champ `filters_unlocked_until` est bien mis à jour dans la base de données.
+4.  **Accès** : Vérifier que les filtres s'ouvrent normalement après l'achat.

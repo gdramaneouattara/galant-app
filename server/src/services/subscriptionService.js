@@ -321,6 +321,20 @@ const applyPurchasedEntitlement = async ({
       message: 'La recherche de partenaires proches est maintenant disponible.',
       next_route: '/partner-discovery'
     };
+  } else if (normalizedType === 'DISCOVER_FILTERS_UNLOCK') {
+    const pricing = await getCurrentPricing();
+    const durationDays = pricing.PRICES.DISCOVER_FILTERS_DAYS || 3;
+    const expiresAt = new Date(Date.now() + durationDays * 24 * 3600 * 1000).toISOString();
+
+    await db.collection('profiles').doc(userId).update({
+      filters_unlocked_until: expiresAt,
+      updated_at: new Date().toISOString()
+    });
+    paymentNotification = {
+      title: 'Filtres debloques',
+      message: `Votre accès aux filtres est actif pendant ${durationDays} jours.`,
+      next_route: '/'
+    };
   }
 
   if (paymentNotification) {

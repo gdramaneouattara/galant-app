@@ -219,6 +219,11 @@ const DiscoverPage: React.FC = () => {
       return;
     }
 
+    if (modal.type === 'DISCOVER_FILTERS_UNLOCK') {
+      setIsFilterOpen(true);
+      return;
+    }
+
     await openDirectThread(target);
   };
 
@@ -360,11 +365,21 @@ const DiscoverPage: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setIsFilterOpen(true)}
+            onClick={() => {
+              const hasAccess = myProfile?.is_premium || (myProfile?.filters_unlocked_until && new Date(myProfile.filters_unlocked_until) > new Date());
+              if (hasAccess) {
+                setIsFilterOpen(true);
+              } else {
+                setPurchaseModal({ isOpen: true, type: 'DISCOVER_FILTERS_UNLOCK', userName: labels.filters, targetId: 'filters_unlock' });
+              }
+            }}
             className={`${headerActionBaseClass} group ${isFilterActive ? headerActionActiveClass : headerActionIdleClass}`}
             title={labels.filters}
             aria-label={labels.filters}
           >
+            {!(myProfile?.is_premium || (myProfile?.filters_unlocked_until && new Date(myProfile.filters_unlocked_until) > new Date())) && (
+              <Lock size={8} className="absolute top-1 right-1 text-slate-400" />
+            )}
             <SlidersHorizontal size={18} className={isFilterActive ? 'animate-pulse' : 'group-hover:rotate-12 transition-transform'} />
           </button>
         </div>

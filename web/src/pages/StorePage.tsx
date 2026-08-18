@@ -17,7 +17,8 @@ import {
   Heart,
   Flame,
   Camera,
-  MapPinned
+  MapPinned,
+  SlidersHorizontal
 } from 'lucide-react';
 import { useSubscription, PurchaseType } from '@shared/hooks/useSubscription';
 import { showAlert } from '@shared/lib/ui-bridge';
@@ -70,6 +71,7 @@ const StorePage: React.FC = () => {
         ],
         unlocks: [
           { id: 'DISCOVER_GRID_UNLOCK', type: 'DISCOVER_GRID_UNLOCK' as PurchaseType, label: 'Gallery Access', sub: '100 profile quota', price: 1000, icon: LayoutGrid, color: 'text-indigo-500' },
+          { id: 'DISCOVER_FILTERS_UNLOCK', type: 'DISCOVER_FILTERS_UNLOCK' as PurchaseType, label: 'Filters Pass', sub: 'For 3 days', price: 500, icon: SlidersHorizontal, color: 'text-purple-500' },
           { id: 'LIKES_INBOX_2H', type: 'LIKES_INBOX_2H' as PurchaseType, label: 'Unlock Likes', sub: 'For 2 hours', price: 1000, icon: Heart, color: 'text-rose-500' },
           { id: 'STORY_UPLOAD', type: 'STORY_UPLOAD' as PurchaseType, label: 'Post a Story', sub: 'One-time post', price: 500, icon: Camera, color: 'text-amber-500' },
           { id: 'PARTNER_DISCOVERY_UNLOCK', type: 'PARTNER_DISCOVERY_UNLOCK' as PurchaseType, label: 'Partners around me', sub: 'Direct Google search', price: 500, icon: MapPinned, color: 'text-emerald-500' },
@@ -114,6 +116,7 @@ const StorePage: React.FC = () => {
         ],
         unlocks: [
           { id: 'DISCOVER_GRID_UNLOCK', type: 'DISCOVER_GRID_UNLOCK' as PurchaseType, label: 'Accès Galerie', sub: 'Quota 100 profils', price: 1000, icon: LayoutGrid, color: 'text-indigo-500' },
+          { id: 'DISCOVER_FILTERS_UNLOCK', type: 'DISCOVER_FILTERS_UNLOCK' as PurchaseType, label: 'Pass Filtres', sub: 'Pendant 3 jours', price: 500, icon: SlidersHorizontal, color: 'text-purple-500' },
           { id: 'LIKES_INBOX_2H', type: 'LIKES_INBOX_2H' as PurchaseType, label: 'Débloquer les Likes', sub: 'Pendant 2 heures', price: 1000, icon: Heart, color: 'text-rose-500' },
           { id: 'STORY_UPLOAD', type: 'STORY_UPLOAD' as PurchaseType, label: 'Publier une Story', sub: 'Publication ponctuelle', price: 500, icon: Camera, color: 'text-amber-500' },
           { id: 'PARTNER_DISCOVERY_UNLOCK', type: 'PARTNER_DISCOVERY_UNLOCK' as PurchaseType, label: 'Partenaires autour de moi', sub: 'Recherche Google directe', price: 500, icon: MapPinned, color: 'text-emerald-500' },
