@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, CreditCard, MessageCircle, Heart, LayoutGrid } from 'lucide-react';
+import { X, CreditCard, MessageCircle, Heart, LayoutGrid, SlidersHorizontal } from 'lucide-react';
 import { useSubscription } from '@shared/hooks/useSubscription';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { useAuth } from '../context/AuthContext';
