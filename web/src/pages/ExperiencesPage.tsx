@@ -4,7 +4,7 @@ import GuidePage from './GuidePage';
 import { Calendar, MapPin } from 'lucide-react';
 
 const ExperiencesPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'AGENDA' | 'GUIDE'>('AGENDA');
+  const [activeTab, setActiveTab] = useState<'AGENDA' | 'GUIDE'>('GUIDE');
   const [isTabRailCompact, setIsTabRailCompact] = useState(false);
   const lastScrollYRef = useRef(0);
 
