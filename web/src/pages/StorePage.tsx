@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useSubscription, PurchaseType } from '@shared/hooks/useSubscription';
 import { showAlert } from '@shared/lib/ui-bridge';
+import { apiRequest } from '@shared/lib/api';
 import { getBoostStatus } from '@shared/lib/boostStatus';
 
 const StorePage: React.FC = () => {
