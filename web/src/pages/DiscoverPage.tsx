@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useMatchmaking } from '@shared/hooks/useMatchmaking';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIcon, SlidersHorizontal, Sparkles, RefreshCw, ChevronRight, Crown, Gem, MessageCircle, CirclePlay, LayoutGrid, Bell, ShoppingBag } from 'lucide-react';
+import { ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIcon, SlidersHorizontal, Sparkles, RefreshCw, ChevronRight, Crown, Gem, MessageCircle, PlayCircle, LayoutGrid, Bell, ShoppingBag } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
 import FilterModal from '../components/FilterModal';
@@ -343,7 +343,7 @@ const DiscoverPage: React.FC = () => {
             title="Stories"
             aria-label="Stories"
           >
-            <CirclePlay size={18} />
+            <PlayCircle size={18} />
           </button>
 
           <button
