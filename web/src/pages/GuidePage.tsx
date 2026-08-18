@@ -345,6 +345,16 @@ const GuidePage: React.FC = () => {
                 </div>
               </div>
 
+              <div className="absolute top-6 right-6 z-30">
+                <button
+                  onClick={(e) => { e.stopPropagation(); navigate(`/venue/${venue.id}`, { state: { from: '/guide', venue } }); }}
+                  className="w-10 h-10 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-xl shadow-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all group/btn"
+                  title="Voir les détails"
+                >
+                  <ChevronRight size={20} className="group-hover/btn:translate-x-0.5 transition-transform" />
+                </button>
+              </div>
+
               <div className="absolute bottom-6 left-8 right-8">
                 <div className="flex items-center gap-2 text-primary-light font-medium text-[10px] uppercase tracking-prestige mb-2">
                   <MapPin size={12} className="text-primary" />
