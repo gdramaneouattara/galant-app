@@ -6,6 +6,15 @@ import { useAuth } from '../context/AuthContext';
 
 const APPS = [
   {
+    titleKey: 'partner_discovery',
+    subtitleKey: 'partner_discovery_subtitle',
+    href: '/partner-discovery',
+    icon: MapPin,
+    color: 'text-rose-600',
+    bg: 'bg-rose-50 dark:bg-rose-600/10',
+    highlight: 'ROSE' as const,
+  },
+  {
     titleKey: 'market',
     subtitleKey: 'market_subtitle',
     href: '/market',
@@ -21,15 +30,6 @@ const APPS = [
     icon: Shield,
     color: 'text-blue-600',
     bg: 'bg-blue-50 dark:bg-blue-600/10',
-    highlight: 'ROSE' as const,
-  },
-  {
-    titleKey: 'partner_discovery',
-    subtitleKey: 'partner_discovery_subtitle',
-    href: '/partner-discovery',
-    icon: MapPin,
-    color: 'text-rose-600',
-    bg: 'bg-rose-50 dark:bg-rose-600/10',
     highlight: 'ROSE' as const,
   },
 ];
