@@ -1,32 +1,31 @@
-# Guide Galant : Conseil Conciergerie (Partenaires GPS)
+# Rétablissement du Sélecteur Guide/Agenda
 
-Ce plan vise à informer les utilisateurs de l'existence de l'outil "Partenaires autour de moi" (onglet Apps) lorsqu'ils consultent le Guide, afin d'améliorer leur expérience de proximité.
+Ce plan vise à restaurer la possibilité de basculer entre le Guide et l'Agenda via un bouton de sélection unique, tout en gardant le Guide comme vue prioritaire par défaut.
 
 ## Proposed Changes
 
-### [Web Mobile] Interface du Guide
+### [Web Mobile] Navigation & Expérience
 
-#### [MODIFY] [GuidePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/GuidePage.tsx)
-- **Ajout d'une bannière informative** :
-    - Position : Juste en dessous de la barre de recherche et au-dessus de la grille des lieux.
-    - Design : Style "Conciergerie Privée" (fond sombre ou ambre léger, bordure raffinée).
-    - Icône : `MapPin` (Géo-localisation).
-- **Contenu du message (FR)** :
-    - Titre : *"À proximité ?"*
-    - Corps : *"Pour découvrir les établissements les plus proches de votre position actuelle, utilisez notre outil intelligent dans l'onglet Apps."*
-- **Action** :
-    - Bouton : *"Voir les Partenaires"*.
-    - Destination : Redirection vers `/apps`.
+#### [MODIFY] [ExperiencesPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ExperiencesPage.tsx)
+- **Priorité Guide** : Changer l'état initial `activeTab` de `AGENDA` vers **`GUIDE`**.
+- **Impact** : L'utilisateur voit les établissements dès le chargement, mais conserve le bouton pour switcher vers les événements.
+
+#### [MODIFY] [App.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/App.tsx)
+- **Routage Unifié** :
+    - Dans la barre du bas (`MobileNav`), pointer le lien "Guide" vers `/experiences` (au lieu de `/guide`).
+    - Dans le menu du haut (`Header`), faire de même pour le lien "Guide".
+- **Impact** : Toutes les entrées "Guide" mènent désormais vers le composant qui possède le sélecteur Guide/Agenda.
 
 ## User Review Required
 
-> [!TIP]
-> **Expérience Utilisateur** : Cette bannière agira comme un guide humain (un concierge) qui suggère une meilleure option à l'utilisateur, ce qui renforce le côté haut de gamme du service.
+> [!NOTE]
+> **Expérience Utilisateur** : Cette approche est la plus ergonomique. Elle donne l'impression d'un seul grand univers "Sorties" où l'on choisit son mode de vue (Lieux ou Événements) via le bouton en haut, tout en respectant votre consigne de mettre le Guide en avant.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Ouvrir le **Guide Galant**.
-2.  Vérifier que le message de conseil apparaît clairement entre la recherche et la liste des lieux.
-3.  Cliquer sur le bouton d'action et vérifier qu'il redirige bien vers la page **Apps**.
-4.  Vérifier que le message est bien traduit si l'utilisateur change la langue de l'app.
+1.  Cliquer sur l'onglet **Guide** dans la barre du bas.
+2.  Vérifier que la liste des établissements (Guide) s'affiche immédiatement.
+3.  Vérifier que le sélecteur (bouton bascule) est présent en haut de l'écran.
+4.  Cliquer sur **Agenda** dans ce sélecteur : vérifier que la liste des événements se charge.
+5.  Vérifier que l'Agenda n'a pas disparu des menus principaux.

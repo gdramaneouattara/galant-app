@@ -155,7 +155,7 @@ const MobileNav: React.FC = () => {
         <span className="text-[9px] font-black uppercase tracking-tighter">{t('messages')}</span>
       </Link>
 
-      <Link to="/guide" className="flex flex-col items-center gap-1 text-slate-400 group">
+      <Link to="/experiences" className="flex flex-col items-center gap-1 text-slate-400 group">
         <div className="p-1 group-hover:text-primary transition-colors">
           <Compass size={22} />
         </div>
@@ -197,9 +197,8 @@ const Header = () => {
           <nav className="hidden md:flex gap-8 font-bold text-sm text-slate-500 dark:text-slate-400">
             <Link to="/" className="hover:text-primary transition-colors">{t('discover')}</Link>
             <Link to="/matches" className="hover:text-primary transition-colors">{t('messages')}</Link>
-            <Link to="/guide" className="hover:text-primary transition-colors">Guide</Link>
+            <Link to="/experiences" className="hover:text-primary transition-colors">Guide</Link>
             <Link to="/apps" className="hover:text-primary transition-colors">{t('apps')}</Link>
-            <Link to="/experiences" className="hover:text-primary transition-colors">{t('agenda')}</Link>
             <Link to="/premium" className="text-amber-500 hover:text-amber-600 transition-colors flex items-center gap-1">
               <Crown size={14} fill="currentColor" />
               Premium
