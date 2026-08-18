@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { apiRequest } from '@shared/lib/api';
 import {
   Search, ShieldCheck, Gem, Star, Ban,
-  RotateCcw, Crown
+  RotateCcw, Crown, UserPlus
 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 
@@ -16,6 +16,7 @@ interface AdminUser {
   is_verified: boolean;
   is_premium: boolean;
   is_vip?: boolean;
+  can_invite?: boolean;
   suspended_at: string | null;
   galanterie_score: number;
   created_at: string;
@@ -191,6 +192,13 @@ const AdminUsers: React.FC = () => {
                         title="VIP"
                       >
                         <Crown size={18} />
+                      </button>
+                      <button
+                        onClick={() => handleToggle(u.id, 'can_invite', u.can_invite)}
+                        className={`p-2 rounded-xl transition-all ${u.can_invite ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-slate-50 dark:bg-white/5 text-slate-300 dark:text-slate-700 hover:text-emerald-500'}`}
+                        title="Programme Ambassadeur"
+                      >
+                        <UserPlus size={18} />
                       </button>
                       <button
                         onClick={() => handleToggle(u.id, 'suspended_at', u.suspended_at)}
