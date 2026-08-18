@@ -10,6 +10,8 @@ interface Props {
   type: 'SUPER_LIKE' | 'DIRECT_MESSAGE' | 'LIKES_INBOX_2H' | 'DISCOVER_GRID_UNLOCK' | 'DISCOVER_FILTERS_UNLOCK';
   targetId?: string;
   userName?: string;
+  durationDays?: number;
+  price?: number;
   onSuccess: () => void;
 }
 
@@ -26,11 +28,12 @@ const copy = {
     dm: 'Message privé',
     likesBody: "Accédez à l'intégralité de vos likes reçus pendant 2 heures et trouvez votre match immédiatement.",
     galleryBody: 'Basculez sur la vue en grille pour parcourir plus de profils avec une efficacité maximale.',
-    filtersBody: 'Ciblez vos rencontres avec précision par ville et par âge pendant 3 jours.',
+    filtersBody: 'Ciblez vos rencontres avec précision par ville et par âge.',
     dmPrefix: 'Débloquez une discussion directe avec',
     price: 'Tarif unique',
     pay: 'Payer par Carte ou Mobile Money',
-    secured: 'Transaction sécurisée par Paystack'
+    secured: 'Transaction sécurisée par Paystack',
+    validity: (days: number) => `Valable ${days} jour${days > 1 ? 's' : ''}`
   },
   en: {
     error: 'Error',
@@ -44,15 +47,16 @@ const copy = {
     dm: 'Private message',
     likesBody: 'Access all your received likes for 2 hours and find your match immediately.',
     galleryBody: 'Switch to grid view to browse all profiles efficiently and without limits.',
-    filtersBody: 'Target your matches precisely by city and age for 3 days.',
+    filtersBody: 'Target your matches precisely by city and age.',
     dmPrefix: 'Unlock a direct conversation with',
     price: 'Single price',
     pay: 'Pay by Card or Mobile Money',
-    secured: 'Secure transaction by Paystack'
+    secured: 'Secure transaction by Paystack',
+    validity: (days: number) => `Valid for ${days} day${days > 1 ? 's' : ''}`
   }
 };
 
-const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targetId, userName, onSuccess }) => {
+const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targetId, userName, durationDays, price, onSuccess }) => {
   const { purchaseWithPaystack, purchaseLoading } = useSubscription();
   const { language } = useAuth();
   const c = copy[language] || copy.fr;
@@ -61,7 +65,7 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
 
   const handlePurchase = async () => {
     try {
-      const amount = type === 'LIKES_INBOX_2H' || type === 'DISCOVER_GRID_UNLOCK' ? 1000 : 500;
+      const amount = price || (type === 'LIKES_INBOX_2H' || type === 'DISCOVER_GRID_UNLOCK' ? 1000 : 500);
       const ok = await purchaseWithPaystack(type, amount, targetId, {
         targetName: userName || (type === 'DISCOVER_GRID_UNLOCK' ? c.galleryTarget : type === 'DISCOVER_FILTERS_UNLOCK' ? c.filtersTarget : c.likesTarget)
       });
@@ -123,7 +127,14 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
 
           <div className="bg-slate-50 dark:bg-white/5 p-4 rounded-2xl">
             <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{c.price}</span>
-            <p className="text-2xl font-black text-slate-900 dark:text-white">{isLikesInbox || isGridUnlock ? '1 000' : '500'} F CFA</p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white">
+              {price || (isLikesInbox || isGridUnlock ? '1 000' : '500')} F CFA
+            </p>
+            {durationDays && (
+               <p className="text-[10px] font-black text-primary uppercase tracking-widest mt-1">
+                 {c.validity(durationDays)}
+               </p>
+            )}
           </div>
 
           <button
