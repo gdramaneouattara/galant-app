@@ -33,6 +33,16 @@ const ChatPage: React.FC = () => {
   const [translations, setTranslations] = useState<Record<string, string>>({});
   const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      const scrollHeight = textareaRef.current.scrollHeight;
+      textareaRef.current.style.height = Math.min(scrollHeight, 150) + 'px';
+    }
+  }, [inputText]);
 
   // Audio Recording State
   const [isRecording, setIsRecording] = useState(false);
@@ -598,8 +608,8 @@ const ChatPage: React.FC = () => {
           </button>
         )}
 
-        <form onSubmit={handleSend} className="flex gap-2 items-center w-full">
-          <div className="flex gap-0.5 flex-shrink-0">
+        <form onSubmit={handleSend} className="flex gap-2 items-end w-full">
+          <div className="flex gap-0.5 flex-shrink-0 mb-1.5">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
@@ -628,18 +638,25 @@ const ChatPage: React.FC = () => {
             <input type="file" ref={videoInputRef} className="hidden" accept="video/*" onChange={(e) => handleFileUpload(e, 'VIDEO')} />
           </div>
 
-          <input
-            type="text"
+          <textarea
+            ref={textareaRef}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                void handleSend(e as any);
+              }
+            }}
             disabled={uploading}
             placeholder={uploading ? "Envoi..." : t('write_message')}
-            className="flex-1 min-w-0 bg-slate-50 dark:bg-slate-800 border-none px-4 py-3 md:py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium disabled:opacity-50 text-sm md:text-base text-slate-900 dark:text-white"
+            rows={1}
+            className="flex-1 min-w-0 bg-slate-50 dark:bg-slate-800 border-none px-4 py-3.5 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium disabled:opacity-50 text-sm md:text-base text-slate-900 dark:text-white resize-none max-h-[150px] overflow-y-auto no-scrollbar"
           />
           <button
             type="submit"
             disabled={(!inputText.trim() && !uploading) || sending || uploading}
-            className="w-11 h-11 bg-primary text-white rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shadow-red-200 disabled:opacity-30 flex-shrink-0 z-10"
+            className="w-11 h-11 bg-primary text-white rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shadow-red-200 disabled:opacity-30 flex-shrink-0 z-10 mb-0.5"
           >
             {uploading ? <Loader2 size={18} className="animate-spin" /> : <Send size={20} fill="white" />}
           </button>
