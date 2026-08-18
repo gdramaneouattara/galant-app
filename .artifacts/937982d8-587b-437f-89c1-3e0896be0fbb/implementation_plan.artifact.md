@@ -1,35 +1,40 @@
-# Correction de la navigation : Retour vers le Guide
+# Restriction du Programme Ambassadeur (Invitations Sélectives)
 
-Ce plan vise à corriger le bouton "RETOUR" de la page d'inscription partenaire pour qu'il ramène l'utilisateur à sa page d'origine (notamment le Guide), au lieu de le renvoyer systématiquement vers la page de connexion.
+Ce plan vise à restreindre la fonctionnalité "Inviter un ami" aux seuls membres autorisés par l'administrateur, tout en affichant l'option comme un privilège exclusif à débloquer pour les autres membres.
 
 ## Proposed Changes
 
-### [Web Mobile] Navigation & Expérience
+### [Server] Administration des Droits
 
-#### [MODIFY] [PartnerSignupPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/PartnerSignupPage.tsx)
-- Importer `useLocation` de `react-router-dom`.
-- Utiliser `location.state?.from` pour déterminer la destination du bouton "RETOUR".
-- Utiliser `navigate(-1)` comme alternative ou un fallback vers `/auth`.
+#### [MODIFY] [adminController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/adminController.js)
+- La fonction `toggleUserStatus` est déjà capable de mettre à jour n'importe quel champ du profil. Aucune modification n'est requise côté serveur, mais nous utiliserons le champ `can_invite`.
 
-#### [MODIFY] [GuidePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/GuidePage.tsx)
-- Mettre à jour l'action du bouton "Inscrire mon établissement" pour passer l'URL actuelle (`/experiences`) dans le state de navigation.
+### [Web Mobile] Espace Admin
 
-#### [MODIFY] [AppsPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/AppsPage.tsx)
-- Ajouter le state `{ from: '/apps' }` au lien vers l'inscription partenaire.
+#### [MODIFY] [AdminUsers.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/admin/AdminUsers.tsx)
+- Ajouter une nouvelle colonne ou une icône d'action "Ambassadeur" (icône `UserPlus` ou `Share2`).
+- Permettre à l'administrateur de basculer le flag `can_invite` pour chaque membre.
 
-#### [MODIFY] [AuthPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/AuthPage.tsx)
-- Ajouter le state `{ from: '/auth' }` lors de la navigation vers l'inscription partenaire.
+### [Web Mobile] Interface Profil
+
+#### [MODIFY] [ProfilePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ProfilePage.tsx)
+- **Logique d'affichage** : Vérifier la valeur de `profile.can_invite`.
+- **État Verrouillé** : Si `can_invite` est à `false` :
+    - Griser la carte "Inviter un Ami".
+    - Ajouter une icône de cadenas 🔒.
+    - Modifier le texte pour indiquer que le programme est sélectif (ex: *"Programme Ambassadeur : Sur invitation uniquement"*).
+    - Désactiver le clic (copie du lien).
+- **État Activé** : Affichage normal et fonctionnel pour les ambassadeurs choisis.
 
 ## User Review Required
 
-> [!NOTE]
-> **Expérience Utilisateur** : Cette correction permet de conserver le contexte de navigation de l'utilisateur. S'il consultait le Guide et a voulu voir les conditions partenaires, il pourra y retourner exactement là où il en était.
+> [!IMPORTANT]
+> **Expérience Utilisateur** : En laissant la carte visible mais verrouillée, vous incitez les membres les plus actifs à vous contacter pour rejoindre le programme, ce qui crée une dynamique de "club privé".
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Ouvrir le **Guide Galant**.
-2.  Cliquer sur "Inscrire mon établissement".
-3.  Sur la page d'inscription, cliquer sur le bouton "RETOUR".
-4.  Vérifier que l'on revient bien sur le **Guide** (et non sur la page de connexion).
-5.  Répéter le test depuis l'onglet **Apps**.
+1.  **Admin** : Ouvrir la gestion des membres, activer le statut "Ambassadeur" pour un compte de test.
+2.  **Membre Classique** : Se connecter avec un compte non-autorisé, vérifier que la carte d'invitation est grise et verrouillée.
+3.  **Ambassadeur** : Vérifier que la carte redevient colorée et que le lien d'invitation est copiable.
+4.  **Admin** : Désactiver le statut et vérifier le verrouillage immédiat côté membre.

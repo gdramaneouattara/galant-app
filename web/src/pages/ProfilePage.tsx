@@ -455,24 +455,52 @@ const ProfilePage: React.FC = () => {
           </div>
 
           {/* Invitation Card */}
-          <div className="bg-slate-900 dark:bg-slate-800 p-8 rounded-[2.5rem] text-white flex items-center justify-between group hover:scale-[1.01] transition-all cursor-pointer shadow-2xl shadow-slate-900/20 dark:shadow-none"
-               onClick={() => {
-                 const url = `https://galant.app/invite/${user.uid}`;
-                 navigator.clipboard.writeText(url);
-                 showAlert(t('link_copied'), t('invite_link_copied_body'));
-               }}>
-            <div className="flex items-center gap-6">
-              <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center text-primary group-hover:rotate-12 transition-transform">
-                <Share2 size={32} />
+          <div
+            className={`p-8 rounded-[2.5rem] flex items-center justify-between group transition-all shadow-2xl relative overflow-hidden ${
+              profile.can_invite
+                ? 'bg-slate-900 dark:bg-slate-800 text-white cursor-pointer hover:scale-[1.01]'
+                : 'bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 opacity-80 cursor-default'
+            }`}
+            onClick={() => {
+              if (!profile.can_invite) {
+                showAlert('Programme Ambassadeur 💎', 'Ce privilège est réservé aux partenaires exclusifs de Galant. Collaborez avec nous pour débloquer cette option.');
+                return;
+              }
+              const url = `https://galant.app/invite/${user.uid}`;
+              navigator.clipboard.writeText(url);
+              showAlert(t('link_copied'), t('invite_link_copied_body'));
+            }}
+          >
+            <div className="flex items-center gap-6 relative z-10">
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-transform ${
+                profile.can_invite ? 'bg-white/10 text-primary group-hover:rotate-12' : 'bg-slate-200 dark:bg-white/5 text-slate-400'
+              }`}>
+                {profile.can_invite ? <Share2 size={32} /> : <Lock size={32} />}
               </div>
               <div className="text-left">
-                <p className="text-lg font-serif italic uppercase tracking-tighter leading-none mb-1">{labels.inviteTitle} 🌹</p>
-                <p className="text-sm font-bold text-slate-400 dark:text-slate-500">{labels.inviteSubtitle}</p>
+                <p className={`text-lg font-serif italic uppercase tracking-tighter leading-none mb-1 ${
+                  profile.can_invite ? 'text-white' : 'text-slate-400 dark:text-slate-500'
+                }`}>
+                  {profile.can_invite ? (labels.inviteTitle + ' 🌹') : 'Devenir Ambassadeur'}
+                </p>
+                <p className={`text-sm font-bold ${
+                  profile.can_invite ? 'text-slate-400 dark:text-slate-500' : 'text-slate-400 dark:text-slate-600'
+                }`}>
+                  {profile.can_invite
+                    ? labels.inviteSubtitle
+                    : 'Programme sur invitation uniquement'}
+                </p>
               </div>
             </div>
-            <div className="bg-white/10 p-3 rounded-full group-hover:bg-primary transition-colors">
-              <ChevronRight size={24} />
-            </div>
+            {profile.can_invite ? (
+              <div className="bg-white/10 p-3 rounded-full group-hover:bg-primary transition-colors relative z-10">
+                <ChevronRight size={24} />
+              </div>
+            ) : (
+              <div className="bg-slate-200 dark:bg-white/5 p-3 rounded-full text-slate-300 dark:text-slate-700 relative z-10">
+                <Lock size={20} />
+              </div>
+            )}
           </div>
         </div>
 
