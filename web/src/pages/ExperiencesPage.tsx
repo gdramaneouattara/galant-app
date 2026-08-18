@@ -46,19 +46,6 @@ const ExperiencesPage: React.FC = () => {
           }`}
         >
           <button
-            onClick={() => setActiveTab('AGENDA')}
-            className={`flex items-center gap-2 px-5 sm:px-8 py-3 rounded-full text-xs font-medium uppercase tracking-prestige transition-all ${
-              activeTab === 'AGENDA'
-                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
-                : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
-            }`}
-          >
-            <Calendar size={16} />
-            <span className={`${isTabRailCompact ? 'max-w-0 opacity-0 sm:max-w-none sm:opacity-100' : 'max-w-20 opacity-100'} overflow-hidden transition-all duration-300`}>
-              Agenda
-            </span>
-          </button>
-          <button
             onClick={() => setActiveTab('GUIDE')}
             className={`flex items-center gap-2 px-5 sm:px-8 py-3 rounded-full text-xs font-medium uppercase tracking-prestige transition-all ${
               activeTab === 'GUIDE'
@@ -69,6 +56,19 @@ const ExperiencesPage: React.FC = () => {
             <MapPin size={16} />
             <span className={`${isTabRailCompact ? 'max-w-0 opacity-0 sm:max-w-none sm:opacity-100' : 'max-w-16 opacity-100'} overflow-hidden transition-all duration-300`}>
               Guide
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('AGENDA')}
+            className={`flex items-center gap-2 px-5 sm:px-8 py-3 rounded-full text-xs font-medium uppercase tracking-prestige transition-all ${
+              activeTab === 'AGENDA'
+                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
+                : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+            }`}
+          >
+            <Calendar size={16} />
+            <span className={`${isTabRailCompact ? 'max-w-0 opacity-0 sm:max-w-none sm:opacity-100' : 'max-w-20 opacity-100'} overflow-hidden transition-all duration-300`}>
+              Agenda
             </span>
           </button>
         </div>

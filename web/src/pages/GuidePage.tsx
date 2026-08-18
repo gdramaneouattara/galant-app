@@ -282,7 +282,7 @@ const GuidePage: React.FC = () => {
       </div>
 
       {/* Barre de Recherche et Filtres */}
-      <div className="flex flex-col md:flex-row gap-6 items-center justify-between sticky top-24 z-40 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-lg p-6 rounded-[2.5rem] border border-slate-200 dark:border-white/10 shadow-xl shadow-slate-200/50 dark:shadow-none">
+      <div className="flex flex-col md:flex-row gap-6 items-center justify-between my-8 bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-200 dark:border-white/10 shadow-xl shadow-slate-200/50 dark:shadow-none">
         <div className="relative flex-1 w-full group">
           <Search size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-primary transition-colors" />
           <input
