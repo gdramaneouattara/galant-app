@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  type: 'SUPER_LIKE' | 'DIRECT_MESSAGE' | 'LIKES_INBOX_2H' | 'DISCOVER_GRID_UNLOCK';
+  type: 'SUPER_LIKE' | 'DIRECT_MESSAGE' | 'LIKES_INBOX_2H' | 'DISCOVER_GRID_UNLOCK' | 'DISCOVER_FILTERS_UNLOCK';
   targetId?: string;
   userName?: string;
   onSuccess: () => void;
@@ -18,12 +18,15 @@ const copy = {
     error: 'Erreur',
     galleryTarget: 'Accès Galerie',
     likesTarget: 'Boite de Likes',
+    filtersTarget: 'Pass Filtres',
     roses: 'Offrir des Roses',
     likes: 'Débloquer les Likes',
     gallery: 'Accès Galerie',
+    filters: 'Débloquer les Filtres',
     dm: 'Message privé',
     likesBody: "Accédez à l'intégralité de vos likes reçus pendant 2 heures et trouvez votre match immédiatement.",
     galleryBody: 'Basculez sur la vue en grille pour parcourir plus de profils avec une efficacité maximale.',
+    filtersBody: 'Ciblez vos rencontres avec précision par ville et par âge pendant 3 jours.',
     dmPrefix: 'Débloquez une discussion directe avec',
     price: 'Tarif unique',
     pay: 'Payer par Carte ou Mobile Money',
@@ -33,12 +36,15 @@ const copy = {
     error: 'Error',
     galleryTarget: 'Gallery Access',
     likesTarget: 'Likes Inbox',
+    filtersTarget: 'Filters Pass',
     roses: 'Send Roses',
     likes: 'Unlock Likes',
     gallery: 'Gallery Access',
+    filters: 'Unlock Filters',
     dm: 'Private message',
     likesBody: 'Access all your received likes for 2 hours and find your match immediately.',
     galleryBody: 'Switch to grid view to browse all profiles efficiently and without limits.',
+    filtersBody: 'Target your matches precisely by city and age for 3 days.',
     dmPrefix: 'Unlock a direct conversation with',
     price: 'Single price',
     pay: 'Pay by Card or Mobile Money',
@@ -57,7 +63,7 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
     try {
       const amount = type === 'LIKES_INBOX_2H' || type === 'DISCOVER_GRID_UNLOCK' ? 1000 : 500;
       const ok = await purchaseWithPaystack(type, amount, targetId, {
-        targetName: userName || (type === 'DISCOVER_GRID_UNLOCK' ? c.galleryTarget : c.likesTarget)
+        targetName: userName || (type === 'DISCOVER_GRID_UNLOCK' ? c.galleryTarget : type === 'DISCOVER_FILTERS_UNLOCK' ? c.filtersTarget : c.likesTarget)
       });
       if (ok) {
         onSuccess();
@@ -71,8 +77,9 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
   const isSuperLike = type === 'SUPER_LIKE';
   const isLikesInbox = type === 'LIKES_INBOX_2H';
   const isGridUnlock = type === 'DISCOVER_GRID_UNLOCK';
+  const isFiltersUnlock = type === 'DISCOVER_FILTERS_UNLOCK';
 
-  const title = isSuperLike ? c.roses : isLikesInbox ? c.likes : isGridUnlock ? c.gallery : c.dm;
+  const title = isSuperLike ? c.roses : isLikesInbox ? c.likes : isGridUnlock ? c.gallery : isFiltersUnlock ? c.filters : c.dm;
 
   return (
     <div className="fixed inset-0 z-[220] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
@@ -88,11 +95,13 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
             isSuperLike ? 'bg-rose-50 dark:bg-rose-900/20 shadow-rose-100 dark:shadow-none' :
             isLikesInbox ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-500 shadow-amber-100 dark:shadow-none' :
             isGridUnlock ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 shadow-indigo-100 dark:shadow-none' :
+            isFiltersUnlock ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 shadow-purple-100 dark:shadow-none' :
             'bg-blue-50 dark:bg-blue-900/20 text-blue-500 shadow-blue-100 dark:shadow-none'
           }`}>
             {isSuperLike ? <span className="text-4xl">🌹</span> :
              isLikesInbox ? <Heart size={40} fill="currentColor" /> :
              isGridUnlock ? <LayoutGrid size={40} /> :
+             isFiltersUnlock ? <SlidersHorizontal size={40} /> :
              <MessageCircle size={40} fill="currentColor" />}
           </div>
 
@@ -105,6 +114,8 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
                 ? c.likesBody
                 : isGridUnlock
                 ? c.galleryBody
+                : isFiltersUnlock
+                ? c.filtersBody
                 : <>{c.dmPrefix} <span className="text-slate-900 dark:text-white font-bold">{userName}</span>.</>
               }
             </p>

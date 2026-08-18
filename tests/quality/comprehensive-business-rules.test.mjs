@@ -132,7 +132,7 @@ test('Rules: Discovery header exposes notifications with compact title and grid/
   const storiesActionIndex = webDiscover.indexOf("navigate('/stories')");
   const galleryActionIndex = webDiscover.indexOf('onClick={handleGridTransition}');
   const notificationsActionIndex = webDiscover.indexOf("navigate('/notifications'");
-  const filterActionIndex = webDiscover.indexOf('setIsFilterOpen(true)');
+  const filterActionIndex = webDiscover.indexOf('aria-label={labels.filters}');
 
   assert.ok(storeActionIndex > -1);
   assert.ok(storiesActionIndex > storeActionIndex);
