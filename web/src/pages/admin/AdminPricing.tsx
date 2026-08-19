@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { apiRequest } from '@shared/lib/api';
-import { Save, RefreshCw, DollarSign, Gem, Rocket, MessageSquare, Heart, Film, Sparkles, LayoutGrid, Users, SlidersHorizontal, Clock } from 'lucide-react';
+import { Save, RefreshCw, DollarSign, Gem, Rocket, MessageSquare, Heart, Film, Sparkles, LayoutGrid, Users, SlidersHorizontal as FiltersIcon, Clock } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 
 const AdminPricing: React.FC = () => {
@@ -104,7 +104,7 @@ const AdminPricing: React.FC = () => {
               { id: 'LIKES_INBOX_2H', label: 'Déblocage Likes (2h)', icon: Heart },
               { id: 'DISCOVER_GRID_UNLOCK', label: 'Déblocage Galerie (Prix)', icon: LayoutGrid },
               { id: 'GRID_QUOTA', label: 'Galerie : Nombre de profils', icon: Users },
-              { id: 'DISCOVER_FILTERS_UNLOCK', label: 'Déblocage Filtres (Prix)', icon: SlidersHorizontal },
+              { id: 'DISCOVER_FILTERS_UNLOCK', label: 'Déblocage Filtres (Prix)', icon: FiltersIcon },
               { id: 'DISCOVER_FILTERS_DAYS', label: 'Filtres : Durée (Jours)', icon: Clock }
             ].map(item => (
               <div key={item.id} className="space-y-1">

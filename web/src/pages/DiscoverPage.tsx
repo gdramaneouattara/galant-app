@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useMatchmaking } from '@shared/hooks/useMatchmaking';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIcon, SlidersHorizontal, Sparkles, RefreshCw, ChevronRight, Crown, Gem, MessageCircle, CirclePlay, LayoutGrid, Bell, ShoppingBag } from 'lucide-react';
+import { ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIcon, SlidersHorizontal as FiltersIcon, Sparkles, RefreshCw, ChevronRight, Crown, Gem, MessageCircle, PlayCircle, LayoutGrid, Bell, ShoppingBag as StoreIcon } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
 import FilterModal from '../components/FilterModal';
@@ -334,7 +334,7 @@ const DiscoverPage: React.FC = () => {
             title="Store"
             aria-label="Store"
           >
-            <ShoppingBag size={18} />
+            <StoreIcon size={18} />
           </button>
 
           <button
@@ -343,7 +343,7 @@ const DiscoverPage: React.FC = () => {
             title="Stories"
             aria-label="Stories"
           >
-            <CirclePlay size={18} />
+            <PlayCircle size={18} />
           </button>
 
           <button
@@ -385,7 +385,7 @@ const DiscoverPage: React.FC = () => {
             {!(myProfile?.is_premium || (myProfile?.filters_unlocked_until && new Date(myProfile.filters_unlocked_until) > new Date())) && (
               <Lock size={8} className="absolute top-1 right-1 text-slate-400" />
             )}
-            <SlidersHorizontal size={18} className={isFilterActive ? 'animate-pulse' : 'group-hover:rotate-12 transition-transform'} />
+            <FiltersIcon size={18} className={isFilterActive ? 'animate-pulse' : 'group-hover:rotate-12 transition-transform'} />
           </button>
         </div>
       </div>

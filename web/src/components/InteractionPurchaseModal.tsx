@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, CreditCard, MessageCircle, Heart, LayoutGrid, SlidersHorizontal } from 'lucide-react';
+import { X, CreditCard, MessageCircle, Heart, LayoutGrid, SlidersHorizontal as FiltersIcon } from 'lucide-react';
 import { useSubscription } from '@shared/hooks/useSubscription';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { useAuth } from '../context/AuthContext';
@@ -105,7 +105,7 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
             {isSuperLike ? <span className="text-4xl">🌹</span> :
              isLikesInbox ? <Heart size={40} fill="currentColor" /> :
              isGridUnlock ? <LayoutGrid size={40} /> :
-             isFiltersUnlock ? <SlidersHorizontal size={40} /> :
+             isFiltersUnlock ? <FiltersIcon size={40} /> :
              <MessageCircle size={40} fill="currentColor" />}
           </div>
 
