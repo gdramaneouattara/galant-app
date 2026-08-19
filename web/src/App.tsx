@@ -220,6 +220,7 @@ const AppContent: React.FC = () => {
   const navigate = useNavigate();
   const isAuthPage = location.pathname === '/auth';
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isChatRoute = location.pathname.startsWith('/chat');
   const isOnboardingPage = location.pathname === '/onboarding';
   const isWelcomePage = location.pathname === '/' && !user;
 
@@ -265,7 +266,7 @@ const AppContent: React.FC = () => {
         <WelcomeVernissage onComplete={() => void completeVernissage()} />
       )}
 
-      <main className={`relative z-10 flex-1 w-full ${(isAuthPage || isWelcomePage || isAdminRoute || isFakeCallActive) ? '' : 'max-w-6xl mx-auto p-4 md:p-8 mb-20 md:mb-0'}`}>
+      <main className={`relative z-10 flex-1 w-full ${(isAuthPage || isWelcomePage || isAdminRoute || isFakeCallActive || isChatRoute) ? '' : 'max-w-6xl mx-auto p-4 md:p-8 mb-20 md:mb-0'}`}>
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<DiscoverPage />} />

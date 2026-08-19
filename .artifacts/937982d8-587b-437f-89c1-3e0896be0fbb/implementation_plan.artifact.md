@@ -1,38 +1,31 @@
-# Adoption de la Typographie "Facebook Style" (Version Web Uniquement)
+# Interface Chat Pleine Largeur (Suppression des marges)
 
-Ce plan vise à supprimer l'aspect "fantaisiste" de la version Web de Galant en remplaçant les polices actuelles par le standard sobre et efficace de Facebook (Meta).
-
-## Diagnostic
-- **Actuel** : Utilisation de `Playfair Display` (Sérif décoratif) sur les titres et `Inter` ailleurs.
-- **Cible** : Une interface 100% propre utilisant les polices système (San Francisco, Roboto, Segoe UI) pour un rendu "App Native" ultra-lisible.
+Ce plan vise à rendre l'interface de discussion plus immersive en supprimant les marges latérales externes et internes qui limitent l'espace de lecture sur la version Web.
 
 ## Proposed Changes
 
-### [Web] Configuration des polices
+### [Web Mobile] Mise en page globale
 
-#### [MODIFY] [tailwind.config.js](file:///C:/Users/UTILISATEUR/galant-app/web/tailwind.config.js)
-- Redéfinir `sans` et `serif` pour pointer vers le stack système de Facebook :
-  `"Optimistic Text", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`.
-- **Note** : En redéfinissant `serif` avec une police sans empattement, nous neutralisons instantanément l'aspect "fantaisiste" sans risquer de casser la mise en page.
+#### [MODIFY] [App.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/App.tsx)
+- **Déverrouillage du Layout** : Ajouter la route `/chat` à la liste des exceptions qui ne subissent pas le `max-w-6xl` et le `p-4` global.
+- **Impact** : Le conteneur du chat pourra utiliser 100% de la largeur du navigateur.
 
-#### [MODIFY] [index.html](file:///C:/Users/UTILISATEUR/galant-app/web/index.html)
-- Supprimer les liens Google Fonts vers `Playfair Display`.
-- Conserver `Inter` comme option de secours ou passer totalement en système.
-
-### [Web] Nettoyage du Design
-
-#### [MODIFY] Tous les fichiers .tsx (web/src/pages/)
-- Supprimer les classes `italic` sur les titres (H1, H2, H3) qui étaient utilisées pour donner un style "Magazine".
-- Remplacer les classes `font-serif` par `font-sans` là où c'est nécessaire pour une uniformité totale.
+#### [MODIFY] [ChatPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ChatPage.tsx)
+- **Élargissement du composant** :
+    - Remplacer `max-w-2xl mx-auto` par `w-full`.
+    - Ajuster la hauteur de `h-[80vh]` à `h-[calc(100vh-theme(spacing.20))]` pour une meilleure utilisation de l'écran vertical également.
+- **Optimisation des bordures** : Supprimer `rounded-[2.5rem]` et `border` sur les côtés pour un rendu "Edge-to-Edge" (bord à bord) plus moderne.
+- **Raffinage interne** : Réduire les paddings horizontaux (`p-6` -> `p-4`) pour gagner encore plus d'espace pour le texte des messages.
 
 ## User Review Required
 
-> [!IMPORTANT]
-> **Impact Visuel** : L'application passera d'un style "Luxe Classique / Mode" à un style "Luxe Technologique / Professionnel". C'est le style adopté par les plus grandes applications mondiales pour inspirer la sécurité et la solidité.
+> [!TIP]
+> **Rendu Visuel** : Sur ordinateur, le chat sera très large (style Facebook Messenger). Sur mobile, il remplira parfaitement l'écran sans laisser de fines bandes sombres sur les côtés.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  **Vérification Navigation** : S'assurer que les titres dans le Guide et les Messages sont nets et droits.
-2.  **Vérification Profils** : Le nom et l'âge doivent être écrits de manière robuste (non-italique).
-3.  **Vérification Performance** : Constater que la page se charge plus vite sans télécharger les polices externes.
+1.  Ouvrir une discussion sur Web.
+2.  Vérifier que le cadre de discussion touche les bords gauche et droit du navigateur.
+3.  Vérifier que le header (nom du contact) et le footer (saisie message) sont bien alignés sur toute la largeur.
+4.  Vérifier que les autres pages (Profil, Découverte) conservent bien leurs marges de sécurité habituelles.
