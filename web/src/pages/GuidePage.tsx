@@ -67,7 +67,9 @@ const GuidePage: React.FC = () => {
         partnerFallback: 'this partner',
         nearbyTitle: 'Nearby?',
         nearbyBody: 'Discover the most exclusive venues around your current location using our GPS tool.',
-        nearbyCta: 'Open GPS Tool'
+        nearbyCta: 'Open GPS Tool',
+        unavailableTitle: 'Service in Preparation',
+        unavailableBody: 'This feature will be available very soon to enhance your Galant experience.'
       }
     : {
         editorialTitle: 'Guide Galant',
@@ -98,8 +100,15 @@ const GuidePage: React.FC = () => {
         partnerFallback: 'ce partenaire',
         nearbyTitle: 'À proximité ?',
         nearbyBody: 'Découvrez les adresses d\'exception à deux pas de vous en utilisant notre outil de détection GPS.',
-        nearbyCta: 'Ouvrir l\'outil GPS'
+        nearbyCta: 'Ouvrir l\'outil GPS',
+        unavailableTitle: 'Service en préparation',
+        unavailableBody: 'Cette fonctionnalité sera disponible très prochainement pour enrichir votre expérience Galant.'
       };
+
+  const handleLockedAction = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    showAlert(labels.unavailableTitle, labels.unavailableBody);
+  };
 
   useEffect(() => {
     const fetchVenues = async () => {
@@ -384,15 +393,15 @@ const GuidePage: React.FC = () => {
               <div className="mt-auto space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <button
-                    onClick={(event) => { event.stopPropagation(); setSelectedVenue(venue); setIsModalOpen(true); }}
-                    className="py-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-2 hover:bg-black dark:hover:bg-slate-100 transition-all shadow-xl shadow-slate-900/10 dark:shadow-none active:scale-95 group/btn"
+                    onClick={handleLockedAction}
+                    className="py-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-2 opacity-70 hover:opacity-100 transition-all shadow-xl shadow-slate-900/10 dark:shadow-none active:scale-95 group/btn"
                   >
                     <Send size={14} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
                     {labels.propose}
                   </button>
                   <button
-                    onClick={(event) => { event.stopPropagation(); handleYangoRide(venue); }}
-                    className="py-4 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-white/10 text-slate-400 dark:text-slate-500 font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-all active:scale-95"
+                    onClick={handleLockedAction}
+                    className="py-4 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-white/10 text-slate-400 dark:text-slate-500 font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-2 opacity-70 hover:opacity-100 transition-all active:scale-95"
                   >
                     <Car size={16} />
                     Yango
@@ -400,8 +409,8 @@ const GuidePage: React.FC = () => {
                 </div>
 
                 <button
-                  onClick={(event) => { event.stopPropagation(); handleContactVenue(venue); }}
-                  className="w-full py-5 rounded-2xl bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/20 text-primary font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-3 hover:bg-primary dark:hover:bg-rose-500 hover:text-white transition-all group/chat active:scale-95 shadow-lg shadow-rose-500/5 dark:shadow-none"
+                  onClick={handleLockedAction}
+                  className="w-full py-5 rounded-2xl bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/20 text-primary font-medium text-[10px] uppercase tracking-prestige flex items-center justify-center gap-3 opacity-70 hover:opacity-100 transition-all group/chat active:scale-95 shadow-lg shadow-rose-500/5 dark:shadow-none"
                 >
                   <MessageCircle size={18} fill="currentColor" className="opacity-20 group-hover/chat:opacity-100 transition-opacity" />
                   {labels.concierge}

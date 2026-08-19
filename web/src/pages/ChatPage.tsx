@@ -5,7 +5,7 @@ import { db, rtdb, COLLECTIONS, fbStorage } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { ref, onValue } from 'firebase/database';
 import { apiRequest } from '@shared/lib/api';
-import { Send, ChevronLeft, ShieldCheck, Gem, Sparkles, Languages, Loader2, MapPin, Calendar, Image as ImageIcon, Video, Paperclip, Mic, Square, Trash2, ExternalLink, Check, X } from 'lucide-react';
+import { Send, ChevronLeft, ShieldCheck, Gem, Sparkles, Languages, Loader2, MapPin, Calendar, Image as ImageIcon, Video, Paperclip, Mic, Square, Trash2, ExternalLink, Check, X, ShieldAlert } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { compressImageWeb } from '../lib/imageCompression';
 import { CHAT_VIDEO_MAX_DURATION_SECONDS, compressVideoWeb, validateVideoFileWeb, VIDEO_UPLOAD_MAX_BYTES } from '../lib/videoOptimization';
@@ -13,6 +13,7 @@ import { startRecording, stopRecording } from '../lib/audioRecording';
 import { ref as storageRef, uploadBytes, getDownloadURL as getStorageUrl } from 'firebase/storage';
 import OptimizedImage from '../components/OptimizedImage';
 import VoicePlayer from '../components/VoicePlayer';
+import ReportModal from '../components/ReportModal';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 const ChatPage: React.FC = () => {
@@ -32,6 +33,7 @@ const ChatPage: React.FC = () => {
   const videoInputRef = useRef<HTMLInputElement>(null);
   const [translations, setTranslations] = useState<Record<string, string>>({});
   const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -428,6 +430,16 @@ const ChatPage: React.FC = () => {
             {targetUser.isVenue ? targetUser.presenceLabel : targetPresence?.state === 'online' ? t('online') : t('offline')}
           </span>
         </div>
+
+        {!targetUser.isVenue && (
+          <button
+            onClick={() => setIsReportOpen(true)}
+            className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors text-slate-300 dark:text-slate-600 hover:text-red-500"
+            title="Signaler"
+          >
+            <ShieldAlert size={20} />
+          </button>
+        )}
       </div>
 
       {/* Zone des Messages */}
@@ -662,6 +674,15 @@ const ChatPage: React.FC = () => {
           </button>
         </form>
       </div>
+
+      {targetUser && !targetUser.isVenue && (
+        <ReportModal
+          isOpen={isReportOpen}
+          onClose={() => setIsReportOpen(false)}
+          reportedUserId={targetUser.id}
+          userName={targetUser.name}
+        />
+      )}
     </div>
   );
 };
