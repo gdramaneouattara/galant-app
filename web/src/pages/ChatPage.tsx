@@ -411,7 +411,7 @@ const ChatPage: React.FC = () => {
   if (!targetUser) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
 
   return (
-    <div className="max-w-2xl mx-auto bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl shadow-slate-200 dark:shadow-none border border-slate-100 dark:border-white/10 flex flex-col h-[80vh] overflow-hidden">
+    <div className="w-full bg-white dark:bg-slate-900 flex flex-col h-[calc(100vh-73px)] md:h-[calc(100vh-80px)] overflow-hidden">
       {/* Header du Chat */}
       <div className="p-4 border-b border-slate-50 dark:border-white/5 flex items-center gap-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
         <button onClick={() => navigate('/matches')} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full transition-colors text-slate-400 dark:text-slate-500">
@@ -443,7 +443,7 @@ const ChatPage: React.FC = () => {
       </div>
 
       {/* Zone des Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30 dark:bg-slate-950/30">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-slate-50/30 dark:bg-slate-950/30">
         <div className="bg-slate-100/50 dark:bg-slate-800/50 p-4 rounded-3xl text-center border border-slate-200/50 dark:border-white/5 mb-4">
            <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige flex items-center justify-center gap-2">
               <ShieldCheck size={14} /> {t('media_privacy_note')}
