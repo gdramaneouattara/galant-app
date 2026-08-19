@@ -422,7 +422,7 @@ const ChatPage: React.FC = () => {
         </div>
         <div className="flex-1 cursor-pointer" onClick={() => !targetUser.isVenue && navigate(`/profile/${targetUser.id}`)}>
           <div className="flex items-center gap-1">
-            <span className="font-serif italic tracking-tighter text-slate-900 dark:text-white">{targetUser.name}</span>
+            <span className="font-sans  tracking-tighter text-slate-900 dark:text-white">{targetUser.name}</span>
             {targetUser.is_verified && <ShieldCheck size={14} className="text-blue-500" />}
             {(targetUser.galanterie_score || 0) >= 4.5 && <Gem size={14} className="text-rose-600" />}
           </div>
@@ -588,7 +588,7 @@ const ChatPage: React.FC = () => {
           <div className="absolute inset-0 bg-white dark:bg-slate-900 z-20 flex items-center justify-between px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-              <span className="text-sm font-black font-serif italic tracking-tighter text-slate-900 dark:text-white">
+              <span className="text-sm font-black font-sans  tracking-tighter text-slate-900 dark:text-white">
                 {t('vocal_serenade')}... {formatRecDuration(recordingDuration)}
               </span>
             </div>

@@ -286,7 +286,7 @@ const RosesInboxPage: React.FC = () => {
                 <div className="absolute -top-3 left-4 bg-primary text-white text-[8px] font-black px-2 py-1 rounded-md uppercase tracking-[0.2em]">
                   {labels.note}
                 </div>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300 italic leading-relaxed transition-colors">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300  leading-relaxed transition-colors">
                   "{row.note || labels.noNote}"
                 </p>
               </div>

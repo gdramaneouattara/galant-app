@@ -12,7 +12,7 @@ import {
   CreditCard,
   Building2,
   Send,
-  History,
+  History as HistoryIcon,
   Database,
   CalendarPlus
 } from 'lucide-react';
@@ -39,7 +39,7 @@ const AdminLayout: React.FC = () => {
     { path: '/admin/messaging', icon: Send, label: 'Diffusion' },
     { path: '/admin/finances', icon: CreditCard, label: 'Finances' },
     { path: '/admin/reports', icon: AlertCircle, label: 'Alertes' },
-    { path: '/admin/audit', icon: History, label: 'Audit' },
+    { path: '/admin/audit', icon: HistoryIcon, label: 'Audit' },
     { path: '/admin/seeder', icon: Database, label: 'Seeder' },
     { path: '/admin/agenda-seeder', icon: CalendarPlus, label: 'Agenda' },
   ];
@@ -89,7 +89,7 @@ const AdminLayout: React.FC = () => {
       <header className="sticky top-0 z-50 border-b border-slate-200 dark:border-white/10 bg-slate-950 text-white lg:hidden">
         <div className="flex items-center justify-between gap-4 px-4 py-4">
           <div className="min-w-0">
-            <h1 className="text-lg font-black italic tracking-tighter text-primary">GALANT ADMIN</h1>
+            <h1 className="text-lg font-black  tracking-tighter text-primary">GALANT ADMIN</h1>
             <p className="truncate text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">{profile.name}</p>
           </div>
           <Link to="/" className="rounded-xl bg-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white">

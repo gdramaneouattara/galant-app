@@ -241,7 +241,7 @@ const AdminDashboard: React.FC = () => {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <div className="rounded-[2rem] bg-slate-900 dark:bg-slate-950 p-6 text-white shadow-2xl lg:p-10">
           <div className="mb-8 flex items-center justify-between gap-4">
-            <h3 className="flex items-center gap-3 text-lg font-black italic sm:text-xl">
+            <h3 className="flex items-center gap-3 text-lg font-black  sm:text-xl">
               <PieChart className="text-primary" />
               Repartition par sexe
             </h3>
@@ -283,7 +283,7 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="rounded-[2rem] border border-slate-50 dark:border-white/5 bg-white dark:bg-slate-900 p-6 shadow-xl lg:p-10 dark:shadow-none">
-          <h3 className="mb-6 text-xl font-black italic text-slate-900 dark:text-white">Maintenance & outils</h3>
+          <h3 className="mb-6 text-xl font-black  text-slate-900 dark:text-white">Maintenance & outils</h3>
           <div className="grid grid-cols-1 gap-4">
             <button
               onClick={handleReconcileCounters}

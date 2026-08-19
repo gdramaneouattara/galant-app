@@ -71,7 +71,7 @@ const PartnerSignupPage: React.FC = () => {
           <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-red-500/20">
             <Building2 size={32} />
           </div>
-          <h2 className="text-3xl font-serif italic tracking-tighter">Galant Business</h2>
+          <h2 className="text-3xl font-sans  tracking-tighter">Galant Business</h2>
           <p className="text-slate-400 dark:text-slate-500 mt-2 font-medium transition-colors">Propulsez votre établissement vers une clientèle d'exception.</p>
         </div>
 

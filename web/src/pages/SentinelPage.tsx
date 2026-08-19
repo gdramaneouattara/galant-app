@@ -413,7 +413,7 @@ const SentinelPage: React.FC = () => {
           <ChevronLeft size={20} />
         </button>
         <div>
-          <h2 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white">{t('sentinel')}</h2>
+          <h2 className="text-3xl font-sans  tracking-tighter text-slate-900 dark:text-white">{t('sentinel')}</h2>
           <p className="text-slate-500 dark:text-slate-400 font-medium uppercase tracking-prestige text-[10px]">{t('security_discrétion')}</p>
         </div>
       </div>
@@ -425,7 +425,7 @@ const SentinelPage: React.FC = () => {
             <div className="w-12 h-12 bg-blue-50 dark:bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center">
               <Shield size={24} />
             </div>
-            <h3 className="font-serif italic text-xl tracking-tighter text-slate-900 dark:text-white">{t('active_security')}</h3>
+            <h3 className="font-sans  text-xl tracking-tighter text-slate-900 dark:text-white">{t('active_security')}</h3>
           </div>
           <button
             onClick={handleSOS}
@@ -514,7 +514,7 @@ const SentinelPage: React.FC = () => {
 
               <div className="space-y-2">
                 {contacts.length === 0 ? (
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 italic text-center py-4 border-2 border-dashed border-slate-100 dark:border-white/5 rounded-2xl">
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500  text-center py-4 border-2 border-dashed border-slate-100 dark:border-white/5 rounded-2xl">
                     {t('no_contact_selected')}
                   </p>
                 ) : (
@@ -623,7 +623,7 @@ const SentinelPage: React.FC = () => {
           <div className="w-12 h-12 bg-white/10 text-primary rounded-2xl flex items-center justify-center">
             <PhoneIncoming size={24} />
           </div>
-          <h3 className="font-serif italic text-xl tracking-tighter">{t('fake_call')}</h3>
+          <h3 className="font-sans  text-xl tracking-tighter">{t('fake_call')}</h3>
         </div>
 
         <div className="space-y-6 relative z-10">

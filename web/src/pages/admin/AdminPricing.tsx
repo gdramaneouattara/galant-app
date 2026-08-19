@@ -71,7 +71,7 @@ const AdminPricing: React.FC = () => {
     <div className="space-y-6 lg:space-y-10 max-w-4xl mx-auto">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-3xl sm:text-4xl font-black italic tracking-tighter text-slate-900 dark:text-white transition-colors">Gestion des Tarifs</h2>
+          <h2 className="text-3xl sm:text-4xl font-black  tracking-tighter text-slate-900 dark:text-white transition-colors">Gestion des Tarifs</h2>
           <p className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-2 transition-colors">Configurez les coûts de l'écosystème Galant</p>
         </div>
         <button

@@ -6,7 +6,7 @@ import {
   Camera, ShieldCheck, MapPin, Edit3, Save, LogOut,
   Sparkles, Plane, Globe, ChevronRight, Share2,
   EyeOff, Eye, Crown, Gem, Settings, User as UserIcon, Bell,
-  Heart, Star, LayoutDashboard,
+  Heart, Star, LayoutDashboard, Lock,
   ShoppingBag as StoreIcon
 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
@@ -448,7 +448,7 @@ const ProfilePage: React.FC = () => {
                 placeholder={labels.bioPlaceholder}
               />
             ) : (
-              <p className="text-slate-600 dark:text-slate-400 font-medium leading-relaxed text-lg italic transition-colors">
+              <p className="text-slate-600 dark:text-slate-400 font-medium leading-relaxed text-lg  transition-colors">
                 {profile.bio || labels.emptyBio}
               </p>
             )}
@@ -478,7 +478,7 @@ const ProfilePage: React.FC = () => {
                 {profile.can_invite ? <Share2 size={32} /> : <Lock size={32} />}
               </div>
               <div className="text-left">
-                <p className={`text-lg font-serif italic uppercase tracking-tighter leading-none mb-1 ${
+                <p className={`text-lg font-sans  uppercase tracking-tighter leading-none mb-1 ${
                   profile.can_invite ? 'text-white' : 'text-slate-400 dark:text-slate-500'
                 }`}>
                   {profile.can_invite ? (labels.inviteTitle + ' 🌹') : 'Devenir Ambassadeur'}
@@ -551,7 +551,7 @@ const ProfilePage: React.FC = () => {
                   <ShieldCheck size={24} />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-serif italic tracking-tighter text-blue-900 dark:text-blue-400 uppercase">{labels.certification}</p>
+                  <p className="text-sm font-sans  tracking-tighter text-blue-900 dark:text-blue-400 uppercase">{labels.certification}</p>
                   <p className="text-[10px] font-bold text-blue-400">{t('become_certified_member')}</p>
                 </div>
                 <ChevronRight size={16} className="text-blue-200" />
@@ -572,7 +572,7 @@ const ProfilePage: React.FC = () => {
                 {profile.is_invisible ? <EyeOff size={24} /> : <Eye size={24} />}
               </div>
               <div className="flex-1">
-                <p className={`text-sm font-serif italic tracking-tighter uppercase ${profile.is_invisible ? 'text-teal-900 dark:text-teal-400' : 'text-slate-900 dark:text-white'}`}>
+                <p className={`text-sm font-sans  tracking-tighter uppercase ${profile.is_invisible ? 'text-teal-900 dark:text-teal-400' : 'text-slate-900 dark:text-white'}`}>
                   {t('invisible_mode')}
                 </p>
                 <p className="text-[10px] font-bold text-slate-400">

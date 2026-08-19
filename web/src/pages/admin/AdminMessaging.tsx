@@ -6,7 +6,7 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-  History,
+  History as HistoryIcon,
   Info,
   Star,
   Heart
@@ -48,7 +48,7 @@ const AdminMessaging: React.FC = () => {
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div>
-        <h2 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white sm:text-4xl">Messages Admin</h2>
+        <h2 className="text-3xl font-sans  tracking-tighter text-slate-900 dark:text-white sm:text-4xl">Messages Admin</h2>
         <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400 sm:text-lg">Diffusez des annonces à toute la communauté Galant.</p>
       </div>
 
@@ -130,10 +130,10 @@ const AdminMessaging: React.FC = () => {
 
            <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] shadow-xl border border-slate-100 dark:border-white/5">
              <div className="flex items-center gap-3 mb-6">
-               <History className="text-slate-400" size={20} />
+               <HistoryIcon className="text-slate-400" size={20} />
                <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Derniers envois</h3>
              </div>
-             <p className="text-[10px] text-center italic text-slate-400 py-4">Aucun historique disponible.</p>
+             <p className="text-[10px] text-center  text-slate-400 py-4">Aucun historique disponible.</p>
            </div>
         </div>
       </div>

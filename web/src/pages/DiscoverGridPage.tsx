@@ -292,7 +292,7 @@ const DiscoverGridPage: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center py-40">
         <RefreshCw className="animate-spin text-primary" size={48} />
-        <p className="mt-8 text-slate-400 font-serif italic tracking-tighter text-xl">{labels.loading}</p>
+        <p className="mt-8 text-slate-400 font-sans  tracking-tighter text-xl">{labels.loading}</p>
       </div>
     );
   }
@@ -302,7 +302,7 @@ const DiscoverGridPage: React.FC = () => {
       {/* Header prestige */}
       <div className="flex justify-between items-start pt-2">
         <div>
-          <h2 className="text-4xl font-serif italic tracking-tighter text-slate-900 dark:text-white leading-none">
+          <h2 className="text-4xl font-sans  tracking-tighter text-slate-900 dark:text-white leading-none">
             {labels.title}
           </h2>
           <div className="flex items-center gap-3 mt-2">
@@ -351,7 +351,7 @@ const DiscoverGridPage: React.FC = () => {
           <div className="w-20 h-20 bg-slate-50 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto text-slate-200 dark:text-slate-700">
             <Search size={40} />
           </div>
-          <p className="text-xl font-serif italic text-slate-900 dark:text-white">{labels.empty}</p>
+          <p className="text-xl font-sans  text-slate-900 dark:text-white">{labels.empty}</p>
           <button
             onClick={() => { setSearchQuery(''); fetchSuggestions('', { reset: true }); }}
             className="text-primary font-bold uppercase tracking-prestige text-[10px]"
@@ -386,7 +386,7 @@ const DiscoverGridPage: React.FC = () => {
 
               {/* Info */}
               <div className="absolute inset-x-3 bottom-4 text-white">
-                <p className="font-serif italic text-lg leading-tight truncate">
+                <p className="font-sans  text-lg leading-tight truncate">
                   {profile.name}, {profile.age}
                 </p>
                 <div className="flex items-center gap-1 mt-1 opacity-80">

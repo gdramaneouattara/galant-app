@@ -108,7 +108,7 @@ const PassportModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 <Plane size={24} />
               </div>
               <div>
-                <h2 className="text-xl font-black italic">{t('passport_galant')}</h2>
+                <h2 className="text-xl font-black ">{t('passport_galant')}</h2>
                 <p className="text-xs font-medium text-slate-500">{t('passport_desc')}</p>
               </div>
             </div>
@@ -120,7 +120,7 @@ const PassportModal: React.FC<Props> = ({ isOpen, onClose }) => {
           {/* Benefits */}
           <div className="flex flex-wrap gap-2">
             {[t('passport_benefit_1'), t('passport_benefit_2')].map((b, i) => (
-              <span key={i} className="bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter italic border border-slate-100">
+              <span key={i} className="bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter  border border-slate-100">
                 {b}
               </span>
             ))}

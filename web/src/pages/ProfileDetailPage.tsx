@@ -180,7 +180,7 @@ const ProfileDetailPage: React.FC = () => {
           <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-8 shadow-xl dark:shadow-none border border-slate-50 dark:border-white/5 space-y-6 transition-colors">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <h2 className="text-4xl font-serif italic tracking-tighter text-slate-900 dark:text-white transition-colors">{profile.name}, {profile.age}</h2>
+                <h2 className="text-4xl font-sans  tracking-tighter text-slate-900 dark:text-white transition-colors">{profile.name}, {profile.age}</h2>
                 {profile.is_verified && <ShieldCheck size={28} className="text-blue-500 fill-blue-50" />}
               </div>
               <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 font-medium uppercase tracking-prestige text-xs transition-colors">
@@ -210,7 +210,7 @@ const ProfileDetailPage: React.FC = () => {
 
             <div className="space-y-3">
               <h3 className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige transition-colors">{language === 'en' ? 'About' : 'A propos'}</h3>
-              <p className="text-slate-600 dark:text-slate-400 font-medium leading-relaxed italic transition-colors">
+              <p className="text-slate-600 dark:text-slate-400 font-medium leading-relaxed  transition-colors">
                 "{profile.bio || (language === 'en' ? 'This member prefers to keep a little mystery...' : 'Ce membre prefere garder une part de mystere...')}"
               </p>
             </div>

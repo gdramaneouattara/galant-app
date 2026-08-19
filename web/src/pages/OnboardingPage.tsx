@@ -353,7 +353,7 @@ const OnboardingPage: React.FC = () => {
                     {formData.latitude ? `Position détectée : ${formData.city} ✓` : 'Détecter ma position GPS'}
                   </button>
                   {!formData.latitude && (
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-center italic">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-center ">
                       L'autorisation GPS est requise pour continuer.
                     </p>
                   )}

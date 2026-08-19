@@ -51,7 +51,7 @@ const PartnerDashboard: React.FC = () => {
       {/* Header Dashboard */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h2 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white flex items-center gap-3 transition-colors">
+          <h2 className="text-3xl font-sans  tracking-tighter text-slate-900 dark:text-white flex items-center gap-3 transition-colors">
             <LayoutDashboard className="text-primary" />
             Espace Partenaire
           </h2>
@@ -113,7 +113,7 @@ const PartnerDashboard: React.FC = () => {
             <img src={venue?.photo_url || 'https://placehold.co/600x300'} className="w-full h-full object-cover" alt="" />
             <div className="absolute inset-0 bg-black/20" />
             <div className="absolute bottom-4 left-6 text-white">
-              <h3 className="text-xl font-serif italic tracking-tighter uppercase">{venue?.name || 'Mon Établissement'}</h3>
+              <h3 className="text-xl font-sans  tracking-tighter uppercase">{venue?.name || 'Mon Établissement'}</h3>
               <div className="flex items-center gap-1 text-sm font-bold opacity-90">
                 <MapPin size={14} />
                 <span>{venue?.city || 'Douala, Cameroun'}</span>
@@ -130,7 +130,7 @@ const PartnerDashboard: React.FC = () => {
         {/* Événements à venir */}
         <section className="bg-white dark:bg-slate-900 rounded-[3rem] shadow-xl dark:shadow-none border border-slate-100 dark:border-white/5 p-8 transition-colors">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-serif italic tracking-tighter flex items-center gap-2 text-slate-900 dark:text-white transition-colors">
+            <h3 className="text-lg font-sans  tracking-tighter flex items-center gap-2 text-slate-900 dark:text-white transition-colors">
               <Calendar className="text-primary" size={20} />
               Mes Événements
             </h3>

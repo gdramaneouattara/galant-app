@@ -127,7 +127,7 @@ const VenueDetailPage: React.FC = () => {
         >
           <ChevronLeft size={20} />
         </button>
-        <h2 className="text-lg font-serif italic tracking-tight text-slate-900 dark:text-white truncate max-w-[220px]">
+        <h2 className="text-lg font-sans  tracking-tight text-slate-900 dark:text-white truncate max-w-[220px]">
           {venue.name}
         </h2>
         <button
@@ -171,7 +171,7 @@ const VenueDetailPage: React.FC = () => {
 
       <div className="px-6 space-y-8">
         <div className="space-y-2">
-          <h1 className="text-4xl font-serif italic tracking-tight text-slate-900 dark:text-white leading-tight">
+          <h1 className="text-4xl font-sans  tracking-tight text-slate-900 dark:text-white leading-tight">
             {venue.name}
           </h1>
           <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
@@ -188,7 +188,7 @@ const VenueDetailPage: React.FC = () => {
             </div>
             <h3 className="text-xs font-black uppercase tracking-prestige text-primary">Avantage Galant</h3>
           </div>
-          <p className="text-lg font-serif italic text-rose-900 dark:text-rose-100 leading-relaxed">
+          <p className="text-lg font-sans  text-rose-900 dark:text-rose-100 leading-relaxed">
             "{venue.benefit_description || 'Presentez votre badge de membre pour beneficier d une attention particuliere.'}"
           </p>
         </div>

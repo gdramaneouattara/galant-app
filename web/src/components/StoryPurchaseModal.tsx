@@ -51,7 +51,7 @@ const StoryPurchaseModal: React.FC<Props> = ({ isOpen, onClose, onPurchase, load
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-3xl font-black italic">{c.title}</h3>
+            <h3 className="text-3xl font-black ">{c.title}</h3>
             <p className="text-slate-500 font-medium">{c.body}</p>
           </div>
 

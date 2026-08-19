@@ -50,7 +50,7 @@ const SettingsModal: React.FC<Props> = ({
     <div className="fixed inset-0 z-[120] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
       <div className="bg-white dark:bg-slate-900 w-full max-w-md max-h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-transparent dark:border-white/10 transition-colors flex flex-col">
         <div className="p-8 border-b border-slate-50 dark:border-white/5 flex justify-between items-center">
-          <h3 className="text-2xl font-black italic text-slate-900 dark:text-white">{labels.settings}</h3>
+          <h3 className="text-2xl font-black  text-slate-900 dark:text-white">{labels.settings}</h3>
           <button onClick={onClose} className="p-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-full text-slate-300" aria-label={labels.close}>
             <X size={24} />
           </button>

@@ -88,7 +88,7 @@ const BoostPage: React.FC = () => {
           <ChevronLeft size={24} />
         </button>
         <div>
-          <h2 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white">{t('boost_your_profile')}</h2>
+          <h2 className="text-3xl font-sans  tracking-tighter text-slate-900 dark:text-white">{t('boost_your_profile')}</h2>
           <p className="text-slate-500 dark:text-slate-400 font-medium">{t('boost_subtitle')}</p>
         </div>
       </div>
@@ -100,7 +100,7 @@ const BoostPage: React.FC = () => {
              <div className="w-20 h-20 bg-white/20 rounded-[2rem] flex items-center justify-center mx-auto backdrop-blur-md">
                 <Rocket size={40} className="animate-bounce" />
              </div>
-             <h3 className="text-2xl font-serif italic tracking-tighter leading-tight">Propulsez votre visibilité</h3>
+             <h3 className="text-2xl font-sans  tracking-tighter leading-tight">Propulsez votre visibilité</h3>
              <p className="text-sm font-medium text-white/80">
                 Passez en tête de liste et multipliez vos chances de rencontre d'exception.
              </p>
@@ -159,7 +159,7 @@ const BoostPage: React.FC = () => {
 
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center gap-3">
-                       <h5 className={`text-xl font-serif italic tracking-tighter ${plan.isBest ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{plan.name}</h5>
+                       <h5 className={`text-xl font-sans  tracking-tighter ${plan.isBest ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{plan.name}</h5>
                        {plan.savings && <span className="bg-green-500 text-white px-2 py-0.5 rounded-lg text-[9px] font-black">-{plan.savings}</span>}
                     </div>
                     <p className={`text-sm font-medium ${plan.isBest ? 'text-white/70' : 'text-slate-500 dark:text-slate-400'}`}>{plan.description}</p>

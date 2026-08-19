@@ -94,7 +94,7 @@ const PartnerPremiumPage: React.FC = () => {
           <ChevronLeft size={20} />
         </button>
         <div>
-          <h2 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white">Abonnement Business</h2>
+          <h2 className="text-3xl font-sans  tracking-tighter text-slate-900 dark:text-white">Abonnement Business</h2>
           <p className="text-slate-500 dark:text-slate-400 font-medium uppercase tracking-prestige text-[10px]">Propulsez votre établissement</p>
         </div>
       </div>
@@ -104,7 +104,7 @@ const PartnerPremiumPage: React.FC = () => {
         <div className="w-20 h-20 bg-primary/10 rounded-[2.5rem] flex items-center justify-center mx-auto text-primary mb-6 animate-bounce-slow">
           <Rocket size={40} />
         </div>
-        <h1 className="text-4xl font-serif italic tracking-tighter text-slate-900 dark:text-white">Devenez une destination de choix</h1>
+        <h1 className="text-4xl font-sans  tracking-tighter text-slate-900 dark:text-white">Devenez une destination de choix</h1>
         <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
           Rejoignez le cercle fermé des établissements certifiés Galant et touchez une audience de prestige.
         </p>
@@ -129,7 +129,7 @@ const PartnerPremiumPage: React.FC = () => {
 
             <div className="space-y-6">
               <div>
-                <h3 className={`text-2xl font-serif italic tracking-tighter ${plan.isBest ? 'text-white' : plan.color}`}>{plan.title}</h3>
+                <h3 className={`text-2xl font-sans  tracking-tighter ${plan.isBest ? 'text-white' : plan.color}`}>{plan.title}</h3>
                 <p className={`text-xs font-medium mt-1 ${plan.isBest ? 'text-slate-400' : 'text-slate-400'}`}>{plan.description}</p>
               </div>
 

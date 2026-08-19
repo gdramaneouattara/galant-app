@@ -121,7 +121,7 @@ const SuperLikeDetailModal: React.FC<Props> = ({
             {row.note && (
               <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4">
                 <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-2">Note parfumee</p>
-                <p className="text-sm text-slate-700 font-medium italic leading-relaxed">"{row.note}"</p>
+                <p className="text-sm text-slate-700 font-medium  leading-relaxed">"{row.note}"</p>
               </div>
             )}
 

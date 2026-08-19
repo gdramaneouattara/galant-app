@@ -162,7 +162,7 @@ const StorePage: React.FC = () => {
           <ChevronLeft size={20} />
         </button>
         <div>
-          <h2 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white">Store Galant</h2>
+          <h2 className="text-3xl font-sans  tracking-tighter text-slate-900 dark:text-white">Store Galant</h2>
           <p className="text-slate-500 dark:text-slate-400 font-medium uppercase tracking-prestige text-[10px]">{labels.subtitle}</p>
         </div>
       </div>
@@ -176,7 +176,7 @@ const StorePage: React.FC = () => {
           </div>
           <div>
             <p className="text-xs font-medium uppercase tracking-prestige text-slate-400 mb-1">{labels.statusLabel}</p>
-            <h3 className="text-2xl font-serif italic tracking-tighter uppercase leading-none">
+            <h3 className="text-2xl font-sans  tracking-tighter uppercase leading-none">
               {profile?.is_premium ? labels.privilegeMember : labels.classicMember}
             </h3>
           </div>
@@ -201,7 +201,7 @@ const StorePage: React.FC = () => {
           <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center text-amber-600">
             <Crown size={20} fill="currentColor" />
           </div>
-          <h3 className="text-2xl font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">{labels.subscriptions}</h3>
+          <h3 className="text-2xl font-sans  tracking-tighter text-slate-900 dark:text-white uppercase">{labels.subscriptions}</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -209,7 +209,7 @@ const StorePage: React.FC = () => {
           <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-white/5 shadow-xl space-y-6 flex flex-col justify-between">
             <div className="space-y-4">
               <div className="flex justify-between items-start">
-                <h4 className="text-xl font-serif italic tracking-tighter uppercase text-slate-900 dark:text-white leading-none">Standard</h4>
+                <h4 className="text-xl font-sans  tracking-tighter uppercase text-slate-900 dark:text-white leading-none">Standard</h4>
                 <div className="bg-slate-50 dark:bg-white/5 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest text-slate-400">{labels.oneMonth}</div>
               </div>
               <div className="flex items-baseline gap-1">
@@ -240,7 +240,7 @@ const StorePage: React.FC = () => {
             </div>
             <div className="space-y-4 relative z-10">
               <div className="flex justify-between items-start">
-                <h4 className="text-xl font-serif italic tracking-tighter uppercase text-white leading-none">Privilège</h4>
+                <h4 className="text-xl font-sans  tracking-tighter uppercase text-white leading-none">Privilège</h4>
                 <div className="bg-white/10 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest text-amber-400">{labels.threeMonths}</div>
               </div>
               <div className="flex items-baseline gap-1">
@@ -272,7 +272,7 @@ const StorePage: React.FC = () => {
           <div className="w-10 h-10 bg-rose-50 dark:bg-rose-900/20 rounded-xl flex items-center justify-center text-primary">
             <Zap size={20} fill="currentColor" />
           </div>
-          <h3 className="text-2xl font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">{labels.aLaCarte}</h3>
+          <h3 className="text-2xl font-sans  tracking-tighter text-slate-900 dark:text-white uppercase">{labels.aLaCarte}</h3>
         </div>
 
         <div className="space-y-12">

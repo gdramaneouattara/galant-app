@@ -182,7 +182,7 @@ const PartnerDiscoveryPage: React.FC = () => {
             <MapPin size={24} />
           </div>
           <div>
-            <h2 className="text-2xl font-serif italic tracking-tighter text-slate-900 dark:text-white">{c.title}</h2>
+            <h2 className="text-2xl font-sans  tracking-tighter text-slate-900 dark:text-white">{c.title}</h2>
             <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{c.subtitle}</p>
           </div>
         </div>
