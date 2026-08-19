@@ -6,7 +6,7 @@ import {
   Camera, ShieldCheck, MapPin, Edit3, Save, LogOut,
   Sparkles, Plane, Globe, ChevronRight, Share2,
   EyeOff, Eye, Crown, Gem, Settings, User as UserIcon, Bell,
-  Heart, Star, LayoutDashboard,
+  Heart, Star, LayoutDashboard, Lock,
   ShoppingBag as StoreIcon
 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';

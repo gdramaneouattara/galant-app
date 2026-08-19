@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  History,
+  History as HistoryIcon,
   Search,
   RefreshCw,
   User,
@@ -64,7 +64,7 @@ const AdminAuditLogs: React.FC = () => {
         ) : logs.length === 0 ? (
           <div className="p-24 text-center space-y-4">
              <div className="w-20 h-20 bg-slate-50 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto text-slate-200">
-               <History size={40} />
+               <HistoryIcon size={40} />
              </div>
              <p className="font-bold text-slate-400 text-lg">Aucune action enregistrée pour le moment.</p>
           </div>

@@ -6,7 +6,7 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-  History,
+  History as HistoryIcon,
   Info,
   Star,
   Heart
@@ -130,7 +130,7 @@ const AdminMessaging: React.FC = () => {
 
            <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] shadow-xl border border-slate-100 dark:border-white/5">
              <div className="flex items-center gap-3 mb-6">
-               <History className="text-slate-400" size={20} />
+               <HistoryIcon className="text-slate-400" size={20} />
                <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Derniers envois</h3>
              </div>
              <p className="text-[10px] text-center  text-slate-400 py-4">Aucun historique disponible.</p>

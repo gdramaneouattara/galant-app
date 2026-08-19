@@ -12,7 +12,7 @@ import {
   CreditCard,
   Building2,
   Send,
-  History,
+  History as HistoryIcon,
   Database,
   CalendarPlus
 } from 'lucide-react';
@@ -39,7 +39,7 @@ const AdminLayout: React.FC = () => {
     { path: '/admin/messaging', icon: Send, label: 'Diffusion' },
     { path: '/admin/finances', icon: CreditCard, label: 'Finances' },
     { path: '/admin/reports', icon: AlertCircle, label: 'Alertes' },
-    { path: '/admin/audit', icon: History, label: 'Audit' },
+    { path: '/admin/audit', icon: HistoryIcon, label: 'Audit' },
     { path: '/admin/seeder', icon: Database, label: 'Seeder' },
     { path: '/admin/agenda-seeder', icon: CalendarPlus, label: 'Agenda' },
   ];
