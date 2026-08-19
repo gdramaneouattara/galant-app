@@ -5,9 +5,9 @@ import { doc, updateDoc } from 'firebase/firestore';
 import {
   Camera, ShieldCheck, MapPin, Edit3, Save, LogOut,
   Sparkles, Plane, Globe, ChevronRight, Share2,
-  EyeOff, Eye, Crown, Gem, Settings, User, Bell,
+  EyeOff, Eye, Crown, Gem, Settings, User as UserIcon, Bell,
   Heart, Star, LayoutDashboard,
-  ShoppingBag
+  ShoppingBag as StoreIcon
 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { apiRequest } from '@shared/lib/api';
@@ -138,7 +138,7 @@ const ProfilePage: React.FC = () => {
       <div className="max-w-md mx-auto py-20 text-center px-6">
         <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] shadow-2xl shadow-slate-200 dark:shadow-none border border-slate-100 dark:border-white/10 transition-colors">
           <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300 dark:text-slate-700">
-            <User size={40} />
+            <UserIcon size={40} />
           </div>
           <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">{labels.profileNotFound}</h2>
           <p className="text-slate-500 dark:text-slate-400 font-medium mb-8">{t('login_required_profile')}</p>
@@ -399,7 +399,7 @@ const ProfilePage: React.FC = () => {
       >
         <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all"></div>
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 shadow-lg">
-          <ShoppingBag size={28} />
+          <StoreIcon size={28} />
         </div>
         <div className="flex-1">
           <h3 className="text-xl font-serif italic tracking-tighter uppercase leading-none mb-1">Store Galant</h3>

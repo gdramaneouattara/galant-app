@@ -1,32 +1,30 @@
-# Amélioration du Confort d'Écriture (Chat Extensible)
+# Résolution de l'Erreur "Illegal constructor" (Filtres Découverte)
 
-Ce plan vise à corriger le champ de saisie du chat qui est actuellement limité à une seule ligne, empêchant la lecture des messages longs avant envoi.
+Ce plan vise à corriger l'erreur technique `TypeError: Illegal constructor` qui survient lors de l'interaction avec les filtres, en sécurisant la manipulation des dates et les imports de composants.
 
 ## Proposed Changes
 
-### [Web Mobile] Interface de Chat
+### [Web Mobile] Sécurisation du Code
 
-#### [MODIFY] [ChatPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ChatPage.tsx)
-- **Transition vers Textarea** : Remplacer l'élément `<input>` par un `<textarea>`.
-- **Auto-agrandissement vertical** :
-    - Utiliser un `useRef` pour manipuler directement la hauteur du composant.
-    - Implémenter un effet qui calcule `scrollHeight` à chaque changement de texte pour ajuster la hauteur.
-    - Fixer une limite maximale (ex: `max-height: 150px`) pour éviter que le clavier et le champ ne masquent toute la discussion.
-- **Optimisation du Design** :
-    - S'assurer que les icônes de gauche (Média) et le bouton d'envoi à droite restent alignés au bas du champ extensible.
-    - Maintenir le style "Pilule arrondie" même lors de l'agrandissement.
-- **Expérience Utilisateur** : Gérer la touche "Entrée" pour envoyer le message (comme actuellement) tout en permettant le saut de ligne via "Shift+Entrée".
+#### [MODIFY] [DiscoverPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/DiscoverPage.tsx)
+- **Refactoring des Dates** :
+    - Extraire la logique de vérification du pass filtres dans une fonction utilitaire.
+    - Utiliser `Date.parse()` ou vérifier le type avant de passer par `new Date()`.
+    - Gérer le cas où la date est un objet `Timestamp` de Firebase.
+- **Défense visuelle** : Simplifier le rendu conditionnel du cadenas 🔒 pour éviter les calculs lourds dans le JSX.
+
+#### [MODIFY] [InteractionPurchaseModal.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/InteractionPurchaseModal.tsx)
+- **Alias d'icônes** : Renommer l'import de `SlidersHorizontal` en `FiltersIcon` pour éviter tout conflit potentiel avec des noms globaux du navigateur.
 
 ## User Review Required
 
-> [!TIP]
-> **Confort de relecture** : Cette modification est cruciale pour une application de rencontre premium. Elle permet aux membres de soigner leur premier message (l'accroche) en voyant l'ensemble de leur texte d'un seul coup d'œil.
+> [!NOTE]
+> **Origine technique** : L'erreur "Illegal constructor" est souvent déclenchée par une tentative de création d'objet (`new`) sur une variable qui n'est pas un constructeur valide (ex: une fonction native détournée ou un objet corrompu). Ce nettoyage rendra l'application plus robuste face aux différences entre navigateurs.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Ouvrir une discussion.
-2.  Écrire un message court : le champ doit rester sur une seule ligne.
-3.  Écrire un message long (plusieurs phrases) : vérifier que le champ s'agrandit verticalement.
-4.  Vérifier que les boutons "Envoyer" et "Micro" suivent bien le mouvement vers le bas.
-5.  Vérifier que le texte est parfaitement lisible et qu'un scroll interne apparaît si le message est très long.
+1.  Ouvrir la page **Découverte**.
+2.  Cliquer sur l'icône des filtres (avec ou sans pass actif).
+3.  Vérifier que l'application ne crash plus et que le modal (achat ou filtres) s'ouvre normalement.
+4.  Vérifier que le statut de l'abonnement est toujours correctement pris en compte.
