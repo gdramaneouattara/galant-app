@@ -178,7 +178,7 @@ const AdminSupport: React.FC = () => {
         <div className="space-y-4 border-b border-slate-50 p-6 dark:border-white/5">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h3 className="text-xl font-black italic text-slate-900 transition-colors dark:text-white">Support Inbox</h3>
+              <h3 className="text-xl font-black  text-slate-900 transition-colors dark:text-white">Support Inbox</h3>
               <p className="mt-1 text-[11px] font-bold uppercase tracking-prestige text-slate-400">Messages utilisateurs</p>
             </div>
             <button
@@ -310,7 +310,7 @@ const AdminSupport: React.FC = () => {
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 text-slate-300 transition-colors dark:text-slate-700">
             <MessageSquare size={80} strokeWidth={1} className="opacity-20" />
-            <p className="font-bold italic transition-colors">Selectionnez une discussion pour repondre.</p>
+            <p className="font-bold  transition-colors">Selectionnez une discussion pour repondre.</p>
           </div>
         )}
       </div>

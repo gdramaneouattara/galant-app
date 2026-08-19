@@ -48,7 +48,7 @@ const AdminMessaging: React.FC = () => {
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div>
-        <h2 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white sm:text-4xl">Messages Admin</h2>
+        <h2 className="text-3xl font-sans  tracking-tighter text-slate-900 dark:text-white sm:text-4xl">Messages Admin</h2>
         <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400 sm:text-lg">Diffusez des annonces à toute la communauté Galant.</p>
       </div>
 
@@ -133,7 +133,7 @@ const AdminMessaging: React.FC = () => {
                <History className="text-slate-400" size={20} />
                <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Derniers envois</h3>
              </div>
-             <p className="text-[10px] text-center italic text-slate-400 py-4">Aucun historique disponible.</p>
+             <p className="text-[10px] text-center  text-slate-400 py-4">Aucun historique disponible.</p>
            </div>
         </div>
       </div>

@@ -115,7 +115,7 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, onApply, defau
           <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-full text-slate-400" aria-label={c.back}>
             <ChevronLeft size={24} />
           </button>
-          <h3 className="min-w-0 truncate text-xl font-black italic">{c.title}</h3>
+          <h3 className="min-w-0 truncate text-xl font-black ">{c.title}</h3>
           <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-full text-slate-300" aria-label={c.close}>
             <X size={24} />
           </button>

@@ -111,7 +111,7 @@ const WelcomeVernissage: React.FC<WelcomeVernissageProps> = ({ onComplete }) => 
             >
               {step.subtitle}
             </motion.p>
-            <h2 className="text-5xl font-serif italic tracking-tighter text-white leading-tight">
+            <h2 className="text-5xl font-sans  tracking-tighter text-white leading-tight">
               {step.title}
             </h2>
             <p className="text-slate-400 font-medium text-lg leading-relaxed pt-2">

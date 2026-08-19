@@ -48,8 +48,8 @@ const PremiumPage: React.FC = () => {
             </span>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-serif italic tracking-tighter text-white leading-[0.95]">
-            L'Élégance n'a pas de <span className="text-primary not-italic">limites.</span>
+          <h1 className="text-5xl md:text-7xl font-sans  tracking-tighter text-white leading-[0.95]">
+            L'Élégance n'a pas de <span className="text-primary not-">limites.</span>
           </h1>
 
           <p className="text-slate-400 text-lg md:text-xl font-medium leading-relaxed max-w-lg">
@@ -80,7 +80,7 @@ const PremiumPage: React.FC = () => {
         {/* SECTION 1: ABONNEMENTS - Design Apple-esque vs Luxury Dark */}
         <div className="lg:col-span-8 space-y-10">
           <div className="flex items-center justify-between">
-            <h3 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white flex items-center gap-4 transition-colors">
+            <h3 className="text-3xl font-sans  tracking-tighter text-slate-900 dark:text-white flex items-center gap-4 transition-colors">
               <div className="w-12 h-12 bg-rose-50 dark:bg-rose-900/20 rounded-2xl flex items-center justify-center text-primary">
                 <Gem size={24} />
               </div>
@@ -94,7 +94,7 @@ const PremiumPage: React.FC = () => {
               <div className="space-y-8">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="text-2xl font-serif italic tracking-tighter uppercase text-slate-900 dark:text-white">Standard</h4>
+                    <h4 className="text-2xl font-sans  tracking-tighter uppercase text-slate-900 dark:text-white">Standard</h4>
                     <p className="text-primary font-medium text-[10px] uppercase tracking-prestige mt-1">Essentiel Galant</p>
                   </div>
                   <div className="w-12 h-12 bg-slate-50 dark:bg-white/5 rounded-2xl flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors">
@@ -148,7 +148,7 @@ const PremiumPage: React.FC = () => {
               <div className="space-y-8 relative z-10">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="text-2xl font-serif italic tracking-tighter uppercase text-white">Privilège</h4>
+                    <h4 className="text-2xl font-sans  tracking-tighter uppercase text-white">Privilège</h4>
                     <p className="text-amber-400 font-medium text-[10px] uppercase tracking-prestige mt-1">L'Expérience Ultime</p>
                   </div>
                   <div className="w-14 h-14 bg-white/5 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/10 shadow-2xl">
@@ -161,7 +161,7 @@ const PremiumPage: React.FC = () => {
                     <span className="text-5xl font-extrabold text-white tracking-tight">10 000 F</span>
                     <span className="text-slate-500 font-medium text-xs uppercase tracking-prestige">/ 3 mois</span>
                   </div>
-                  <p className="text-primary font-medium text-[9px] uppercase tracking-prestige italic opacity-80">Soit 3 333 F / mois seulement</p>
+                  <p className="text-primary font-medium text-[9px] uppercase tracking-prestige  opacity-80">Soit 3 333 F / mois seulement</p>
                 </div>
 
                 <div className="h-[1px] bg-white/10 w-full"></div>
@@ -195,7 +195,7 @@ const PremiumPage: React.FC = () => {
 
         {/* SECTION 2: SOLDE ROSES - Boutique de luxe style */}
         <div className="lg:col-span-4 space-y-10">
-          <h3 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white flex items-center gap-4 transition-colors">
+          <h3 className="text-3xl font-sans  tracking-tighter text-slate-900 dark:text-white flex items-center gap-4 transition-colors">
             <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center text-amber-600">
                <Award size={24} />
             </div>
@@ -245,7 +245,7 @@ const PremiumPage: React.FC = () => {
               ))}
             </div>
 
-            <p className="text-[9px] text-center text-slate-400 dark:text-slate-500 font-medium px-4 leading-relaxed italic transition-colors">
+            <p className="text-[9px] text-center text-slate-400 dark:text-slate-500 font-medium px-4 leading-relaxed  transition-colors">
               Le Solde Roses sert aux attentions consommables. La Rose d'Or est un boost de visibilite separe.
             </p>
           </div>
@@ -254,7 +254,7 @@ const PremiumPage: React.FC = () => {
         {/* SECTION 3: BOOSTS - Modern Cards */}
         <div className="lg:col-span-12 space-y-10 pt-8">
            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-              <h3 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white flex items-center gap-4 transition-colors">
+              <h3 className="text-3xl font-sans  tracking-tighter text-slate-900 dark:text-white flex items-center gap-4 transition-colors">
                 <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center text-purple-600">
                   <Rocket size={24} />
                 </div>
@@ -284,7 +284,7 @@ const PremiumPage: React.FC = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-sm font-bold text-slate-600 dark:text-slate-400 italic transition-colors">"{boost.sub}"</p>
+                    <p className="text-sm font-bold text-slate-600 dark:text-slate-400  transition-colors">"{boost.sub}"</p>
                     <div className="text-4xl font-black text-slate-950 dark:text-white tracking-tighter transition-colors">{boost.price} F</div>
                   </div>
 

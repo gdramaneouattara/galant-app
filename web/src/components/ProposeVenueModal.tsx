@@ -103,7 +103,7 @@ const ProposeVenueModal: React.FC<Props> = ({ isOpen, onClose, venue }) => {
       <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh] border border-slate-100 dark:border-white/10">
         <div className="p-8 border-b border-slate-50 dark:border-white/10 space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-xl font-serif italic text-slate-900 dark:text-white">{c.title}</h3>
+            <h3 className="text-xl font-sans  text-slate-900 dark:text-white">{c.title}</h3>
             <button onClick={onClose} className="p-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-full text-slate-300" aria-label={c.close}>
               <X size={20} />
             </button>
@@ -133,7 +133,7 @@ const ProposeVenueModal: React.FC<Props> = ({ isOpen, onClose, venue }) => {
 
         <div className="flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar">
           {activeMatches.length === 0 ? (
-            <div className="py-10 text-center text-slate-300 font-bold italic">
+            <div className="py-10 text-center text-slate-300 font-bold ">
               {c.empty}
             </div>
           ) : (

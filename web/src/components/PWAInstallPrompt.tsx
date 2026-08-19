@@ -117,7 +117,7 @@ const PWAInstallPrompt: React.FC = () => {
               <img src="/galant-logo-web.png" alt="Galant" className="w-8 h-8 object-contain" />
             </div>
             <div>
-              <h4 className="font-black italic text-sm uppercase tracking-tighter text-primary">Galant App</h4>
+              <h4 className="font-black  text-sm uppercase tracking-tighter text-primary">Galant App</h4>
               <p className="text-xs text-slate-400 font-medium">Installez Galant sur votre ecran d'accueil</p>
             </div>
           </div>

@@ -204,7 +204,7 @@ const AdminKyc: React.FC = () => {
           ) : (
             <div className="h-full flex flex-col items-center justify-center bg-white dark:bg-slate-900 rounded-[3rem] border-2 border-dashed border-slate-100 dark:border-white/5 text-slate-300 dark:text-slate-700 gap-4 py-20 transition-colors">
               <ShieldCheck size={80} strokeWidth={1} className="opacity-20" />
-              <p className="font-bold italic">Sélectionnez une demande pour l'examiner.</p>
+              <p className="font-bold ">Sélectionnez une demande pour l'examiner.</p>
             </div>
           )}
         </div>

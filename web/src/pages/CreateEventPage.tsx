@@ -32,7 +32,7 @@ const CreateEventPage: React.FC = () => {
   });
 
   if (!profile?.is_partner) {
-    return <div className="text-center py-20 font-bold text-slate-400 text-xl italic">Accès réservé aux partenaires.</div>;
+    return <div className="text-center py-20 font-bold text-slate-400 text-xl ">Accès réservé aux partenaires.</div>;
   }
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,7 +88,7 @@ const CreateEventPage: React.FC = () => {
           <ChevronLeft size={24} />
         </button>
         <div>
-          <h2 className="text-3xl font-black italic">Créer un événement</h2>
+          <h2 className="text-3xl font-black ">Créer un événement</h2>
           <p className="text-slate-500 font-medium">Publiez une offre ou une soirée exclusive</p>
         </div>
       </div>

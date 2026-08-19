@@ -345,7 +345,7 @@ const AdminAgendaSeeder: React.FC = () => {
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div>
-        <h2 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white sm:text-4xl">
+        <h2 className="text-3xl font-sans  tracking-tighter text-slate-900 dark:text-white sm:text-4xl">
           Agenda Galant
         </h2>
         <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400 sm:text-lg">

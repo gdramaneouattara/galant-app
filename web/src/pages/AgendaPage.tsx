@@ -206,8 +206,8 @@ const AgendaPage: React.FC = () => {
             </span>
           </div>
 
-          <h2 className="text-5xl md:text-7xl font-serif italic tracking-tighter text-white leading-none">
-            {labels.titlePrefix} <span className="text-primary not-italic">Galant</span>
+          <h2 className="text-5xl md:text-7xl font-bold tracking-tighter text-white leading-none">
+            {labels.titlePrefix} <span className="text-primary">Galant</span>
           </h2>
 
           <p className="text-slate-400 text-lg md:text-xl font-medium leading-relaxed max-w-md">
@@ -300,7 +300,7 @@ const AgendaPage: React.FC = () => {
                     <MapPin size={12} className="text-primary" />
                     <span>{event.venues?.city || labels.cityMissing}</span>
                   </div>
-                  <h3 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white leading-none group-hover:text-primary transition-colors">
+                  <h3 className="text-3xl font-bold tracking-tighter text-slate-900 dark:text-white leading-none group-hover:text-primary transition-colors">
                     {event.title}
                   </h3>
                   {isExternalEvent && (
@@ -393,7 +393,7 @@ const AgendaPage: React.FC = () => {
             </div>
           </div>
           <div className="space-y-4">
-            <h3 className="text-3xl md:text-5xl font-serif italic tracking-tighter text-white">{labels.eliteTitle}</h3>
+            <h3 className="text-3xl md:text-5xl font-bold tracking-tighter text-white">{labels.eliteTitle}</h3>
             <p className="text-slate-400 text-lg font-medium leading-relaxed">
               {labels.eliteBody}
             </p>

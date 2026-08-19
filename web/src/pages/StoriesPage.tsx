@@ -537,8 +537,8 @@ const StoriesPage: React.FC = () => {
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div>
-          <h2 className="text-4xl sm:text-5xl font-serif italic tracking-tighter text-slate-900 dark:text-white leading-none mb-3 transition-colors">
-            {labels.title.split(' ')[0]} <span className="text-primary italic">{labels.title.split(' ').slice(1).join(' ') || 'Stories'}</span>
+          <h2 className="text-4xl sm:text-5xl font-sans  tracking-tighter text-slate-900 dark:text-white leading-none mb-3 transition-colors">
+            {labels.title.split(' ')[0]} <span className="text-primary ">{labels.title.split(' ').slice(1).join(' ') || 'Stories'}</span>
           </h2>
           <p className="text-slate-400 dark:text-slate-500 font-medium uppercase tracking-prestige text-sm transition-colors">
             {labels.subtitle}
@@ -622,7 +622,7 @@ const StoriesPage: React.FC = () => {
               </div>
 
               <div className="absolute bottom-5 left-5 right-5 z-20">
-                <p className="text-sm font-serif italic tracking-tighter text-white truncate">{status.profiles.name}</p>
+                <p className="text-sm font-sans  tracking-tighter text-white truncate">{status.profiles.name}</p>
                 <p className="text-[9px] font-bold text-white/60 uppercase tracking-widest mt-1">{formatPublishedAt(status.created_at)}</p>
               </div>
 
@@ -700,7 +700,7 @@ const StoriesPage: React.FC = () => {
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="font-serif italic tracking-tighter text-white text-base sm:text-lg truncate">{selectedStatus.profiles.name}</p>
+                    <p className="font-sans  tracking-tighter text-white text-base sm:text-lg truncate">{selectedStatus.profiles.name}</p>
                     {selectedStatus.profiles.is_premium && <Crown size={14} className="text-amber-400 flex-shrink-0" fill="currentColor" />}
                   </div>
                   <p className="text-[10px] font-medium text-white/60 uppercase tracking-prestige mt-0.5">
@@ -733,7 +733,7 @@ const StoriesPage: React.FC = () => {
 
             <div className="absolute bottom-8 sm:bottom-12 left-6 right-6 sm:left-10 sm:right-10 flex items-end gap-4 z-50">
               <div className="flex-1 bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl p-5 min-w-0">
-                <p className="text-white text-sm sm:text-base font-medium leading-relaxed italic">
+                <p className="text-white text-sm sm:text-base font-medium leading-relaxed ">
                   {selectedStatus.content || "Vivre l'instant présent avec élégance..."}
                 </p>
               </div>

@@ -91,7 +91,7 @@ const ReportModal: React.FC<Props> = ({ isOpen, onClose, reportedUserId, userNam
               <CheckCircle2 size={40} />
             </div>
             <div className="space-y-2">
-              <h3 className="text-2xl font-black italic text-slate-900 dark:text-white">{c.successTitle}</h3>
+              <h3 className="text-2xl font-black  text-slate-900 dark:text-white">{c.successTitle}</h3>
               <p className="text-slate-500 dark:text-slate-400 text-sm font-medium leading-relaxed">
                 {c.successBody}
               </p>
@@ -114,7 +114,7 @@ const ReportModal: React.FC<Props> = ({ isOpen, onClose, reportedUserId, userNam
         <div className="p-8 border-b border-slate-50 dark:border-white/5 flex justify-between items-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-center gap-3 text-red-500">
              <ShieldAlert size={24} />
-             <h3 className="text-2xl font-black italic text-slate-900 dark:text-white leading-none">{c.title}</h3>
+             <h3 className="text-2xl font-black  text-slate-900 dark:text-white leading-none">{c.title}</h3>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-full text-slate-300" aria-label={c.close}>
             <X size={24} />

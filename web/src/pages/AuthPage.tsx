@@ -189,7 +189,7 @@ const AuthPage: React.FC = () => {
         <div className="mb-10 text-center flex flex-col items-center gap-4 animate-in fade-in slide-in-from-top duration-700">
           <img src={logoImg} alt="Galant Logo" className="w-20 h-20 rounded-[2rem] shadow-2xl border-4 border-white/20 object-contain bg-white/90" />
           <div>
-            <h1 className="text-5xl font-serif font-black text-white italic mb-2 drop-shadow-2xl">
+            <h1 className="text-5xl font-sans font-black text-white  mb-2 drop-shadow-2xl">
               GALANT
             </h1>
             <div className="h-1.5 w-12 bg-primary mx-auto rounded-full shadow-lg shadow-red-500/50"></div>
@@ -386,7 +386,7 @@ const AuthPage: React.FC = () => {
               className="group flex flex-col items-center gap-2 mx-auto"
             >
               <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] group-hover:text-primary transition-colors">{labels.partnerQuestion}</span>
-              <span className="text-sm font-black italic text-slate-900 dark:text-white border-b-2 border-slate-900 dark:border-white group-hover:border-primary group-hover:text-primary transition-all">{labels.partnerCta}</span>
+              <span className="text-sm font-black text-slate-900 dark:text-white border-b-2 border-slate-900 dark:border-white group-hover:border-primary group-hover:text-primary transition-all">{labels.partnerCta}</span>
             </button>
           </div>
         </div>

@@ -287,7 +287,7 @@ const DiscoverPage: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-5xl font-black text-white italic tracking-tighter">
+            <h2 className="text-5xl font-black text-white  tracking-tighter">
               {labels.welcome}
             </h2>
             <div className="h-1.5 w-14 bg-primary mx-auto rounded-full"></div>

@@ -145,9 +145,9 @@ const AdminUsers: React.FC = () => {
           </thead>
           <tbody className="divide-y divide-slate-50 dark:divide-white/5">
             {loading ? (
-              <tr><td colSpan={4} className="py-20 text-center animate-pulse font-bold text-slate-300 dark:text-slate-700 italic">Chargement des membres...</td></tr>
+              <tr><td colSpan={4} className="py-20 text-center animate-pulse font-bold text-slate-300 dark:text-slate-700 ">Chargement des membres...</td></tr>
             ) : users.length === 0 ? (
-              <tr><td colSpan={4} className="py-20 text-center font-bold text-slate-300 dark:text-slate-700 italic">Aucun membre ne correspond à ces critères.</td></tr>
+              <tr><td colSpan={4} className="py-20 text-center font-bold text-slate-300 dark:text-slate-700 ">Aucun membre ne correspond à ces critères.</td></tr>
             ) : (
               users.map((u) => (
                 <tr key={u.id} className={`hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors ${u.suspended_at ? 'opacity-50 grayscale' : ''}`}>
@@ -173,7 +173,7 @@ const AdminUsers: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-5">
-                    <span className="font-black text-primary italic flex items-center gap-1">
+                    <span className="font-black text-primary  flex items-center gap-1">
                       <Star size={12} fill="currentColor" /> {u.galanterie_score || '5.0'}
                     </span>
                   </td>

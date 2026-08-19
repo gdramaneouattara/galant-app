@@ -56,7 +56,7 @@ const AdminVenues: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white sm:text-4xl">Guide & Partenaires</h2>
+          <h2 className="text-3xl font-sans  tracking-tighter text-slate-900 dark:text-white sm:text-4xl">Guide & Partenaires</h2>
           <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400 sm:text-lg">Validez et gérez le prestige du catalogue Galant.</p>
         </div>
 
@@ -86,7 +86,7 @@ const AdminVenues: React.FC = () => {
           <div className="w-20 h-20 bg-slate-50 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto text-slate-200">
             <Building2 size={40} />
           </div>
-          <p className="text-xl font-serif italic text-slate-900 dark:text-white">Aucun partenaire dans cette catégorie</p>
+          <p className="text-xl font-sans  text-slate-900 dark:text-white">Aucun partenaire dans cette catégorie</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -98,7 +98,7 @@ const AdminVenues: React.FC = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start">
-                    <h3 className="text-xl font-serif italic tracking-tighter text-slate-900 dark:text-white truncate">{venue.name}</h3>
+                    <h3 className="text-xl font-sans  tracking-tighter text-slate-900 dark:text-white truncate">{venue.name}</h3>
                     <div className="px-2 py-1 bg-slate-100 dark:bg-white/5 rounded text-[8px] font-black uppercase tracking-widest text-slate-400">
                       {venue.venue_type}
                     </div>

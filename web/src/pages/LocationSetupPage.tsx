@@ -96,7 +96,7 @@ const LocationSetupPage: React.FC = () => {
         </div>
 
         <div className="space-y-2">
-          <h2 className="text-3xl font-black italic tracking-tighter text-slate-900 dark:text-white transition-colors">Où êtes-vous ?</h2>
+          <h2 className="text-3xl font-black  tracking-tighter text-slate-900 dark:text-white transition-colors">Où êtes-vous ?</h2>
           <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed transition-colors">
             Galant utilise votre position pour vous proposer les profils les plus proches et les meilleurs lieux de rendez-vous.
           </p>

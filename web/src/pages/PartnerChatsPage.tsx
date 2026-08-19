@@ -40,20 +40,20 @@ const PartnerChatsPage: React.FC = () => {
           <ChevronRight className="rotate-180" size={20} />
         </button>
         <div>
-          <h2 className="text-3xl font-serif italic tracking-tighter text-slate-900 dark:text-white transition-colors">Messages Clients</h2>
+          <h2 className="text-3xl font-sans  tracking-tighter text-slate-900 dark:text-white transition-colors">Messages Clients</h2>
           <p className="text-slate-500 dark:text-slate-400 font-medium transition-colors">Répondez aux demandes de vos membres Galant.</p>
         </div>
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl dark:shadow-none border border-slate-100 dark:border-white/5 overflow-hidden transition-colors">
         {loading ? (
-          <div className="p-20 text-center animate-pulse text-slate-300 dark:text-slate-700 font-bold italic text-lg">Chargement de vos conversations...</div>
+          <div className="p-20 text-center animate-pulse text-slate-300 dark:text-slate-700 font-bold  text-lg">Chargement de vos conversations...</div>
         ) : chats.length === 0 ? (
           <div className="p-20 text-center space-y-4">
             <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-[2rem] flex items-center justify-center mx-auto text-slate-300 dark:text-slate-700 transition-colors">
                <MessageCircle size={40} />
             </div>
-            <p className="text-slate-400 dark:text-slate-500 font-medium italic text-lg transition-colors">Aucun client ne vous a encore contacté.</p>
+            <p className="text-slate-400 dark:text-slate-500 font-medium  text-lg transition-colors">Aucun client ne vous a encore contacté.</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-50 dark:divide-white/5">
@@ -82,7 +82,7 @@ const PartnerChatsPage: React.FC = () => {
                     )}
                   </div>
                   <div className="min-w-0">
-                    <h4 className="text-xl font-serif italic tracking-tighter text-slate-900 dark:text-white group-hover:text-primary transition-colors">
+                    <h4 className="text-xl font-sans  tracking-tighter text-slate-900 dark:text-white group-hover:text-primary transition-colors">
                       {chat.client?.name || 'Client Galant'}
                     </h4>
                     <div className="flex items-center gap-3 mt-1">

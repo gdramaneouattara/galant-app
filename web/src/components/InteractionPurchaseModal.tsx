@@ -110,7 +110,7 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-2xl font-black italic text-slate-900 dark:text-white">
+            <h3 className="text-2xl font-black  text-slate-900 dark:text-white">
               {title}
             </h3>
             <p className="text-slate-500 dark:text-slate-400 text-sm font-medium leading-relaxed">

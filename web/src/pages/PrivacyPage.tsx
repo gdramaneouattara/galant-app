@@ -23,8 +23,8 @@ const PrivacyPage: React.FC = () => {
           <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-2xl flex items-center justify-center transition-colors">
             <ShieldCheck size={32} />
           </div>
-          <h1 className="text-4xl font-serif italic tracking-tighter text-slate-900 dark:text-white transition-colors">Politique de Confidentialité</h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium italic transition-colors">Respecter votre vie privée est notre priorité absolue.</p>
+          <h1 className="text-4xl font-sans  tracking-tighter text-slate-900 dark:text-white transition-colors">Politique de Confidentialité</h1>
+          <p className="text-slate-500 dark:text-slate-400 font-medium  transition-colors">Respecter votre vie privée est notre priorité absolue.</p>
         </header>
 
         <section className="space-y-6">

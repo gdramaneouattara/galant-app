@@ -23,8 +23,8 @@ const TermsPage: React.FC = () => {
           <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center">
             <Scale size={32} />
           </div>
-          <h1 className="text-4xl font-serif italic tracking-tighter text-slate-900 dark:text-white">Conditions Générales d'Utilisation</h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium italic transition-colors">Version 1.2 - Spéciale Côte d'Ivoire - Juillet 2026</p>
+          <h1 className="text-4xl font-sans  tracking-tighter text-slate-900 dark:text-white">Conditions Générales d'Utilisation</h1>
+          <p className="text-slate-500 dark:text-slate-400 font-medium  transition-colors">Version 1.2 - Spéciale Côte d'Ivoire - Juillet 2026</p>
         </header>
 
         {/* 1. ADMISSIBILITÉ */}
@@ -53,7 +53,7 @@ const TermsPage: React.FC = () => {
             <ShieldAlert size={16} /> 3. Code de la Galanterie
           </div>
           <div className="bg-slate-900 dark:bg-slate-950 text-white p-8 rounded-[2.5rem] shadow-xl dark:shadow-none space-y-4 transition-colors">
-            <p className="text-primary font-black italic uppercase tracking-widest text-xs">Charte d'Honneur</p>
+            <p className="text-primary font-black  uppercase tracking-widest text-xs">Charte d'Honneur</p>
             <p className="text-slate-300 dark:text-slate-400 text-sm leading-relaxed transition-colors">
               Tout harcèlement, propos injurieux, ou comportement portant atteinte à la dignité d'un membre entraînera une suspension immédiate et définitive. Galant utilise une modération hybride (IA et Humaine) pour veiller au respect de cette charte 24h/24.
             </p>
