@@ -6,10 +6,11 @@ import { apiRequest } from '@shared/lib/api';
 import { showAlert } from '@shared/lib/ui-bridge';
 import {
   ChevronLeft, Heart, MapPin, MessageCircle, Rocket,
-  ShieldCheck, Star, Info, Target, User as UserIcon
+  ShieldCheck, Star, Info, Target, User as UserIcon, ShieldAlert
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
+import ReportModal from '../components/ReportModal';
 import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 import { getRelationshipGoalLabel } from '../components/GoalModal';
@@ -36,6 +37,7 @@ const ProfileDetailPage: React.FC = () => {
     open: false,
     type: 'SUPER_LIKE'
   });
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   const handleBack = () => {
     if ((window.history.state?.idx ?? 0) > 0) {
@@ -254,6 +256,16 @@ const ProfileDetailPage: React.FC = () => {
                 {language === 'en' ? 'Direct Message' : 'Message Direct'}
               </button>
             </div>
+
+            <div className="pt-8 border-t border-slate-50 dark:border-white/5 text-center">
+               <button
+                 onClick={() => setIsReportOpen(true)}
+                 className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-300 dark:text-slate-600 hover:text-red-500 transition-colors"
+               >
+                 <ShieldAlert size={14} />
+                 {language === 'en' ? 'Report this member' : 'Signaler ce membre'}
+               </button>
+            </div>
           </div>
         </div>
       </div>
@@ -264,6 +276,13 @@ const ProfileDetailPage: React.FC = () => {
         type={purchaseModal.type}
         userName={profile.name}
         onSuccess={() => onLike(purchaseModal.type === 'SUPER_LIKE')}
+      />
+
+      <ReportModal
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        reportedUserId={id!}
+        userName={profile.name}
       />
     </div>
   );
