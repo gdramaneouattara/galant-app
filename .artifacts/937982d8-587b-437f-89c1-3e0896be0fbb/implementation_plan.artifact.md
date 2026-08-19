@@ -1,41 +1,34 @@
-# Système de Signalement (Version Web)
+# Verrouillage Temporaire des Services du Guide
 
-Ce plan vise à implémenter une fonctionnalité de signalement des utilisateurs directement dans l'interface Web de Galant, afin de renforcer la sécurité et la modération de la communauté.
+Ce plan vise à suspendre temporairement les fonctionnalités "Proposer", "Yango" et "Accès Conciergerie" dans le Guide Galant, en informant les utilisateurs que ces services seront disponibles prochainement.
 
 ## Proposed Changes
 
-### [Web Mobile] Nouveaux Composants
+### [Web Mobile] Interface du Guide
 
-#### [NEW] [ReportModal.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/ReportModal.tsx)
-- Création d'une fenêtre modale élégante permettant de choisir un motif de signalement.
-- Motifs inclus : Faux profil, Harcèlement, Contenu inapproprié, Arnaque, Autre.
-- Champ de texte optionnel pour apporter des précisions.
-- Bouton de soumission relié à l'API `/api/messages/report`.
+#### [MODIFY] [GuidePage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/GuidePage.tsx)
+- **Interception des Actions** :
+    - Modifier le bouton **"Proposer"** pour afficher une alerte au lieu d'ouvrir le modal de suggestion.
+    - Modifier le bouton **"Yango"** pour afficher une alerte au lieu d'ouvrir l'application de transport.
+    - Modifier le bouton **"Accès Conciergerie"** pour afficher une alerte au lieu de lancer une discussion.
+- **Message d'information** :
+    - Titre : *"Service en préparation"*
+    - Corps : *"Cette fonctionnalité sera disponible très prochainement pour enrichir votre expérience Galant."*
+- **Design (Optionnel)** : Ajouter une légère opacité (`opacity-70`) pour suggérer l'indisponibilité tout en gardant les boutons visibles.
 
-### [Web Mobile] Intégration sur les Pages
-
-#### [MODIFY] [ProfileDetailPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ProfileDetailPage.tsx)
-- Ajouter un bouton "Signaler ce membre" en bas de la fiche détaillée.
-- Design : Texte discret avec icône `ShieldAlert`, style épuré pour ne pas surcharger la page.
-- Action : Ouvrir le `ReportModal`.
-
-#### [MODIFY] [ChatPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ChatPage.tsx)
-- Ajouter un bouton d'options (icône `ShieldAlert` ou `Flag`) dans le header du chat, à droite du nom.
-- Action : Ouvrir le `ReportModal`.
+#### [MODIFY] [VenueDetailPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/VenueDetailPage.tsx)
+- **Discuter avec l'hôte** : Modifier la fonction `startVenueChat` pour afficher la même alerte d'indisponibilité.
 
 ## User Review Required
 
-> [!IMPORTANT]
-> **Modération instantanée** : Une fois le signalement envoyé, il apparaîtra immédiatement dans votre tableau de bord **Admin > Alertes**, vous permettant de suspendre le compte si nécessaire.
+> [!NOTE]
+> **Expérience Utilisateur** : Cette approche permet de montrer la richesse future de l'application tout en gérant les attentes des membres durant la phase de lancement.
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Ouvrir le **Profil** d'un autre membre.
-2.  Cliquer sur "Signaler ce membre" en bas de page.
-3.  Choisir un motif (ex: "Faux Profil") et envoyer.
-4.  Vérifier que le message de succès s'affiche.
-5.  Aller dans une **Discussion** avec un membre.
-6.  Cliquer sur l'icône de signalement dans le bandeau du haut.
-7.  Vérifier que le signalement fonctionne également depuis cet endroit.
-8.  **Admin** : Se rendre dans l'onglet "Alertes" pour confirmer la réception du signalement.
+1.  Ouvrir le **Guide Galant**.
+2.  Cliquer sur **Proposer** sur une carte : vérifier l'affichage du message "Service en préparation".
+3.  Cliquer sur **Yango** : vérifier l'affichage du message.
+4.  Cliquer sur **Accès Conciergerie** : vérifier l'affichage du message.
+5.  Aller sur la fiche détaillée d'un lieu et cliquer sur **Discuter avec l'hôte** : vérifier l'affichage du message.

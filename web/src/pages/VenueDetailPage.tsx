@@ -60,16 +60,7 @@ const VenueDetailPage: React.FC = () => {
   };
 
   const startVenueChat = async () => {
-    try {
-      await openVenueChat();
-    } catch (error: any) {
-      const message = String(error?.message || '');
-      if (message.includes('payment_required') || message.includes('partner_contact_requires_payment')) {
-        setPurchaseOpen(true);
-        return;
-      }
-      showAlert('Erreur', 'Impossible d ouvrir la discussion.');
-    }
+    showAlert('Service en préparation', 'Cette fonctionnalité sera disponible très prochainement pour enrichir votre expérience Galant.');
   };
 
   const openInMaps = () => {
