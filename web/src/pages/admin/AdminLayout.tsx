@@ -48,8 +48,8 @@ const AdminLayout: React.FC = () => {
     <div className="min-h-screen bg-slate-100 dark:bg-slate-950 font-sans text-slate-900 dark:text-white transition-colors">
       <aside className="fixed left-0 top-0 z-50 hidden h-full w-64 flex-col bg-slate-900 text-white lg:flex">
         <div className="p-8">
-          <h1 className="flex items-center gap-2 text-2xl font-black italic tracking-tighter text-primary">
-            GALANT <span className="rounded border border-primary/30 bg-primary/20 px-2 py-0.5 text-[10px] not-italic tracking-normal text-primary">ADMIN</span>
+          <h1 className="flex items-center gap-2 text-2xl font-black tracking-tighter text-primary">
+            GALANT <span className="rounded border border-primary/30 bg-primary/20 px-2 py-0.5 text-[10px] tracking-normal text-primary">ADMIN</span>
           </h1>
         </div>
 

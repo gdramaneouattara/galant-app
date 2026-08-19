@@ -207,7 +207,7 @@ const OnboardingPage: React.FC = () => {
                <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/20 rounded-2xl flex items-center justify-center mx-auto text-primary mb-4">
                   <UserIcon size={32} />
                </div>
-               <h3 className="text-3xl font-serif italic tracking-tighter dark:text-white">Qui êtes-vous ?</h3>
+               <h3 className="text-3xl font-bold tracking-tighter dark:text-white">Qui êtes-vous ?</h3>
                <p className="text-slate-500 dark:text-slate-400 font-medium">L'élégance commence par la transparence.</p>
             </div>
 
@@ -268,7 +268,7 @@ const OnboardingPage: React.FC = () => {
                <div className="w-16 h-16 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center mx-auto text-amber-500 mb-4">
                   <Heart size={32} />
                </div>
-               <h3 className="text-3xl font-serif italic tracking-tighter dark:text-white">Vos Intentions</h3>
+               <h3 className="text-3xl font-bold tracking-tighter dark:text-white">Vos Intentions</h3>
                <p className="text-slate-500 dark:text-slate-400 font-medium">Pour des rencontres qui vous ressemblent.</p>
             </div>
 
@@ -284,7 +284,7 @@ const OnboardingPage: React.FC = () => {
                     >
                       <span className="text-3xl">{goal.icon}</span>
                       <div className="flex-1">
-                        <p className={`font-serif italic tracking-tighter text-sm uppercase ${formData.relationship_goal === goal.id ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>{goal.label}</p>
+                        <p className={`font-bold tracking-tighter text-sm uppercase ${formData.relationship_goal === goal.id ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>{goal.label}</p>
                         <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1">{goal.desc}</p>
                       </div>
                       {formData.relationship_goal === goal.id && <CheckCircle2 className="text-primary" size={20} />}
@@ -334,7 +334,7 @@ const OnboardingPage: React.FC = () => {
                <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mx-auto text-blue-500 mb-4">
                   <MapPin size={32} />
                </div>
-               <h3 className="text-3xl font-serif italic tracking-tighter dark:text-white">Emplacement & Bio</h3>
+               <h3 className="text-3xl font-bold tracking-tighter dark:text-white">Emplacement & Bio</h3>
                <p className="text-slate-500 dark:text-slate-400 font-medium">Où la magie doit-elle opérer ?</p>
             </div>
 
@@ -403,7 +403,7 @@ const OnboardingPage: React.FC = () => {
                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto text-primary mb-4">
                   <Camera size={32} />
                </div>
-               <h3 className="text-3xl font-serif italic tracking-tighter dark:text-white">Votre Galerie</h3>
+               <h3 className="text-3xl font-bold tracking-tighter dark:text-white">Votre Galerie</h3>
                <p className="text-slate-500 dark:text-slate-400 font-medium">Profil gratuit: 3 photos maximum. Premium permet jusqu'a 6.</p>
             </div>
 
@@ -478,7 +478,7 @@ const OnboardingPage: React.FC = () => {
         return (
           <div className="space-y-10 animate-in fade-in zoom-in-95 duration-700 py-4">
             <div className="text-center space-y-3">
-               <h3 className="text-4xl font-serif italic tracking-tighter text-slate-900 dark:text-white transition-colors">Le Manifeste</h3>
+               <h3 className="text-4xl font-bold tracking-tighter text-slate-900 dark:text-white transition-colors">Le Manifeste</h3>
                <p className="text-amber-600 font-medium text-[10px] uppercase tracking-prestige">Contrat de Prestige</p>
             </div>
 
@@ -541,7 +541,7 @@ const OnboardingPage: React.FC = () => {
                <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/20 rounded-[2.5rem] flex items-center justify-center mx-auto text-blue-500 mb-6 shadow-xl shadow-blue-500/10">
                   <ShieldCheck size={40} />
                </div>
-               <h3 className="text-4xl font-serif italic tracking-tighter text-slate-900 dark:text-white">Expérience Activée</h3>
+               <h3 className="text-4xl font-bold tracking-tighter text-slate-900 dark:text-white">Expérience Activée</h3>
                <p className="text-slate-500 dark:text-slate-400 font-medium px-4">
                  Votre dossier a été transmis. Pour assurer votre sécurité et ne manquer aucun match, nous activons maintenant vos services.
                </p>
