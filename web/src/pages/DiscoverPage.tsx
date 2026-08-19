@@ -450,7 +450,7 @@ const DiscoverPage: React.FC = () => {
 
               <div className="absolute inset-x-8 bottom-10 text-white pointer-events-none">
                 <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-3xl font-serif italic tracking-tight leading-none">
+                  <h3 className="text-3xl font-bold tracking-tight leading-none">
                     {(currentProfile.name || '').trim()}, {currentProfile.age}
                   </h3>
                 </div>

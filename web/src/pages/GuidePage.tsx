@@ -235,7 +235,7 @@ const GuidePage: React.FC = () => {
              <MapPin size={28} />
           </div>
           <div>
-            <h4 className="text-white font-serif italic text-lg leading-none mb-1">{labels.nearbyTitle}</h4>
+            <h4 className="text-white font-bold text-lg leading-none mb-1">{labels.nearbyTitle}</h4>
             <p className="text-slate-400 text-xs font-medium leading-relaxed max-w-md">{labels.nearbyBody}</p>
           </div>
         </div>
@@ -269,7 +269,7 @@ const GuidePage: React.FC = () => {
             </span>
           </div>
 
-          <h2 className="text-5xl md:text-7xl font-serif italic tracking-tighter text-white leading-none">
+          <h2 className="text-5xl md:text-7xl font-bold tracking-tighter text-white leading-none">
             {labels.title}
           </h2>
 
@@ -369,7 +369,7 @@ const GuidePage: React.FC = () => {
                   <MapPin size={12} className="text-primary" />
                   <span className="text-white/80">{venue.city}</span>
                 </div>
-                <h4 className="text-3xl font-serif italic tracking-tighter text-white leading-none">{venue.name}</h4>
+                <h4 className="text-3xl font-bold tracking-tighter text-white leading-none">{venue.name}</h4>
               </div>
             </div>
 
@@ -427,7 +427,7 @@ const GuidePage: React.FC = () => {
         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 bg-black/10 rounded-full blur-3xl"></div>
 
         <div className="relative z-10 max-w-2xl mx-auto space-y-6">
-          <h3 className="text-3xl md:text-5xl font-serif italic tracking-tighter text-white">{labels.partnerTitle}</h3>
+          <h3 className="text-3xl md:text-5xl font-bold tracking-tighter text-white">{labels.partnerTitle}</h3>
           <p className="text-white/80 text-lg font-medium">{labels.partnerBody}</p>
           <button
             onClick={() => navigate('/partner-signup', { state: { from: '/experiences' } })}

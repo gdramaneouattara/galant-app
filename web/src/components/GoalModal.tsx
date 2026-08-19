@@ -65,7 +65,7 @@ const GoalModal: React.FC<Props> = ({ isOpen, onClose, currentGoalId, onUpdateGo
     <div className="fixed inset-0 z-[120] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
       <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-transparent dark:border-white/10">
         <div className="p-8 border-b border-slate-50 dark:border-white/5 flex justify-between items-center">
-          <h3 className="text-2xl font-black italic text-slate-900 dark:text-white">{c.title}</h3>
+          <h3 className="text-2xl font-black text-slate-900 dark:text-white">{c.title}</h3>
           <button onClick={onClose} className="p-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-full text-slate-300" aria-label={c.close}>
             <X size={24} />
           </button>

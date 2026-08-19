@@ -195,7 +195,7 @@ const MatchesPage: React.FC = () => {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <span className="font-serif italic tracking-tighter text-slate-900 dark:text-white text-lg group-hover:text-primary transition-colors">
+                    <span className="font-bold tracking-tighter text-slate-900 dark:text-white text-lg group-hover:text-primary transition-colors">
                       {chat.venues?.name}
                     </span>
                     <p className="text-sm truncate font-medium text-slate-500 dark:text-slate-400">
@@ -229,7 +229,7 @@ const MatchesPage: React.FC = () => {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-serif italic tracking-tighter text-slate-900 dark:text-white text-lg group-hover:text-primary transition-colors">
+                      <span className="font-bold tracking-tighter text-slate-900 dark:text-white text-lg group-hover:text-primary transition-colors">
                         {otherUser.name}
                       </span>
                       {otherUser.is_verified && <ShieldCheck size={16} className="text-blue-500 fill-blue-50" />}

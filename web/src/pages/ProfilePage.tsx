@@ -351,7 +351,7 @@ const ProfilePage: React.FC = () => {
                 className="text-xl md:text-4xl font-black border-b-2 border-primary outline-none bg-transparent w-full md:w-auto"
               />
             ) : (
-              <h2 className="text-xl md:text-4xl font-serif italic tracking-tighter leading-tight">{profile.name}, {profile.age}</h2>
+              <h2 className="text-xl md:text-4xl font-bold tracking-tighter leading-tight">{profile.name}, {profile.age}</h2>
             )}
             <div className="flex items-center gap-2 text-white/90 font-medium text-[10px] md:text-xs uppercase tracking-prestige mt-1">
               <MapPin size={12} className="text-primary" />
@@ -402,7 +402,7 @@ const ProfilePage: React.FC = () => {
           <StoreIcon size={28} />
         </div>
         <div className="flex-1">
-          <h3 className="text-xl font-serif italic tracking-tighter uppercase leading-none mb-1">Store Galant</h3>
+          <h3 className="text-xl font-bold tracking-tighter uppercase leading-none mb-1">Store Galant</h3>
           <p className="text-[10px] font-black uppercase tracking-prestige text-white/80">{labels.storeSubtitle}</p>
         </div>
         <div className="bg-white/20 p-2 rounded-full backdrop-blur-sm group-hover:translate-x-1 transition-transform">
@@ -516,7 +516,7 @@ const ProfilePage: React.FC = () => {
                 <Heart size={24} />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">{labels.goal}</p>
+                <p className="text-sm font-bold tracking-tighter text-slate-900 dark:text-white uppercase">{labels.goal}</p>
                 <p className="text-[10px] font-bold text-slate-400">
                   {getRelationshipGoalLabel(profile.relationship_goal, language)}
                 </p>
@@ -533,7 +533,7 @@ const ProfilePage: React.FC = () => {
                 <Plane size={24} />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-serif italic tracking-tighter text-slate-900 dark:text-white uppercase">{labels.travelMode}</p>
+                <p className="text-sm font-bold tracking-tighter text-slate-900 dark:text-white uppercase">{labels.travelMode}</p>
                 <p className="text-[10px] font-bold text-slate-400">
                   {profile.passport_city ? profile.passport_city : labels.changeCity}
                 </p>
