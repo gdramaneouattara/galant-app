@@ -605,9 +605,12 @@ test('Rules: Web profile Store groups subscriptions and global purchases', async
   assert.doesNotMatch(webProfile, /\bHelpCircle\b/);
   assert.match(webStore, /Store Galant/);
   assert.match(webStore, /Abonnements/);
+  assert.match(webStore, /Monthly Premium/);
+  assert.match(webStore, /Priority swipes/);
   assert.match(webStore, /Premium Mensuel/);
   assert.match(webStore, /Privilege 3 Mois/);
   assert.match(webStore, /Swipes prioritaires/);
+  assert.doesNotMatch(webStore, /Unlimited priority swipes/);
   assert.match(webStore, /3 Roses offertes chaque mois/);
   assert.doesNotMatch(webStore, /Le paiement active automatiquement votre acces apres validation/);
   assert.match(webStore, /MONTHLY/);
