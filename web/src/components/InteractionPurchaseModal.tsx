@@ -1,5 +1,6 @@
 import React from 'react';
-import { X, CreditCard, MessageCircle, Heart, LayoutGrid, SlidersHorizontal as FiltersIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { X, CreditCard, MessageCircle, Heart, LayoutGrid, SlidersHorizontal as FiltersIcon, Crown } from 'lucide-react';
 import { useSubscription } from '@shared/hooks/useSubscription';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { useAuth } from '../context/AuthContext';
@@ -32,6 +33,8 @@ const copy = {
     dmPrefix: 'Débloquez une discussion directe avec',
     price: 'Tarif unique',
     pay: 'Payer par Carte ou Mobile Money',
+    premiumAlternative: 'Ou profitez de cette fonctionnalite avec votre abonnement Premium.',
+    becomePremium: 'Devenir Premium',
     secured: 'Transaction sécurisée par Paystack',
     validity: (days: number) => `Valable ${days} jour${days > 1 ? 's' : ''}`
   },
@@ -51,6 +54,8 @@ const copy = {
     dmPrefix: 'Unlock a direct conversation with',
     price: 'Single price',
     pay: 'Pay by Card or Mobile Money',
+    premiumAlternative: 'Or enjoy this feature with your Premium subscription.',
+    becomePremium: 'Become Premium',
     secured: 'Secure transaction by Paystack',
     validity: (days: number) => `Valid for ${days} day${days > 1 ? 's' : ''}`
   }
@@ -59,6 +64,7 @@ const copy = {
 const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targetId, userName, durationDays, price, onSuccess }) => {
   const { purchaseWithPaystack, purchaseLoading } = useSubscription();
   const { language } = useAuth();
+  const navigate = useNavigate();
   const c = copy[language] || copy.fr;
 
   if (!isOpen) return null;
@@ -82,6 +88,7 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
   const isLikesInbox = type === 'LIKES_INBOX_2H';
   const isGridUnlock = type === 'DISCOVER_GRID_UNLOCK';
   const isFiltersUnlock = type === 'DISCOVER_FILTERS_UNLOCK';
+  const canBecomePremium = isGridUnlock || isFiltersUnlock;
 
   const title = isSuperLike ? c.roses : isLikesInbox ? c.likes : isGridUnlock ? c.gallery : isFiltersUnlock ? c.filters : c.dm;
 
@@ -151,6 +158,25 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
               </>
             )}
           </button>
+
+          {canBecomePremium && (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold leading-relaxed text-slate-500 dark:text-slate-400">
+                {c.premiumAlternative}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  navigate('/store');
+                }}
+                className="w-full border border-amber-200 dark:border-amber-400/20 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all"
+              >
+                <Crown size={18} />
+                {c.becomePremium}
+              </button>
+            </div>
+          )}
 
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
             {c.secured}
