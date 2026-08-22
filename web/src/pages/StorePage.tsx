@@ -124,7 +124,7 @@ const StorePage: React.FC = () => {
         privilegeValue: 'Meilleur choix',
         privilegePriceNote: 'environ 3 333 F / mois',
         standardFeatures: [
-          'Swipes illimites et prioritaires',
+          'Swipes prioritaires',
           'Voir les profils qui vous ont like',
           'Messages et conversations debloques',
           'Stories incluses',
