@@ -8,11 +8,13 @@ test('Rules: ChatScreen handles send messages', async () => {
   const code = await read('src/screens/messages/ChatScreen.tsx');
   const webChat = await read('web/src/pages/ChatPage.tsx');
   assert.match(code, /handleSend/);
-  assert.match(webChat, /bottom-24/);
+  assert.match(webChat, /MOBILE_TAB_BAR_HEIGHT = 72/);
+  assert.match(webChat, /bottom-\[72px\]/);
   assert.match(webChat, /composerRef/);
   assert.match(webChat, /ResizeObserver/);
   assert.match(webChat, /messageBottomPadding/);
   assert.match(webChat, /style=\{\{ paddingBottom: messageBottomPadding \}\}/);
+  assert.doesNotMatch(webChat, /bottom-24/);
   assert.doesNotMatch(webChat, /pb-44 md:pb-4/);
 });
 
@@ -104,6 +106,7 @@ test('Rules: Discovery header exposes notifications with compact title and grid/
   const nativeHome = await read('src/screens/home/HomeScreen.tsx');
   const nativeGrid = await read('src/screens/discover/DiscoverGridScreen.tsx');
   const webDiscover = await read('web/src/pages/DiscoverPage.tsx');
+  const webPurchaseModal = await read('web/src/components/InteractionPurchaseModal.tsx');
 
   assert.match(nativeHome, /Bell/);
   assert.match(nativeHome, /notificationUnreadCount/);
@@ -134,6 +137,12 @@ test('Rules: Discovery header exposes notifications with compact title and grid/
   assert.match(webDiscover, /border-4 border-white/);
   assert.match(webDiscover, /grid w-full grid-cols-5 items-center/);
   assert.match(webDiscover, /relative mx-auto w-10 h-10/);
+  assert.match(webPurchaseModal, /DISCOVER_GRID_UNLOCK/);
+  assert.match(webPurchaseModal, /DISCOVER_FILTERS_UNLOCK/);
+  assert.match(webPurchaseModal, /canBecomePremium = isGridUnlock \|\| isFiltersUnlock/);
+  assert.match(webPurchaseModal, /Devenir Premium/);
+  assert.match(webPurchaseModal, /Become Premium/);
+  assert.match(webPurchaseModal, /navigate\('\/store'\)/);
   assert.doesNotMatch(webDiscover, /FeatureHighlight/);
   const storeActionIndex = webDiscover.indexOf("navigate('/store')");
   const storiesActionIndex = webDiscover.indexOf("navigate('/stories')");

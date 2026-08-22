@@ -16,6 +16,9 @@ import VoicePlayer from '../components/VoicePlayer';
 import ReportModal from '../components/ReportModal';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
+const MOBILE_TAB_BAR_HEIGHT = 72;
+const MOBILE_COMPOSER_GAP = 16;
+
 const ChatPage: React.FC = () => {
   const { matchId } = useParams();
   const { user, profile, t, language } = useAuth();
@@ -57,7 +60,7 @@ const ChatPage: React.FC = () => {
       }
 
       const composerHeight = composerRef.current?.getBoundingClientRect().height || 96;
-      setMessageBottomPadding(Math.ceil(composerHeight + 112));
+      setMessageBottomPadding(Math.ceil(composerHeight + MOBILE_TAB_BAR_HEIGHT + MOBILE_COMPOSER_GAP));
     };
 
     updateComposerPadding();
@@ -616,7 +619,7 @@ const ChatPage: React.FC = () => {
       {/* Input de Message */}
       <div
         ref={composerRef}
-        className="fixed bottom-24 left-0 right-0 z-40 shrink-0 p-4 bg-white dark:bg-slate-900 border-t border-slate-50 dark:border-white/5 shadow-[0_-18px_40px_rgba(15,23,42,0.12)] dark:shadow-[0_-18px_40px_rgba(0,0,0,0.25)] md:relative md:bottom-auto md:left-auto md:right-auto md:z-auto md:shadow-none"
+        className="fixed bottom-[72px] left-0 right-0 z-40 shrink-0 p-4 bg-white dark:bg-slate-900 border-t border-slate-50 dark:border-white/5 shadow-[0_-18px_40px_rgba(15,23,42,0.12)] dark:shadow-[0_-18px_40px_rgba(0,0,0,0.25)] md:relative md:bottom-auto md:left-auto md:right-auto md:z-auto md:shadow-none"
       >
         {isRecording && (
           <div className="absolute inset-0 bg-white dark:bg-slate-900 z-20 flex items-center justify-between px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
