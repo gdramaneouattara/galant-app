@@ -92,7 +92,7 @@ const PaymentReturnPage: React.FC = () => {
 
         <div className="flex flex-col gap-3">
           <Link
-            to="/premium"
+            to="/store"
             className="w-full py-4 rounded-2xl bg-primary text-white font-black text-xs uppercase tracking-widest"
           >
             Retour aux abonnements

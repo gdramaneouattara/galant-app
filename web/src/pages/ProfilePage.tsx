@@ -156,7 +156,7 @@ const ProfilePage: React.FC = () => {
   const handleToggleInvisible = async () => {
     if (!profile.is_premium || !profile.invisible_mode_eligible) {
       showAlert(t('premium_required'), t('invisible_premium_only'));
-      navigate('/premium');
+      navigate('/store');
       return;
     }
 
@@ -244,7 +244,7 @@ const ProfilePage: React.FC = () => {
   const handleAiAssist = async () => {
     if (!profile?.is_premium) {
       showAlert(t('premium_required'), t('ai_assistant_exclusive'));
-      navigate('/premium');
+      navigate('/store');
       return;
     }
 

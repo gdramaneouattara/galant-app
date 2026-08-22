@@ -497,7 +497,7 @@ const StoriesPage: React.FC = () => {
             >
               {uploading ? t('loading') : labels.unlockStory}
             </button>
-            <Link to="/premium" className="block w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-slate-900/10 hover:scale-[1.02] transition-all active:scale-95">
+            <Link to="/store" className="block w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-slate-900/10 hover:scale-[1.02] transition-all active:scale-95">
               {labels.premium}
             </Link>
           </div>
