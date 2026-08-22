@@ -105,16 +105,16 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
   const title = isSuperLike ? c.roses : isLikesInbox ? c.likes : isGridUnlock ? c.gallery : isFiltersUnlock ? c.filters : isPartnerDiscoveryUnlock ? c.partnerDiscovery : c.dm;
 
   return (
-    <div className="fixed inset-0 z-[220] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-transparent dark:border-white/5">
-        <div className="p-8 text-center space-y-6">
+    <div className="fixed inset-0 z-[220] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white dark:bg-slate-900 w-full max-w-sm max-h-[calc(100svh-1rem)] overflow-y-auto overscroll-contain rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-200 border border-transparent dark:border-white/5">
+        <div className="p-4 sm:p-8 text-center space-y-3 sm:space-y-6">
           <div className="flex justify-end">
             <button onClick={onClose} className="p-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-full text-slate-300" aria-label="Close">
               <X size={20} />
             </button>
           </div>
 
-          <div className={`w-20 h-20 mx-auto rounded-[2rem] flex items-center justify-center shadow-lg ${
+          <div className={`w-14 h-14 sm:w-20 sm:h-20 mx-auto rounded-2xl sm:rounded-[2rem] flex items-center justify-center shadow-lg ${
             isSuperLike ? 'bg-rose-50 dark:bg-rose-900/20 shadow-rose-100 dark:shadow-none' :
             isLikesInbox ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-500 shadow-amber-100 dark:shadow-none' :
             isGridUnlock ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 shadow-indigo-100 dark:shadow-none' :
@@ -123,18 +123,18 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
             'bg-blue-50 dark:bg-blue-900/20 text-blue-500 shadow-blue-100 dark:shadow-none'
           }`}>
             {isSuperLike ? <span className="text-4xl">🌹</span> :
-             isLikesInbox ? <Heart size={40} fill="currentColor" /> :
-             isGridUnlock ? <LayoutGrid size={40} /> :
-             isFiltersUnlock ? <FiltersIcon size={40} /> :
-             isPartnerDiscoveryUnlock ? <MapPinned size={40} /> :
-             <MessageCircle size={40} fill="currentColor" />}
+             isLikesInbox ? <Heart className="w-8 h-8 sm:w-10 sm:h-10" fill="currentColor" /> :
+             isGridUnlock ? <LayoutGrid className="w-8 h-8 sm:w-10 sm:h-10" /> :
+             isFiltersUnlock ? <FiltersIcon className="w-8 h-8 sm:w-10 sm:h-10" /> :
+             isPartnerDiscoveryUnlock ? <MapPinned className="w-8 h-8 sm:w-10 sm:h-10" /> :
+             <MessageCircle className="w-8 h-8 sm:w-10 sm:h-10" fill="currentColor" />}
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-2xl font-black  text-slate-900 dark:text-white">
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight">
               {title}
             </h3>
-            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium leading-relaxed">
+            <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm font-medium leading-relaxed">
               {isLikesInbox
                 ? c.likesBody
                 : isGridUnlock
@@ -148,9 +148,9 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
             </p>
           </div>
 
-          <div className="bg-slate-50 dark:bg-white/5 p-4 rounded-2xl">
+          <div className="bg-slate-50 dark:bg-white/5 p-3 sm:p-4 rounded-2xl">
             <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{c.price}</span>
-            <p className="text-2xl font-black text-slate-900 dark:text-white">
+            <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
               {price || (isLikesInbox || isGridUnlock ? '1 000' : '500')} F CFA
             </p>
             {durationDays && (
@@ -163,7 +163,7 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
           <button
             onClick={handlePurchase}
             disabled={purchaseLoading}
-            className="w-full bg-primary text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-red-100 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+            className="w-full bg-primary text-white py-4 sm:py-5 px-3 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-widest leading-snug flex items-center justify-center gap-2 sm:gap-3 shadow-lg shadow-red-100 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
           >
             {purchaseLoading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -176,7 +176,7 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
           </button>
 
           {canBecomePremium && (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               <p className="text-xs font-semibold leading-relaxed text-slate-500 dark:text-slate-400">
                 {c.premiumAlternative}
               </p>
@@ -186,7 +186,7 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
                   onClose();
                   navigate('/store');
                 }}
-                className="w-full border border-amber-200 dark:border-amber-400/20 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all"
+                className="w-full border border-amber-200 dark:border-amber-400/20 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 py-3.5 sm:py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all"
               >
                 <Crown size={18} />
                 {c.becomePremium}
