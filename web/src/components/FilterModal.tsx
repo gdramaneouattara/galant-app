@@ -79,7 +79,7 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, onApply, defau
     if (!is_premium) {
       showAlert(c.premiumTitle, c.standingLocked);
       onClose();
-      navigate('/premium');
+      navigate('/store');
       return;
     }
     setDraftFilters({ ...draftFilters, [key]: !draftFilters[key] });
@@ -89,7 +89,7 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, onApply, defau
     if (score > 0 && !is_premium) {
       showAlert(c.premiumTitle, c.scoreLocked);
       onClose();
-      navigate('/premium');
+      navigate('/store');
       return;
     }
     setDraftFilters({ ...draftFilters, minScore: score });

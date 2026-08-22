@@ -112,7 +112,7 @@ const LikesInboxPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 gap-4 pt-4">
-          <Link to="/premium" className="block w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all hover:scale-[1.02] active:scale-95">
+          <Link to="/store" className="block w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all hover:scale-[1.02] active:scale-95">
             {t('become_premium')}
           </Link>
 

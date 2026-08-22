@@ -177,7 +177,7 @@ const ChatPage: React.FC = () => {
   const handleAiAssist = async () => {
     if (!profile?.is_premium) {
       showAlert(t('premium_required'), t('ai_assistant_exclusive'));
-      navigate('/premium');
+      navigate('/store');
       return;
     }
 
@@ -273,7 +273,7 @@ const ChatPage: React.FC = () => {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | Blob, type: 'IMAGE' | 'VIDEO' | 'VOICE') => {
     if (!profile?.is_premium) {
       showAlert(t('premium_required'), t('media_premium_only'));
-      navigate('/premium');
+      navigate('/store');
       return;
     }
 

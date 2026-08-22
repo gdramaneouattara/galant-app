@@ -35,7 +35,6 @@ const MatchesPage = lazy(() => import('./pages/MatchesPage'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ProfileDetailPage = lazy(() => import('./pages/ProfileDetailPage'));
-const PremiumPage = lazy(() => import('./pages/PremiumPage'));
 const PaymentReturnPage = lazy(() => import('./pages/PaymentReturnPage'));
 const VerifyPage = lazy(() => import('./pages/VerifyPage'));
 const PartnerDashboard = lazy(() => import('./pages/PartnerDashboard'));
@@ -56,7 +55,6 @@ const SentinelPage = lazy(() => import('./pages/SentinelPage'));
 const AppsPage = lazy(() => import('./pages/AppsPage'));
 const LikesInboxPage = lazy(() => import('./pages/LikesInboxPage'));
 const RosesInboxPage = lazy(() => import('./pages/RosesInboxPage'));
-const BoostPage = lazy(() => import('./pages/BoostPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 const SupportPage = lazy(() => import('./pages/SupportPage'));
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'));
@@ -199,7 +197,7 @@ const Header = () => {
             <Link to="/matches" className="hover:text-primary transition-colors">{t('messages')}</Link>
             <Link to="/experiences" className="hover:text-primary transition-colors">Guide</Link>
             <Link to="/apps" className="hover:text-primary transition-colors">{t('apps')}</Link>
-            <Link to="/premium" className="text-amber-500 hover:text-amber-600 transition-colors flex items-center gap-1">
+            <Link to="/store" className="text-amber-500 hover:text-amber-600 transition-colors flex items-center gap-1">
               <Crown size={14} fill="currentColor" />
               Premium
             </Link>
@@ -285,14 +283,14 @@ const AppContent: React.FC = () => {
             <Route path="/matches" element={<MatchesPage />} />
             <Route path="/likes" element={<LikesInboxPage />} />
             <Route path="/roses" element={<RosesInboxPage />} />
-            <Route path="/boost" element={<BoostPage />} />
+            <Route path="/boost" element={<Navigate to="/store" replace />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/support" element={<SupportPage />} />
             <Route path="/chat/:matchId" element={<ChatPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/profile/:id" element={<ProfileDetailPage />} />
             <Route path="/store" element={<StorePage />} />
-            <Route path="/premium" element={<PremiumPage />} />
+            <Route path="/premium" element={<Navigate to="/store" replace />} />
             <Route path="/payment-return" element={<PaymentReturnPage />} />
             <Route path="/agenda" element={<AgendaPage />} />
             <Route path="/guide" element={<GuidePage />} />
