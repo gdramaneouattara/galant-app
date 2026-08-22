@@ -48,8 +48,31 @@ const StorePage: React.FC = () => {
         oneMonth: '1 month',
         threeMonths: '3 months',
         perMonth: '/ month',
-        standardFeatures: ['Unlimited swipes', 'Certified Member badge', 'See who liked you'],
-        privilegeFeatures: ['Everything in Standard', 'Discreet invisible mode', '3 free Roses / month'],
+        standardName: 'Monthly Premium',
+        standardTagline: 'The essential Galant access for 30 days.',
+        standardValue: 'Full access',
+        privilegeName: 'Privilege 3 Months',
+        privilegeTagline: 'Longer access, more benefits, better monthly value.',
+        privilegeValue: 'Best value',
+        privilegePriceNote: 'around 3,333 F / month',
+        standardFeatures: [
+          'Unlimited priority swipes',
+          'See who liked you',
+          'Messages and chats unlocked',
+          'Stories included',
+          'AI assistant and advanced filters',
+          'Invisible mode included',
+          'Up to 6 profile photos',
+          'Nearby partners included'
+        ],
+        privilegeFeatures: [
+          'All Monthly Premium benefits',
+          '3 months of access',
+          '3 free Roses every month',
+          'Priority support',
+          'Invisible mode included',
+          'Better price: around 3,333 F / month'
+        ],
         processing: 'Processing...',
         subscribe: 'Subscribe',
         recommended: 'Recommended',
@@ -93,8 +116,31 @@ const StorePage: React.FC = () => {
         oneMonth: '1 mois',
         threeMonths: '3 mois',
         perMonth: '/ mois',
-        standardFeatures: ['Swipes illimités', 'Badge Membre Certifié', 'Voir qui vous a liké'],
-        privilegeFeatures: ['Tout le mode Standard', 'Mode Invisible discret', '3 Roses offertes / mois'],
+        standardName: 'Premium Mensuel',
+        standardTagline: 'L acces essentiel a Galant pendant 30 jours.',
+        standardValue: 'Acces complet',
+        privilegeName: 'Privilege 3 Mois',
+        privilegeTagline: 'Plus long, plus avantageux, avec un meilleur prix mensuel.',
+        privilegeValue: 'Meilleur choix',
+        privilegePriceNote: 'environ 3 333 F / mois',
+        standardFeatures: [
+          'Swipes illimites et prioritaires',
+          'Voir les profils qui vous ont like',
+          'Messages et conversations debloques',
+          'Stories incluses',
+          'Assistant IA et filtres avances',
+          'Mode invisible inclus',
+          'Jusqu a 6 photos de profil',
+          'Partenaires autour de moi inclus'
+        ],
+        privilegeFeatures: [
+          'Tous les avantages Premium Mensuel',
+          '3 mois d acces',
+          '3 Roses offertes chaque mois',
+          'Support prioritaire',
+          'Mode invisible inclus',
+          'Meilleur prix : environ 3 333 F / mois'
+        ],
         processing: 'Traitement...',
         subscribe: "S'abonner",
         recommended: 'Recommandé',
@@ -209,12 +255,19 @@ const StorePage: React.FC = () => {
           <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-white/5 shadow-xl space-y-6 flex flex-col justify-between">
             <div className="space-y-4">
               <div className="flex justify-between items-start">
-                <h4 className="text-xl font-sans  tracking-tighter uppercase text-slate-900 dark:text-white leading-none">Standard</h4>
+                <div className="space-y-2">
+                  <h4 className="text-xl font-sans  tracking-tighter uppercase text-slate-900 dark:text-white leading-none">{labels.standardName}</h4>
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 leading-relaxed">{labels.standardTagline}</p>
+                </div>
                 <div className="bg-slate-50 dark:bg-white/5 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest text-slate-400">{labels.oneMonth}</div>
               </div>
               <div className="flex items-baseline gap-1">
                 <span className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">5 000 F</span>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{labels.perMonth}</span>
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-50 dark:bg-white/5 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-300">
+                <Crown size={13} />
+                {labels.standardValue}
               </div>
               <ul className="space-y-3">
                 {labels.standardFeatures.map((f, i) => (
@@ -240,12 +293,24 @@ const StorePage: React.FC = () => {
             </div>
             <div className="space-y-4 relative z-10">
               <div className="flex justify-between items-start">
-                <h4 className="text-xl font-sans  tracking-tighter uppercase text-white leading-none">Privilège</h4>
+                <div className="space-y-2 pr-16">
+                  <h4 className="text-xl font-sans  tracking-tighter uppercase text-white leading-none">{labels.privilegeName}</h4>
+                  <p className="text-xs font-semibold text-slate-400 leading-relaxed">{labels.privilegeTagline}</p>
+                </div>
                 <div className="bg-white/10 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest text-amber-400">{labels.threeMonths}</div>
               </div>
               <div className="flex items-baseline gap-1">
                 <span className="text-4xl font-black text-white tracking-tighter">10 000 F</span>
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">/ 3 mois</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex items-center gap-2 rounded-2xl bg-primary/15 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-primary">
+                  <Crown size={13} />
+                  {labels.privilegeValue}
+                </span>
+                <span className="inline-flex rounded-2xl bg-white/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-300">
+                  {labels.privilegePriceNote}
+                </span>
               </div>
               <ul className="space-y-3">
                 {labels.privilegeFeatures.map((f, i) => (

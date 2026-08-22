@@ -6,7 +6,10 @@ const read = (path) => readFile(path, 'utf8');
 
 test('Rules: ChatScreen handles send messages', async () => {
   const code = await read('src/screens/messages/ChatScreen.tsx');
+  const webChat = await read('web/src/pages/ChatPage.tsx');
   assert.match(code, /handleSend/);
+  assert.match(webChat, /bottom-24/);
+  assert.match(webChat, /pb-44 md:pb-4/);
 });
 
 test('Rules: ChatScreen handles translation Premium perk', async () => {
@@ -598,6 +601,11 @@ test('Rules: Web profile Store groups subscriptions and global purchases', async
   assert.doesNotMatch(webProfile, /\bHelpCircle\b/);
   assert.match(webStore, /Store Galant/);
   assert.match(webStore, /Abonnements/);
+  assert.match(webStore, /Premium Mensuel/);
+  assert.match(webStore, /Privilege 3 Mois/);
+  assert.match(webStore, /Swipes illimites et prioritaires/);
+  assert.match(webStore, /3 Roses offertes chaque mois/);
+  assert.doesNotMatch(webStore, /Le paiement active automatiquement votre acces apres validation/);
   assert.match(webStore, /MONTHLY/);
   assert.match(webStore, /QUARTERLY/);
   assert.match(webStore, /ROSE_PACK/);
