@@ -443,7 +443,7 @@ const ChatPage: React.FC = () => {
       </div>
 
       {/* Zone des Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-slate-50/30 dark:bg-slate-950/30">
+      <div className="flex-1 overflow-y-auto p-4 pb-44 md:pb-4 space-y-6 bg-slate-50/30 dark:bg-slate-950/30">
         <div className="bg-slate-100/50 dark:bg-slate-800/50 p-4 rounded-3xl text-center border border-slate-200/50 dark:border-white/5 mb-4">
            <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige flex items-center justify-center gap-2">
               <ShieldCheck size={14} /> {t('media_privacy_note')}
@@ -583,7 +583,7 @@ const ChatPage: React.FC = () => {
       </div>
 
       {/* Input de Message */}
-      <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-50 dark:border-white/5 relative">
+      <div className="fixed bottom-24 left-0 right-0 z-40 shrink-0 p-4 bg-white dark:bg-slate-900 border-t border-slate-50 dark:border-white/5 shadow-[0_-18px_40px_rgba(15,23,42,0.12)] dark:shadow-[0_-18px_40px_rgba(0,0,0,0.25)] md:relative md:bottom-auto md:left-auto md:right-auto md:z-auto md:shadow-none">
         {isRecording && (
           <div className="absolute inset-0 bg-white dark:bg-slate-900 z-20 flex items-center justify-between px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex items-center gap-3">

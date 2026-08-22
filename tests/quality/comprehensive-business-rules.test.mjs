@@ -6,7 +6,10 @@ const read = (path) => readFile(path, 'utf8');
 
 test('Rules: ChatScreen handles send messages', async () => {
   const code = await read('src/screens/messages/ChatScreen.tsx');
+  const webChat = await read('web/src/pages/ChatPage.tsx');
   assert.match(code, /handleSend/);
+  assert.match(webChat, /bottom-24/);
+  assert.match(webChat, /pb-44 md:pb-4/);
 });
 
 test('Rules: ChatScreen handles translation Premium perk', async () => {
