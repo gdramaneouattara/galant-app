@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft,
   Coffee,
-  CreditCard,
   ExternalLink,
   Flower2,
   Gift,
@@ -21,8 +20,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '@shared/lib/api';
-import { useSubscription } from '@shared/hooks/useSubscription';
 import { showAlert } from '@shared/lib/ui-bridge';
+import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
 
 type DiscoveryVenue = {
   id: string;
@@ -100,26 +99,18 @@ const copy = {
 
 const PartnerDiscoveryPage: React.FC = () => {
   const { profile, language } = useAuth();
-  const { purchaseWithPaystack, purchaseLoading } = useSubscription();
   const [city, setCity] = useState('');
   const [venues, setVenues] = useState<DiscoveryVenue[]>([]);
   const [loadingDiscovery, setLoadingDiscovery] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [category, setCategory] = useState<DiscoveryCategory>('ALL');
+  const [unlockModalOpen, setUnlockModalOpen] = useState(false);
   const c = copy[language] || copy.fr;
   const hasDiscoveryAccess = !!(profile?.is_premium || profile?.is_vip || profile?.partner_discovery_unlocked);
 
-  const promptUnlock = async () => {
-    if (!window.confirm(`${c.payTitle}\n\n${c.payBody}`)) return;
-    const ok = await purchaseWithPaystack('PARTNER_DISCOVERY_UNLOCK', 500, 'partner_discovery', {
-      targetName: 'Partenaires autour de moi'
-    });
-    if (ok) showAlert('Succès', 'Recherche partenaires débloquée.');
-  };
-
   const fetchDiscovery = async (params: Record<string, string | number>) => {
     if (!hasDiscoveryAccess) {
-      await promptUnlock();
+      setUnlockModalOpen(true);
       return;
     }
 
@@ -189,10 +180,10 @@ const PartnerDiscoveryPage: React.FC = () => {
 
         <button
           onClick={handleLocate}
-          disabled={loadingDiscovery || purchaseLoading}
+          disabled={loadingDiscovery}
           className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 text-xs font-black uppercase tracking-widest text-white disabled:opacity-50"
         >
-          {loadingDiscovery || purchaseLoading ? <Loader2 size={16} className="animate-spin" /> : <LocateFixed size={16} />}
+          {loadingDiscovery ? <Loader2 size={16} className="animate-spin" /> : <LocateFixed size={16} />}
           {c.nearMe}
         </button>
 
@@ -230,10 +221,10 @@ const PartnerDiscoveryPage: React.FC = () => {
           </div>
           <button
             onClick={handleCitySearch}
-            disabled={loadingDiscovery || purchaseLoading || !city.trim()}
+            disabled={loadingDiscovery || !city.trim()}
             className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 dark:bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-white dark:text-slate-900 disabled:opacity-50"
           >
-            {loadingDiscovery || purchaseLoading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+            {loadingDiscovery ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
             {c.searchCity}
           </button>
         </div>
@@ -277,6 +268,16 @@ const PartnerDiscoveryPage: React.FC = () => {
           ))}
         </div>
       )}
+
+      <InteractionPurchaseModal
+        isOpen={unlockModalOpen}
+        onClose={() => setUnlockModalOpen(false)}
+        type="PARTNER_DISCOVERY_UNLOCK"
+        targetId="partner_discovery"
+        userName={c.title}
+        price={500}
+        onSuccess={() => setUnlockModalOpen(false)}
+      />
     </div>
   );
 };

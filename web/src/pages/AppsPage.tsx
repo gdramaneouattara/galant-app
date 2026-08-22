@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Shield, ShoppingCart, Sparkles } from 'lucide-react';
 import FeatureHighlight from '../components/FeatureHighlight';
 import { useAuth } from '../context/AuthContext';
+import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
 
 const APPS = [
   {
@@ -40,7 +41,9 @@ const fallbackCopy: Record<string, string> = {
 };
 
 const AppsPage: React.FC = () => {
-  const { t } = useAuth();
+  const { profile, t } = useAuth();
+  const [partnerUnlockOpen, setPartnerUnlockOpen] = useState(false);
+  const hasPartnerDiscoveryAccess = !!(profile?.is_premium || profile?.is_vip || profile?.partner_discovery_unlocked);
   const label = (key: string) => {
     const translated = t(key as any);
     return translated === key ? fallbackCopy[key] || key : translated;
@@ -64,6 +67,12 @@ const AppsPage: React.FC = () => {
             <FeatureHighlight key={app.href} id={`app_${app.href.replace('/', '')}`} active type={app.highlight}>
               <Link
                 to={app.href}
+                onClick={(event) => {
+                  if (app.href === '/partner-discovery' && !hasPartnerDiscoveryAccess) {
+                    event.preventDefault();
+                    setPartnerUnlockOpen(true);
+                  }
+                }}
                 className="min-h-[180px] rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-5 shadow-sm hover:-translate-y-1 hover:shadow-xl transition-all w-full flex flex-col"
               >
                 <div className={`w-12 h-12 rounded-2xl ${app.bg} ${app.color} flex items-center justify-center mb-5`}>
@@ -90,6 +99,16 @@ const AppsPage: React.FC = () => {
           <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1">{t('partner_signup_short_desc')}</p>
         </div>
       </Link>
+
+      <InteractionPurchaseModal
+        isOpen={partnerUnlockOpen}
+        onClose={() => setPartnerUnlockOpen(false)}
+        type="PARTNER_DISCOVERY_UNLOCK"
+        targetId="partner_discovery"
+        userName={label('partner_discovery')}
+        price={500}
+        onSuccess={() => setPartnerUnlockOpen(false)}
+      />
     </div>
   );
 };

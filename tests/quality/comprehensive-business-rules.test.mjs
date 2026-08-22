@@ -139,7 +139,8 @@ test('Rules: Discovery header exposes notifications with compact title and grid/
   assert.match(webDiscover, /relative mx-auto w-10 h-10/);
   assert.match(webPurchaseModal, /DISCOVER_GRID_UNLOCK/);
   assert.match(webPurchaseModal, /DISCOVER_FILTERS_UNLOCK/);
-  assert.match(webPurchaseModal, /canBecomePremium = isGridUnlock \|\| isFiltersUnlock/);
+  assert.match(webPurchaseModal, /PARTNER_DISCOVERY_UNLOCK/);
+  assert.match(webPurchaseModal, /canBecomePremium = isGridUnlock \|\| isFiltersUnlock \|\| isPartnerDiscoveryUnlock/);
   assert.match(webPurchaseModal, /Devenir Premium/);
   assert.match(webPurchaseModal, /Become Premium/);
   assert.match(webPurchaseModal, /navigate\('\/store'\)/);
@@ -860,10 +861,16 @@ test('Rules: Apps exposes paid user partner discovery with direct Google import'
   assert.match(subscriptionService, /partner_discovery_unlocked:\s*true/);
   assert.match(webApp, /\/partner-discovery/);
   assert.match(webApps, /\/partner-discovery/);
-  assert.doesNotMatch(webApps, /PARTNER_DISCOVERY_UNLOCK/);
+  assert.match(webApps, /InteractionPurchaseModal/);
+  assert.match(webApps, /PARTNER_DISCOVERY_UNLOCK/);
+  assert.match(webApps, /setPartnerUnlockOpen\(true\)/);
+  assert.match(webApps, /hasPartnerDiscoveryAccess/);
   assert.doesNotMatch(webApps, /\/api\/venues\/partner-discovery\/google/);
   assert.match(webPartnerDiscovery, /PARTNER_DISCOVERY_UNLOCK/);
-  assert.match(webPartnerDiscovery, /window\.confirm/);
+  assert.match(webPartnerDiscovery, /InteractionPurchaseModal/);
+  assert.match(webPartnerDiscovery, /setUnlockModalOpen\(true\)/);
+  assert.doesNotMatch(webPartnerDiscovery, /window\.confirm/);
+  assert.match(webPartnerDiscovery, /price=\{500\}/);
   assert.match(webPartnerDiscovery, /\/api\/venues\/partner-discovery\/google/);
   assert.match(webPartnerDiscovery, /DISCOVERY_CATEGORIES/);
   assert.match(webPartnerDiscovery, /category/);
