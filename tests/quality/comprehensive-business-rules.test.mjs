@@ -141,6 +141,9 @@ test('Rules: Discovery header exposes notifications with compact title and grid/
   assert.match(webPurchaseModal, /DISCOVER_FILTERS_UNLOCK/);
   assert.match(webPurchaseModal, /PARTNER_DISCOVERY_UNLOCK/);
   assert.match(webPurchaseModal, /canBecomePremium = isGridUnlock \|\| isFiltersUnlock \|\| isPartnerDiscoveryUnlock/);
+  assert.match(webPurchaseModal, /max-h-\[calc\(100svh-1rem\)\]/);
+  assert.match(webPurchaseModal, /overflow-y-auto/);
+  assert.match(webPurchaseModal, /py-4 sm:py-5/);
   assert.match(webPurchaseModal, /Devenir Premium/);
   assert.match(webPurchaseModal, /Become Premium/);
   assert.match(webPurchaseModal, /navigate\('\/store'\)/);
