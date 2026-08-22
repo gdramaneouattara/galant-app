@@ -8,11 +8,13 @@ test('Rules: ChatScreen handles send messages', async () => {
   const code = await read('src/screens/messages/ChatScreen.tsx');
   const webChat = await read('web/src/pages/ChatPage.tsx');
   assert.match(code, /handleSend/);
-  assert.match(webChat, /bottom-24/);
+  assert.match(webChat, /MOBILE_TAB_BAR_HEIGHT = 72/);
+  assert.match(webChat, /bottom-\[72px\]/);
   assert.match(webChat, /composerRef/);
   assert.match(webChat, /ResizeObserver/);
   assert.match(webChat, /messageBottomPadding/);
   assert.match(webChat, /style=\{\{ paddingBottom: messageBottomPadding \}\}/);
+  assert.doesNotMatch(webChat, /bottom-24/);
   assert.doesNotMatch(webChat, /pb-44 md:pb-4/);
 });
 
