@@ -56,7 +56,7 @@ const StorePage: React.FC = () => {
         privilegeValue: 'Best value',
         privilegePriceNote: 'around 3,333 F / month',
         standardFeatures: [
-          'Unlimited priority swipes',
+          'Priority swipes',
           'See who liked you',
           'Messages and chats unlocked',
           'Stories included',
