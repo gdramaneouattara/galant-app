@@ -34,6 +34,14 @@ test('Monetization: Boost 7 Days price is 5000 FCFA', async () => {
   assert.match(code, /5000/);
 });
 
+test('Admin pricing exposes boost tariff controls', async () => {
+  const page = await read('web/src/pages/admin/AdminPricing.tsx');
+  assert.match(page, /Boosts/);
+  assert.match(page, /BOOST_1D/);
+  assert.match(page, /BOOST_3D/);
+  assert.match(page, /BOOST_7D/);
+});
+
 test('Monetization: Women premium Super Like quota is 10/day', async () => {
   const code = await read('server/src/config/constants.js');
   assert.match(code, /WOMEN_SUPER_LIKE:\s*10/);

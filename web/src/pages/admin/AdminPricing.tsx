@@ -123,6 +123,37 @@ const AdminPricing: React.FC = () => {
           </div>
         </div>
 
+        {/* Boosts */}
+        <div className="bg-white dark:bg-slate-900 rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-xl dark:shadow-none border border-slate-100 dark:border-white/5 space-y-6 transition-colors">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-sky-50 dark:bg-sky-900/20 rounded-xl flex items-center justify-center text-sky-500 transition-colors">
+              <Rocket size={20} />
+            </div>
+            <h3 className="font-black text-lg uppercase tracking-tight text-slate-900 dark:text-white transition-colors">Boosts</h3>
+          </div>
+
+          <div className="space-y-4">
+            {[
+              { id: 'BOOST_1D', label: 'Boost 1 jour' },
+              { id: 'BOOST_3D', label: 'Boost 3 jours' },
+              { id: 'BOOST_7D', label: 'Boost 7 jours' }
+            ].map(item => (
+              <div key={item.id} className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors">{item.label}</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={pricing.PRICES[item.id]}
+                    onChange={(e) => updateField('PRICES', item.id, e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl py-3 pl-10 pr-4 font-bold text-slate-900 dark:text-white transition-colors"
+                  />
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 font-bold text-xs transition-colors">F</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Packs de Roses */}
         <div className="bg-white dark:bg-slate-900 rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-xl dark:shadow-none border border-slate-100 dark:border-white/5 space-y-6 transition-colors">
           <div className="flex items-center gap-3 mb-4">
