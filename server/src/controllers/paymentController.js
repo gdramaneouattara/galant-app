@@ -6,6 +6,16 @@ const {
   verifyGooglePlayPurchase,
   verifyApplePurchase
 } = require('../services/subscriptionService');
+const { getCurrentPricing } = require('../services/pricingService');
+
+const getPaymentPricing = async (req, res) => {
+  try {
+    const pricing = await getCurrentPricing();
+    res.json(pricing);
+  } catch (error) {
+    res.status(500).json({ error: 'pricing_unavailable' });
+  }
+};
 
 const initializePayment = async (req, res) => {
   const { planId, type, targetId, paymentMethod, note, callbackUrl } = req.body;
@@ -222,4 +232,4 @@ const appleVerify = async (req, res) => {
   }
 };
 
-module.exports = { initializePayment, verifyPayment, googleVerify, appleVerify, handleWebhook };
+module.exports = { getPaymentPricing, initializePayment, verifyPayment, googleVerify, appleVerify, handleWebhook };

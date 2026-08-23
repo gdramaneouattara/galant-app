@@ -42,6 +42,25 @@ test('Admin pricing exposes boost tariff controls', async () => {
   assert.match(page, /BOOST_7D/);
 });
 
+test('Boost purchase screens use configured pricing', async () => {
+  const routes = await read('server/src/routes/paymentRoutes.js');
+  const controller = await read('server/src/controllers/paymentController.js');
+  const store = await read('web/src/pages/StorePage.tsx');
+  const boostScreen = await read('src/screens/boost/BoostScreen.tsx');
+
+  assert.match(routes, /router\.get\(['"]\/pricing['"],\s*requireAuth,\s*getPaymentPricing\)/);
+  assert.match(controller, /const getPaymentPricing/);
+  assert.match(controller, /getCurrentPricing\(\)/);
+  assert.match(store, /\/api\/payments\/pricing/);
+  assert.match(store, /getPrice\(['"]BOOST_1D['"],\s*1000\)/);
+  assert.match(store, /getPrice\(['"]BOOST_3D['"],\s*2500\)/);
+  assert.match(store, /getPrice\(['"]BOOST_7D['"],\s*5000\)/);
+  assert.match(boostScreen, /\/api\/payments\/pricing/);
+  assert.match(boostScreen, /getBoostPrice\(['"]BOOST_1D['"],\s*1000\)/);
+  assert.match(boostScreen, /getBoostPrice\(['"]BOOST_3D['"],\s*2500\)/);
+  assert.match(boostScreen, /getBoostPrice\(['"]BOOST_7D['"],\s*5000\)/);
+});
+
 test('Monetization: Women premium Super Like quota is 10/day', async () => {
   const code = await read('server/src/config/constants.js');
   assert.match(code, /WOMEN_SUPER_LIKE:\s*10/);
@@ -96,7 +115,7 @@ test('Payments: all payment handlers are exported and routed', async () => {
   const controller = await read('server/src/controllers/paymentController.js');
   const routes = await read('server/src/routes/paymentRoutes.js');
 
-  assert.match(controller, /module\.exports\s*=\s*\{[^}]*initializePayment[^}]*verifyPayment[^}]*googleVerify[^}]*appleVerify[^}]*handleWebhook[^}]*\}/s);
+  assert.match(controller, /module\.exports\s*=\s*\{[^}]*getPaymentPricing[^}]*initializePayment[^}]*verifyPayment[^}]*googleVerify[^}]*appleVerify[^}]*handleWebhook[^}]*\}/s);
   assert.match(routes, /router\.post\(['"]\/initialize['"],\s*requireAuth,\s*initializePayment\)/);
   assert.match(routes, /router\.get\(['"]\/verify['"],\s*requireAuth,\s*verifyPayment\)/);
   assert.match(routes, /router\.post\(['"]\/google-verify['"],\s*requireAuth,\s*googleVerify\)/);
