@@ -34,6 +34,10 @@ const StorePage: React.FC = () => {
 
   const boostStatus = getBoostStatus(profile?.boosted_until);
   const hasPartnerDiscoveryAccess = !!(profile?.is_premium || profile?.is_vip || profile?.partner_discovery_unlocked);
+  const getPrice = (key: string, fallback: number) => {
+    const value = Number(pricing?.PRICES?.[key]);
+    return Number.isFinite(value) && value > 0 ? value : fallback;
+  };
   const labels = language === 'en'
     ? {
         alreadyTitle: 'Already available',
@@ -90,9 +94,9 @@ const StorePage: React.FC = () => {
           { id: 'GOLDEN_ROSE', type: 'GOLDEN_ROSE' as PurchaseType, label: 'Golden Rose (3h)', price: 2500, icon: '🏆' },
         ],
         boosts: [
-          { id: '1D', label: '1 Day Boost', price: 1000, color: 'text-indigo-500', icon: Flame },
-          { id: '3D', label: '3 Day Boost', price: 2500, color: 'text-purple-600', icon: Rocket },
-          { id: '7D', label: '7 Day Boost', price: 5000, color: 'text-primary', icon: Star },
+          { id: '1D', label: '1 Day Boost', price: getPrice('BOOST_1D', 1000), color: 'text-indigo-500', icon: Flame },
+          { id: '3D', label: '3 Day Boost', price: getPrice('BOOST_3D', 2500), color: 'text-purple-600', icon: Rocket },
+          { id: '7D', label: '7 Day Boost', price: getPrice('BOOST_7D', 5000), color: 'text-primary', icon: Star },
         ],
           unlocks: [
             { id: 'DISCOVER_GRID_UNLOCK', type: 'DISCOVER_GRID_UNLOCK' as PurchaseType, label: 'Gallery Access', sub: '100 profile quota', price: 1000, icon: LayoutGrid, color: 'text-indigo-500' },
@@ -158,9 +162,9 @@ const StorePage: React.FC = () => {
           { id: 'GOLDEN_ROSE', type: 'GOLDEN_ROSE' as PurchaseType, label: "Rose d'Or (3h)", price: 2500, icon: '🏆' },
         ],
         boosts: [
-          { id: '1D', label: 'Boost 1 Jour', price: 1000, color: 'text-indigo-500', icon: Flame },
-          { id: '3D', label: 'Boost 3 Jours', price: 2500, color: 'text-purple-600', icon: Rocket },
-          { id: '7D', label: 'Boost 7 Jours', price: 5000, color: 'text-primary', icon: Star },
+          { id: '1D', label: 'Boost 1 Jour', price: getPrice('BOOST_1D', 1000), color: 'text-indigo-500', icon: Flame },
+          { id: '3D', label: 'Boost 3 Jours', price: getPrice('BOOST_3D', 2500), color: 'text-purple-600', icon: Rocket },
+          { id: '7D', label: 'Boost 7 Jours', price: getPrice('BOOST_7D', 5000), color: 'text-primary', icon: Star },
         ],
           unlocks: [
             { id: 'DISCOVER_GRID_UNLOCK', type: 'DISCOVER_GRID_UNLOCK' as PurchaseType, label: 'Accès Galerie', sub: 'Quota 100 profils', price: 1000, icon: LayoutGrid, color: 'text-indigo-500' },
@@ -173,10 +177,17 @@ const StorePage: React.FC = () => {
       };
 
   useEffect(() => {
-    apiRequest<any>('/api/admin/pricing', { requireAuth: true })
-      .then((data) => setPricing(data))
+    if (!profile?.id) return;
+    let cancelled = false;
+    apiRequest<any>('/api/payments/pricing', { requireAuth: true })
+      .then((data) => {
+        if (!cancelled) setPricing(data);
+      })
       .catch(() => {});
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [profile?.id]);
 
   const handlePurchase = async (type: PurchaseType, id: string, amount: number) => {
     if (type === 'PARTNER_DISCOVERY_UNLOCK' && hasPartnerDiscoveryAccess) {

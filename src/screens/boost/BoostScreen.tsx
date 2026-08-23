@@ -26,6 +26,8 @@ type BoostPlan = {
   isBest?: boolean;
 };
 
+const formatFcfa = (amount: number) => `${Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} F CFA`;
+
 const BoostScreen: React.FC = () => {
   // Quality requirements: /api/payments/initialize, /api/payments/verify
   const navigation = useNavigation<any>();
@@ -33,15 +35,21 @@ const BoostScreen: React.FC = () => {
   const { purchaseLoading, purchaseWithPaystack, purchaseWithStore, initIAP, endIAP } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [activatingFree, setActivatingFree] = useState(false);
+  const [pricing, setPricing] = useState<any>(null);
   const boostStatus = getBoostStatus(currentUser?.boosted_until);
+
+  const getBoostPrice = useCallback((key: string, fallback: number) => {
+    const value = Number(pricing?.PRICES?.[key]);
+    return Number.isFinite(value) && value > 0 ? value : fallback;
+  }, [pricing]);
 
   const BOOST_PLANS: BoostPlan[] = useMemo(() => [
     {
       id: '1D',
       sku: process.env.EXPO_PUBLIC_BOOST_1D_SKU || 'boost_1_day',
       name: t('one_day'),
-      priceText: `1 000 F CFA`,
-      priceAmount: 1000,
+      priceText: formatFcfa(getBoostPrice('BOOST_1D', 1000)),
+      priceAmount: getBoostPrice('BOOST_1D', 1000),
       icon: (props) => <Flame {...props} />,
       description: t('boost_1d_desc'),
     },
@@ -49,8 +57,8 @@ const BoostScreen: React.FC = () => {
       id: '3D',
       sku: process.env.EXPO_PUBLIC_BOOST_3D_SKU || 'boost_3_days',
       name: t('three_days'),
-      priceText: `2 500 F CFA`,
-      priceAmount: 2500,
+      priceText: formatFcfa(getBoostPrice('BOOST_3D', 2500)),
+      priceAmount: getBoostPrice('BOOST_3D', 2500),
       savings: '17%',
       icon: (props) => <ChevronsUp {...props} />,
       description: t('boost_3d_desc'),
@@ -60,13 +68,13 @@ const BoostScreen: React.FC = () => {
       id: '7D',
       sku: process.env.EXPO_PUBLIC_BOOST_7D_SKU || 'boost_7_days',
       name: t('seven_days'),
-      priceText: `5 000 F CFA`,
-      priceAmount: 5000,
+      priceText: formatFcfa(getBoostPrice('BOOST_7D', 5000)),
+      priceAmount: getBoostPrice('BOOST_7D', 5000),
       savings: '29%',
       icon: (props) => <Crown {...props} />,
       description: t('boost_7d_desc'),
     },
-  ], [t]);
+  ], [getBoostPrice, t]);
 
   const isMaleTrialActive = useMemo(() => {
     if (!currentUser) return false;
@@ -83,6 +91,19 @@ const BoostScreen: React.FC = () => {
     void initIAP(BOOST_PLANS.map(p => p.sku));
     return () => { void endIAP(); };
   }, [BOOST_PLANS]);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    let cancelled = false;
+    apiRequest<any>('/api/payments/pricing', { requireAuth: true })
+      .then((data) => {
+        if (!cancelled) setPricing(data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser?.id]);
 
   useFocusEffect(useCallback(() => { void refreshCurrentUser(); }, [refreshCurrentUser, appResumeVersion]));
 
