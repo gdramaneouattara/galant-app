@@ -20,9 +20,9 @@ const mergeRosePacks = (overrides = {}) => {
 /**
  * Gets the current pricing, with fallback to constants.
  */
-const getCurrentPricing = async () => {
+const getCurrentPricing = async ({ forceRefresh = false } = {}) => {
   const now = Date.now();
-  if (cachedPricing && (now - lastFetch < CACHE_TTL)) {
+  if (!forceRefresh && cachedPricing && (now - lastFetch < CACHE_TTL)) {
     return cachedPricing;
   }
 
@@ -57,4 +57,9 @@ const getCurrentPricing = async () => {
   }
 };
 
-module.exports = { getCurrentPricing };
+const clearPricingCache = () => {
+  cachedPricing = null;
+  lastFetch = 0;
+};
+
+module.exports = { getCurrentPricing, clearPricingCache };

@@ -12,6 +12,7 @@ const {
   TIKERAMA_AGENDA_CATEGORIES
 } = require('../services/tikeramaAgendaService');
 const { cleanupExpiredAgendaEvents, deleteAgendaEventWithAttendance } = require('../services/cronService');
+const { clearPricingCache } = require('../services/pricingService');
 const pricingDefaults = require('../config/constants');
 
 const createNotificationSafely = (payload) => {
@@ -490,6 +491,7 @@ const updatePricing = async (req, res) => {
       updated_by: req.user.id
     };
     await db.collection('app_settings').doc('pricing').set(data, { merge: true });
+    clearPricingCache();
 
     await appendAdminAuditLog({
       adminId: req.user.id,
