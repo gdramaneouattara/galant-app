@@ -18,7 +18,7 @@ const getPaymentPricing = async (req, res) => {
 };
 
 const initializePayment = async (req, res) => {
-  const { planId, type, targetId, paymentMethod, note, callbackUrl } = req.body;
+  const { planId, type, targetId, paymentMethod, note, callbackUrl, amount } = req.body;
   const email = req.authUser?.email || `${req.user.id}@galant.app`;
   const normalizedType = String(type || '').toUpperCase();
   const normalizedPlanId = String(planId || '').toUpperCase();
@@ -51,6 +51,22 @@ const initializePayment = async (req, res) => {
   if (!Number.isFinite(roundedAmount) || roundedAmount <= 0 || expectedAmount === null) {
     return res.status(400).json({ error: 'invalid_purchase_payload' });
   }
+  const displayedAmount = amount === undefined || amount === null ? null : Number(amount);
+  if (displayedAmount !== null) {
+    const normalizedDisplayedAmount = Math.round(displayedAmount);
+    const normalizedExpectedAmount = Math.round(Number(expectedAmount));
+    if (!Number.isFinite(normalizedDisplayedAmount) || normalizedDisplayedAmount <= 0) {
+      return res.status(400).json({ error: 'invalid_quoted_amount' });
+    }
+    if (normalizedDisplayedAmount !== normalizedExpectedAmount) {
+      return res.status(409).json({
+        error: 'price_changed',
+        quoted_amount: normalizedDisplayedAmount,
+        expected_amount: normalizedExpectedAmount,
+        message: 'Le prix de cette offre a change. Veuillez rafraichir le Store avant de payer.'
+      });
+    }
+  }
 
   const payload = {
     email,
@@ -63,6 +79,7 @@ const initializePayment = async (req, res) => {
       type: normalizedType,
       targetId: targetId || null,
       paymentMethod: normalizedPaymentMethod,
+      quotedAmount: displayedAmount === null ? null : Math.round(displayedAmount),
       note: note || null,
     },
   };

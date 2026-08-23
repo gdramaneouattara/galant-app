@@ -61,6 +61,18 @@ test('Boost purchase screens use configured pricing', async () => {
   assert.match(boostScreen, /getBoostPrice\(['"]BOOST_7D['"],\s*5000\)/);
 });
 
+test('Payment initialization rejects stale displayed prices', async () => {
+  const controller = await read('server/src/controllers/paymentController.js');
+
+  assert.match(controller, /const \{ planId, type, targetId, paymentMethod, note, callbackUrl, amount \} = req\.body/);
+  assert.match(controller, /displayedAmount/);
+  assert.match(controller, /normalizedDisplayedAmount !== normalizedExpectedAmount/);
+  assert.match(controller, /res\.status\(409\)\.json\(\{/);
+  assert.match(controller, /error:\s*['"]price_changed['"]/);
+  assert.match(controller, /expected_amount/);
+  assert.match(controller, /quotedAmount/);
+});
+
 test('Monetization: Women premium Super Like quota is 10/day', async () => {
   const code = await read('server/src/config/constants.js');
   assert.match(code, /WOMEN_SUPER_LIKE:\s*10/);
