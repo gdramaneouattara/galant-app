@@ -27,7 +27,7 @@ interface Venue {
 const GuidePage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { language } = useAuth();
+  const { language, profile } = useAuth();
   const routeState = (location.state as any) || {};
   const initialGuideState = routeState.guideState || {};
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -35,8 +35,10 @@ const GuidePage: React.FC = () => {
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pendingVenueContact, setPendingVenueContact] = useState<Venue | null>(null);
+  const [partnerDiscoveryUnlockOpen, setPartnerDiscoveryUnlockOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState(initialGuideState.searchQuery || '');
   const [activeCategory, setActiveCategory] = useState<'ALL' | 'RESTAURANT' | 'LOUNGE' | 'HOTEL'>(initialGuideState.activeCategory || 'ALL');
+  const hasPartnerDiscoveryAccess = !!(profile?.is_premium || profile?.is_vip || profile?.partner_discovery_unlocked);
   const labels = language === 'en'
     ? {
         editorialTitle: 'Guide Galant',
@@ -217,6 +219,14 @@ const GuidePage: React.FC = () => {
     window.open(yangoUrl, '_blank');
   };
 
+  const handleNearbyGps = () => {
+    if (hasPartnerDiscoveryAccess) {
+      navigate('/partner-discovery');
+      return;
+    }
+    setPartnerDiscoveryUnlockOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-40">
@@ -240,7 +250,7 @@ const GuidePage: React.FC = () => {
           </div>
         </div>
         <button
-          onClick={() => navigate('/partner-discovery')}
+          onClick={handleNearbyGps}
           className="bg-white dark:bg-primary text-slate-900 dark:text-white px-8 py-3.5 rounded-xl font-black text-[10px] uppercase tracking-prestige hover:scale-105 active:scale-95 transition-all shadow-xl whitespace-nowrap"
         >
           {labels.nearbyCta}
@@ -454,6 +464,15 @@ const GuidePage: React.FC = () => {
           setPendingVenueContact(null);
           if (venue) void openVenueChat(venue);
         }}
+      />
+      <InteractionPurchaseModal
+        isOpen={partnerDiscoveryUnlockOpen}
+        onClose={() => setPartnerDiscoveryUnlockOpen(false)}
+        type="PARTNER_DISCOVERY_UNLOCK"
+        targetId="partner_discovery"
+        userName={labels.nearbyCta}
+        price={500}
+        onSuccess={() => setPartnerDiscoveryUnlockOpen(false)}
       />
     </div>
   );

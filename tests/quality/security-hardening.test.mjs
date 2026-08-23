@@ -97,6 +97,11 @@ test('partner direct access is paid and consistent across web and mobile', async
   assert.match(messageController, /chat_not_authorized/);
   assert.match(webGuide, /InteractionPurchaseModal/);
   assert.match(webGuide, /event\.stopPropagation\(\)/);
+  assert.match(webGuide, /handleNearbyGps/);
+  assert.match(webGuide, /hasPartnerDiscoveryAccess/);
+  assert.match(webGuide, /setPartnerDiscoveryUnlockOpen\(true\)/);
+  assert.match(webGuide, /type="PARTNER_DISCOVERY_UNLOCK"/);
+  assert.match(webGuide, /price=\{500\}/);
   assert.match(webVenueDetail, /venueChatId:\s*res\.venueChatId/);
   assert.match(webVenueDetail, /InteractionPurchaseModal/);
   assert.match(nativeVenueDetail, /DirectMessagePurchaseModal/);
