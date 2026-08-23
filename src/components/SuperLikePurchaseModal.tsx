@@ -13,6 +13,7 @@ interface Props {
   loading?: boolean;
   userName?: string;
   userInterests?: string[];
+  priceAmount?: number;
 }
 
 const SUPER_LIKE_PRICE = parseInt(process.env.EXPO_PUBLIC_SUPER_LIKE_AMOUNT || '500');
@@ -24,7 +25,8 @@ const SuperLikePurchaseModal: React.FC<Props> = ({
   onPurchaseGoogle,
   loading,
   userName,
-  userInterests
+  userInterests,
+  priceAmount = SUPER_LIKE_PRICE
 }) => {
   const [note, setNote] = useState('');
   const { currentUser, language, t } = useApp();
@@ -99,7 +101,7 @@ const SuperLikePurchaseModal: React.FC<Props> = ({
           </View>
 
           <View style={styles.priceTag}>
-            <Text style={styles.price}>{SUPER_LIKE_PRICE} F CFA</Text>
+            <Text style={styles.price}>{priceAmount} F CFA</Text>
             <Text style={styles.unit}>{t('per_bouquet')}</Text>
           </View>
 

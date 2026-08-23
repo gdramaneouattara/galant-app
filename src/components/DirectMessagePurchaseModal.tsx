@@ -10,6 +10,7 @@ interface Props {
   onPurchaseGoogle?: () => void;
   loading?: boolean;
   userName?: string;
+  priceAmount?: number;
 }
 
 const DM_PRICE = parseInt(process.env.EXPO_PUBLIC_DIRECT_MESSAGE_AMOUNT || '500');
@@ -20,7 +21,8 @@ const DirectMessagePurchaseModal: React.FC<Props> = ({
   onPurchasePaystack,
   onPurchaseGoogle,
   loading,
-  userName
+  userName,
+  priceAmount = DM_PRICE
 }) => {
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -40,7 +42,7 @@ const DirectMessagePurchaseModal: React.FC<Props> = ({
           </Text>
 
           <View style={styles.priceTag}>
-            <Text style={styles.price}>{DM_PRICE} F CFA</Text>
+            <Text style={styles.price}>{priceAmount} F CFA</Text>
             <Text style={styles.unit}>par profil débloqué</Text>
           </View>
 
