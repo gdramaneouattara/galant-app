@@ -1,7 +1,7 @@
 const { getCurrentPricing } = require('../services/pricingService');
 
-const getExpectedAmountForPurchase = async ({ type, planId }) => {
-  const pricing = await getCurrentPricing();
+const getExpectedAmountForPurchase = async ({ type, planId, forceRefresh = false }) => {
+  const pricing = await getCurrentPricing({ forceRefresh });
   const { PRICES, PLAN_AMOUNTS, PARTNER_PLAN_AMOUNTS } = pricing;
 
   const normalizedType = String(type || '').toUpperCase();

@@ -37,6 +37,8 @@ type SwipeResponse = {
 
 const SUPER_LIKE_SKU = String(process.env.EXPO_PUBLIC_SUPER_LIKE_SKU || 'super_like').trim();
 const DIRECT_MESSAGE_SKU = String(process.env.EXPO_PUBLIC_DIRECT_MESSAGE_SKU || 'direct_message_1').trim();
+const SUPER_LIKE_PRICE = parseInt(process.env.EXPO_PUBLIC_SUPER_LIKE_AMOUNT || '500', 10);
+const DIRECT_MESSAGE_PRICE = parseInt(process.env.EXPO_PUBLIC_DIRECT_MESSAGE_AMOUNT || '500', 10);
 const PLACEHOLDER_PHOTO = 'https://placehold.co/900x1200';
 
 const GENDER_LABELS: Record<string, string> = {
@@ -168,6 +170,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
   const initiatePurchasePaystack = async (
     type: 'SUPER_LIKE' | 'DIRECT_MESSAGE',
     targetId: string,
+    amount: number,
     onSuccess: () => void
   ) => {
     try {
@@ -175,7 +178,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
       const init = await apiRequest<{ authorization_url: string; reference: string }>('/api/payments/initialize', {
         method: 'POST',
         requireAuth: true,
-        body: JSON.stringify({ type, targetId, paymentMethod: 'MOBILE_MONEY' }),
+        body: JSON.stringify({ type, targetId, amount, paymentMethod: 'MOBILE_MONEY' }),
       });
       const redirectUrl = Linking.createURL('paystack');
       await WebBrowser.openAuthSessionAsync(init.authorization_url, redirectUrl);
@@ -248,7 +251,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
 
   const handleSuperLikePaystack = () => {
     if (!targetUserId) return;
-    void initiatePurchasePaystack('SUPER_LIKE', targetUserId, () => {
+    void initiatePurchasePaystack('SUPER_LIKE', targetUserId, SUPER_LIKE_PRICE, () => {
       setShowSuperLikePurchaseModal(false);
       Alert.alert(t('success'), t('super_like_sent'));
     });
@@ -264,7 +267,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
 
   const handleDirectMessagePaystack = () => {
     if (!targetUserId) return;
-    void initiatePurchasePaystack('DIRECT_MESSAGE', targetUserId, () => {
+    void initiatePurchasePaystack('DIRECT_MESSAGE', targetUserId, DIRECT_MESSAGE_PRICE, () => {
       setShowDirectMessagePurchaseModal(false);
       Alert.alert(t('success'), t('direct_message_unlocked_for', { name: profile?.name || t('this_profile') }));
       navigation.navigate('Chat', { userId: targetUserId });

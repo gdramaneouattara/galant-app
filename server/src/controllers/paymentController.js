@@ -26,7 +26,7 @@ const initializePayment = async (req, res) => {
   const normalizedPaymentMethod = ['CARD', 'MOBILE_MONEY', 'CARD_MOBILE_MONEY'].includes(requestedPaymentMethod)
     ? requestedPaymentMethod
     : 'CARD_MOBILE_MONEY';
-  const expectedAmount = await getExpectedAmountForPurchase({ type: normalizedType, planId: normalizedPlanId });
+  const expectedAmount = await getExpectedAmountForPurchase({ type: normalizedType, planId: normalizedPlanId, forceRefresh: true });
   const roundedAmount = Math.round(Number(expectedAmount || 0) * 100);
 
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
@@ -51,21 +51,22 @@ const initializePayment = async (req, res) => {
   if (!Number.isFinite(roundedAmount) || roundedAmount <= 0 || expectedAmount === null) {
     return res.status(400).json({ error: 'invalid_purchase_payload' });
   }
-  const displayedAmount = amount === undefined || amount === null ? null : Number(amount);
-  if (displayedAmount !== null) {
-    const normalizedDisplayedAmount = Math.round(displayedAmount);
-    const normalizedExpectedAmount = Math.round(Number(expectedAmount));
-    if (!Number.isFinite(normalizedDisplayedAmount) || normalizedDisplayedAmount <= 0) {
-      return res.status(400).json({ error: 'invalid_quoted_amount' });
-    }
-    if (normalizedDisplayedAmount !== normalizedExpectedAmount) {
-      return res.status(409).json({
-        error: 'price_changed',
-        quoted_amount: normalizedDisplayedAmount,
-        expected_amount: normalizedExpectedAmount,
-        message: 'Le prix de cette offre a change. Veuillez rafraichir le Store avant de payer.'
-      });
-    }
+  if (amount === undefined || amount === null) {
+    return res.status(400).json({ error: 'missing_quoted_amount' });
+  }
+  const displayedAmount = Number(amount);
+  const normalizedDisplayedAmount = Math.round(displayedAmount);
+  const normalizedExpectedAmount = Math.round(Number(expectedAmount));
+  if (!Number.isFinite(normalizedDisplayedAmount) || normalizedDisplayedAmount <= 0) {
+    return res.status(400).json({ error: 'invalid_quoted_amount' });
+  }
+  if (normalizedDisplayedAmount !== normalizedExpectedAmount) {
+    return res.status(409).json({
+      error: 'price_changed',
+      quoted_amount: normalizedDisplayedAmount,
+      expected_amount: normalizedExpectedAmount,
+      message: 'Le prix de cette offre a change. Veuillez rafraichir le Store avant de payer.'
+    });
   }
 
   const payload = {
@@ -79,7 +80,7 @@ const initializePayment = async (req, res) => {
       type: normalizedType,
       targetId: targetId || null,
       paymentMethod: normalizedPaymentMethod,
-      quotedAmount: displayedAmount === null ? null : Math.round(displayedAmount),
+      quotedAmount: normalizedDisplayedAmount,
       note: note || null,
     },
   };
