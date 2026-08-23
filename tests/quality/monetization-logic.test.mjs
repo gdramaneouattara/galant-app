@@ -67,6 +67,8 @@ test('Payment initialization rejects stale displayed prices', async () => {
   const pricingService = await read('server/src/services/pricingService.js');
   const adminController = await read('server/src/controllers/adminController.js');
   const boostedProfile = await read('src/screens/profile/BoostedProfileDetailScreen.tsx');
+  const superLikeModal = await read('src/components/SuperLikePurchaseModal.tsx');
+  const directMessageModal = await read('src/components/DirectMessagePurchaseModal.tsx');
 
   assert.match(controller, /const \{ planId, type, targetId, paymentMethod, note, callbackUrl, amount \} = req\.body/);
   assert.match(controller, /forceRefresh:\s*true/);
@@ -80,9 +82,15 @@ test('Payment initialization rejects stale displayed prices', async () => {
   assert.match(controller, /quotedAmount/);
   assert.match(helpers, /getCurrentPricing\(\{\s*forceRefresh\s*\}\)/);
   assert.match(pricingService, /forceRefresh = false/);
+  assert.match(pricingService, /if \(cachedPricing\) \{\s*return cachedPricing;\s*\}/s);
   assert.match(pricingService, /const clearPricingCache/);
   assert.match(adminController, /clearPricingCache\(\)/);
+  assert.match(boostedProfile, /\/api\/payments\/pricing/);
+  assert.match(boostedProfile, /superLikePrice/);
+  assert.match(boostedProfile, /directMessagePrice/);
   assert.match(boostedProfile, /body:\s*JSON\.stringify\(\{ type, targetId, amount, paymentMethod: ['"]MOBILE_MONEY['"] \}\)/);
+  assert.match(superLikeModal, /priceAmount = SUPER_LIKE_PRICE/);
+  assert.match(directMessageModal, /priceAmount = DM_PRICE/);
 });
 
 test('Monetization: Women premium Super Like quota is 10/day', async () => {

@@ -48,6 +48,9 @@ const getCurrentPricing = async ({ forceRefresh = false } = {}) => {
     return cachedPricing;
   } catch (error) {
     console.error('Error fetching pricing from Firestore:', error);
+    if (cachedPricing) {
+      return cachedPricing;
+    }
     return {
       PRICES: constants.PRICES,
       PLAN_AMOUNTS: constants.PLAN_AMOUNTS,

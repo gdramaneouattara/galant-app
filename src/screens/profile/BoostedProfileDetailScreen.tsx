@@ -66,6 +66,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
   const [showDirectMessagePurchaseModal, setShowDirectMessagePurchaseModal] = useState(false);
   const [availableProductIds, setAvailableProductIds] = useState<Set<string>>(new Set());
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [pricing, setPricing] = useState<any>(null);
 
   const targetUserId = String(profile?.id || '').trim();
   const profilePhotos = (profile?.photos || []).filter((photo): photo is string => !!photo);
@@ -77,6 +78,8 @@ const BoostedProfileDetailScreen: React.FC = () => {
   const relationshipGoalLabel = RELATIONSHIP_GOAL_LABELS[normalizedGoal] || profile?.relationship_goal || 'Non renseigné';
   const ageLabel = typeof profile?.age === 'number' ? `${profile.age}` : null;
   const handleBack = () => safeGoBack(navigation, 'MainTabs', { screen: 'DiscoverTab' });
+  const superLikePrice = Number(pricing?.PRICES?.SUPER_LIKE) > 0 ? Number(pricing.PRICES.SUPER_LIKE) : SUPER_LIKE_PRICE;
+  const directMessagePrice = Number(pricing?.PRICES?.DIRECT_MESSAGE) > 0 ? Number(pricing.PRICES.DIRECT_MESSAGE) : DIRECT_MESSAGE_PRICE;
 
   const loadProducts = async (): Promise<Set<string>> => {
     if (Platform.OS !== 'android' || isExpoGo) return new Set();
@@ -98,6 +101,18 @@ const BoostedProfileDetailScreen: React.FC = () => {
   useEffect(() => {
     setSelectedPhoto(null);
   }, [targetUserId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiRequest<any>('/api/payments/pricing', { requireAuth: true })
+      .then((data) => {
+        if (!cancelled) setPricing(data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const sendLike = async () => {
     if (!targetUserId || liking) return;
@@ -251,7 +266,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
 
   const handleSuperLikePaystack = () => {
     if (!targetUserId) return;
-    void initiatePurchasePaystack('SUPER_LIKE', targetUserId, SUPER_LIKE_PRICE, () => {
+    void initiatePurchasePaystack('SUPER_LIKE', targetUserId, superLikePrice, () => {
       setShowSuperLikePurchaseModal(false);
       Alert.alert(t('success'), t('super_like_sent'));
     });
@@ -267,7 +282,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
 
   const handleDirectMessagePaystack = () => {
     if (!targetUserId) return;
-    void initiatePurchasePaystack('DIRECT_MESSAGE', targetUserId, DIRECT_MESSAGE_PRICE, () => {
+    void initiatePurchasePaystack('DIRECT_MESSAGE', targetUserId, directMessagePrice, () => {
       setShowDirectMessagePurchaseModal(false);
       Alert.alert(t('success'), t('direct_message_unlocked_for', { name: profile?.name || t('this_profile') }));
       navigation.navigate('Chat', { userId: targetUserId });
@@ -431,6 +446,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
         loading={purchaseLoading}
         userName={profile.name}
         userInterests={profile.interests || []}
+        priceAmount={superLikePrice}
       />
       <DirectMessagePurchaseModal
         visible={showDirectMessagePurchaseModal}
@@ -439,6 +455,7 @@ const BoostedProfileDetailScreen: React.FC = () => {
         onPurchaseGoogle={handleDirectMessageGoogle}
         loading={purchaseLoading}
         userName={profile.name}
+        priceAmount={directMessagePrice}
       />
     </SafeAreaView>
   );
