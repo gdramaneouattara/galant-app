@@ -9,6 +9,18 @@ const isWeb = typeof window !== 'undefined' && !((window as any).expo);
 export type PurchaseType = 'SUPER_LIKE' | 'DIRECT_MESSAGE' | 'BOOST' | 'PREMIUM' | 'PARTNER_PREMIUM' | 'ROSE_NOTE_UNLOCK' | 'STORY_UPLOAD' | 'LIKES_INBOX_2H' | 'DISCOVER_GRID_UNLOCK' | 'GOLDEN_ROSE' | 'ROSE_PACK' | 'PARTNER_DISCOVERY_UNLOCK' | 'DISCOVER_FILTERS_UNLOCK';
 export type PaystackPaymentMethod = 'CARD' | 'MOBILE_MONEY' | 'CARD_MOBILE_MONEY';
 
+export type WaveManualIntent = {
+  status: 'PENDING';
+  reference_code: string;
+  amount: number;
+  currency: string;
+  payment_link: string;
+  receiver_name?: string | null;
+  receiver_phone?: string | null;
+  expires_at: string;
+  instructions?: string[];
+};
+
 export const useSubscription = () => {
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const [androidOfferTokenBySku, setAndroidOfferTokenBySku] = useState<Record<string, string>>({});
@@ -87,6 +99,54 @@ export const useSubscription = () => {
     }
   }, []);
 
+  const createWaveManualPayment = useCallback(async (
+    type: PurchaseType,
+    amount: number,
+    targetId?: string,
+    metadata?: any
+  ): Promise<WaveManualIntent | null> => {
+    try {
+      setPurchaseLoading(true);
+      return await apiRequest<WaveManualIntent>('/api/payments/wave/manual-intent', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({
+          ...(metadata || {}),
+          amount,
+          type,
+          targetId
+        })
+      });
+    } catch (error: any) {
+      showAlert('Erreur', error?.message || 'La commande Wave n a pas pu etre creee.');
+      return null;
+    } finally {
+      setPurchaseLoading(false);
+    }
+  }, []);
+
+  const submitWaveManualProof = useCallback(async (
+    referenceCode: string,
+    transactionId: string,
+    phone?: string
+  ): Promise<boolean> => {
+    try {
+      setPurchaseLoading(true);
+      await apiRequest('/api/payments/wave/manual-proof', {
+        method: 'POST',
+        requireAuth: true,
+        body: JSON.stringify({ referenceCode, transactionId, phone })
+      });
+      showAlert('Paiement en verification', 'Votre paiement Wave attend la validation admin.');
+      return true;
+    } catch (error: any) {
+      showAlert('Erreur', error?.message || 'Impossible de soumettre la transaction Wave.');
+      return false;
+    } finally {
+      setPurchaseLoading(false);
+    }
+  }, []);
+
   // La logique IAP est désactivée sur Web
   const purchaseWithStore = useCallback(async (
     sku: string,
@@ -106,6 +166,8 @@ export const useSubscription = () => {
   return {
     purchaseLoading,
     purchaseWithPaystack,
+    createWaveManualPayment,
+    submitWaveManualProof,
     purchaseWithStore,
     initIAP,
     endIAP,

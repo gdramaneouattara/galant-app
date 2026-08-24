@@ -139,6 +139,7 @@ test('Monetization: all web purchase types map to backend prices', async () => {
   assert.match(hook, /DISCOVER_GRID_UNLOCK/);
   assert.match(hook, /PARTNER_PREMIUM/);
   assert.match(helpers, /DISCOVER_GRID_UNLOCK/);
+  assert.match(helpers, /DISCOVER_FILTERS_UNLOCK/);
   assert.match(helpers, /PARTNER_DISCOVERY_UNLOCK/);
   assert.match(helpers, /PARTNER_PLAN_AMOUNTS\[normalizedPlanId\]/);
 });
@@ -153,6 +154,47 @@ test('Payments: all payment handlers are exported and routed', async () => {
   assert.match(routes, /router\.post\(['"]\/google-verify['"],\s*requireAuth,\s*googleVerify\)/);
   assert.match(routes, /router\.post\(['"]\/apple-verify['"],\s*requireAuth,\s*appleVerify\)/);
   assert.match(routes, /router\.post\(['"]\/webhook['"],\s*handleWebhook\)/);
+});
+
+test('Payments: Wave manual orders stay pending until admin validation', async () => {
+  const controller = await read('server/src/controllers/paymentController.js');
+  const routes = await read('server/src/routes/paymentRoutes.js');
+  const adminRoutes = await read('server/src/routes/adminRoutes.js');
+  const envExample = await read('server/.env.example');
+
+  assert.match(controller, /createWaveManualPayment/);
+  assert.match(controller, /submitWaveManualPaymentProof/);
+  assert.match(controller, /status:\s*'PENDING'/);
+  assert.match(controller, /status:\s*'SUBMITTED'/);
+  assert.match(controller, /wave_transaction_already_used/);
+  assert.match(controller, /applyPurchasedEntitlement\(/);
+  assert.match(controller, /paymentMethod:\s*WAVE_PROVIDER/);
+  assert.match(routes, /\/wave\/manual-intent/);
+  assert.match(routes, /\/wave\/manual-proof/);
+  assert.match(adminRoutes, /\/payments\/wave/);
+  assert.match(adminRoutes, /approveWaveManualPayment/);
+  assert.match(adminRoutes, /rejectWaveManualPayment/);
+  assert.match(envExample, /WAVE_PAYMENT_LINK/);
+  assert.match(envExample, /WAVE_MANUAL_PAYMENT_EXPIRES_MINUTES/);
+});
+
+test('Payments: web Store exposes Wave manual payment flow without screenshots', async () => {
+  const hook = await read('src/hooks/useSubscription.ts');
+  const store = await read('web/src/pages/StorePage.tsx');
+  const modal = await read('web/src/components/WaveManualPaymentModal.tsx');
+  const finances = await read('web/src/pages/admin/AdminFinances.tsx');
+
+  assert.match(hook, /createWaveManualPayment/);
+  assert.match(hook, /submitWaveManualProof/);
+  assert.match(store, /paymentMode/);
+  assert.match(store, /WaveManualPaymentModal/);
+  assert.match(store, /createWaveManualPayment\(type,\s*amount/);
+  assert.match(modal, /transactionId/);
+  assert.match(modal, /reference_code/);
+  assert.doesNotMatch(modal, /screenshot|capture/i);
+  assert.match(finances, /Paiements Wave a verifier/);
+  assert.match(finances, /Valider/);
+  assert.match(finances, /Rejeter/);
 });
 
 test('Payments: Paystack supports card and mobile money channels', async () => {

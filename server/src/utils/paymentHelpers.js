@@ -23,6 +23,7 @@ const getExpectedAmountForPurchase = async ({ type, planId, forceRefresh = false
   if (normalizedType === 'STORY_UPLOAD') return PRICES.STORY_UPLOAD;
   if (normalizedType === 'LIKES_INBOX_2H') return PRICES.LIKES_INBOX_2H;
   if (normalizedType === 'DISCOVER_GRID_UNLOCK') return PRICES.DISCOVER_GRID_UNLOCK;
+  if (normalizedType === 'DISCOVER_FILTERS_UNLOCK') return PRICES.DISCOVER_FILTERS_UNLOCK;
   if (normalizedType === 'PARTNER_DISCOVERY_UNLOCK') return PRICES.PARTNER_DISCOVERY_UNLOCK;
   return null;
 };
