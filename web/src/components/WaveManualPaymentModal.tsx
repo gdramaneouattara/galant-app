@@ -9,7 +9,7 @@ type Props = {
   intent: WaveManualIntent | null;
   loading?: boolean;
   onClose: () => void;
-  onSubmit: (payload: { transactionId: string; phone?: string }) => Promise<void> | void;
+  onSubmit: (payload: { transactionId: string; phone: string }) => Promise<void> | void;
 };
 
 const copy = {
@@ -22,7 +22,6 @@ const copy = {
     openWave: 'Ouvrir Wave',
     transactionId: 'ID transaction Wave',
     phone: 'Numero Wave utilise',
-    phoneOptional: 'Optionnel',
     submit: 'Soumettre a validation',
     pending: 'Validation admin requise',
     warning: 'Le service reste bloque jusqu a verification dans Wave.',
@@ -37,7 +36,6 @@ const copy = {
     openWave: 'Open Wave',
     transactionId: 'Wave transaction ID',
     phone: 'Wave phone used',
-    phoneOptional: 'Optional',
     submit: 'Submit for validation',
     pending: 'Admin validation required',
     warning: 'The service stays locked until verification in Wave.',
@@ -128,15 +126,15 @@ const WaveManualPaymentModal: React.FC<Props> = ({ isOpen, intent, loading, onCl
             <input
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
-              placeholder={`${c.phone} (${c.phoneOptional})`}
+              placeholder={c.phone}
               className="w-full rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4 text-sm font-bold outline-none focus:border-cyan-400 dark:border-white/10 dark:bg-white/5 dark:text-white"
             />
           </div>
 
           <button
             type="button"
-            disabled={loading || !transactionId.trim()}
-            onClick={() => onSubmit({ transactionId: transactionId.trim(), phone: phone.trim() || undefined })}
+            disabled={loading || !transactionId.trim() || !phone.trim()}
+            onClick={() => onSubmit({ transactionId: transactionId.trim(), phone: phone.trim() })}
             className="flex w-full items-center justify-center gap-3 rounded-2xl bg-slate-900 px-5 py-4 text-xs font-black uppercase tracking-widest text-white transition active:scale-95 disabled:opacity-50 dark:bg-white dark:text-slate-900"
           >
             {loading ? <Loader2 className="animate-spin" size={18} /> : <ShieldCheck size={18} />}

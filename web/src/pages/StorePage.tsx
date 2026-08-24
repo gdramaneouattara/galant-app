@@ -34,7 +34,7 @@ const StorePage: React.FC = () => {
   const { purchaseWithPaystack, createWaveManualPayment, submitWaveManualProof, purchaseLoading } = useSubscription();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [pricing, setPricing] = useState<any>(null);
-  const [paymentMode, setPaymentMode] = useState<'PAYSTACK' | 'WAVE'>('PAYSTACK');
+  const [paymentMode, setPaymentMode] = useState<'PAYSTACK' | 'WAVE'>('WAVE');
   const [waveIntent, setWaveIntent] = useState<WaveManualIntent | null>(null);
 
   const boostStatus = getBoostStatus(profile?.boosted_until);
@@ -229,7 +229,7 @@ const StorePage: React.FC = () => {
     }
   };
 
-  const submitWaveTransaction = async ({ transactionId, phone }: { transactionId: string; phone?: string }) => {
+  const submitWaveTransaction = async ({ transactionId, phone }: { transactionId: string; phone: string }) => {
     if (!waveIntent) return;
     const ok = await submitWaveManualProof(waveIntent.reference_code, transactionId, phone);
     if (ok) {

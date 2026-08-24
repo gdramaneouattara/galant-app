@@ -148,7 +148,7 @@ const submitWaveManualPaymentProof = async (req, res) => {
   const transactionIdNormalized = normalizeTransactionId(transactionId);
   const payerPhone = normalizePaymentText(req.body.phone || req.body.payer_phone);
 
-  if (!referenceCode || !transactionIdNormalized) {
+  if (!referenceCode || !transactionIdNormalized || !payerPhone) {
     return res.status(400).json({ error: 'missing_wave_transaction_payload' });
   }
 
@@ -180,7 +180,7 @@ const submitWaveManualPaymentProof = async (req, res) => {
       status: 'SUBMITTED',
       transaction_id: transactionId,
       transaction_id_normalized: transactionIdNormalized,
-      payer_phone: payerPhone || null,
+      payer_phone: payerPhone,
       submitted_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     });

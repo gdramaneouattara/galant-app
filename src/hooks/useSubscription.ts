@@ -128,7 +128,7 @@ export const useSubscription = () => {
   const submitWaveManualProof = useCallback(async (
     referenceCode: string,
     transactionId: string,
-    phone?: string
+    phone: string
   ): Promise<boolean> => {
     try {
       setPurchaseLoading(true);

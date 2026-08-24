@@ -166,6 +166,8 @@ test('Payments: Wave manual orders stay pending until admin validation', async (
   assert.match(controller, /submitWaveManualPaymentProof/);
   assert.match(controller, /status:\s*'PENDING'/);
   assert.match(controller, /status:\s*'SUBMITTED'/);
+  assert.match(controller, /!payerPhone/);
+  assert.match(controller, /payer_phone:\s*payerPhone/);
   assert.match(controller, /wave_transaction_already_used/);
   assert.match(controller, /applyPurchasedEntitlement\(/);
   assert.match(controller, /paymentMethod:\s*WAVE_PROVIDER/);
@@ -187,14 +189,27 @@ test('Payments: web Store exposes Wave manual payment flow without screenshots',
   assert.match(hook, /createWaveManualPayment/);
   assert.match(hook, /submitWaveManualProof/);
   assert.match(store, /paymentMode/);
+  assert.match(store, /useState<'PAYSTACK' \| 'WAVE'>\('WAVE'\)/);
   assert.match(store, /WaveManualPaymentModal/);
   assert.match(store, /createWaveManualPayment\(type,\s*amount/);
   assert.match(modal, /transactionId/);
   assert.match(modal, /reference_code/);
+  assert.match(modal, /!phone\.trim\(\)/);
+  assert.doesNotMatch(modal, /phoneOptional/);
   assert.doesNotMatch(modal, /screenshot|capture/i);
   assert.match(finances, /Paiements Wave a verifier/);
   assert.match(finances, /Valider/);
   assert.match(finances, /Rejeter/);
+});
+
+test('Payments: Cloud Run deploy does not require disabled Paystack secret for Wave manual mode', async () => {
+  const workflow = await read('.github/workflows/deploy-server.yml');
+
+  assert.doesNotMatch(workflow, /PAYSTACK_SECRET_KEY=PAYSTACK_SECRET_KEY:latest/);
+  assert.match(workflow, /--remove-secrets PAYSTACK_SECRET_KEY/);
+  assert.match(workflow, /--update-secrets/);
+  assert.match(workflow, /WAVE_PAYMENT_LINK=WAVE_PAYMENT_LINK:latest/);
+  assert.match(workflow, /WAVE_RECEIVER_PHONE=WAVE_RECEIVER_PHONE:latest/);
 });
 
 test('Payments: Paystack supports card and mobile money channels', async () => {
