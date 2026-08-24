@@ -190,7 +190,7 @@ const AuthPage: React.FC = () => {
           <img src={logoImg} alt="Galant Logo" className="w-20 h-20 rounded-[2rem] shadow-2xl border-4 border-white/20 object-contain bg-white/90" />
           <div>
             <h1 className="text-5xl font-sans font-black text-white  mb-2 drop-shadow-2xl">
-              GALANT
+              Galant
             </h1>
             <div className="h-1.5 w-12 bg-primary mx-auto rounded-full shadow-lg shadow-red-500/50"></div>
           </div>
