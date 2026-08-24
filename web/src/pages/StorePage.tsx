@@ -11,6 +11,7 @@ import {
   Zap,
   ShieldCheck,
   CreditCard,
+  Waves,
   Award,
   Sparkles,
   LayoutGrid,
@@ -24,13 +25,17 @@ import { useSubscription, PurchaseType } from '@shared/hooks/useSubscription';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { apiRequest } from '@shared/lib/api';
 import { getBoostStatus } from '@shared/lib/boostStatus';
+import WaveManualPaymentModal from '../components/WaveManualPaymentModal';
+import type { WaveManualIntent } from '@shared/hooks/useSubscription';
 
 const StorePage: React.FC = () => {
   const navigate = useNavigate();
   const { profile, t, language } = useAuth();
-  const { purchaseWithPaystack, purchaseLoading } = useSubscription();
+  const { purchaseWithPaystack, createWaveManualPayment, submitWaveManualProof, purchaseLoading } = useSubscription();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [pricing, setPricing] = useState<any>(null);
+  const [paymentMode, setPaymentMode] = useState<'PAYSTACK' | 'WAVE'>('WAVE');
+  const [waveIntent, setWaveIntent] = useState<WaveManualIntent | null>(null);
 
   const boostStatus = getBoostStatus(profile?.boosted_until);
   const hasPartnerDiscoveryAccess = !!(profile?.is_premium || profile?.is_vip || profile?.partner_discovery_unlocked);
@@ -87,6 +92,11 @@ const StorePage: React.FC = () => {
         destinyBoosts: 'Destiny Accelerators',
         passes: 'Passes & Unlocks',
         included: 'Included',
+        paymentMethod: 'Payment method',
+        paystackMode: 'Card / Mobile Money',
+        waveMode: 'Wave manual',
+        wavePendingTitle: 'Wave payment pending',
+        wavePendingBody: 'Your Wave transaction has been submitted. An admin will validate it before activation.',
         rosePacks: [
           { id: 'ROSE_1', type: 'ROSE_PACK' as PurchaseType, label: '1 Rose to use', price: 500, icon: '🌹' },
           { id: 'ROSE_5', type: 'ROSE_PACK' as PurchaseType, label: 'Pack of 5 Roses', price: 2500, icon: '✨' },
@@ -155,6 +165,11 @@ const StorePage: React.FC = () => {
         destinyBoosts: 'Accélérateurs de Destin',
         passes: 'Pass & Déblocages',
         included: 'Inclus',
+        paymentMethod: 'Mode de paiement',
+        paystackMode: 'Carte / Mobile Money',
+        waveMode: 'Wave manuel',
+        wavePendingTitle: 'Paiement Wave en attente',
+        wavePendingBody: 'Votre transaction Wave a ete soumise. Un admin la validera avant activation.',
         rosePacks: [
           { id: 'ROSE_1', type: 'ROSE_PACK' as PurchaseType, label: '1 Rose à consommer', price: 500, icon: '🌹' },
           { id: 'ROSE_5', type: 'ROSE_PACK' as PurchaseType, label: 'Pack 5 Roses', price: 2500, icon: '✨' },
@@ -197,6 +212,12 @@ const StorePage: React.FC = () => {
 
     setLoadingId(id);
     try {
+      if (paymentMode === 'WAVE') {
+        const intent = await createWaveManualPayment(type, amount, undefined, { planId: id });
+        if (intent) setWaveIntent(intent);
+        return;
+      }
+
       const ok = await purchaseWithPaystack(type, amount, undefined, { planId: id });
       if (ok) {
         showAlert(t('success'), t('purchase_activated'));
@@ -205,6 +226,15 @@ const StorePage: React.FC = () => {
       showAlert(labels.error, error.message);
     } finally {
       setLoadingId(null);
+    }
+  };
+
+  const submitWaveTransaction = async ({ transactionId, phone }: { transactionId: string; phone: string }) => {
+    if (!waveIntent) return;
+    const ok = await submitWaveManualProof(waveIntent.reference_code, transactionId, phone);
+    if (ok) {
+      setWaveIntent(null);
+      showAlert(labels.wavePendingTitle, labels.wavePendingBody);
     }
   };
 
@@ -249,6 +279,36 @@ const StorePage: React.FC = () => {
               <span className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mt-1">Boost</span>
             </div>
           )}
+        </div>
+      </div>
+
+      <div className="rounded-[2rem] border border-slate-100 bg-white p-4 shadow-lg dark:border-white/5 dark:bg-slate-900">
+        <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">{labels.paymentMethod}</p>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setPaymentMode('PAYSTACK')}
+            className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition ${
+              paymentMode === 'PAYSTACK'
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                : 'bg-slate-50 text-slate-500 dark:bg-white/5 dark:text-slate-400'
+            }`}
+          >
+            <CreditCard size={15} />
+            {labels.paystackMode}
+          </button>
+          <button
+            type="button"
+            onClick={() => setPaymentMode('WAVE')}
+            className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition ${
+              paymentMode === 'WAVE'
+                ? 'bg-[#09a5db] text-white'
+                : 'bg-slate-50 text-slate-500 dark:bg-white/5 dark:text-slate-400'
+            }`}
+          >
+            <Waves size={15} />
+            {labels.waveMode}
+          </button>
         </div>
       </div>
 
@@ -444,6 +504,14 @@ const StorePage: React.FC = () => {
           {labels.security}
         </p>
       </div>
+
+      <WaveManualPaymentModal
+        isOpen={!!waveIntent}
+        intent={waveIntent}
+        loading={purchaseLoading}
+        onClose={() => setWaveIntent(null)}
+        onSubmit={submitWaveTransaction}
+      />
     </div>
   );
 };

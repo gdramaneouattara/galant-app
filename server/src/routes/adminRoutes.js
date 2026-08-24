@@ -16,6 +16,11 @@ const {
   sendAdminSupportReply,
   updateAdminSupportThreadStatus,
 } = require('../controllers/supportController');
+const {
+  listWaveManualPayments,
+  approveWaveManualPayment,
+  rejectWaveManualPayment
+} = require('../controllers/paymentController');
 
 router.use(requireAuth);
 router.use(requireAdmin);
@@ -56,5 +61,8 @@ router.post('/support/threads/:threadId/status', updateAdminSupportThreadStatus)
 
 router.get('/pricing', getPricing);
 router.post('/pricing', updatePricing);
+router.get('/payments/wave', listWaveManualPayments);
+router.post('/payments/wave/:referenceCode/approve', approveWaveManualPayment);
+router.post('/payments/wave/:referenceCode/reject', rejectWaveManualPayment);
 
 module.exports = router;
