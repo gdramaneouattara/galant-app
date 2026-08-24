@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, MapPin, Globe, Search, Plane, Loader2 } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { X, MapPin, Globe, Search, Plane, Loader2, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '@shared/lib/api';
 import { showAlert } from '@shared/lib/ui-bridge';
@@ -97,30 +98,30 @@ const PassportModal: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-end md:items-center justify-center p-4">
-      <div className="bg-white w-full max-w-md rounded-t-[2.5rem] md:rounded-[2.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300">
-        <div className="p-8 space-y-6">
+  const modal = (
+    <div className="fixed inset-0 z-[220] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center px-4 py-3">
+      <div className="bg-white w-full max-w-md max-h-[calc(100dvh-2rem)] rounded-[2rem] md:rounded-[2.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300">
+        <div className="p-5 sm:p-8 space-y-4 sm:space-y-6 overflow-y-auto max-h-[calc(100dvh-2rem)]">
           {/* Header */}
-          <div className="flex justify-between items-start">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-rose-50 text-primary rounded-2xl flex items-center justify-center">
-                <Plane size={24} />
+          <div className="flex justify-between items-start gap-3">
+            <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 bg-rose-50 text-primary rounded-2xl flex items-center justify-center shrink-0">
+                <Plane size={22} />
               </div>
-              <div>
-                <h2 className="text-xl font-black ">{t('passport_galant')}</h2>
-                <p className="text-xs font-medium text-slate-500">{t('passport_desc')}</p>
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-xl leading-tight font-black">{t('passport_galant')}</h2>
+                <p className="text-[11px] sm:text-xs leading-relaxed font-medium text-slate-500">{t('passport_desc')}</p>
               </div>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-full text-slate-300 transition-colors">
-              <X size={24} />
+            <button onClick={onClose} className="p-1.5 sm:p-2 hover:bg-slate-50 rounded-full text-slate-300 transition-colors shrink-0">
+              <X size={22} />
             </button>
           </div>
 
           {/* Benefits */}
           <div className="flex flex-wrap gap-2">
             {[t('passport_benefit_1'), t('passport_benefit_2')].map((b, i) => (
-              <span key={i} className="bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter  border border-slate-100">
+              <span key={i} className="bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-tighter border border-slate-100">
                 {b}
               </span>
             ))}
@@ -133,9 +134,9 @@ const PassportModal: React.FC<Props> = ({ isOpen, onClose }) => {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('search_city')}
-              className="w-full bg-slate-50 border-none px-12 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium"
+              className="w-full bg-slate-50 border-none px-11 py-3.5 sm:px-12 sm:py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium text-sm sm:text-base"
             />
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <button
               type="submit"
               disabled={loading}
@@ -152,7 +153,7 @@ const PassportModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 key={i}
                 onClick={() => handleSelectCity(res)}
                 disabled={updating}
-                className="w-full flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors text-left group"
+                className="w-full flex items-center justify-between p-3.5 sm:p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors text-left group"
               >
                 <div className="flex items-center gap-3">
                   <MapPin size={20} className="text-primary" />
@@ -170,7 +171,7 @@ const PassportModal: React.FC<Props> = ({ isOpen, onClose }) => {
             <button
               onClick={deactivatePassport}
               disabled={updating}
-              className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-3.5 sm:py-4 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-colors"
             >
               <Globe size={16} />
               {t('deactivate_passport')}
@@ -186,7 +187,7 @@ const PassportModal: React.FC<Props> = ({ isOpen, onClose }) => {
       </div>
     </div>
   );
-};
 
-import { ChevronRight } from 'lucide-react';
+  return createPortal(modal, document.body);
+};
 export default PassportModal;
