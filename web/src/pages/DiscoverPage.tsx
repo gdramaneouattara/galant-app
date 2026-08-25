@@ -472,7 +472,7 @@ const DiscoverPage: React.FC = () => {
           </motion.div>
 
           {/* Action Buttons */}
-          <div className="flex justify-center items-center gap-6 py-4 px-4">
+          <div className="flex justify-center items-center gap-4 pt-2 pb-3 px-4">
             <button
               onClick={() => onSwipe('LEFT')}
               className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center text-slate-300 dark:text-slate-700 hover:text-red-500 hover:border-red-500/20 hover:bg-red-50 dark:hover:bg-red-900/20 hover:scale-110 active:scale-95 transition-all border border-slate-100 dark:border-white/5"
@@ -482,9 +482,9 @@ const DiscoverPage: React.FC = () => {
 
             <button
               onClick={handleDirectMessage}
-              className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center text-blue-500 hover:scale-110 active:scale-95 transition-all border border-slate-100 dark:border-white/5"
+              className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center text-sky-500 dark:text-sky-300 hover:text-sky-400 hover:border-sky-400/25 hover:bg-sky-50 dark:hover:bg-sky-900/20 hover:scale-110 active:scale-95 transition-all border border-slate-100 dark:border-white/5"
             >
-              <MessageCircle size={28} fill="currentColor" className="opacity-20" />
+              <MessageCircle size={27} strokeWidth={2.6} />
             </button>
 
             <button
@@ -496,9 +496,9 @@ const DiscoverPage: React.FC = () => {
 
             <button
               onClick={() => onSwipe('RIGHT')}
-              className="w-20 h-20 rounded-[1.8rem] bg-primary shadow-2xl shadow-red-500/30 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all group"
+              className="w-[72px] h-[72px] rounded-[1.65rem] bg-primary shadow-2xl shadow-red-500/30 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all group"
             >
-              <Heart size={38} fill="currentColor" className="group-hover:scale-110 transition-transform" />
+              <Heart size={34} fill="currentColor" className="group-hover:scale-110 transition-transform" />
             </button>
           </div>
         </div>
