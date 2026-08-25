@@ -158,6 +158,7 @@ test('Payments: all payment handlers are exported and routed', async () => {
 
 test('Payments: Wave manual orders stay pending until admin validation', async () => {
   const controller = await read('server/src/controllers/paymentController.js');
+  const subscriptionService = await read('server/src/services/subscriptionService.js');
   const routes = await read('server/src/routes/paymentRoutes.js');
   const adminRoutes = await read('server/src/routes/adminRoutes.js');
   const envExample = await read('server/.env.example');
@@ -170,12 +171,22 @@ test('Payments: Wave manual orders stay pending until admin validation', async (
   assert.match(controller, /payer_phone:\s*payerPhone/);
   assert.match(controller, /wave_transaction_already_used/);
   assert.match(controller, /MANUAL_PAYMENT_TRANSACTION_CLAIMS_COLLECTION/);
+  assert.match(controller, /hashFirestoreId/);
+  assert.match(controller, /createHash\('sha256'\)/);
   assert.match(controller, /db\.runTransaction/);
   assert.match(controller, /manual_payment_processing/);
-  assert.match(controller, /\.where\('status',\s*'==',\s*itemStatus\)/);
+  assert.match(controller, /isManualPaymentProcessingStale/);
+  assert.match(controller, /ENTITLEMENT_APPLIED/);
+  assert.match(controller, /approval_error/);
   assert.match(controller, /\.orderBy\('created_at',\s*'desc'\)/);
+  assert.match(controller, /statusesToKeep\.includes/);
+  assert.doesNotMatch(controller, /\.where\('status',\s*'=='/);
   assert.match(controller, /applyPurchasedEntitlement\(/);
   assert.match(controller, /paymentMethod:\s*WAVE_PROVIDER/);
+  assert.match(subscriptionService, /runEntitlementOnce/);
+  assert.match(subscriptionService, /paymentLedgerId/);
+  assert.match(subscriptionService, /createHash\('sha256'\)/);
+  assert.match(subscriptionService, /alreadyProcessed/);
   assert.match(routes, /\/wave\/manual-intent/);
   assert.match(routes, /\/wave\/manual-proof/);
   assert.match(adminRoutes, /\/payments\/wave/);
@@ -224,7 +235,7 @@ test('Payments: Paystack checkout is disabled while Wave manual mode is active',
   const stories = await read('web/src/pages/StoriesPage.tsx');
   const hook = await read('src/hooks/useSubscription.ts');
 
-  assert.match(controller, /isPaystackCheckoutEnabled/);
+  assert.match(controller, /isPaystackInitializationEnabled/);
   assert.match(controller, /paystack_disabled/);
   assert.match(controller, /PAYSTACK_ENABLED/);
   assert.match(hook, /PAYSTACK_TEMPORARILY_DISABLED\s*=\s*true/);
@@ -245,6 +256,9 @@ test('Payments: legacy Paystack return route stays non-authoritative while check
   assert.match(hook, /next=/);
   assert.match(controller, /paystackDisabledPayload/);
   assert.match(controller, /return res\.status\(410\)\.json\(paystackDisabledPayload\)/);
+  assert.match(controller, /hasPaystackSecret/);
+  assert.match(controller, /return res\.status\(503\)\.json\(paystackUnavailablePayload\)/);
+  assert.match(controller, /return res\.sendStatus\(503\)/);
   assert.match(controller, /callbackUrl/);
   assert.match(controller, /requestOrigin/);
   assert.match(controller, /callback_url:\s*PAYSTACK_CALLBACK_URL/);
