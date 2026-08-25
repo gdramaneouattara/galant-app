@@ -5,6 +5,8 @@ on:
     branches: [ main, staging ]
     paths:
       - 'server/**'
+      - 'firebase.json'
+      - 'firestore.indexes.json'
       - '.github/workflows/deploy-server.yml'
 
 env:
@@ -30,6 +32,39 @@ jobs:
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy Firestore indexes
+        run: npx -y firebase-tools@latest deploy --only firestore:indexes --project ${{ env.PROJECT_ID }} --non-interactive
+
+      - name: Wait for Firestore indexes
+        run: |
+          for attempt in {1..60}; do
+            if gcloud firestore indexes composite list --project "${{ env.PROJECT_ID }}" --format=json | node -e "
+              let input = '';
+              process.stdin.on('data', chunk => input += chunk);
+              process.stdin.on('end', () => {
+                const indexes = JSON.parse(input || '[]');
+                const ready = indexes.some(index => {
+                  const fields = index.fields || [];
+                  const collectionMatches = index.collectionGroup === 'manual_payments'
+                    || String(index.name || '').includes('/collectionGroups/manual_payments/');
+                  return collectionMatches
+                    && index.queryScope === 'COLLECTION'
+                    && index.state === 'READY'
+                    && fields.some(field => field.fieldPath === 'status' && field.order === 'ASCENDING')
+                    && fields.some(field => field.fieldPath === 'created_at' && field.order === 'DESCENDING');
+                });
+                process.exit(ready ? 0 : 1);
+              });
+            "; then
+              echo "Firestore manual_payments index is ready."
+              exit 0
+            fi
+            echo "Waiting for Firestore manual_payments index to become READY... ($attempt/60)"
+            sleep 10
+          done
+          echo "Firestore manual_payments index was not ready in time."
+          exit 1
 
       - name: Build and Push Container
         run: |

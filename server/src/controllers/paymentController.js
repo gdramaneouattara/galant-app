@@ -60,6 +60,28 @@ const isManualPaymentProcessingStale = (payment = {}, claim = {}) => {
   return !timestamp || Date.now() - timestamp > getManualPaymentProcessingTimeoutMs();
 };
 
+const isFirestoreIndexMissingError = (error) => {
+  const message = String(error?.message || '');
+  return error?.code === 9 || message.includes('FAILED_PRECONDITION') || message.includes('requires an index');
+};
+
+const fetchManualPaymentsByStatus = async (itemStatus, queryLimit) => {
+  try {
+    return await db.collection(MANUAL_PAYMENTS_COLLECTION)
+      .where('status', '==', itemStatus)
+      .orderBy('created_at', 'desc')
+      .limit(queryLimit)
+      .get();
+  } catch (error) {
+    if (!isFirestoreIndexMissingError(error)) throw error;
+    console.warn('[payments] manual_payments_index_not_ready', itemStatus);
+    return db.collection(MANUAL_PAYMENTS_COLLECTION)
+      .where('status', '==', itemStatus)
+      .limit(queryLimit)
+      .get();
+  }
+};
+
 const validateQuotedAmount = async ({ type, planId, amount }) => {
   const normalizedType = String(type || '').toUpperCase();
   const normalizedPlanId = String(planId || '').toUpperCase();
@@ -233,11 +255,7 @@ const listWaveManualPayments = async (req, res) => {
     const statusesToFetch = status === 'OPEN' ? openStatuses : (status === 'ALL' ? null : [status]);
     const queryLimit = Math.min(300, Math.max(limit * 3, limit));
     const snapshots = statusesToFetch
-      ? await Promise.all(statusesToFetch.map(itemStatus => db.collection(MANUAL_PAYMENTS_COLLECTION)
-        .where('status', '==', itemStatus)
-        .orderBy('created_at', 'desc')
-        .limit(queryLimit)
-        .get()))
+      ? await Promise.all(statusesToFetch.map(itemStatus => fetchManualPaymentsByStatus(itemStatus, queryLimit)))
       : [await db.collection(MANUAL_PAYMENTS_COLLECTION)
         .orderBy('created_at', 'desc')
         .limit(queryLimit)
