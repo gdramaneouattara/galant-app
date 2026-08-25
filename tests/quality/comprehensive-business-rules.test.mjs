@@ -839,6 +839,8 @@ test('Rules: Apps exposes paid user partner discovery with direct Google import'
   const subscriptionService = await read('server/src/services/subscriptionService.js');
   const webApp = await read('web/src/App.tsx');
   const webApps = await read('web/src/pages/AppsPage.tsx');
+  const webExperiences = await read('web/src/pages/ExperiencesPage.tsx');
+  const webTranslations = await read('src/translations/index.ts');
   const webPartnerDiscovery = await read('web/src/pages/PartnerDiscoveryPage.tsx');
   const nativeApps = await read('src/screens/apps/AppsScreen.tsx');
   const nativePartnerDiscovery = await read('src/screens/apps/PartnerDiscoveryScreen.tsx');
@@ -868,6 +870,13 @@ test('Rules: Apps exposes paid user partner discovery with direct Google import'
   assert.match(webApps, /PARTNER_DISCOVERY_UNLOCK/);
   assert.match(webApps, /setPartnerUnlockOpen\(true\)/);
   assert.match(webApps, /hasPartnerDiscoveryAccess/);
+  assert.match(webApps, /label\('locked_body'\)/);
+  assert.match(webApps, /label\('locked_soon'\)/);
+  assert.match(webTranslations, /locked_soon:\s*"Bientot disponible"/);
+  assert.match(webTranslations, /locked_body:\s*"Cette fonctionnalite est temporairement verrouillee pendant sa finalisation\."/);
+  assert.match(webTranslations, /locked_soon:\s*"Coming soon"/);
+  assert.match(webTranslations, /locked_body:\s*"This feature is temporarily locked while we finish the experience\."/);
+  assert.match(webExperiences, /onBack=\{\(\) => setActiveTab\('GUIDE'\)\}/);
   assert.doesNotMatch(webApps, /\/api\/venues\/partner-discovery\/google/);
   assert.match(webPartnerDiscovery, /PARTNER_DISCOVERY_UNLOCK/);
   assert.match(webPartnerDiscovery, /InteractionPurchaseModal/);

@@ -6,9 +6,10 @@ import { useAuth } from '../context/AuthContext';
 type LockedFeatureNoticeProps = {
   title: string;
   backTo?: string;
+  onBack?: () => void;
 };
 
-const LockedFeatureNotice: React.FC<LockedFeatureNoticeProps> = ({ title, backTo = '/apps' }) => {
+const LockedFeatureNotice: React.FC<LockedFeatureNoticeProps> = ({ title, backTo = '/apps', onBack }) => {
   const navigate = useNavigate();
   const { language } = useAuth();
   const copy = language === 'en'
@@ -47,7 +48,13 @@ const LockedFeatureNotice: React.FC<LockedFeatureNoticeProps> = ({ title, backTo
       </p>
       <button
         type="button"
-        onClick={() => navigate(backTo)}
+        onClick={() => {
+          if (onBack) {
+            onBack();
+            return;
+          }
+          navigate(backTo);
+        }}
         className="mt-8 inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-6 py-4 text-xs font-black uppercase tracking-widest text-white transition active:scale-95 dark:bg-white dark:text-slate-900"
       >
         <ChevronLeft size={16} />
