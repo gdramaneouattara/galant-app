@@ -185,10 +185,10 @@ test('Payments: Wave manual orders stay pending until admin validation', async (
   assert.match(controller, /approval_lease_id/);
   assert.match(controller, /manual_payment_approval_lease_lost/);
   assert.match(controller, /fetchManualPaymentsByStatus/);
-  assert.match(controller, /isFirestoreIndexMissingError/);
   assert.match(controller, /\.where\('status',\s*'==',\s*itemStatus\)/);
   assert.match(controller, /\.where\('status',\s*'==',\s*itemStatus\)\s*\n\s*\.orderBy\('created_at',\s*'desc'\)\s*\n\s*\.limit\(queryLimit\)/);
-  assert.match(controller, /manual_payments_index_not_ready/);
+  assert.doesNotMatch(controller, /\.where\('status',\s*'==',\s*itemStatus\)\s*\n\s*\.limit\(queryLimit\)\s*\n\s*\.get\(\)/);
+  assert.doesNotMatch(controller, /manual_payments_index_not_ready/);
   assert.match(firestoreIndexes, /"collectionGroup":\s*"manual_payments"/);
   assert.match(firestoreIndexes, /"fieldPath":\s*"status"[\s\S]*"order":\s*"ASCENDING"/);
   assert.match(firestoreIndexes, /"fieldPath":\s*"created_at"[\s\S]*"order":\s*"DESCENDING"/);

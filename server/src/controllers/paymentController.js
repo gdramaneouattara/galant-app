@@ -60,26 +60,12 @@ const isManualPaymentProcessingStale = (payment = {}, claim = {}) => {
   return !timestamp || Date.now() - timestamp > getManualPaymentProcessingTimeoutMs();
 };
 
-const isFirestoreIndexMissingError = (error) => {
-  const message = String(error?.message || '');
-  return error?.code === 9 || message.includes('FAILED_PRECONDITION') || message.includes('requires an index');
-};
-
 const fetchManualPaymentsByStatus = async (itemStatus, queryLimit) => {
-  try {
-    return await db.collection(MANUAL_PAYMENTS_COLLECTION)
-      .where('status', '==', itemStatus)
-      .orderBy('created_at', 'desc')
-      .limit(queryLimit)
-      .get();
-  } catch (error) {
-    if (!isFirestoreIndexMissingError(error)) throw error;
-    console.warn('[payments] manual_payments_index_not_ready', itemStatus);
-    return db.collection(MANUAL_PAYMENTS_COLLECTION)
-      .where('status', '==', itemStatus)
-      .limit(queryLimit)
-      .get();
-  }
+  return db.collection(MANUAL_PAYMENTS_COLLECTION)
+    .where('status', '==', itemStatus)
+    .orderBy('created_at', 'desc')
+    .limit(queryLimit)
+    .get();
 };
 
 const validateQuotedAmount = async ({ type, planId, amount }) => {
