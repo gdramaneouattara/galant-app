@@ -222,10 +222,12 @@ test('Payments: Paystack checkout is disabled while Wave manual mode is active',
   const controller = await read('server/src/controllers/paymentController.js');
   const interactionModal = await read('web/src/components/InteractionPurchaseModal.tsx');
   const stories = await read('web/src/pages/StoriesPage.tsx');
+  const hook = await read('src/hooks/useSubscription.ts');
 
   assert.match(controller, /isPaystackCheckoutEnabled/);
   assert.match(controller, /paystack_disabled/);
   assert.match(controller, /PAYSTACK_ENABLED/);
+  assert.match(hook, /PAYSTACK_TEMPORARILY_DISABLED\s*=\s*true/);
   assert.doesNotMatch(interactionModal, /purchaseWithPaystack/);
   assert.match(interactionModal, /createWaveManualPayment/);
   assert.doesNotMatch(stories, /purchaseWithPaystack/);
