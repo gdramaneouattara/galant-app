@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, MapPin, Globe, Search, Plane, Loader2, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -14,11 +14,37 @@ interface Props {
 
 const PassportModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const { user, profile, t } = useAuth();
+  const modalRef = useRef<HTMLDivElement | null>(null);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [results, setResults] = useState<any[]>([]);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [visualViewportStyle, setVisualViewportStyle] = useState<React.CSSProperties>({});
+
+  useEffect(() => {
+    if (!isOpen || !isInputFocused || typeof window === 'undefined' || !window.visualViewport) {
+      setVisualViewportStyle({});
+      return;
+    }
+
+    const viewport = window.visualViewport;
+    const updateViewportStyle = () => {
+      setVisualViewportStyle({
+        top: `${viewport.offsetTop}px`,
+        height: `${viewport.height}px`
+      });
+    };
+
+    updateViewportStyle();
+    viewport.addEventListener('resize', updateViewportStyle);
+    viewport.addEventListener('scroll', updateViewportStyle);
+
+    return () => {
+      viewport.removeEventListener('resize', updateViewportStyle);
+      viewport.removeEventListener('scroll', updateViewportStyle);
+    };
+  }, [isOpen, isInputFocused]);
 
   if (!isOpen) return null;
 
@@ -99,24 +125,38 @@ const PassportModal: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   };
 
+  const handleModalBlur = () => {
+    window.setTimeout(() => {
+      const activeElement = document.activeElement;
+      if (!modalRef.current || !activeElement || !modalRef.current.contains(activeElement)) {
+        setIsInputFocused(false);
+      }
+    }, 0);
+  };
+
   const overlayClassName = [
-    'fixed inset-0 z-[220] bg-slate-900/70 backdrop-blur-sm flex px-4',
-    isInputFocused ? 'items-end justify-center pt-3 pb-2' : 'items-center justify-center py-3'
+    'fixed left-0 right-0 z-[220] bg-slate-900/70 backdrop-blur-sm flex px-4',
+    isInputFocused ? 'top-0 h-[100dvh] items-end justify-center pt-3 pb-2' : 'inset-y-0 items-center justify-center py-3'
   ].join(' ');
   const modalClassName = [
     'bg-white w-full max-w-md shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300',
     isInputFocused
-      ? 'max-h-[calc(100dvh-0.75rem)] rounded-t-[1.75rem] rounded-b-[1.25rem]'
+      ? 'max-h-[calc(100%-0.75rem)] rounded-t-[1.75rem] rounded-b-[1.25rem]'
       : 'max-h-[calc(100dvh-2rem)] rounded-[2rem] md:rounded-[2.5rem]'
   ].join(' ');
   const contentClassName = [
     'overflow-y-auto overscroll-contain',
-    isInputFocused ? 'p-4 space-y-3 max-h-[calc(100dvh-0.75rem)]' : 'p-5 sm:p-8 space-y-4 sm:space-y-6 max-h-[calc(100dvh-2rem)]'
+    isInputFocused ? 'p-4 space-y-3 max-h-[calc(100%-0.75rem)]' : 'p-5 sm:p-8 space-y-4 sm:space-y-6 max-h-[calc(100dvh-2rem)]'
   ].join(' ');
 
   const modal = (
-    <div className={overlayClassName}>
-      <div className={modalClassName}>
+    <div className={overlayClassName} style={isInputFocused ? visualViewportStyle : undefined}>
+      <div
+        ref={modalRef}
+        className={modalClassName}
+        onFocusCapture={() => setIsInputFocused(true)}
+        onBlurCapture={handleModalBlur}
+      >
         <div className={contentClassName}>
           {/* Header */}
           <div className="sticky top-0 z-10 -mx-1 flex justify-between items-start gap-3 bg-white px-1 pb-1">
@@ -150,7 +190,6 @@ const PassportModal: React.FC<Props> = ({ isOpen, onClose }) => {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onFocus={() => setIsInputFocused(true)}
-              onBlur={() => setIsInputFocused(false)}
               placeholder={t('search_city')}
               className="w-full bg-slate-50 border-none px-11 py-3.5 sm:px-12 sm:py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium text-sm sm:text-base"
             />
@@ -158,6 +197,7 @@ const PassportModal: React.FC<Props> = ({ isOpen, onClose }) => {
             <button
               type="submit"
               disabled={loading}
+              onMouseDown={(event) => event.preventDefault()}
               className="absolute right-3 top-1/2 -translate-y-1/2 bg-white p-2 rounded-xl shadow-sm text-primary hover:scale-105 active:scale-95 transition-all"
             >
               {loading ? <Loader2 size={20} className="animate-spin" /> : <ChevronRight size={20} />}
