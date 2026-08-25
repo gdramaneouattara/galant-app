@@ -55,7 +55,7 @@ const PrivacyPage: React.FC = () => {
             <ShieldOff size={16} /> 3. Non-partage des données
           </div>
           <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium transition-colors">
-            <span className="font-bold text-slate-900 dark:text-white transition-colors">Galant ne vend jamais vos données personnelles.</span> Nous ne partageons vos informations avec des tiers que dans le cadre strict de l'exécution du service (ex: traitement des paiements via Paystack) ou pour répondre à des obligations légales.
+            <span className="font-bold text-slate-900 dark:text-white transition-colors">Galant ne vend jamais vos données personnelles.</span> Nous ne partageons vos informations avec des tiers que dans le cadre strict de l'exécution du service (ex: vérification manuelle des paiements Wave) ou pour répondre à des obligations légales.
           </p>
         </section>
 
@@ -73,7 +73,7 @@ const PrivacyPage: React.FC = () => {
             <EyeOff size={16} /> 5. Sécurité des Échanges
           </div>
           <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium text-sm transition-colors">
-            Tous les échanges de données entre votre appareil et nos serveurs sont protégés par un chiffrement SSL. Vos informations de paiement ne transitent jamais par nos serveurs et sont gérées directement par notre partenaire certifié PCI-DSS : Paystack.
+            Tous les échanges de données entre votre appareil et nos serveurs sont protégés par un chiffrement SSL. En mode Wave temporaire, Galant conserve uniquement les informations nécessaires à la vérification manuelle : référence Galant, ID transaction Wave, numéro renseigné, montant et statut de validation.
           </p>
         </section>
 

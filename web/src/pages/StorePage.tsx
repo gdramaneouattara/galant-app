@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   Zap,
   ShieldCheck,
-  CreditCard,
   Waves,
   Award,
   Sparkles,
@@ -30,11 +29,10 @@ import type { WaveManualIntent } from '@shared/hooks/useSubscription';
 
 const StorePage: React.FC = () => {
   const navigate = useNavigate();
-  const { profile, t, language } = useAuth();
-  const { purchaseWithPaystack, createWaveManualPayment, submitWaveManualProof, purchaseLoading } = useSubscription();
+  const { profile, language } = useAuth();
+  const { createWaveManualPayment, submitWaveManualProof, purchaseLoading } = useSubscription();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [pricing, setPricing] = useState<any>(null);
-  const [paymentMode, setPaymentMode] = useState<'PAYSTACK' | 'WAVE'>('WAVE');
   const [waveIntent, setWaveIntent] = useState<WaveManualIntent | null>(null);
 
   const boostStatus = getBoostStatus(profile?.boosted_until);
@@ -93,8 +91,7 @@ const StorePage: React.FC = () => {
         passes: 'Passes & Unlocks',
         included: 'Included',
         paymentMethod: 'Payment method',
-        paystackMode: 'Card / Mobile Money',
-        waveMode: 'Wave manual',
+        waveMode: 'Wave manual payment',
         wavePendingTitle: 'Wave payment pending',
         wavePendingBody: 'Your Wave transaction has been submitted. An admin will validate it before activation.',
         rosePacks: [
@@ -115,7 +112,7 @@ const StorePage: React.FC = () => {
             { id: 'STORY_UPLOAD', type: 'STORY_UPLOAD' as PurchaseType, label: 'Post a Story', sub: 'One-time post', price: 500, icon: Camera, color: 'text-amber-500' },
             { id: 'PARTNER_DISCOVERY_UNLOCK', type: 'PARTNER_DISCOVERY_UNLOCK' as PurchaseType, label: 'Partners around me', sub: 'Direct Google search', price: 500, icon: MapPinned, color: 'text-emerald-500' },
           ],
-        security: 'All transactions are SSL encrypted and processed by Paystack. Orange Money, MTN MoMo, Moov Money and Wave are accepted.'
+        security: 'Temporary Wave manual mode: pay the exact amount, enter your Wave transaction ID and phone number, then wait for admin validation.'
       }
     : {
         alreadyTitle: 'Déjà disponible',
@@ -166,8 +163,7 @@ const StorePage: React.FC = () => {
         passes: 'Pass & Déblocages',
         included: 'Inclus',
         paymentMethod: 'Mode de paiement',
-        paystackMode: 'Carte / Mobile Money',
-        waveMode: 'Wave manuel',
+        waveMode: 'Paiement Wave manuel',
         wavePendingTitle: 'Paiement Wave en attente',
         wavePendingBody: 'Votre transaction Wave a ete soumise. Un admin la validera avant activation.',
         rosePacks: [
@@ -188,7 +184,7 @@ const StorePage: React.FC = () => {
             { id: 'STORY_UPLOAD', type: 'STORY_UPLOAD' as PurchaseType, label: 'Publier une Story', sub: 'Publication ponctuelle', price: 500, icon: Camera, color: 'text-amber-500' },
             { id: 'PARTNER_DISCOVERY_UNLOCK', type: 'PARTNER_DISCOVERY_UNLOCK' as PurchaseType, label: 'Partenaires autour de moi', sub: 'Recherche Google directe', price: 500, icon: MapPinned, color: 'text-emerald-500' },
           ],
-        security: 'Toutes vos transactions sont sécurisées par cryptage SSL et traitées par Paystack. Orange Money, MTN MoMo, Moov Money et Wave sont acceptés.'
+        security: 'Mode Wave manuel temporaire : payez le montant exact, saisissez l ID transaction Wave et votre numero, puis attendez la validation admin.'
       };
 
   useEffect(() => {
@@ -212,16 +208,8 @@ const StorePage: React.FC = () => {
 
     setLoadingId(id);
     try {
-      if (paymentMode === 'WAVE') {
-        const intent = await createWaveManualPayment(type, amount, undefined, { planId: id });
-        if (intent) setWaveIntent(intent);
-        return;
-      }
-
-      const ok = await purchaseWithPaystack(type, amount, undefined, { planId: id });
-      if (ok) {
-        showAlert(t('success'), t('purchase_activated'));
-      }
+      const intent = await createWaveManualPayment(type, amount, undefined, { planId: id });
+      if (intent) setWaveIntent(intent);
     } catch (error: any) {
       showAlert(labels.error, error.message);
     } finally {
@@ -284,31 +272,9 @@ const StorePage: React.FC = () => {
 
       <div className="rounded-[2rem] border border-slate-100 bg-white p-4 shadow-lg dark:border-white/5 dark:bg-slate-900">
         <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">{labels.paymentMethod}</p>
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => setPaymentMode('PAYSTACK')}
-            className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition ${
-              paymentMode === 'PAYSTACK'
-                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
-                : 'bg-slate-50 text-slate-500 dark:bg-white/5 dark:text-slate-400'
-            }`}
-          >
-            <CreditCard size={15} />
-            {labels.paystackMode}
-          </button>
-          <button
-            type="button"
-            onClick={() => setPaymentMode('WAVE')}
-            className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition ${
-              paymentMode === 'WAVE'
-                ? 'bg-[#09a5db] text-white'
-                : 'bg-slate-50 text-slate-500 dark:bg-white/5 dark:text-slate-400'
-            }`}
-          >
-            <Waves size={15} />
-            {labels.waveMode}
-          </button>
+        <div className="flex items-center justify-center gap-2 rounded-2xl bg-[#09a5db] px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white">
+          <Waves size={15} />
+          {labels.waveMode}
         </div>
       </div>
 

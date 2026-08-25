@@ -66,7 +66,7 @@ const TermsPage: React.FC = () => {
             <CreditCard size={16} /> 4. Achats & Abonnements
           </div>
           <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium transition-colors">
-            Les Roses à consommer, Roses d'Or visibilité et Abonnements Premium sont des services numériques consommables. <span className="font-bold text-slate-900 dark:text-white">Aucun remboursement</span> ne sera accordé une fois le service activé ou la Rose consommée. Les paiements sont sécurisés par Paystack et acceptent les cartes bancaires ainsi que les moyens locaux (Orange Money, MTN MoMo, Wave).
+            Les Roses à consommer, Roses d'Or visibilité et Abonnements Premium sont des services numériques consommables. <span className="font-bold text-slate-900 dark:text-white">Aucun remboursement</span> ne sera accordé une fois le service activé ou la Rose consommée. En mode temporaire, les paiements Wave sont vérifiés manuellement avant activation.
           </p>
         </section>
 

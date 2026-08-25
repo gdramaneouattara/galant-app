@@ -12,8 +12,10 @@ import StatusLikersModal from '../components/StatusLikersModal';
 import StoryPurchaseModal from '../components/StoryPurchaseModal';
 import LikerProfileModal, { type StatusLiker } from '../components/LikerProfileModal';
 import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
+import WaveManualPaymentModal from '../components/WaveManualPaymentModal';
 import { useMatchmaking } from '@shared/hooks/useMatchmaking';
 import { useSubscription } from '@shared/hooks/useSubscription';
+import type { WaveManualIntent } from '@shared/hooks/useSubscription';
 import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
@@ -50,7 +52,7 @@ const StoriesPage: React.FC = () => {
   const location = useLocation();
   const routeState = location.state as { initialStatusId?: string; openComposer?: boolean } | null;
   const { handleSwipe } = useMatchmaking();
-  const { purchaseWithPaystack, purchaseLoading } = useSubscription();
+  const { createWaveManualPayment, submitWaveManualProof, purchaseLoading } = useSubscription();
 
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +75,7 @@ const StoriesPage: React.FC = () => {
   });
 
   const [isPurchaseOpen, setIsPurchaseOpen] = useState(false);
+  const [waveIntent, setWaveIntent] = useState<WaveManualIntent | null>(null);
   const [storyUploadUnlocked, setStoryUploadUnlocked] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -398,13 +401,18 @@ const StoriesPage: React.FC = () => {
   };
 
   const handleStoryPurchase = async () => {
-    const ok = await purchaseWithPaystack('STORY_UPLOAD', 500);
+    const intent = await createWaveManualPayment('STORY_UPLOAD', 500, undefined, { planId: 'STORY_UPLOAD' });
+    if (intent) {
+      setWaveIntent(intent);
+    }
+  };
+
+  const submitStoryWaveTransaction = async ({ transactionId, phone }: { transactionId: string; phone: string }) => {
+    if (!waveIntent) return;
+    const ok = await submitWaveManualProof(waveIntent.reference_code, transactionId, phone);
     if (ok) {
       setIsPurchaseOpen(false);
-      setStoryUploadUnlocked(true);
-      showAlert(t('purchase_success'), t('story_upload_unlocked'));
-      await fetchStatuses({ append: false });
-      window.setTimeout(() => fileInputRef.current?.click(), 600);
+      setWaveIntent(null);
     }
   };
 
@@ -508,6 +516,13 @@ const StoriesPage: React.FC = () => {
           onClose={() => setIsPurchaseOpen(false)}
           onPurchase={handleStoryPurchase}
           loading={purchaseLoading}
+        />
+        <WaveManualPaymentModal
+          isOpen={!!waveIntent}
+          intent={waveIntent}
+          loading={purchaseLoading}
+          onClose={() => setWaveIntent(null)}
+          onSubmit={submitStoryWaveTransaction}
         />
       </div>
     );
@@ -796,6 +811,13 @@ const StoriesPage: React.FC = () => {
         onClose={() => setIsPurchaseOpen(false)}
         onPurchase={handleStoryPurchase}
         loading={purchaseLoading}
+      />
+      <WaveManualPaymentModal
+        isOpen={!!waveIntent}
+        intent={waveIntent}
+        loading={purchaseLoading}
+        onClose={() => setWaveIntent(null)}
+        onSubmit={submitStoryWaveTransaction}
       />
     </div>
   );

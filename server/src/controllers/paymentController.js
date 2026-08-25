@@ -19,11 +19,22 @@ const getPaymentPricing = async (req, res) => {
 };
 
 const MANUAL_PAYMENTS_COLLECTION = 'manual_payments';
+const MANUAL_PAYMENT_TRANSACTION_CLAIMS_COLLECTION = 'manual_payment_transaction_claims';
 const WAVE_PROVIDER = 'WAVE_MANUAL';
 
 const normalizePaymentText = (value = '') => String(value || '').trim();
 const normalizeTransactionId = (value = '') => normalizePaymentText(value).replace(/\s+/g, '').toUpperCase();
 const normalizeManualReference = (value = '') => normalizePaymentText(value).replace(/\s+/g, '').toUpperCase();
+const safeFirestoreId = (value = '') => normalizePaymentText(value).replace(/[^A-Z0-9_-]/gi, '_').slice(0, 120);
+const isPaystackCheckoutEnabled = () => {
+  const enabled = String(process.env.PAYSTACK_ENABLED || 'false').toLowerCase() === 'true';
+  return enabled && !!process.env.PAYSTACK_SECRET_KEY;
+};
+
+const paystackDisabledPayload = {
+  error: 'paystack_disabled',
+  message: 'Le paiement Paystack est temporairement desactive. Utilisez le paiement Wave manuel.'
+};
 
 const getManualPaymentExpiryMinutes = () => {
   const value = Number(process.env.WAVE_MANUAL_PAYMENT_EXPIRES_MINUTES || 60);
@@ -198,17 +209,22 @@ const submitWaveManualPaymentProof = async (req, res) => {
 const listWaveManualPayments = async (req, res) => {
   const status = String(req.query.status || 'OPEN').toUpperCase();
   const limit = Math.max(1, Math.min(200, parseInt(req.query.limit || '80', 10)));
-  const openStatuses = new Set(['PENDING', 'SUBMITTED']);
+  const openStatuses = ['SUBMITTED', 'PENDING', 'PROCESSING'];
 
   try {
-    const snapshot = await db.collection(MANUAL_PAYMENTS_COLLECTION).limit(300).get();
-    const payments = snapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter(item => {
-        if (status === 'ALL') return true;
-        if (status === 'OPEN') return openStatuses.has(item.status);
-        return item.status === status;
-      })
+    const statusesToFetch = status === 'OPEN' ? openStatuses : (status === 'ALL' ? null : [status]);
+    const snapshots = statusesToFetch
+      ? await Promise.all(statusesToFetch.map(itemStatus => db.collection(MANUAL_PAYMENTS_COLLECTION)
+        .where('status', '==', itemStatus)
+        .orderBy('created_at', 'desc')
+        .limit(limit)
+        .get()))
+      : [await db.collection(MANUAL_PAYMENTS_COLLECTION)
+        .orderBy('created_at', 'desc')
+        .limit(limit)
+        .get()];
+    const payments = snapshots
+      .flatMap(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
       .sort((left, right) => String(right.created_at || '').localeCompare(String(left.created_at || '')))
       .slice(0, limit);
 
@@ -243,45 +259,96 @@ const approveWaveManualPayment = async (req, res) => {
 
   try {
     const ref = db.collection(MANUAL_PAYMENTS_COLLECTION).doc(referenceCode);
-    const doc = await ref.get();
-    if (!doc.exists) return res.status(404).json({ error: 'manual_payment_not_found' });
-    const payment = doc.data() || {};
+    const now = new Date().toISOString();
+    const claim = await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(ref);
+      if (!doc.exists) return { error: 'manual_payment_not_found', statusCode: 404 };
+      const payment = doc.data() || {};
 
-    if (payment.status === 'APPROVED') return res.json({ success: true, status: 'APPROVED', already_approved: true });
-    if (payment.status === 'REJECTED') return res.status(409).json({ error: 'manual_payment_rejected' });
-    if (!payment.transaction_id_normalized) return res.status(400).json({ error: 'missing_wave_transaction_id' });
+      if (payment.status === 'APPROVED') return { alreadyApproved: true };
+      if (payment.status === 'REJECTED') return { error: 'manual_payment_rejected', statusCode: 409 };
+      if (payment.status === 'PROCESSING') return { error: 'manual_payment_processing', statusCode: 409 };
+      if (!payment.transaction_id_normalized) return { error: 'missing_wave_transaction_id', statusCode: 400 };
 
-    const duplicateApproved = await db.collection(MANUAL_PAYMENTS_COLLECTION)
-      .where('transaction_id_normalized', '==', payment.transaction_id_normalized)
-      .limit(5)
-      .get();
-    const alreadyApprovedElsewhere = duplicateApproved.docs
-      .some(item => item.id !== referenceCode && item.data()?.status === 'APPROVED');
-    if (alreadyApprovedElsewhere) {
-      return res.status(409).json({ error: 'wave_transaction_already_approved' });
+      const claimId = safeFirestoreId(payment.transaction_id_normalized);
+      const claimRef = db.collection(MANUAL_PAYMENT_TRANSACTION_CLAIMS_COLLECTION).doc(claimId);
+      const claimDoc = await transaction.get(claimRef);
+      if (claimDoc.exists) {
+        const claimData = claimDoc.data() || {};
+        if (claimData.reference_code !== referenceCode) {
+          return { error: 'wave_transaction_already_claimed', statusCode: 409 };
+        }
+        if (claimData.status === 'APPROVED') {
+          transaction.update(ref, {
+            status: 'APPROVED',
+            approved_at: claimData.approved_at || now,
+            approved_by: claimData.approved_by || req.user.id,
+            admin_note: adminNote || payment.admin_note || null,
+            updated_at: now
+          });
+          return { alreadyApproved: true };
+        }
+        return { error: 'manual_payment_processing', statusCode: 409 };
+      }
+
+      transaction.set(claimRef, {
+        reference_code: referenceCode,
+        transaction_id_normalized: payment.transaction_id_normalized,
+        status: 'PROCESSING',
+        user_id: payment.user_id,
+        amount: payment.amount,
+        claimed_by: req.user.id,
+        claimed_at: now,
+        updated_at: now
+      }, { merge: true });
+      transaction.update(ref, {
+        status: 'PROCESSING',
+        approval_claimed_at: now,
+        approval_claimed_by: req.user.id,
+        admin_note: adminNote || null,
+        updated_at: now
+      });
+
+      return { payment, claimRef };
+    });
+
+    if (claim.alreadyApproved) {
+      return res.json({ success: true, status: 'APPROVED', already_approved: true });
+    }
+    if (claim.error) {
+      return res.status(claim.statusCode || 500).json({ error: claim.error });
     }
 
     await applyPurchasedEntitlement({
-      userId: payment.user_id,
-      planId: payment.plan_id,
-      type: payment.type,
-      targetId: payment.target_id,
+      userId: claim.payment.user_id,
+      planId: claim.payment.plan_id,
+      type: claim.payment.type,
+      targetId: claim.payment.target_id,
       reference: `wave_${referenceCode}`,
       paymentMethod: WAVE_PROVIDER,
-      note: payment.note || null,
+      note: claim.payment.note || null,
       purchaseMeta: {
         manualReference: referenceCode,
-        transactionId: payment.transaction_id,
-        payerPhone: payment.payer_phone || null
+        transactionId: claim.payment.transaction_id,
+        payerPhone: claim.payment.payer_phone || null
       }
     });
 
-    await ref.update({
-      status: 'APPROVED',
-      approved_at: new Date().toISOString(),
-      approved_by: req.user.id,
-      admin_note: adminNote || null,
-      updated_at: new Date().toISOString()
+    const approvedAt = new Date().toISOString();
+    await db.runTransaction(async (transaction) => {
+      transaction.update(ref, {
+        status: 'APPROVED',
+        approved_at: approvedAt,
+        approved_by: req.user.id,
+        admin_note: adminNote || null,
+        updated_at: approvedAt
+      });
+      transaction.set(claim.claimRef, {
+        status: 'APPROVED',
+        approved_at: approvedAt,
+        approved_by: req.user.id,
+        updated_at: approvedAt
+      }, { merge: true });
     });
 
     return res.json({ success: true, status: 'APPROVED' });
@@ -300,6 +367,7 @@ const rejectWaveManualPayment = async (req, res) => {
     if (!doc.exists) return res.status(404).json({ error: 'manual_payment_not_found' });
     const payment = doc.data() || {};
     if (payment.status === 'APPROVED') return res.status(409).json({ error: 'manual_payment_already_approved' });
+    if (payment.status === 'PROCESSING') return res.status(409).json({ error: 'manual_payment_processing' });
 
     await ref.update({
       status: 'REJECTED',
@@ -316,6 +384,10 @@ const rejectWaveManualPayment = async (req, res) => {
 };
 
 const initializePayment = async (req, res) => {
+  if (!isPaystackCheckoutEnabled()) {
+    return res.status(410).json(paystackDisabledPayload);
+  }
+
   const { planId, type, targetId, paymentMethod, note, callbackUrl, amount } = req.body;
   const email = req.authUser?.email || `${req.user.id}@galant.app`;
   const normalizedType = String(type || '').toUpperCase();
@@ -414,6 +486,10 @@ const initializePayment = async (req, res) => {
 };
 
 const verifyPayment = async (req, res) => {
+  if (!isPaystackCheckoutEnabled()) {
+    return res.status(410).json(paystackDisabledPayload);
+  }
+
   const { reference } = req.query;
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
   try {
@@ -444,6 +520,9 @@ const verifyPayment = async (req, res) => {
 
 const handleWebhook = async (req, res) => {
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+  if (!isPaystackCheckoutEnabled()) {
+    return res.sendStatus(200);
+  }
 
   // Verify signature
   const hash = crypto.createHmac('sha512', PAYSTACK_SECRET_KEY).update(JSON.stringify(req.body)).digest('hex');

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, CreditCard, Film, Loader2 } from 'lucide-react';
+import { X, Film, Loader2, Waves } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface Props {
@@ -16,7 +16,7 @@ const copy = {
     title: 'Partager un moment',
     body: 'Publiez une story visible pendant 24h par toute la communauté Galant.',
     unit: 'par story publiée',
-    pay: 'Carte ou Mobile Money',
+    pay: 'Payer avec Wave',
     later: 'Peut-être plus tard',
     hint: 'Astuce : les membres Premium bénéficient de publications illimitées et gratuites.'
   },
@@ -24,7 +24,7 @@ const copy = {
     title: 'Share a moment',
     body: 'Publish a story visible for 24 hours to the whole Galant community.',
     unit: 'per published story',
-    pay: 'Card or Mobile Money',
+    pay: 'Pay with Wave',
     later: 'Maybe later',
     hint: 'Tip: Premium members get unlimited free story posts.'
   }
@@ -68,7 +68,7 @@ const StoryPurchaseModal: React.FC<Props> = ({ isOpen, onClose, onPurchase, load
             >
               {loading ? <Loader2 className="animate-spin" size={20} /> : (
                 <>
-                  <CreditCard size={20} />
+                  <Waves size={20} />
                   {c.pay}
                 </>
               )}
