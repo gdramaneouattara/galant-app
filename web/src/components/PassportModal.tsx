@@ -18,6 +18,7 @@ const PassportModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [results, setResults] = useState<any[]>([]);
+  const [isInputFocused, setIsInputFocused] = useState(false);
 
   if (!isOpen) return null;
 
@@ -98,28 +99,43 @@ const PassportModal: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   };
 
+  const overlayClassName = [
+    'fixed inset-0 z-[220] bg-slate-900/70 backdrop-blur-sm flex px-4',
+    isInputFocused ? 'items-end justify-center pt-3 pb-2' : 'items-center justify-center py-3'
+  ].join(' ');
+  const modalClassName = [
+    'bg-white w-full max-w-md shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300',
+    isInputFocused
+      ? 'max-h-[calc(100dvh-0.75rem)] rounded-t-[1.75rem] rounded-b-[1.25rem]'
+      : 'max-h-[calc(100dvh-2rem)] rounded-[2rem] md:rounded-[2.5rem]'
+  ].join(' ');
+  const contentClassName = [
+    'overflow-y-auto overscroll-contain',
+    isInputFocused ? 'p-4 space-y-3 max-h-[calc(100dvh-0.75rem)]' : 'p-5 sm:p-8 space-y-4 sm:space-y-6 max-h-[calc(100dvh-2rem)]'
+  ].join(' ');
+
   const modal = (
-    <div className="fixed inset-0 z-[220] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center px-4 py-3">
-      <div className="bg-white w-full max-w-md max-h-[calc(100dvh-2rem)] rounded-[2rem] md:rounded-[2.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300">
-        <div className="p-5 sm:p-8 space-y-4 sm:space-y-6 overflow-y-auto max-h-[calc(100dvh-2rem)]">
+    <div className={overlayClassName}>
+      <div className={modalClassName}>
+        <div className={contentClassName}>
           {/* Header */}
-          <div className="flex justify-between items-start gap-3">
+          <div className="sticky top-0 z-10 -mx-1 flex justify-between items-start gap-3 bg-white px-1 pb-1">
             <div className="flex items-start gap-3 sm:gap-4 min-w-0">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 bg-rose-50 text-primary rounded-2xl flex items-center justify-center shrink-0">
-                <Plane size={22} />
+              <div className={`${isInputFocused ? 'w-9 h-9 rounded-xl' : 'w-11 h-11 sm:w-12 sm:h-12 rounded-2xl'} bg-rose-50 text-primary flex items-center justify-center shrink-0 transition-all`}>
+                <Plane size={isInputFocused ? 18 : 22} />
               </div>
               <div className="min-w-0">
-                <h2 className="text-lg sm:text-xl leading-tight font-black">{t('passport_galant')}</h2>
-                <p className="text-[11px] sm:text-xs leading-relaxed font-medium text-slate-500">{t('passport_desc')}</p>
+                <h2 className={`${isInputFocused ? 'text-base' : 'text-lg sm:text-xl'} leading-tight font-black`}>{t('passport_galant')}</h2>
+                <p className={`${isInputFocused ? 'line-clamp-2 text-[10px]' : 'text-[11px] sm:text-xs'} leading-relaxed font-medium text-slate-500`}>{t('passport_desc')}</p>
               </div>
             </div>
-            <button onClick={onClose} className="p-1.5 sm:p-2 hover:bg-slate-50 rounded-full text-slate-300 transition-colors shrink-0">
-              <X size={22} />
+            <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-full text-slate-300 transition-colors shrink-0">
+              <X size={isInputFocused ? 20 : 22} />
             </button>
           </div>
 
           {/* Benefits */}
-          <div className="flex flex-wrap gap-2">
+          <div className={`${isInputFocused ? 'hidden' : 'flex'} flex-wrap gap-2`}>
             {[t('passport_benefit_1'), t('passport_benefit_2')].map((b, i) => (
               <span key={i} className="bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-tighter border border-slate-100">
                 {b}
@@ -133,6 +149,8 @@ const PassportModal: React.FC<Props> = ({ isOpen, onClose }) => {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onFocus={() => setIsInputFocused(true)}
+              onBlur={() => setIsInputFocused(false)}
               placeholder={t('search_city')}
               className="w-full bg-slate-50 border-none px-11 py-3.5 sm:px-12 sm:py-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium text-sm sm:text-base"
             />
