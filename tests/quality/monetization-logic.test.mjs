@@ -162,6 +162,7 @@ test('Payments: Wave manual orders stay pending until admin validation', async (
   const routes = await read('server/src/routes/paymentRoutes.js');
   const adminRoutes = await read('server/src/routes/adminRoutes.js');
   const envExample = await read('server/.env.example');
+  const firestoreIndexes = await read('firestore.indexes.json');
 
   assert.match(controller, /createWaveManualPayment/);
   assert.match(controller, /submitWaveManualPaymentProof/);
@@ -182,8 +183,10 @@ test('Payments: Wave manual orders stay pending until admin validation', async (
   assert.match(controller, /approval_lease_id/);
   assert.match(controller, /manual_payment_approval_lease_lost/);
   assert.match(controller, /\.where\('status',\s*'==',\s*itemStatus\)/);
-  assert.match(controller, /\.where\('status',\s*'==',\s*itemStatus\)\s*\n\s*\.limit\(queryLimit\)/);
-  assert.doesNotMatch(controller, /\.where\('status',\s*'==',\s*itemStatus\)\s*\n\s*\.orderBy/s);
+  assert.match(controller, /\.where\('status',\s*'==',\s*itemStatus\)\s*\n\s*\.orderBy\('created_at',\s*'desc'\)\s*\n\s*\.limit\(queryLimit\)/);
+  assert.match(firestoreIndexes, /"collectionGroup":\s*"manual_payments"/);
+  assert.match(firestoreIndexes, /"fieldPath":\s*"status"[\s\S]*"order":\s*"ASCENDING"/);
+  assert.match(firestoreIndexes, /"fieldPath":\s*"created_at"[\s\S]*"order":\s*"DESCENDING"/);
   assert.match(controller, /applyPurchasedEntitlement\(/);
   assert.match(controller, /paymentMethod:\s*WAVE_PROVIDER/);
   assert.match(subscriptionService, /runEntitlementOnce/);

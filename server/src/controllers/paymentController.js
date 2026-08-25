@@ -235,6 +235,7 @@ const listWaveManualPayments = async (req, res) => {
     const snapshots = statusesToFetch
       ? await Promise.all(statusesToFetch.map(itemStatus => db.collection(MANUAL_PAYMENTS_COLLECTION)
         .where('status', '==', itemStatus)
+        .orderBy('created_at', 'desc')
         .limit(queryLimit)
         .get()))
       : [await db.collection(MANUAL_PAYMENTS_COLLECTION)
