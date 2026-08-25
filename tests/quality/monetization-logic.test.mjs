@@ -212,7 +212,7 @@ test('Payments: Wave manual orders stay pending until admin validation', async (
   assert.match(envExample, /WAVE_MANUAL_PAYMENT_EXPIRES_MINUTES/);
 });
 
-test('Payments: web Store exposes Wave manual payment flow without screenshots', async () => {
+test('Payments: web Store exposes Wave payment flow without screenshots', async () => {
   const hook = await read('src/hooks/useSubscription.ts');
   const store = await read('web/src/pages/StorePage.tsx');
   const modal = await read('web/src/components/WaveManualPaymentModal.tsx');
@@ -245,7 +245,7 @@ test('Payments: Cloud Run deploy disables Paystack and uses Wave manual secrets'
   assert.match(workflow, /WAVE_RECEIVER_PHONE=WAVE_RECEIVER_PHONE:latest/);
 });
 
-test('Payments: Paystack checkout is disabled while Wave manual mode is active', async () => {
+test('Payments: Paystack checkout is disabled while Wave mode is active', async () => {
   const controller = await read('server/src/controllers/paymentController.js');
   const interactionModal = await read('web/src/components/InteractionPurchaseModal.tsx');
   const stories = await read('web/src/pages/StoriesPage.tsx');

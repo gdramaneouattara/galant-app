@@ -35,7 +35,7 @@ const isPaystackInitializationEnabled = () => {
 
 const paystackDisabledPayload = {
   error: 'paystack_disabled',
-  message: 'Le paiement Paystack est temporairement desactive. Utilisez le paiement Wave manuel.'
+  message: 'Le paiement Paystack est temporairement desactive. Utilisez le paiement Wave.'
 };
 const paystackUnavailablePayload = {
   error: 'paystack_unavailable',

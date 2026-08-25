@@ -111,7 +111,7 @@ const AdminFinances: React.FC = () => {
             Finances
           </h2>
           <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400 sm:text-lg">
-            Validation manuelle des paiements Wave et acces aux outils financiers.
+            Validation des paiements Wave et acces aux outils financiers.
           </p>
         </div>
         <button
@@ -131,7 +131,7 @@ const AdminFinances: React.FC = () => {
           </div>
           <h3 className="text-xl font-black text-slate-900 dark:text-white">Revenus</h3>
           <p className="mt-3 text-sm font-medium leading-relaxed text-slate-500 dark:text-slate-400">
-            Les revenus automatiques restent traites par les prestataires de paiement. Les paiements Wave ci-dessous demandent une validation manuelle.
+            Les revenus automatiques restent traites par les prestataires de paiement. Les paiements Wave ci-dessous demandent une validation admin.
           </p>
         </section>
 
@@ -156,7 +156,7 @@ const AdminFinances: React.FC = () => {
           <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-cyan-600 transition-colors dark:bg-white/10 dark:text-cyan-300">
             <ShieldCheck size={24} />
           </div>
-          <h3 className="text-xl font-black text-slate-900 dark:text-white">Wave manuel</h3>
+          <h3 className="text-xl font-black text-slate-900 dark:text-white">Wave</h3>
           <p className="mt-3 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">
             {openCount} paiement{openCount > 1 ? 's' : ''} a verifier. Validez uniquement apres controle dans Wave.
           </p>

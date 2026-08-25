@@ -14,7 +14,7 @@ type Props = {
 
 const copy = {
   fr: {
-    title: 'Paiement Wave manuel',
+    title: 'Paiement Wave',
     body: 'Payez le montant exact avec le lien Wave, puis renseignez l ID transaction affiche dans Wave.',
     amount: 'Montant exact',
     reference: 'Reference Galant',
@@ -28,7 +28,7 @@ const copy = {
     copied: 'Copie'
   },
   en: {
-    title: 'Manual Wave payment',
+    title: 'Wave payment',
     body: 'Pay the exact amount with the Wave link, then enter the transaction ID shown in Wave.',
     amount: 'Exact amount',
     reference: 'Galant reference',
