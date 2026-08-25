@@ -169,6 +169,11 @@ test('Payments: Wave manual orders stay pending until admin validation', async (
   assert.match(controller, /!payerPhone/);
   assert.match(controller, /payer_phone:\s*payerPhone/);
   assert.match(controller, /wave_transaction_already_used/);
+  assert.match(controller, /MANUAL_PAYMENT_TRANSACTION_CLAIMS_COLLECTION/);
+  assert.match(controller, /db\.runTransaction/);
+  assert.match(controller, /manual_payment_processing/);
+  assert.match(controller, /\.where\('status',\s*'==',\s*itemStatus\)/);
+  assert.match(controller, /\.orderBy\('created_at',\s*'desc'\)/);
   assert.match(controller, /applyPurchasedEntitlement\(/);
   assert.match(controller, /paymentMethod:\s*WAVE_PROVIDER/);
   assert.match(routes, /\/wave\/manual-intent/);
@@ -188,8 +193,8 @@ test('Payments: web Store exposes Wave manual payment flow without screenshots',
 
   assert.match(hook, /createWaveManualPayment/);
   assert.match(hook, /submitWaveManualProof/);
-  assert.match(store, /paymentMode/);
-  assert.match(store, /useState<'PAYSTACK' \| 'WAVE'>\('WAVE'\)/);
+  assert.doesNotMatch(store, /paymentMode/);
+  assert.doesNotMatch(store, /purchaseWithPaystack/);
   assert.match(store, /WaveManualPaymentModal/);
   assert.match(store, /createWaveManualPayment\(type,\s*amount/);
   assert.match(modal, /transactionId/);
@@ -202,50 +207,47 @@ test('Payments: web Store exposes Wave manual payment flow without screenshots',
   assert.match(finances, /Rejeter/);
 });
 
-test('Payments: Cloud Run deploy does not require disabled Paystack secret for Wave manual mode', async () => {
+test('Payments: Cloud Run deploy disables Paystack and uses Wave manual secrets', async () => {
   const workflow = await read('.github/workflows/deploy-server.yml');
 
   assert.doesNotMatch(workflow, /PAYSTACK_SECRET_KEY=PAYSTACK_SECRET_KEY:latest/);
+  assert.match(workflow, /PAYSTACK_ENABLED=false/);
   assert.match(workflow, /--remove-secrets PAYSTACK_SECRET_KEY/);
   assert.match(workflow, /--update-secrets/);
   assert.match(workflow, /WAVE_PAYMENT_LINK=WAVE_PAYMENT_LINK:latest/);
   assert.match(workflow, /WAVE_RECEIVER_PHONE=WAVE_RECEIVER_PHONE:latest/);
 });
 
-test('Payments: Paystack supports card and mobile money channels', async () => {
+test('Payments: Paystack checkout is disabled while Wave manual mode is active', async () => {
   const controller = await read('server/src/controllers/paymentController.js');
+  const interactionModal = await read('web/src/components/InteractionPurchaseModal.tsx');
+  const stories = await read('web/src/pages/StoriesPage.tsx');
   const hook = await read('src/hooks/useSubscription.ts');
 
-  assert.match(controller, /CARD_MOBILE_MONEY/);
-  assert.match(controller, /payload\.channels\s*=\s*\['card'\]/);
-  assert.match(controller, /payload\.channels\s*=\s*\['mobile_money'\]/);
-  assert.match(controller, /payload\.channels\s*=\s*\['card',\s*'mobile_money'\]/);
-  assert.match(hook, /PaystackPaymentMethod/);
-  assert.match(hook, /CARD_MOBILE_MONEY/);
+  assert.match(controller, /isPaystackCheckoutEnabled/);
+  assert.match(controller, /paystack_disabled/);
+  assert.match(controller, /PAYSTACK_ENABLED/);
+  assert.match(hook, /PAYSTACK_TEMPORARILY_DISABLED\s*=\s*true/);
+  assert.doesNotMatch(interactionModal, /purchaseWithPaystack/);
+  assert.match(interactionModal, /createWaveManualPayment/);
+  assert.doesNotMatch(stories, /purchaseWithPaystack/);
+  assert.match(stories, /WaveManualPaymentModal/);
 });
 
-test('Payments: web Paystack returns are verified after checkout', async () => {
+test('Payments: legacy Paystack return route stays non-authoritative while checkout is disabled', async () => {
   const hook = await read('src/hooks/useSubscription.ts');
   const app = await read('web/src/App.tsx');
   const returnPage = await read('web/src/pages/PaymentReturnPage.tsx');
   const controller = await read('server/src/controllers/paymentController.js');
-  const authContext = await read('web/src/context/AuthContext.tsx');
-  const subscriptionService = await read('server/src/services/subscriptionService.js');
 
   assert.match(hook, /callbackUrl/);
   assert.match(hook, /\/payment-return/);
   assert.match(hook, /next=/);
+  assert.match(controller, /paystackDisabledPayload/);
+  assert.match(controller, /return res\.status\(410\)\.json\(paystackDisabledPayload\)/);
   assert.match(controller, /callbackUrl/);
   assert.match(controller, /requestOrigin/);
   assert.match(controller, /callback_url:\s*PAYSTACK_CALLBACK_URL/);
   assert.match(app, /path="\/payment-return"/);
   assert.match(returnPage, /\/api\/payments\/verify\?reference=/);
-  assert.match(returnPage, /reloadUser/);
-  assert.match(returnPage, /await reloadUser\(\)/);
-  assert.match(authContext, /getDoc\(doc\(db,\s*COLLECTIONS\.PROFILES/);
-  assert.match(authContext, /setProfile\(\{\s*id:\s*profileDoc\.id/);
-  assert.match(subscriptionService, /normalizedType === 'ROSE_PACK'/);
-  assert.match(subscriptionService, /db\.runTransaction/);
-  assert.match(subscriptionService, /payment_\$\{safeReference\}/);
-  assert.match(subscriptionService, /rose_balance:\s*FieldValue\.increment\(quantity\)/);
 });

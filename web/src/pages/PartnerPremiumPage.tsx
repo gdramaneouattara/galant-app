@@ -6,7 +6,7 @@ import {
   BarChart3,
   Bell,
   Check,
-  CreditCard,
+  Waves,
   Sparkles,
   Zap,
   Star
@@ -15,12 +15,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '@shared/hooks/useSubscription';
 import { showAlert } from '@shared/lib/ui-bridge';
+import WaveManualPaymentModal from '../components/WaveManualPaymentModal';
+import type { WaveManualIntent } from '@shared/hooks/useSubscription';
 
 const PartnerPremiumPage: React.FC = () => {
   const navigate = useNavigate();
-  const { t, reloadUser } = useAuth();
-  const { purchaseWithPaystack, purchaseLoading } = useSubscription();
+  const { reloadUser } = useAuth();
+  const { createWaveManualPayment, submitWaveManualProof, purchaseLoading } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [waveIntent, setWaveIntent] = useState<WaveManualIntent | null>(null);
   const handleBack = () => {
     if ((window.history.state?.idx ?? 0) > 0) {
       navigate(-1);
@@ -71,15 +74,21 @@ const PartnerPremiumPage: React.FC = () => {
   const handleSubscribe = async (plan: any) => {
     setLoadingPlan(plan.id);
     try {
-      const ok = await purchaseWithPaystack('PARTNER_PREMIUM', plan.priceAmount, undefined, { planId: plan.id });
-      if (ok) {
-        await reloadUser();
-        showAlert(t('success'), t('purchase_activated'));
-      }
+      const intent = await createWaveManualPayment('PARTNER_PREMIUM', plan.priceAmount, undefined, { planId: plan.id });
+      if (intent) setWaveIntent(intent);
     } catch (e: any) {
-      showAlert('Erreur', e.message || 'Impossible d\'initialiser le paiement.');
+      showAlert('Erreur', e.message || 'Impossible de creer la commande Wave.');
     } finally {
       setLoadingPlan(null);
+    }
+  };
+
+  const submitWaveTransaction = async ({ transactionId, phone }: { transactionId: string; phone: string }) => {
+    if (!waveIntent) return;
+    const ok = await submitWaveManualProof(waveIntent.reference_code, transactionId, phone);
+    if (ok) {
+      setWaveIntent(null);
+      await reloadUser();
     }
   };
 
@@ -161,7 +170,7 @@ const PartnerPremiumPage: React.FC = () => {
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current"></div>
               ) : (
                 <>
-                  <CreditCard size={18} /> S'abonner maintenant
+                  <Waves size={18} /> S'abonner avec Wave
                 </>
               )}
             </button>
@@ -173,11 +182,19 @@ const PartnerPremiumPage: React.FC = () => {
       <div className="max-w-md mx-auto p-6 bg-slate-50 dark:bg-white/5 rounded-3xl border border-slate-100 dark:border-white/10 flex items-center gap-4">
         <ShieldCheck className="text-emerald-500 flex-shrink-0" size={24} />
         <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 leading-relaxed uppercase tracking-wider">
-          Paiements 100% sécurisés par Paystack. Cartes bancaires, Orange Money, MTN, Moov et Wave acceptés.
+          Paiement Wave manuel : l'abonnement est active apres validation admin de votre transaction.
         </p>
       </div>
+      <WaveManualPaymentModal
+        isOpen={!!waveIntent}
+        intent={waveIntent}
+        loading={purchaseLoading}
+        onClose={() => setWaveIntent(null)}
+        onSubmit={submitWaveTransaction}
+      />
     </div>
   );
 };
 
 export default PartnerPremiumPage;
+

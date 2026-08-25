@@ -1,9 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, CreditCard, MessageCircle, Heart, LayoutGrid, SlidersHorizontal as FiltersIcon, Crown, MapPinned } from 'lucide-react';
+import { X, MessageCircle, Heart, LayoutGrid, SlidersHorizontal as FiltersIcon, Crown, MapPinned, Waves } from 'lucide-react';
 import { useSubscription } from '@shared/hooks/useSubscription';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { useAuth } from '../context/AuthContext';
+import WaveManualPaymentModal from './WaveManualPaymentModal';
+import type { WaveManualIntent } from '@shared/hooks/useSubscription';
 
 interface Props {
   isOpen: boolean;
@@ -35,10 +37,10 @@ const copy = {
     partnerDiscoveryBody: 'Trouvez des restaurants, lounges, hôtels et lieux utiles autour de vous ou dans une ville choisie.',
     dmPrefix: 'Débloquez une discussion directe avec',
     price: 'Tarif unique',
-    pay: 'Payer par Carte ou Mobile Money',
+    pay: 'Payer avec Wave',
     premiumAlternative: 'Ou profitez de cette fonctionnalite avec votre abonnement Premium.',
     becomePremium: 'Devenir Premium',
-    secured: 'Transaction sécurisée par Paystack',
+    secured: 'Validation admin Wave requise',
     validity: (days: number) => `Valable ${days} jour${days > 1 ? 's' : ''}`
   },
   en: {
@@ -59,26 +61,28 @@ const copy = {
     partnerDiscoveryBody: 'Find restaurants, lounges, hotels and useful places around you or in a chosen city.',
     dmPrefix: 'Unlock a direct conversation with',
     price: 'Single price',
-    pay: 'Pay by Card or Mobile Money',
+    pay: 'Pay with Wave',
     premiumAlternative: 'Or enjoy this feature with your Premium subscription.',
     becomePremium: 'Become Premium',
-    secured: 'Secure transaction by Paystack',
+    secured: 'Wave admin validation required',
     validity: (days: number) => `Valid for ${days} day${days > 1 ? 's' : ''}`
   }
 };
 
 const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targetId, userName, durationDays, price, onSuccess }) => {
-  const { purchaseWithPaystack, purchaseLoading } = useSubscription();
+  const { createWaveManualPayment, submitWaveManualProof, purchaseLoading } = useSubscription();
   const { language } = useAuth();
   const navigate = useNavigate();
   const c = copy[language] || copy.fr;
+  const [waveIntent, setWaveIntent] = React.useState<WaveManualIntent | null>(null);
+  void onSuccess;
 
   if (!isOpen) return null;
 
   const handlePurchase = async () => {
     try {
       const amount = price || (type === 'LIKES_INBOX_2H' || type === 'DISCOVER_GRID_UNLOCK' ? 1000 : 500);
-      const ok = await purchaseWithPaystack(type, amount, targetId, {
+      const intent = await createWaveManualPayment(type, amount, targetId, {
         targetName: userName || (
           type === 'DISCOVER_GRID_UNLOCK' ? c.galleryTarget :
           type === 'DISCOVER_FILTERS_UNLOCK' ? c.filtersTarget :
@@ -86,12 +90,18 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
           c.likesTarget
         )
       });
-      if (ok) {
-        onSuccess();
-        onClose();
-      }
+      if (intent) setWaveIntent(intent);
     } catch (error: any) {
       showAlert(c.error, error.message);
+    }
+  };
+
+  const submitWaveTransaction = async ({ transactionId, phone }: { transactionId: string; phone: string }) => {
+    if (!waveIntent) return;
+    const ok = await submitWaveManualProof(waveIntent.reference_code, transactionId, phone);
+    if (ok) {
+      setWaveIntent(null);
+      onClose();
     }
   };
 
@@ -105,6 +115,7 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
   const title = isSuperLike ? c.roses : isLikesInbox ? c.likes : isGridUnlock ? c.gallery : isFiltersUnlock ? c.filters : isPartnerDiscoveryUnlock ? c.partnerDiscovery : c.dm;
 
   return (
+    <>
     <div className="fixed inset-0 z-[220] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
       <div className="bg-white dark:bg-slate-900 w-full max-w-sm max-h-[calc(100svh-1rem)] overflow-y-auto overscroll-contain rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 duration-200 border border-transparent dark:border-white/5">
         <div className="p-4 sm:p-8 text-center space-y-3 sm:space-y-6">
@@ -169,7 +180,7 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               <>
-                <CreditCard size={18} />
+                <Waves size={18} />
                 {c.pay}
               </>
             )}
@@ -200,6 +211,14 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
         </div>
       </div>
     </div>
+    <WaveManualPaymentModal
+      isOpen={!!waveIntent}
+      intent={waveIntent}
+      loading={purchaseLoading}
+      onClose={() => setWaveIntent(null)}
+      onSubmit={submitWaveTransaction}
+    />
+    </>
   );
 };
 
