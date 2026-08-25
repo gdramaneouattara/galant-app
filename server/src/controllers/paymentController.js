@@ -8,6 +8,7 @@ const {
   verifyApplePurchase
 } = require('../services/subscriptionService');
 const { getCurrentPricing } = require('../services/pricingService');
+const { createInternalNotification, NOTIFICATION_TYPES } = require('../services/notificationCenterService');
 
 const getPaymentPricing = async (req, res) => {
   try {
@@ -21,6 +22,12 @@ const getPaymentPricing = async (req, res) => {
 const MANUAL_PAYMENTS_COLLECTION = 'manual_payments';
 const MANUAL_PAYMENT_TRANSACTION_CLAIMS_COLLECTION = 'manual_payment_transaction_claims';
 const WAVE_PROVIDER = 'WAVE_MANUAL';
+
+const createPaymentNotificationSafely = (payload) => {
+  void createInternalNotification(payload).catch((error) => {
+    console.warn('[payment] notification_failed', error.message);
+  });
+};
 
 const normalizePaymentText = (value = '') => String(value || '').trim();
 const normalizeTransactionId = (value = '') => normalizePaymentText(value).replace(/\s+/g, '').toUpperCase();
@@ -474,9 +481,37 @@ const rejectWaveManualPayment = async (req, res) => {
           updated_at: rejectedAt
         }, { merge: true });
       }
-      return { success: true };
+      return { success: true, payment };
     });
     if (result.error) return res.status(result.statusCode || 500).json({ error: result.error });
+
+    if (result.payment?.user_id) {
+      createPaymentNotificationSafely({
+        userId: result.payment.user_id,
+        type: NOTIFICATION_TYPES.PAYMENT_FAILED,
+        title: 'Paiement Wave refuse',
+        message: adminNote
+          ? `Votre paiement ${referenceCode} n'a pas ete valide : ${adminNote}`
+          : `Votre paiement ${referenceCode} n'a pas ete valide. Verifiez les informations Wave puis ressayez.`,
+        targetId: referenceCode,
+        metadata: {
+          payment_reference: referenceCode,
+          purchase_type: result.payment.type || null,
+          plan_id: result.payment.plan_id || null,
+          payment_method: WAVE_PROVIDER,
+          status: 'REJECTED',
+          next_route: '/store',
+          admin_note: adminNote || null
+        },
+        dedupeKey: `payment_failed_${result.payment.user_id}_${referenceCode}`,
+        sendPush: true,
+        pushData: {
+          type: 'PAYMENT_FAILED',
+          reference: referenceCode,
+          purchaseType: result.payment.type || ''
+        }
+      });
+    }
 
     return res.json({ success: true, status: 'REJECTED' });
   } catch (error) {
