@@ -318,6 +318,12 @@ const DiscoverPage: React.FC = () => {
   }
 
   const currentProfile = suggestions[0];
+  const profileTitle = currentProfile ? `${(currentProfile.name || '').trim()}, ${currentProfile.age}` : '';
+  const profileTitleSizeClass = profileTitle.length > 32
+    ? 'text-[1.25rem]'
+    : profileTitle.length > 24
+      ? 'text-[1.4rem]'
+      : 'text-[1.55rem]';
   const isFilterActive = filters.premiumOnly || filters.verifiedOnly || filters.minScore > 0 || filters.gender !== 'ALL' || filters.minAge !== 18 || filters.maxAge !== 50;
   const headerActionBaseClass = "relative mx-auto w-10 h-10 shrink-0 rounded-2xl border shadow-lg flex items-center justify-center transition-all active:scale-95";
   const headerActionIdleClass = "bg-white dark:bg-slate-900 border-slate-100 dark:border-white/5 text-slate-400 hover:text-primary";
@@ -450,8 +456,8 @@ const DiscoverPage: React.FC = () => {
 
               <div className="absolute inset-x-8 bottom-10 text-white pointer-events-none">
                 <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-3xl font-bold tracking-tight leading-none">
-                    {(currentProfile.name || '').trim()}, {currentProfile.age}
+                  <h3 className={`max-w-[92%] ${profileTitleSizeClass} font-medium tracking-normal leading-[1.08] line-clamp-2 break-words [overflow-wrap:anywhere] drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)]`}>
+                    {profileTitle}
                   </h3>
                 </div>
 

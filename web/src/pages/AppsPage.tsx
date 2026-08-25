@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Shield, ShoppingCart, Sparkles } from 'lucide-react';
+import { LockKeyhole, MapPin, Shield, ShoppingCart, Sparkles } from 'lucide-react';
 import FeatureHighlight from '../components/FeatureHighlight';
 import { useAuth } from '../context/AuthContext';
 import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
+import { showAlert } from '@shared/lib/ui-bridge';
 
 const APPS = [
   {
@@ -23,6 +24,7 @@ const APPS = [
     color: 'text-indigo-500',
     bg: 'bg-indigo-50 dark:bg-indigo-500/10',
     highlight: 'GOLD' as const,
+    locked: true,
   },
   {
     titleKey: 'sentinel',
@@ -32,12 +34,15 @@ const APPS = [
     color: 'text-blue-600',
     bg: 'bg-blue-50 dark:bg-blue-600/10',
     highlight: 'ROSE' as const,
+    locked: true,
   },
 ];
 
 const fallbackCopy: Record<string, string> = {
   partner_discovery: 'Partenaires autour de moi',
   partner_discovery_subtitle: 'Restaurants, lounges, hotels et lieux utiles par ville ou geolocalisation.',
+  locked: 'Bientot disponible',
+  locked_body: 'Cette fonctionnalite est temporairement verrouillee pendant sa finalisation.',
 };
 
 const AppsPage: React.FC = () => {
@@ -63,18 +68,33 @@ const AppsPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {APPS.map((app) => {
           const Icon = app.icon;
+          const isLocked = !!app.locked;
           return (
             <FeatureHighlight key={app.href} id={`app_${app.href.replace('/', '')}`} active type={app.highlight}>
               <Link
                 to={app.href}
                 onClick={(event) => {
+                  if (isLocked) {
+                    event.preventDefault();
+                    showAlert(label('locked'), label('locked_body'));
+                    return;
+                  }
                   if (app.href === '/partner-discovery' && !hasPartnerDiscoveryAccess) {
                     event.preventDefault();
                     setPartnerUnlockOpen(true);
                   }
                 }}
-                className="min-h-[180px] rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-5 shadow-sm hover:-translate-y-1 hover:shadow-xl transition-all w-full flex flex-col"
+                aria-disabled={isLocked}
+                className={`relative min-h-[180px] rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-5 shadow-sm transition-all w-full flex flex-col ${
+                  isLocked ? 'cursor-not-allowed opacity-60 grayscale' : 'hover:-translate-y-1 hover:shadow-xl'
+                }`}
               >
+                {isLocked && (
+                  <div className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-slate-900 px-3 py-1 text-[8px] font-black uppercase tracking-widest text-white dark:bg-white dark:text-slate-900">
+                    <LockKeyhole size={10} />
+                    {label('locked')}
+                  </div>
+                )}
                 <div className={`w-12 h-12 rounded-2xl ${app.bg} ${app.color} flex items-center justify-center mb-5`}>
                   <Icon size={24} />
                 </div>

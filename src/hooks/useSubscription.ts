@@ -55,8 +55,8 @@ export const useSubscription = () => {
       showAlert(
         'Paiement Wave',
         isWeb
-          ? 'Paystack est temporairement desactive. Utilisez le paiement Wave manuel.'
-          : 'Paystack est temporairement desactive. Utilisez la version web Galant pour le paiement Wave manuel.'
+          ? 'Paystack est temporairement desactive. Utilisez le paiement Wave.'
+          : 'Paystack est temporairement desactive. Utilisez la version web Galant pour le paiement Wave.'
       );
       return false;
     }

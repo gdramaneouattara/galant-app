@@ -91,7 +91,7 @@ const StorePage: React.FC = () => {
         passes: 'Passes & Unlocks',
         included: 'Included',
         paymentMethod: 'Payment method',
-        waveMode: 'Wave manual payment',
+        waveMode: 'Wave payment',
         wavePendingTitle: 'Wave payment pending',
         wavePendingBody: 'Your Wave transaction has been submitted. An admin will validate it before activation.',
         rosePacks: [
@@ -112,7 +112,7 @@ const StorePage: React.FC = () => {
             { id: 'STORY_UPLOAD', type: 'STORY_UPLOAD' as PurchaseType, label: 'Post a Story', sub: 'One-time post', price: 500, icon: Camera, color: 'text-amber-500' },
             { id: 'PARTNER_DISCOVERY_UNLOCK', type: 'PARTNER_DISCOVERY_UNLOCK' as PurchaseType, label: 'Partners around me', sub: 'Direct Google search', price: 500, icon: MapPinned, color: 'text-emerald-500' },
           ],
-        security: 'Temporary Wave manual mode: pay the exact amount, enter your Wave transaction ID and phone number, then wait for admin validation.'
+        security: 'Temporary Wave mode: pay the exact amount, enter your Wave transaction ID and phone number, then wait for admin validation.'
       }
     : {
         alreadyTitle: 'Déjà disponible',
@@ -163,7 +163,7 @@ const StorePage: React.FC = () => {
         passes: 'Pass & Déblocages',
         included: 'Inclus',
         paymentMethod: 'Mode de paiement',
-        waveMode: 'Paiement Wave manuel',
+        waveMode: 'Paiement Wave',
         wavePendingTitle: 'Paiement Wave en attente',
         wavePendingBody: 'Votre transaction Wave a ete soumise. Un admin la validera avant activation.',
         rosePacks: [
@@ -184,7 +184,7 @@ const StorePage: React.FC = () => {
             { id: 'STORY_UPLOAD', type: 'STORY_UPLOAD' as PurchaseType, label: 'Publier une Story', sub: 'Publication ponctuelle', price: 500, icon: Camera, color: 'text-amber-500' },
             { id: 'PARTNER_DISCOVERY_UNLOCK', type: 'PARTNER_DISCOVERY_UNLOCK' as PurchaseType, label: 'Partenaires autour de moi', sub: 'Recherche Google directe', price: 500, icon: MapPinned, color: 'text-emerald-500' },
           ],
-        security: 'Mode Wave manuel temporaire : payez le montant exact, saisissez l ID transaction Wave et votre numero, puis attendez la validation admin.'
+        security: 'Mode Wave temporaire : payez le montant exact, saisissez l ID transaction Wave et votre numero, puis attendez la validation admin.'
       };
 
   useEffect(() => {

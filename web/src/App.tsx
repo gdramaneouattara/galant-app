@@ -8,7 +8,6 @@ import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 import {
   Crown,
   Briefcase,
-  Calendar,
   Languages,
   Heart as HeartIcon,
   LayoutDashboard,
@@ -21,6 +20,7 @@ import {
 } from 'lucide-react';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import WelcomeVernissage from './components/WelcomeVernissage';
+import LockedFeatureNotice from './components/LockedFeatureNotice';
 
 // Admin
 import logoImg from './assets/galant-logo-web.png';
@@ -43,15 +43,12 @@ const PartnerChatsPage = lazy(() => import('./pages/PartnerChatsPage'));
 const CreateEventPage = lazy(() => import('./pages/CreateEventPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
-const AgendaPage = lazy(() => import('./pages/AgendaPage'));
 const GuidePage = lazy(() => import('./pages/GuidePage'));
 const ExperiencesPage = lazy(() => import('./pages/ExperiencesPage'));
 const StoriesPage = lazy(() => import('./pages/StoriesPage'));
 const StorePage = lazy(() => import('./pages/StorePage'));
-const MarketPage = lazy(() => import('./pages/MarketPage'));
 const PartnerDiscoveryPage = lazy(() => import('./pages/PartnerDiscoveryPage'));
 const VenueDetailPage = lazy(() => import('./pages/VenueDetailPage'));
-const SentinelPage = lazy(() => import('./pages/SentinelPage'));
 const AppsPage = lazy(() => import('./pages/AppsPage'));
 const LikesInboxPage = lazy(() => import('./pages/LikesInboxPage'));
 const RosesInboxPage = lazy(() => import('./pages/RosesInboxPage'));
@@ -213,7 +210,7 @@ const Header = () => {
 };
 
 const AppContent: React.FC = () => {
-  const { user, profile, loading, activeTheme, isFakeCallActive, completeVernissage } = useAuth();
+  const { user, profile, loading, activeTheme, isFakeCallActive, completeVernissage, t } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const isAuthPage = location.pathname === '/auth';
@@ -274,10 +271,10 @@ const AppContent: React.FC = () => {
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/partner-signup" element={<PartnerSignupPage />} />
-            <Route path="/market" element={<MarketPage />} />
+            <Route path="/market" element={<LockedFeatureNotice title={t('market')} />} />
             <Route path="/partner-discovery" element={<PartnerDiscoveryPage />} />
             <Route path="/venue/:id" element={<VenueDetailPage />} />
-            <Route path="/sentinel" element={<SentinelPage />} />
+            <Route path="/sentinel" element={<LockedFeatureNotice title={t('sentinel')} />} />
             <Route path="/stories" element={<StoriesPage />} />
             <Route path="/apps" element={<AppsPage />} />
             <Route path="/matches" element={<MatchesPage />} />
@@ -292,7 +289,7 @@ const AppContent: React.FC = () => {
             <Route path="/store" element={<StorePage />} />
             <Route path="/premium" element={<Navigate to="/store" replace />} />
             <Route path="/payment-return" element={<PaymentReturnPage />} />
-            <Route path="/agenda" element={<AgendaPage />} />
+            <Route path="/agenda" element={<LockedFeatureNotice title={t('agenda')} backTo="/experiences" />} />
             <Route path="/guide" element={<GuidePage />} />
             <Route path="/experiences" element={<ExperiencesPage />} />
             <Route path="/verify" element={<VerifyPage />} />

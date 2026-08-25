@@ -182,7 +182,7 @@ const PartnerPremiumPage: React.FC = () => {
       <div className="max-w-md mx-auto p-6 bg-slate-50 dark:bg-white/5 rounded-3xl border border-slate-100 dark:border-white/10 flex items-center gap-4">
         <ShieldCheck className="text-emerald-500 flex-shrink-0" size={24} />
         <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 leading-relaxed uppercase tracking-wider">
-          Paiement Wave manuel : l'abonnement est active apres validation admin de votre transaction.
+          Paiement Wave : l'abonnement est active apres validation admin de votre transaction.
         </p>
       </div>
       <WaveManualPaymentModal
