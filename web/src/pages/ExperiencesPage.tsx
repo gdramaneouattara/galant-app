@@ -77,7 +77,11 @@ const ExperiencesPage: React.FC = () => {
       </div>
 
       <div className="px-2">
-        {activeTab === 'AGENDA' ? <LockedFeatureNotice title={t('agenda')} backTo="/experiences" /> : <GuidePage />}
+        {activeTab === 'AGENDA' ? (
+          <LockedFeatureNotice title={t('agenda')} onBack={() => setActiveTab('GUIDE')} />
+        ) : (
+          <GuidePage />
+        )}
       </div>
     </div>
   );

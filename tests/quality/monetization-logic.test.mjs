@@ -184,6 +184,9 @@ test('Payments: Wave manual orders stay pending until admin validation', async (
   assert.match(controller, /createApprovalLeaseId/);
   assert.match(controller, /approval_lease_id/);
   assert.match(controller, /manual_payment_approval_lease_lost/);
+  assert.match(controller, /NOTIFICATION_TYPES\.PAYMENT_FAILED/);
+  assert.match(controller, /payment_failed_/);
+  assert.match(controller, /sendPush:\s*true/);
   assert.match(controller, /fetchManualPaymentsByStatus/);
   assert.match(controller, /\.where\('status',\s*'==',\s*itemStatus\)/);
   assert.match(controller, /\.where\('status',\s*'==',\s*itemStatus\)\s*\n\s*\.orderBy\('created_at',\s*'desc'\)\s*\n\s*\.limit\(queryLimit\)/);

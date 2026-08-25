@@ -41,7 +41,7 @@ const APPS = [
 const fallbackCopy: Record<string, string> = {
   partner_discovery: 'Partenaires autour de moi',
   partner_discovery_subtitle: 'Restaurants, lounges, hotels et lieux utiles par ville ou geolocalisation.',
-  locked: 'Bientot disponible',
+  locked_soon: 'Bientot disponible',
   locked_body: 'Cette fonctionnalite est temporairement verrouillee pendant sa finalisation.',
 };
 
@@ -76,7 +76,7 @@ const AppsPage: React.FC = () => {
                 onClick={(event) => {
                   if (isLocked) {
                     event.preventDefault();
-                    showAlert(label('locked'), label('locked_body'));
+                    showAlert(label('locked_soon'), label('locked_body'));
                     return;
                   }
                   if (app.href === '/partner-discovery' && !hasPartnerDiscoveryAccess) {
@@ -92,7 +92,7 @@ const AppsPage: React.FC = () => {
                 {isLocked && (
                   <div className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-slate-900 px-3 py-1 text-[8px] font-black uppercase tracking-widest text-white dark:bg-white dark:text-slate-900">
                     <LockKeyhole size={10} />
-                    {label('locked')}
+                    {label('locked_soon')}
                   </div>
                 )}
                 <div className={`w-12 h-12 rounded-2xl ${app.bg} ${app.color} flex items-center justify-center mb-5`}>
