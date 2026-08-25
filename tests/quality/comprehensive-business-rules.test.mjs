@@ -546,7 +546,9 @@ test('Rules: Internal notification center is wired across server, web and native
   assert.match(nativeNotifications, /archiveNotification/);
   assert.match(nativeNotifications, /openNotificationTarget/);
   assert.match(nativeNotifications, /route\.startsWith\('\/store'\)/);
+  assert.match(nativeNotifications, /hasAdminProfileAccess\(currentUser,\s*currentUser\?\.id\)/);
   assert.match(nativeNotifications, /currentUser\?\.is_partner/);
+  assert.match(nativeNotifications, /&& !isAdmin/);
   assert.match(nativeNotifications, /navigation\.navigate\('PartnerPremium'\)/);
   assert.match(nativeNotifications, /navigation\.navigate\('Premium'\)/);
 });
