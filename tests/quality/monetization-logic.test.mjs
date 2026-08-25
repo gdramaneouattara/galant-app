@@ -158,6 +158,8 @@ test('Payments: all payment handlers are exported and routed', async () => {
 
 test('Payments: Wave manual orders stay pending until admin validation', async () => {
   const controller = await read('server/src/controllers/paymentController.js');
+  const notificationCenterService = await read('server/src/services/notificationCenterService.js');
+  const notificationService = await read('server/src/services/notificationService.js');
   const subscriptionService = await read('server/src/services/subscriptionService.js');
   const routes = await read('server/src/routes/paymentRoutes.js');
   const adminRoutes = await read('server/src/routes/adminRoutes.js');
@@ -189,6 +191,10 @@ test('Payments: Wave manual orders stay pending until admin validation', async (
   assert.match(controller, /await createPaymentNotificationSafely/);
   assert.match(controller, /sendPush:\s*true/);
   assert.match(controller, /awaitPush:\s*true/);
+  assert.match(notificationCenterService, /PUSH_WAIT_TIMEOUT_MS\s*=\s*2500/);
+  assert.match(notificationCenterService, /Promise\.race/);
+  assert.match(notificationService, /EXPO_PUSH_TIMEOUT_MS\s*=\s*5000/);
+  assert.match(notificationService, /timeout:\s*EXPO_PUSH_TIMEOUT_MS/);
   assert.match(controller, /fetchManualPaymentsByStatus/);
   assert.match(controller, /\.where\('status',\s*'==',\s*itemStatus\)/);
   assert.match(controller, /\.where\('status',\s*'==',\s*itemStatus\)\s*\n\s*\.orderBy\('created_at',\s*'desc'\)\s*\n\s*\.limit\(queryLimit\)/);

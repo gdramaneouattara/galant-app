@@ -142,7 +142,11 @@ const NotificationsScreen: React.FC = () => {
     } else if (route.startsWith('/premium')) {
       navigation.navigate('Premium');
     } else if (route.startsWith('/store')) {
-      navigation.navigate('Premium');
+      if (currentUser?.is_partner) {
+        navigation.navigate('PartnerPremium');
+      } else {
+        navigation.navigate('Premium');
+      }
     } else if (route.startsWith('/boost')) {
       navigation.navigate('Boost');
     } else if (route.startsWith('/verify')) {

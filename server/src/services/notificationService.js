@@ -4,6 +4,7 @@ const { STORY_LIKE_NOTIFICATION_DEDUP_MS } = require('../config/constants');
 const { createInternalNotification, NOTIFICATION_TYPES } = require('./notificationCenterService');
 
 const EXPO_PUSH_ACCESS_TOKEN = process.env.EXPO_PUSH_ACCESS_TOKEN || '';
+const EXPO_PUSH_TIMEOUT_MS = 5000;
 
 /**
  * Sends a push notification via Firebase Cloud Messaging (FCM) or Expo
@@ -54,6 +55,7 @@ const sendPushNotification = async (userId, title, body, data = {}) => {
       }));
 
       await axios.post('https://exp.host/--/api/v2/push/send', messages, {
+        timeout: EXPO_PUSH_TIMEOUT_MS,
         headers: {
           'Accept': 'application/json',
           'Accept-encoding': 'gzip, deflate',

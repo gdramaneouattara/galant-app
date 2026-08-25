@@ -1,5 +1,7 @@
 const { db } = require('../config/firebase');
 
+const PUSH_WAIT_TIMEOUT_MS = 2500;
+
 const NOTIFICATION_TYPES = {
   MESSAGE: 'MESSAGE',
   LIKE_RECEIVED: 'LIKE_RECEIVED',
@@ -70,6 +72,17 @@ const dedupeDocId = (dedupeKey) => (
   String(dedupeKey).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 180)
 );
 
+const waitForPushWithTimeout = async (pushPromise) => {
+  let timeoutId;
+  await Promise.race([
+    pushPromise,
+    new Promise((resolve) => {
+      timeoutId = setTimeout(resolve, PUSH_WAIT_TIMEOUT_MS);
+    }),
+  ]);
+  if (timeoutId) clearTimeout(timeoutId);
+};
+
 const createInternalNotification = async ({
   userId,
   type,
@@ -116,7 +129,7 @@ const createInternalNotification = async ({
       }).catch((error) => {
         console.warn('[notification_center] push_failed', error.message);
       });
-      if (awaitPush) await pushPromise;
+      if (awaitPush) await waitForPushWithTimeout(pushPromise);
       else void pushPromise;
     }
 
