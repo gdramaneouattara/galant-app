@@ -23,10 +23,13 @@ const MANUAL_PAYMENTS_COLLECTION = 'manual_payments';
 const MANUAL_PAYMENT_TRANSACTION_CLAIMS_COLLECTION = 'manual_payment_transaction_claims';
 const WAVE_PROVIDER = 'WAVE_MANUAL';
 
-const createPaymentNotificationSafely = (payload) => {
-  void createInternalNotification(payload).catch((error) => {
+const createPaymentNotificationSafely = async (payload) => {
+  try {
+    return await createInternalNotification(payload);
+  } catch (error) {
     console.warn('[payment] notification_failed', error.message);
-  });
+    return null;
+  }
 };
 
 const normalizePaymentText = (value = '') => String(value || '').trim();
@@ -486,7 +489,7 @@ const rejectWaveManualPayment = async (req, res) => {
     if (result.error) return res.status(result.statusCode || 500).json({ error: result.error });
 
     if (result.payment?.user_id) {
-      createPaymentNotificationSafely({
+      await createPaymentNotificationSafely({
         userId: result.payment.user_id,
         type: NOTIFICATION_TYPES.PAYMENT_FAILED,
         title: 'Paiement Wave refuse',
@@ -505,6 +508,7 @@ const rejectWaveManualPayment = async (req, res) => {
         },
         dedupeKey: `payment_failed_${result.payment.user_id}_${referenceCode}`,
         sendPush: true,
+        awaitPush: true,
         pushData: {
           type: 'PAYMENT_FAILED',
           reference: referenceCode,

@@ -141,6 +141,8 @@ const NotificationsScreen: React.FC = () => {
       navigation.navigate('Status', { initialStatusId: metadata.story_id });
     } else if (route.startsWith('/premium')) {
       navigation.navigate('Premium');
+    } else if (route.startsWith('/store')) {
+      navigation.navigate('Premium');
     } else if (route.startsWith('/boost')) {
       navigation.navigate('Boost');
     } else if (route.startsWith('/verify')) {
