@@ -19,6 +19,7 @@ import type { RootStackParamList } from '../../navigation/MainNavigator';
 import { apiRequest } from '../../lib/api';
 import { useApp } from '../../state/AppContext';
 import { COLORS } from '../../data/mock';
+import { hasAdminProfileAccess } from '../../lib/adminAccess';
 
 type NotificationType =
   | 'ALL'
@@ -126,6 +127,7 @@ const NotificationsScreen: React.FC = () => {
   const openNotificationTarget = (item: GalantNotification) => {
     const route = item.target_route || '';
     const metadata = item.metadata || {};
+    const isAdmin = hasAdminProfileAccess(currentUser, currentUser?.id);
     if (route.startsWith('/chat/')) {
       const id = route.replace('/chat/', '').split('?')[0];
       if (metadata.venue_chat_id) {
@@ -142,7 +144,7 @@ const NotificationsScreen: React.FC = () => {
     } else if (route.startsWith('/premium')) {
       navigation.navigate('Premium');
     } else if (route.startsWith('/store')) {
-      if (currentUser?.is_partner) {
+      if (currentUser?.is_partner && !isAdmin) {
         navigation.navigate('PartnerPremium');
       } else {
         navigation.navigate('Premium');
