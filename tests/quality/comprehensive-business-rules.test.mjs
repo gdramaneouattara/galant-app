@@ -472,6 +472,8 @@ test('Rules: Internal notification center is wired across server, web and native
   assert.match(centerService, /NOTIFICATION_TYPES/);
   assert.match(centerService, /createInternalNotification/);
   assert.match(centerService, /target_route/);
+  assert.match(centerService, /awaitPush\s*=\s*false/);
+  assert.match(centerService, /if \(awaitPush\) await pushPromise/);
   assert.match(centerService, /legacyEventToNotification/);
   assert.match(centerService, /Lazy require avoids a circular dependency/);
   assert.match(centerService, /runTransaction/);
@@ -541,6 +543,8 @@ test('Rules: Internal notification center is wired across server, web and native
   assert.match(nativeNotifications, /markAllAsRead/);
   assert.match(nativeNotifications, /archiveNotification/);
   assert.match(nativeNotifications, /openNotificationTarget/);
+  assert.match(nativeNotifications, /route\.startsWith\('\/store'\)/);
+  assert.match(nativeNotifications, /navigation\.navigate\('Premium'\)/);
 });
 
 test('Rules: Admin-user support messaging is bidirectional on web', async () => {

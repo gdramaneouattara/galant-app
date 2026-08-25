@@ -80,6 +80,7 @@ const createInternalNotification = async ({
   metadata = {},
   dedupeKey = null,
   sendPush = true,
+  awaitPush = false,
   pushData = {},
 }) => {
   if (!userId) return null;
@@ -106,7 +107,7 @@ const createInternalNotification = async ({
     if (sendPush) {
       // Lazy require avoids a circular dependency with notificationService.
       const { sendPushNotification } = require('./notificationService');
-      void sendPushNotification(userId, payload.title, payload.message, {
+      const pushPromise = sendPushNotification(userId, payload.title, payload.message, {
         type: payload.type,
         notificationId: ref.id,
         targetRoute: payload.target_route,
@@ -115,6 +116,8 @@ const createInternalNotification = async ({
       }).catch((error) => {
         console.warn('[notification_center] push_failed', error.message);
       });
+      if (awaitPush) await pushPromise;
+      else void pushPromise;
     }
 
     return { id: ref.id, ...payload };
