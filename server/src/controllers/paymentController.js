@@ -26,6 +26,7 @@ const normalizePaymentText = (value = '') => String(value || '').trim();
 const normalizeTransactionId = (value = '') => normalizePaymentText(value).replace(/\s+/g, '').toUpperCase();
 const normalizeManualReference = (value = '') => normalizePaymentText(value).replace(/\s+/g, '').toUpperCase();
 const hashFirestoreId = (value = '') => crypto.createHash('sha256').update(normalizePaymentText(value)).digest('hex');
+const createApprovalLeaseId = () => crypto.randomBytes(12).toString('hex');
 const hasPaystackSecret = () => !!process.env.PAYSTACK_SECRET_KEY;
 const isPaystackInitializationEnabled = () => {
   const enabled = String(process.env.PAYSTACK_ENABLED || 'false').toLowerCase() === 'true';
@@ -229,15 +230,19 @@ const listWaveManualPayments = async (req, res) => {
   const openStatuses = ['SUBMITTED', 'PENDING', 'PROCESSING'];
 
   try {
-    const statusesToKeep = status === 'OPEN' ? openStatuses : (status === 'ALL' ? null : [status]);
-    const queryLimit = Math.min(600, Math.max(limit * 5, 120));
-    const snapshot = await db.collection(MANUAL_PAYMENTS_COLLECTION)
-      .orderBy('created_at', 'desc')
-      .limit(queryLimit)
-      .get();
-    const payments = snapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter(item => !statusesToKeep || statusesToKeep.includes(String(item.status || '').toUpperCase()))
+    const statusesToFetch = status === 'OPEN' ? openStatuses : (status === 'ALL' ? null : [status]);
+    const queryLimit = Math.min(300, Math.max(limit * 3, limit));
+    const snapshots = statusesToFetch
+      ? await Promise.all(statusesToFetch.map(itemStatus => db.collection(MANUAL_PAYMENTS_COLLECTION)
+        .where('status', '==', itemStatus)
+        .limit(queryLimit)
+        .get()))
+      : [await db.collection(MANUAL_PAYMENTS_COLLECTION)
+        .orderBy('created_at', 'desc')
+        .limit(queryLimit)
+        .get()];
+    const payments = snapshots
+      .flatMap(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
       .sort((left, right) => String(right.created_at || '').localeCompare(String(left.created_at || '')))
       .slice(0, limit);
 
@@ -273,6 +278,7 @@ const approveWaveManualPayment = async (req, res) => {
   try {
     const ref = db.collection(MANUAL_PAYMENTS_COLLECTION).doc(referenceCode);
     const now = new Date().toISOString();
+    const approvalLeaseId = createApprovalLeaseId();
     const claim = await db.runTransaction(async (transaction) => {
       const doc = await transaction.get(ref);
       if (!doc.exists) return { error: 'manual_payment_not_found', statusCode: 404 };
@@ -315,6 +321,7 @@ const approveWaveManualPayment = async (req, res) => {
         amount: payment.amount,
         claimed_by: req.user.id,
         claimed_at: now,
+        approval_lease_id: approvalLeaseId,
         retry_count: claimDoc.exists ? (claimDoc.data()?.retry_count || 0) + 1 : 0,
         updated_at: now
       }, { merge: true });
@@ -322,11 +329,12 @@ const approveWaveManualPayment = async (req, res) => {
         status: 'PROCESSING',
         approval_claimed_at: now,
         approval_claimed_by: req.user.id,
+        approval_lease_id: approvalLeaseId,
         admin_note: adminNote || null,
         updated_at: now
       });
 
-      return { payment, claimRef };
+      return { payment, claimRef, approvalLeaseId };
     });
 
     if (claim.alreadyApproved) {
@@ -354,9 +362,17 @@ const approveWaveManualPayment = async (req, res) => {
     } catch (entitlementError) {
       const failedAt = new Date().toISOString();
       await db.runTransaction(async (transaction) => {
+        const paymentDoc = await transaction.get(ref);
+        const claimDoc = await transaction.get(claim.claimRef);
+        const latestPayment = paymentDoc.data() || {};
+        const latestClaim = claimDoc.data() || {};
+        if (latestPayment.approval_lease_id !== claim.approvalLeaseId || latestClaim.approval_lease_id !== claim.approvalLeaseId) {
+          return;
+        }
         transaction.update(ref, {
           status: 'SUBMITTED',
           approval_error: entitlementError.message || 'entitlement_failed',
+          approval_lease_id: null,
           updated_at: failedAt
         });
         transaction.set(claim.claimRef, {
@@ -369,20 +385,25 @@ const approveWaveManualPayment = async (req, res) => {
       throw entitlementError;
     }
 
-    const entitlementAppliedAt = new Date().toISOString();
-    await claim.claimRef.set({
-      status: 'ENTITLEMENT_APPLIED',
-      entitlement_applied_at: entitlementAppliedAt,
-      updated_at: entitlementAppliedAt
-    }, { merge: true });
-
     const approvedAt = new Date().toISOString();
-    await db.runTransaction(async (transaction) => {
+    const finalized = await db.runTransaction(async (transaction) => {
+      const paymentDoc = await transaction.get(ref);
+      const claimDoc = await transaction.get(claim.claimRef);
+      const latestPayment = paymentDoc.data() || {};
+      const latestClaim = claimDoc.data() || {};
+      const leaseMatches = latestPayment.approval_lease_id === claim.approvalLeaseId
+        && latestClaim.approval_lease_id === claim.approvalLeaseId
+        && latestPayment.status === 'PROCESSING'
+        && latestClaim.status === 'PROCESSING';
+      if (!leaseMatches) {
+        return false;
+      }
       transaction.update(ref, {
         status: 'APPROVED',
         approved_at: approvedAt,
         approved_by: req.user.id,
         admin_note: adminNote || null,
+        approval_lease_id: null,
         updated_at: approvedAt
       });
       transaction.set(claim.claimRef, {
@@ -391,7 +412,11 @@ const approveWaveManualPayment = async (req, res) => {
         approved_by: req.user.id,
         updated_at: approvedAt
       }, { merge: true });
+      return true;
     });
+    if (!finalized) {
+      return res.status(409).json({ error: 'manual_payment_approval_lease_lost' });
+    }
 
     return res.json({ success: true, status: 'APPROVED' });
   } catch (error) {
@@ -405,25 +430,36 @@ const rejectWaveManualPayment = async (req, res) => {
 
   try {
     const ref = db.collection(MANUAL_PAYMENTS_COLLECTION).doc(referenceCode);
-    const doc = await ref.get();
-    if (!doc.exists) return res.status(404).json({ error: 'manual_payment_not_found' });
-    const payment = doc.data() || {};
-    if (payment.status === 'APPROVED') return res.status(409).json({ error: 'manual_payment_already_approved' });
-    if (payment.status === 'PROCESSING' && !isManualPaymentProcessingStale(payment)) {
-      return res.status(409).json({ error: 'manual_payment_processing' });
-    }
-
     const rejectedAt = new Date().toISOString();
-    await db.runTransaction(async (transaction) => {
+    const result = await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(ref);
+      if (!doc.exists) return { error: 'manual_payment_not_found', statusCode: 404 };
+      const payment = doc.data() || {};
+      const claimRef = payment.transaction_id_normalized
+        ? db.collection(MANUAL_PAYMENT_TRANSACTION_CLAIMS_COLLECTION).doc(hashFirestoreId(payment.transaction_id_normalized))
+        : null;
+      const claimDoc = claimRef ? await transaction.get(claimRef) : null;
+      const claimData = claimDoc?.exists ? claimDoc.data() || {} : {};
+
+      if (payment.status === 'APPROVED' || claimData.status === 'APPROVED' || claimData.status === 'ENTITLEMENT_APPLIED') {
+        return { error: 'manual_payment_already_approved', statusCode: 409 };
+      }
+      if (payment.status === 'PROCESSING' || claimData.status === 'PROCESSING') {
+        return { error: 'manual_payment_processing', statusCode: 409 };
+      }
+      if (claimData.reference_code && claimData.reference_code !== referenceCode) {
+        return { error: 'wave_transaction_already_claimed', statusCode: 409 };
+      }
+
       transaction.update(ref, {
         status: 'REJECTED',
         rejected_at: rejectedAt,
         rejected_by: req.user.id,
         admin_note: adminNote || null,
+        approval_lease_id: null,
         updated_at: rejectedAt
       });
-      if (payment.transaction_id_normalized) {
-        const claimRef = db.collection(MANUAL_PAYMENT_TRANSACTION_CLAIMS_COLLECTION).doc(hashFirestoreId(payment.transaction_id_normalized));
+      if (claimRef) {
         transaction.set(claimRef, {
           reference_code: referenceCode,
           transaction_id_normalized: payment.transaction_id_normalized,
@@ -433,7 +469,9 @@ const rejectWaveManualPayment = async (req, res) => {
           updated_at: rejectedAt
         }, { merge: true });
       }
+      return { success: true };
     });
+    if (result.error) return res.status(result.statusCode || 500).json({ error: result.error });
 
     return res.json({ success: true, status: 'REJECTED' });
   } catch (error) {
