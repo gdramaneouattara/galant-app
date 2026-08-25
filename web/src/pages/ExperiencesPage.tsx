@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import AgendaPage from './AgendaPage';
 import GuidePage from './GuidePage';
 import { Calendar, MapPin } from 'lucide-react';
+import LockedFeatureNotice from '../components/LockedFeatureNotice';
+import { useAuth } from '../context/AuthContext';
 
 const ExperiencesPage: React.FC = () => {
+  const { t } = useAuth();
   const [activeTab, setActiveTab] = useState<'AGENDA' | 'GUIDE'>('GUIDE');
   const [isTabRailCompact, setIsTabRailCompact] = useState(false);
   const lastScrollYRef = useRef(0);
@@ -75,7 +77,7 @@ const ExperiencesPage: React.FC = () => {
       </div>
 
       <div className="px-2">
-        {activeTab === 'AGENDA' ? <AgendaPage /> : <GuidePage />}
+        {activeTab === 'AGENDA' ? <LockedFeatureNotice title={t('agenda')} backTo="/experiences" /> : <GuidePage />}
       </div>
     </div>
   );
