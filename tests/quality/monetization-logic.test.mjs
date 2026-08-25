@@ -163,6 +163,8 @@ test('Payments: Wave manual orders stay pending until admin validation', async (
   const adminRoutes = await read('server/src/routes/adminRoutes.js');
   const envExample = await read('server/.env.example');
   const firestoreIndexes = await read('firestore.indexes.json');
+  const firebaseConfig = await read('firebase.json');
+  const serverDeployWorkflow = await read('.github/workflows/deploy-server.yml');
 
   assert.match(controller, /createWaveManualPayment/);
   assert.match(controller, /submitWaveManualPaymentProof/);
@@ -182,11 +184,19 @@ test('Payments: Wave manual orders stay pending until admin validation', async (
   assert.match(controller, /createApprovalLeaseId/);
   assert.match(controller, /approval_lease_id/);
   assert.match(controller, /manual_payment_approval_lease_lost/);
+  assert.match(controller, /fetchManualPaymentsByStatus/);
+  assert.match(controller, /isFirestoreIndexMissingError/);
   assert.match(controller, /\.where\('status',\s*'==',\s*itemStatus\)/);
   assert.match(controller, /\.where\('status',\s*'==',\s*itemStatus\)\s*\n\s*\.orderBy\('created_at',\s*'desc'\)\s*\n\s*\.limit\(queryLimit\)/);
+  assert.match(controller, /manual_payments_index_not_ready/);
   assert.match(firestoreIndexes, /"collectionGroup":\s*"manual_payments"/);
   assert.match(firestoreIndexes, /"fieldPath":\s*"status"[\s\S]*"order":\s*"ASCENDING"/);
   assert.match(firestoreIndexes, /"fieldPath":\s*"created_at"[\s\S]*"order":\s*"DESCENDING"/);
+  assert.match(firebaseConfig, /"indexes":\s*"firestore\.indexes\.json"/);
+  assert.match(serverDeployWorkflow, /firestore\.indexes\.json/);
+  assert.match(serverDeployWorkflow, /deploy --only firestore:indexes/);
+  assert.match(serverDeployWorkflow, /Wait for Firestore indexes/);
+  assert.match(serverDeployWorkflow, /manual_payments/);
   assert.match(controller, /applyPurchasedEntitlement\(/);
   assert.match(controller, /paymentMethod:\s*WAVE_PROVIDER/);
   assert.match(subscriptionService, /runEntitlementOnce/);
