@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Heart, Coffee, Users } from 'lucide-react-native';
+import { Heart, Coffee, Users, Briefcase } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useApp } from '../../state/AppContext';
 import type { RootStackParamList } from '../../navigation/MainNavigator';
@@ -28,6 +28,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 const RELATIONSHIP_GOALS = [
   { id: 'SERIOUS', labelKey: 'serious_love', icon: (props: any) => <Heart {...props} /> },
   { id: 'FRIENDSHIP', labelKey: 'friendship_goal', icon: (props: any) => <Users {...props} /> },
+  { id: 'NETWORKING', labelKey: 'networking_goal', icon: (props: any) => <Briefcase {...props} /> },
   { id: 'CASUAL', labelKey: 'casual_goal', icon: (props: any) => <Coffee {...props} /> },
 ];
 

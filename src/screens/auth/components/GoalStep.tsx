@@ -3,11 +3,12 @@ import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import PrimaryButton from '../../../components/PrimaryButton';
 import { COLORS } from '../../../data/mock';
 import { useApp } from '../../../state/AppContext';
-import { Heart, Users, Coffee } from 'lucide-react-native';
+import { Heart, Users, Briefcase, Coffee } from 'lucide-react-native';
 
 const RELATIONSHIP_GOALS = [
   { id: 'SERIOUS', label: 'Amour sérieux', icon: (props: any) => <Heart {...props} /> },
   { id: 'FRIENDSHIP', label: 'Amitié', icon: (props: any) => <Users {...props} /> },
+  { id: 'NETWORKING', label: 'Réseautage', icon: (props: any) => <Briefcase {...props} /> },
   { id: 'CASUAL', label: 'On verra bien', icon: (props: any) => <Coffee {...props} /> },
 ];
 

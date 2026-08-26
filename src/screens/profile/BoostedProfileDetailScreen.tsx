@@ -50,6 +50,7 @@ const GENDER_LABELS: Record<string, string> = {
 const RELATIONSHIP_GOAL_LABELS: Record<string, string> = {
   SERIOUS: 'Amour sérieux',
   FRIENDSHIP: 'Amitié',
+  NETWORKING: 'Réseautage',
   CASUAL: 'On verra bien',
 };
 

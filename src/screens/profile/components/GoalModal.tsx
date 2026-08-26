@@ -1,11 +1,12 @@
 import React from 'react';
 import { View, Text, Modal, Pressable, StyleSheet } from 'react-native';
-import { X, Heart, Users, Coffee } from 'lucide-react-native';
+import { X, Heart, Users, Briefcase, Coffee } from 'lucide-react-native';
 import { COLORS } from '../../../data/mock';
 
 const RELATIONSHIP_GOALS = [
   { id: 'SERIOUS', label: 'Amour sérieux', icon: (props: any) => <Heart {...props} /> },
   { id: 'FRIENDSHIP', label: 'Amitié', icon: (props: any) => <Users {...props} /> },
+  { id: 'NETWORKING', label: 'Réseautage', icon: (props: any) => <Briefcase {...props} /> },
   { id: 'CASUAL', label: 'On verra bien', icon: (props: any) => <Coffee {...props} /> },
 ];
 
