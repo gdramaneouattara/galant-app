@@ -16,28 +16,28 @@ import { showAlert } from '@shared/lib/ui-bridge';
 
 const AdminMessaging: React.FC = () => {
   const [title, setTitle] = useState('');
-  const [body, setBody] = useState('');
-  const [targetAudience, setTargetAudience] = useState<'ALL' | 'PREMIUM' | 'MALE' | 'FEMALE'>('ALL');
+  const [message, setMessage] = useState('');
+  const [segment, setSegment] = useState<'ALL' | 'PREMIUM' | 'MALE' | 'FEMALE'>('ALL');
   const [sending, setSending] = useState(false);
 
   const handleSendBroadcast = async () => {
-    if (!title || !body) {
+    if (!title || !message) {
       showAlert('Champs requis', 'Veuillez saisir un titre et un message.');
       return;
     }
 
-    if (!window.confirm(`Voulez-vous vraiment envoyer ce message à l'audience : ${targetAudience} ?`)) return;
+    if (!window.confirm(`Voulez-vous vraiment envoyer ce message à l'audience : ${segment} ?`)) return;
 
     setSending(true);
     try {
-      await apiRequest('/api/admin/broadcast', {
+      await apiRequest('/api/admin/messages/broadcast', {
         method: 'POST',
         requireAuth: true,
-        body: JSON.stringify({ title, body, targetAudience })
+        body: JSON.stringify({ segment, title, message })
       });
       showAlert('Succès', 'Message envoyé avec succès à toute l\'audience ciblée.');
       setTitle('');
-      setBody('');
+      setMessage('');
     } catch (e: any) {
       showAlert('Erreur', e.message || 'Échec de l\'envoi du broadcast.');
     } finally {
@@ -67,9 +67,9 @@ const AdminMessaging: React.FC = () => {
                 ].map((aud: any) => (
                   <button
                     key={aud.id}
-                    onClick={() => setTargetAudience(aud.id)}
+                    onClick={() => setSegment(aud.id)}
                     className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${
-                      targetAudience === aud.id
+                      segment === aud.id
                         ? 'border-primary bg-primary/5 text-primary'
                         : 'border-slate-100 dark:border-white/5 text-slate-400 hover:border-slate-200'
                     }`}
@@ -94,8 +94,8 @@ const AdminMessaging: React.FC = () => {
             <div className="space-y-2">
               <label className="text-xs font-black text-slate-400 uppercase tracking-prestige ml-2">Message</label>
               <textarea
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
                 rows={5}
                 placeholder="Décrivez l'annonce en quelques lignes..."
                 className="w-full bg-slate-50 dark:bg-white/5 border-none rounded-[2rem] px-6 py-4 font-medium text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
@@ -105,7 +105,7 @@ const AdminMessaging: React.FC = () => {
 
           <button
             onClick={handleSendBroadcast}
-            disabled={sending || !title || !body}
+            disabled={sending || !title || !message}
             className="w-full bg-primary text-white py-6 rounded-3xl font-black text-xs uppercase tracking-prestige flex items-center justify-center gap-3 shadow-xl shadow-red-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 disabled:scale-100"
           >
             {sending ? <Loader2 className="animate-spin" /> : <Send size={18} />}
