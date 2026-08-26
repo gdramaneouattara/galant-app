@@ -466,6 +466,19 @@ test('Rules: New profile push respects goal and gender without interest filterin
   assert.doesNotMatch(conciergeService, /commonInterests|candidateInterests|myInterests/);
 });
 
+test('Rules: Admin web broadcast uses the push-enabled backend route', async () => {
+  const adminRoutes = await read('server/src/routes/adminRoutes.js');
+  const adminController = await read('server/src/controllers/adminController.js');
+  const webAdminMessaging = await read('web/src/pages/admin/AdminMessaging.tsx');
+
+  assert.match(adminRoutes, /\/messages\/broadcast/);
+  assert.match(adminController, /sendPushNotification\(uid,\s*title,\s*message/);
+  assert.match(webAdminMessaging, /\/api\/admin\/messages\/broadcast/);
+  assert.match(webAdminMessaging, /JSON\.stringify\(\{\s*segment,\s*title,\s*message\s*\}\)/);
+  assert.doesNotMatch(webAdminMessaging, /\/api\/admin\/broadcast/);
+  assert.doesNotMatch(webAdminMessaging, /targetAudience/);
+});
+
 test('Rules: Internal notification center is wired across server, web and native', async () => {
   const centerService = await read('server/src/services/notificationCenterService.js');
   const notificationController = await read('server/src/controllers/notificationController.js');
