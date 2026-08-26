@@ -1,8 +1,99 @@
 const { db, rtdb } = require('../config/firebase');
-const { apiRequest } = require('../services/aiService');
 const { sendPushNotification } = require('../services/notificationService');
 
 const CONCIERGE_ID = 'galant_concierge_official';
+const STRICT_RELATIONSHIP_GOALS = new Set(['SERIOUS', 'MARRIAGE']);
+const SOCIAL_RELATIONSHIP_GOALS = new Set(['FRIENDSHIP', 'CASUAL', 'NETWORKING']);
+const NEW_PROFILE_NOTIFY_LIMIT = 80;
+
+const normalizeText = (value = '') => String(value || '').trim().toUpperCase();
+
+const normalizeGender = (value = '') => {
+  const gender = normalizeText(value);
+  if (['MAN', 'MALE', 'M', 'HOMME'].includes(gender)) return 'MALE';
+  if (['WOMAN', 'FEMALE', 'F', 'FEMME'].includes(gender)) return 'FEMALE';
+  return gender;
+};
+
+const normalizeList = (value) => {
+  if (Array.isArray(value)) return value.map(normalizeText).filter(Boolean);
+  const text = normalizeText(value);
+  return text ? [text] : [];
+};
+
+const getTargetGenders = (profile = {}) => {
+  const raw = profile.target_gender || profile.target_genders || profile.preferences?.targetGender;
+  return normalizeList(raw).map(normalizeGender).filter(Boolean);
+};
+
+const getRelationshipGoal = (profile = {}) => normalizeText(profile.relationship_goal);
+
+const getOppositeGender = (gender) => {
+  if (gender === 'MALE') return 'FEMALE';
+  if (gender === 'FEMALE') return 'MALE';
+  return null;
+};
+
+const desiredGendersForNewProfilePush = (profile = {}) => {
+  const goal = getRelationshipGoal(profile);
+  const explicitTargets = getTargetGenders(profile);
+
+  if (STRICT_RELATIONSHIP_GOALS.has(goal)) {
+    const oppositeGender = getOppositeGender(normalizeGender(profile.gender));
+    return oppositeGender ? [oppositeGender] : explicitTargets;
+  }
+
+  return explicitTargets;
+};
+
+const acceptsGenderForNewProfilePush = (recipient = {}, newProfile = {}) => {
+  const recipientGender = normalizeGender(recipient.gender);
+  const newProfileGender = normalizeGender(newProfile.gender);
+  const recipientTargets = desiredGendersForNewProfilePush(recipient);
+  const newProfileTargets = desiredGendersForNewProfilePush(newProfile);
+
+  const recipientAcceptsNewProfile = recipientTargets.length === 0 || recipientTargets.includes(newProfileGender);
+  const newProfileAcceptsRecipient = newProfileTargets.length === 0 || newProfileTargets.includes(recipientGender);
+
+  return recipientAcceptsNewProfile && newProfileAcceptsRecipient;
+};
+
+const goalsCompatibleForNewProfilePush = (recipient = {}, newProfile = {}) => {
+  const recipientGoal = getRelationshipGoal(recipient);
+  const newProfileGoal = getRelationshipGoal(newProfile);
+
+  if (!recipientGoal || !newProfileGoal) return true;
+  if (recipientGoal === newProfileGoal) return true;
+  if (STRICT_RELATIONSHIP_GOALS.has(recipientGoal) || STRICT_RELATIONSHIP_GOALS.has(newProfileGoal)) return false;
+  if (SOCIAL_RELATIONSHIP_GOALS.has(recipientGoal) && SOCIAL_RELATIONSHIP_GOALS.has(newProfileGoal)) return true;
+  return true;
+};
+
+const collectInteractedUserIds = async (newUserId) => {
+  const interacted = new Set([newUserId, CONCIERGE_ID]);
+  const [outgoingLikes, incomingLikes, outgoingSwipes, incomingSwipes] = await Promise.all([
+    db.collection('likes').where('liker_id', '==', newUserId).limit(200).get(),
+    db.collection('likes').where('liked_id', '==', newUserId).limit(200).get(),
+    db.collection('swipes').where('swiper_id', '==', newUserId).limit(200).get(),
+    db.collection('swipes').where('target_id', '==', newUserId).limit(200).get()
+  ]);
+
+  outgoingLikes.docs.forEach(doc => doc.data()?.liked_id && interacted.add(doc.data().liked_id));
+  incomingLikes.docs.forEach(doc => doc.data()?.liker_id && interacted.add(doc.data().liker_id));
+  outgoingSwipes.docs.forEach(doc => doc.data()?.target_id && interacted.add(doc.data().target_id));
+  incomingSwipes.docs.forEach(doc => doc.data()?.swiper_id && interacted.add(doc.data().swiper_id));
+
+  return interacted;
+};
+
+const isEligibleNewProfileRecipient = ({ recipientId, recipient, newProfile, interactedUserIds }) => {
+  if (!recipientId || interactedUserIds.has(recipientId)) return false;
+  if (!recipient?.onboarding_completed) return false;
+  if (recipient?.suspended_at || recipient?.status === 'SUSPENDED') return false;
+  if (!acceptsGenderForNewProfilePush(recipient, newProfile)) return false;
+  if (!goalsCompatibleForNewProfilePush(recipient, newProfile)) return false;
+  return true;
+};
 
 /**
  * Envoie un message de la part du Concierge (Chat + Push)
@@ -48,20 +139,35 @@ const sendConciergeMessage = async (userId, content, metadata = {}) => {
  */
 const notifyNewProfiles = async (newUserId, city) => {
   try {
+    const newProfileDoc = await db.collection('profiles').doc(newUserId).get();
+    if (!newProfileDoc.exists) return;
+
+    const newProfile = { id: newProfileDoc.id, ...newProfileDoc.data() };
+    const targetCity = city || newProfile.city;
+    if (!targetCity || !newProfile.onboarding_completed || newProfile.suspended_at || newProfile.status === 'SUSPENDED') return;
+
+    const interactedUserIds = await collectInteractedUserIds(newUserId);
     const snapshot = await db.collection('profiles')
-      .where('city', '==', city)
-      .where('onboarding_completed', '==', true)
-      .limit(30)
+      .where('city', '==', targetCity)
+      .limit(NEW_PROFILE_NOTIFY_LIMIT)
       .get();
 
     const recipients = snapshot.docs
-      .map(doc => doc.id)
-      .filter(id => id !== newUserId && id !== CONCIERGE_ID);
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(profile => isEligibleNewProfileRecipient({
+        recipientId: profile.id,
+        recipient: profile,
+        newProfile,
+        interactedUserIds
+      }));
 
-    for (const uid of recipients) {
-      await sendConciergeMessage(uid, `Une nouvelle vague d'élégance vient d'arriver à ${city}. Venez découvrir les nouveaux profils certifiés !`, {
-        pushTitle: "Nouveaux profils disponibles ✨",
-        action_trigger: 'NEW_PROFILES'
+    for (const profile of recipients) {
+      const uid = profile.id;
+      await sendConciergeMessage(uid, `Un nouveau profil compatible vient d'arriver à ${targetCity}. Ouvrez Découverte pour le rencontrer.`, {
+        pushTitle: "Nouveau profil compatible ✨",
+        action_trigger: 'NEW_PROFILES',
+        new_profile_id: newUserId,
+        compatibility_basis: 'GOAL_GENDER_CITY'
       });
     }
   } catch (e) {

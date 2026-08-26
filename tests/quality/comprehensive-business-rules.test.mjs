@@ -452,6 +452,20 @@ test('Rules: Web push notifications are fully wired', async () => {
   assert.match(envTypes, /VITE_FIREBASE_VAPID_KEY/);
 });
 
+test('Rules: New profile push respects goal and gender without interest filtering', async () => {
+  const conciergeService = await read('server/src/services/conciergeService.js');
+
+  assert.match(conciergeService, /STRICT_RELATIONSHIP_GOALS/);
+  assert.match(conciergeService, /desiredGendersForNewProfilePush/);
+  assert.match(conciergeService, /acceptsGenderForNewProfilePush/);
+  assert.match(conciergeService, /goalsCompatibleForNewProfilePush/);
+  assert.match(conciergeService, /isEligibleNewProfileRecipient/);
+  assert.match(conciergeService, /compatibility_basis:\s*'GOAL_GENDER_CITY'/);
+  assert.match(conciergeService, /action_trigger:\s*'NEW_PROFILES'/);
+  assert.doesNotMatch(conciergeService, /calculateMatchScore/);
+  assert.doesNotMatch(conciergeService, /commonInterests|candidateInterests|myInterests/);
+});
+
 test('Rules: Internal notification center is wired across server, web and native', async () => {
   const centerService = await read('server/src/services/notificationCenterService.js');
   const notificationController = await read('server/src/controllers/notificationController.js');
