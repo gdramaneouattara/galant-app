@@ -32,10 +32,10 @@ const INTERESTS_OPTIONS = [
 ];
 
 const RELATIONSHIP_GOALS = [
-  { id: 'SERIOUS', label: 'Relation sérieuse', icon: '💍', desc: 'Pour construire un avenir durable.' },
-  { id: 'MARRIAGE', label: 'Mariage / Vie commune', icon: '💎', desc: 'L\'engagement ultime de l\'élégance.' },
-  { id: 'FRIENDSHIP', label: 'Amitié sélective', icon: '🥂', desc: 'Des rencontres de haut vol, sans pression.' },
-  { id: 'NETWORKING', label: 'Réseautage prestige', icon: '🤝', desc: 'Élargir son cercle d\'influence.' }
+  { id: 'SERIOUS', label: 'Amour sérieux', icon: '💍', desc: 'Pour construire une relation durable.' },
+  { id: 'FRIENDSHIP', label: 'Amitié', icon: '🥂', desc: 'Rencontrer de belles personnes, sans pression.' },
+  { id: 'NETWORKING', label: 'Réseautage', icon: '🤝', desc: 'Élargir son cercle et créer des opportunités.' },
+  { id: 'CASUAL', label: 'On verra bien', icon: '☕', desc: 'Laisser la rencontre évoluer naturellement.' }
 ];
 
 const BIO_PROMPTS = [

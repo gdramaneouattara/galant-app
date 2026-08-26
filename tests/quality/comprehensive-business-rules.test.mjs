@@ -58,6 +58,33 @@ test('Rules: Auth forms keep Galant logo visible after login or signup choice', 
   assert.match(nativeAuthMethod, /brandHeader/);
 });
 
+test('Rules: Relationship goals are harmonized across onboarding and profile', async () => {
+  const webOnboarding = await read('web/src/pages/OnboardingPage.tsx');
+  const webGoalModal = await read('web/src/components/GoalModal.tsx');
+  const nativeGoalStep = await read('src/screens/auth/components/GoalStep.tsx');
+  const nativeGoalModal = await read('src/screens/profile/components/GoalModal.tsx');
+  const nativeProfile = await read('src/screens/profile/ProfileScreen.tsx');
+  const nativeBoostedProfile = await read('src/screens/profile/BoostedProfileDetailScreen.tsx');
+  const translations = await read('src/translations/index.ts');
+  const files = [webOnboarding, webGoalModal, nativeGoalStep, nativeGoalModal, nativeProfile];
+
+  for (const code of files) {
+    assert.match(code, /id:\s*'SERIOUS'/);
+    assert.match(code, /id:\s*'FRIENDSHIP'/);
+    assert.match(code, /id:\s*'NETWORKING'/);
+    assert.match(code, /id:\s*'CASUAL'/);
+    assert.doesNotMatch(code, /id:\s*'MARRIAGE'/);
+  }
+
+  assert.match(webOnboarding, /Amour sérieux/);
+  assert.match(webOnboarding, /Réseautage/);
+  assert.match(webGoalModal, /RelationshipGoalId = 'SERIOUS' \| 'FRIENDSHIP' \| 'NETWORKING' \| 'CASUAL'/);
+  assert.match(nativeProfile, /networking_goal/);
+  assert.match(nativeBoostedProfile, /NETWORKING:\s*'Réseautage'/);
+  assert.match(translations, /networking_goal:\s*"Réseautage"/);
+  assert.match(translations, /networking_goal:\s*"Networking"/);
+});
+
 test('Rules: Stories move into discovery and Apps replaces the stories tab', async () => {
   const homeScreen = await read('src/screens/home/HomeScreen.tsx');
   const navigator = await read('src/navigation/MainNavigator.tsx');

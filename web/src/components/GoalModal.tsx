@@ -1,9 +1,9 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { X, Heart, Users, Coffee, CheckCircle } from 'lucide-react';
+import { X, Heart, Users, Briefcase, Coffee, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export type RelationshipGoalId = 'SERIOUS' | 'FRIENDSHIP' | 'CASUAL';
+export type RelationshipGoalId = 'SERIOUS' | 'FRIENDSHIP' | 'NETWORKING' | 'CASUAL';
 
 export const RELATIONSHIP_GOALS = [
   {
@@ -19,6 +19,13 @@ export const RELATIONSHIP_GOALS = [
     icon: Users,
     color: 'text-blue-500',
     bg: 'bg-blue-50'
+  },
+  {
+    id: 'NETWORKING' as RelationshipGoalId,
+    label: { fr: 'Réseautage', en: 'Networking' },
+    icon: Briefcase,
+    color: 'text-emerald-500',
+    bg: 'bg-emerald-50'
   },
   {
     id: 'CASUAL' as RelationshipGoalId,
