@@ -496,12 +496,17 @@ test('Rules: New profile push respects goal and gender without interest filterin
 test('Rules: Admin web broadcast uses the push-enabled backend route', async () => {
   const adminRoutes = await read('server/src/routes/adminRoutes.js');
   const adminController = await read('server/src/controllers/adminController.js');
+  const accessService = await read('server/src/services/accessService.js');
   const webAdminMessaging = await read('web/src/pages/admin/AdminMessaging.tsx');
 
   assert.match(adminRoutes, /\/messages\/broadcast/);
   assert.match(adminController, /sendPushNotification\(uid,\s*title,\s*message/);
   assert.match(webAdminMessaging, /\/api\/admin\/messages\/broadcast/);
   assert.match(webAdminMessaging, /JSON\.stringify\(\{\s*segment,\s*title,\s*message\s*\}\)/);
+  assert.match(webAdminMessaging, /id:\s*'MALE'/);
+  assert.match(webAdminMessaging, /id:\s*'FEMALE'/);
+  assert.match(accessService, /if \(value === 'MALE'\) return gender === 'MALE'/);
+  assert.match(accessService, /if \(value === 'FEMALE'\) return gender === 'FEMALE'/);
   assert.doesNotMatch(webAdminMessaging, /\/api\/admin\/broadcast/);
   assert.doesNotMatch(webAdminMessaging, /targetAudience/);
 });

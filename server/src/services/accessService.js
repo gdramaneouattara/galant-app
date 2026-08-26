@@ -31,12 +31,15 @@ const isHiddenByInvisibleMode = (profile, hasInvisiblePremiumAccess = false) => 
 const buildUserSegmentFilter = (segment) => {
   const value = String(segment || 'ALL').toUpperCase();
   return (profile) => {
+    const gender = String(profile?.gender || '').toUpperCase();
     if (value === 'ALL') return true;
     if (value === 'ACTIVE') return !profile.suspended_at;
     if (value === 'UNVERIFIED') return !profile.is_verified;
     if (value === 'VERIFIED') return !!profile.is_verified;
     if (value === 'FREE') return !profile.is_premium;
     if (value === 'PREMIUM') return !!profile.is_premium;
+    if (value === 'MALE') return gender === 'MALE';
+    if (value === 'FEMALE') return gender === 'FEMALE';
     if (value === 'INVISIBLE_PREMIUM') return !!profile.is_premium && !!profile.is_invisible;
     if (value === 'SUSPENDED') return !!profile.suspended_at;
     return true;
