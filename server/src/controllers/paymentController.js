@@ -73,7 +73,7 @@ const isManualPaymentProcessingStale = (payment = {}, claim = {}) => {
 const fetchManualPaymentsByStatus = async (itemStatus, queryLimit) => {
   return db.collection(MANUAL_PAYMENTS_COLLECTION)
     .where('status', '==', itemStatus)
-    .orderBy('created_at', 'desc')
+    .orderBy('created_at', 'asc')
     .limit(queryLimit)
     .get();
 };
@@ -253,12 +253,12 @@ const listWaveManualPayments = async (req, res) => {
     const snapshots = statusesToFetch
       ? await Promise.all(statusesToFetch.map(itemStatus => fetchManualPaymentsByStatus(itemStatus, queryLimit)))
       : [await db.collection(MANUAL_PAYMENTS_COLLECTION)
-        .orderBy('created_at', 'desc')
+        .orderBy('created_at', 'asc')
         .limit(queryLimit)
         .get()];
     const payments = snapshots
       .flatMap(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
-      .sort((left, right) => String(right.created_at || '').localeCompare(String(left.created_at || '')))
+      .sort((left, right) => String(left.created_at || '').localeCompare(String(right.created_at || '')))
       .slice(0, limit);
 
     const userIds = [...new Set(payments.map(item => item.user_id).filter(Boolean))].slice(0, 80);
@@ -302,6 +302,7 @@ const approveWaveManualPayment = async (req, res) => {
       if (payment.status === 'APPROVED') return { alreadyApproved: true };
       if (payment.status === 'REJECTED') return { error: 'manual_payment_rejected', statusCode: 409 };
       if (!payment.transaction_id_normalized) return { error: 'missing_wave_transaction_id', statusCode: 400 };
+      if (!payment.payer_phone) return { error: 'missing_wave_payer_phone', statusCode: 400 };
 
       const claimId = hashFirestoreId(payment.transaction_id_normalized);
       const claimRef = db.collection(MANUAL_PAYMENT_TRANSACTION_CLAIMS_COLLECTION).doc(claimId);
