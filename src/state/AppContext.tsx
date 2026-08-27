@@ -201,6 +201,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       photo_variants: profile.photo_variants || {},
       bio: profile.bio || '',
       interests: profile.interests || [],
+      religion: profile.religion ?? null,
+      religion_other: profile.religion_other ?? null,
       phone: profile.phone ?? null,
       location: {
         lat: Number.isFinite(profile.latitude) ? profile.latitude : null,
@@ -551,6 +553,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (updates.photos) payload.photos = updates.photos;
     if (updates.photo_variants) payload.photo_variants = updates.photo_variants;
     if (updates.interests) payload.interests = updates.interests;
+    if (updates.religion !== undefined) payload.religion = updates.religion;
+    if (updates.religion_other !== undefined) payload.religion_other = updates.religion_other;
     if (updates.location?.city) payload.city = updates.location.city;
     if (updates.location?.lat) payload.latitude = updates.location.lat;
     if (updates.location?.lng) payload.longitude = updates.location.lng;

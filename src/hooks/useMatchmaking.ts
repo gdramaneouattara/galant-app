@@ -15,6 +15,8 @@ export type ProfileDetailParam = {
   distance_km?: number | null;
   bio?: string;
   interests?: string[];
+  religion?: string | null;
+  religion_other?: string | null;
   gender?: string;
 };
 

@@ -15,7 +15,7 @@ import WelcomeStep from './components/WelcomeStep';
 import IdentityStep from './components/IdentityStep';
 import PhotosStep from './components/PhotosStep';
 import BioStep from './components/BioStep';
-import InterestsStep from './components/InterestsStep';
+import ReligionStep from './components/ReligionStep';
 import GoalStep from './components/GoalStep';
 import LocationStep from './components/LocationStep';
 import ManifestoStep from './components/ManifestoStep';
@@ -55,6 +55,8 @@ const AuthFlowScreen: React.FC = () => {
     photos: [] as any[],
     bio: '',
     interests: [] as string[],
+    religion: 'CHRISTIAN',
+    religionOther: '',
     relationshipGoal: 'SERIOUS',
     targetGender: [Gender.MALE] as Gender[],
     city: 'Douala',
@@ -128,7 +130,7 @@ const AuthFlowScreen: React.FC = () => {
       // Calcul du Score de Rayonnement (identique au Web)
       let radiance_score = 0;
       if (form.name && form.age) radiance_score += 20;
-      if (form.relationshipGoal && form.interests.length >= 3) radiance_score += 30;
+      if (form.relationshipGoal && form.religion) radiance_score += 30;
       if (form.city && form.bio.length >= 15) radiance_score += 25;
       if (photoUrls.length >= 1) radiance_score += 25;
 
@@ -141,7 +143,9 @@ const AuthFlowScreen: React.FC = () => {
           age: Number(form.age),
           gender: form.gender,
           bio: form.bio,
-          interests: form.interests,
+          interests: [],
+          religion: form.religion,
+          religion_other: form.religion === 'OTHER' ? form.religionOther.trim() : null,
           relationship_goal: form.relationshipGoal,
           city: form.city,
           country: form.country,
@@ -234,7 +238,7 @@ const AuthFlowScreen: React.FC = () => {
       case 'identity': return <IdentityStep form={form} setForm={setForm} onNext={() => setStep('photos')} />;
       case 'photos': return <PhotosStep form={form} setForm={setForm} onNext={() => setStep('bio')} />;
       case 'bio': return <BioStep form={form} setForm={setForm} onNext={() => setStep('preferences')} />;
-      case 'preferences': return <InterestsStep form={form} setForm={setForm} onNext={() => setStep('goal')} />;
+      case 'preferences': return <ReligionStep form={form} setForm={setForm} onNext={() => setStep('goal')} />;
       case 'goal': return <GoalStep form={form} setForm={setForm} onNext={() => setStep('location')} />;
       case 'location': return <LocationStep form={form} setForm={setForm} onComplete={() => setStep('manifesto')} loading={loading} />;
       case 'manifesto': return <ManifestoStep onComplete={completeOnboarding} loading={loading} />;
