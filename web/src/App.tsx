@@ -186,7 +186,7 @@ const Header = () => {
           <Link to="/" className="flex items-center gap-2 group">
             <img src={logoImg} alt="Galant Logo" className="w-8 h-8 rounded-lg shadow-sm group-hover:scale-105 transition-transform" />
             <h1 className="text-2xl font-black text-primary tracking-tighter">
-              Galant
+              Galants
             </h1>
           </Link>
           <nav className="hidden md:flex gap-8 font-bold text-sm text-slate-500 dark:text-slate-400">

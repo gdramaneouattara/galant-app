@@ -81,7 +81,7 @@ const AuthMethodStep: React.FC<AuthMethodStepProps> = ({ mode, onBack, onSuccess
 
       <View style={styles.brandHeader}>
         <Image source={require('../../../../assets/icon (2).png')} style={styles.logoImage} />
-        <Text style={styles.brandName}>GALANT</Text>
+        <Text style={styles.brandName}>Galants</Text>
       </View>
 
       <Text style={[styles.title, { color: colors.text }]}>{mode === 'signup' ? t('create_account') : t('login')}</Text>

@@ -25,7 +25,7 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ onGoTo }) => {
 
       <View style={styles.welcomeTop}>
         <Image source={require('../../../../assets/icon (2).png')} style={styles.logoImage} />
-        <Text style={styles.brand}>Galant</Text>
+        <Text style={styles.brand}>Galants</Text>
         <Text style={styles.subtitle}>{t('welcome_subtitle')}</Text>
       </View>
       <View style={styles.actions}>

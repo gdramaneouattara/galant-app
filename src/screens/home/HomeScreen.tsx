@@ -414,7 +414,7 @@ const HomeScreen: React.FC = () => {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.header }]}>
         <View style={styles.headerTitle}>
-          <Text style={styles.brand} numberOfLines={1}>Galant</Text>
+          <Text style={styles.brand} numberOfLines={1}>Galants</Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]} numberOfLines={1}>{t('discover_subtitle')}</Text>
         </View>
         <View style={styles.headerActions}>
