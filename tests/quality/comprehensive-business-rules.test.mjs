@@ -90,6 +90,8 @@ test('Rules: Onboarding asks for religion instead of interests', async () => {
   const nativeAuthFlow = await read('src/screens/auth/AuthFlowScreen.tsx');
   const nativeReligionStep = await read('src/screens/auth/components/ReligionStep.tsx');
   const profileController = await read('server/src/controllers/profileController.js');
+  const matchmakingService = await read('server/src/services/matchmakingService.js');
+  const venueController = await read('server/src/controllers/venueController.js');
 
   assert.match(webOnboarding, /RELIGION_OPTIONS/);
   assert.match(webOnboarding, /id:\s*'CHRISTIAN'/);
@@ -119,6 +121,17 @@ test('Rules: Onboarding asks for religion instead of interests', async () => {
   assert.match(profileController, /normalizeReligion/);
   assert.match(profileController, /RELIGION_VALUES/);
   assert.match(profileController, /religion_other/);
+
+  assert.match(matchmakingService, /getReligionCompatibility/);
+  assert.match(matchmakingService, /religionCompatibilityScore/);
+  assert.match(matchmakingService, /legacyInterestScore/);
+  assert.doesNotMatch(matchmakingService, /commonCount \* 45/);
+
+  assert.match(venueController, /religionVenueKeywords/);
+  assert.match(venueController, /scoreVenueForProfile/);
+  assert.match(venueController, /relationship_goal/);
+  assert.doesNotMatch(venueController, /const interests = me\.interests/);
+  assert.doesNotMatch(venueController, /interests\.some/);
 });
 
 test('Rules: Stories move into discovery and Apps replaces the stories tab', async () => {
