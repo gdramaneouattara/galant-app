@@ -170,8 +170,14 @@ test('Rules: Web Stories are paginated and paid one-shot access is capped', asyn
   assert.match(statusController, /STORY_PURCHASE_VIEW_LIMIT = 10/);
   assert.match(statusController, /hasStorySubscriptionAccess/);
   assert.match(statusController, /hasStoryPurchaseAccess/);
+  assert.match(statusController, /consumeStoryPurchaseInTransaction/);
+  assert.match(statusController, /db\.runTransaction/);
   assert.doesNotMatch(statusController, /hasStandardAccess/);
   assert.match(usageService, /hasStoryPurchaseAccess/);
+  assert.match(usageService, /getStoryPurchaseDocs/);
+  assert.match(usageService, /interaction_type === 'STORY_UPLOAD'/);
+  assert.match(usageService, /status === 'UNUSED'/);
+  assert.match(usageService, /consumeStoryPurchaseInTransaction/);
   assert.match(usageService, /status === 'UNUSED'/);
   assert.match(usageService, /status !== 'USED'/);
   assert.match(usageService, /accessWindowMs = 24 \* 3600 \* 1000/);

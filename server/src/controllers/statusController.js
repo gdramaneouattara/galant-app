@@ -1,6 +1,12 @@
 const { db, bucket } = require('../config/firebase');
 const { hasInvisiblePremiumAccessForPlan, isHiddenByInvisibleMode } = require('../services/accessService');
-const { getDailyUsage, incrementUsage, consumeStoryPurchase, hasUnusedStoryPurchase, hasStoryPurchaseAccess } = require('../services/usageService');
+const {
+  getDailyUsage,
+  incrementUsage,
+  consumeStoryPurchaseInTransaction,
+  hasUnusedStoryPurchase,
+  hasStoryPurchaseAccess
+} = require('../services/usageService');
 const { createStoryLikeNotificationIfNeeded } = require('../services/notificationService');
 const { QUOTAS } = require('../config/constants');
 
@@ -187,31 +193,34 @@ const getStatuses = async (req, res) => {
 const createStatus = async (req, res) => {
   const { mediaUrl, thumbnailUrl, type, content } = req.body;
   const me = req.user;
-
-  // 1. Check for Premium or VIP story publishing access
-  let hasAccess = hasStorySubscriptionAccess(me);
-
-  // 2. If no subscription, check for a one-time Story Purchase
-  if (!hasAccess) {
-    const consumed = await consumeStoryPurchase(me.id);
-    if (consumed) {
-      hasAccess = true;
-    }
-  }
-
-  if (!hasAccess) return res.status(403).json({ error: 'subscription_required' });
-
+  const nowIso = new Date().toISOString();
   const expiresAt = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+  const data = {
+    user_id: me.id,
+    media_url: mediaUrl,
+    thumbnail_url: thumbnailUrl || null,
+    message_type: type,
+    content: content || '',
+    expires_at: expiresAt,
+    created_at: nowIso
+  };
+
   try {
-    const data = {
-      user_id: me.id,
-      media_url: mediaUrl,
-      thumbnail_url: thumbnailUrl || null,
-      message_type: type,
-      content: content || '',
-      expires_at: expiresAt,
-      created_at: new Date().toISOString()
-    };
+    if (!mediaUrl || !type) return res.status(400).json({ error: 'missing_status_payload' });
+
+    if (!hasStorySubscriptionAccess(me)) {
+      const created = await db.runTransaction(async (tx) => {
+        const statusRef = db.collection('statuses').doc();
+        const consumed = await consumeStoryPurchaseInTransaction(tx, me.id, nowIso);
+        if (!consumed) return null;
+        tx.set(statusRef, data);
+        return { id: statusRef.id, ...data };
+      });
+
+      if (!created) return res.status(403).json({ error: 'subscription_required' });
+      return res.json(created);
+    }
+
     const ref = await db.collection('statuses').add(data);
     res.json({ id: ref.id, ...data });
   } catch (error) { res.status(500).json({ error: error.message }); }
