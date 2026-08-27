@@ -311,7 +311,8 @@ const StoriesPage: React.FC = () => {
             : 'Aucun ticket Story valide n’est disponible pour ce compte. Si votre paiement Wave vient d’être validé, actualisez puis réessayez.'
         );
       } else {
-        showAlert(t('error'), message || t('story_publish_failed'));
+        console.error('[stories] publish_failed', error);
+        showAlert(t('error'), t('story_publish_failed'));
       }
     } finally {
       setUploading(false);
