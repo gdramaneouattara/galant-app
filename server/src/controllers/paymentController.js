@@ -70,6 +70,31 @@ const isManualPaymentProcessingStale = (payment = {}, claim = {}) => {
   return !timestamp || Date.now() - timestamp > getManualPaymentProcessingTimeoutMs();
 };
 
+const isManualPaymentExpired = (payment = {}, nowMs = Date.now()) => {
+  if (!payment.expires_at) return false;
+  const expiresAtMs = new Date(payment.expires_at).getTime();
+  return Number.isFinite(expiresAtMs) && expiresAtMs < nowMs;
+};
+
+const getOpenPaymentPriority = (payment = {}) => {
+  const priorities = {
+    SUBMITTED: 0,
+    PROCESSING: 1,
+    PENDING: 2
+  };
+  return priorities[payment.status] ?? 99;
+};
+
+const sortOldestFirst = (left = {}, right = {}) => (
+  String(left.created_at || '').localeCompare(String(right.created_at || ''))
+);
+
+const sortOpenPaymentsForAdmin = (left = {}, right = {}) => {
+  const priorityDelta = getOpenPaymentPriority(left) - getOpenPaymentPriority(right);
+  if (priorityDelta !== 0) return priorityDelta;
+  return sortOldestFirst(left, right);
+};
+
 const fetchManualPaymentsByStatus = async (itemStatus, queryLimit) => {
   return db.collection(MANUAL_PAYMENTS_COLLECTION)
     .where('status', '==', itemStatus)
@@ -258,7 +283,8 @@ const listWaveManualPayments = async (req, res) => {
         .get()];
     const payments = snapshots
       .flatMap(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
-      .sort((left, right) => String(left.created_at || '').localeCompare(String(right.created_at || '')))
+      .filter(item => status !== 'OPEN' || item.status !== 'PENDING' || !isManualPaymentExpired(item))
+      .sort(status === 'OPEN' ? sortOpenPaymentsForAdmin : sortOldestFirst)
       .slice(0, limit);
 
     const userIds = [...new Set(payments.map(item => item.user_id).filter(Boolean))].slice(0, 80);
