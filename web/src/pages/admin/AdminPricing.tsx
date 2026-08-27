@@ -41,7 +41,10 @@ const AdminPricing: React.FC = () => {
   };
 
   const updateField = (category: string, key: string, value: string) => {
-    const numValue = parseInt(value) || 0;
+    const parsedValue = parseInt(value) || 0;
+    const numValue = category === 'PRICES' && key === 'GRID_QUOTA'
+      ? Math.min(100, Math.max(1, parsedValue))
+      : parsedValue;
     setPricing((prev: any) => ({
       ...prev,
       [category]: {
@@ -112,6 +115,8 @@ const AdminPricing: React.FC = () => {
                 <div className="relative">
                   <input
                     type="number"
+                    min={item.id === 'GRID_QUOTA' ? 1 : undefined}
+                    max={item.id === 'GRID_QUOTA' ? 100 : undefined}
                     value={pricing.PRICES[item.id]}
                     onChange={(e) => updateField('PRICES', item.id, e.target.value)}
                     className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl py-3 pl-10 pr-4 font-bold text-slate-900 dark:text-white transition-colors"

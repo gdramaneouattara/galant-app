@@ -413,7 +413,11 @@ const applyPurchasedEntitlement = async ({
     };
   } else if (normalizedType === 'DISCOVER_GRID_UNLOCK') {
     const pricing = await getCurrentPricing();
-    const quota = pricing.PRICES.GRID_QUOTA || 100;
+    const configuredQuota = Number(pricing.PRICES.GRID_QUOTA || QUOTAS.DISCOVER_GRID_PROFILES);
+    const quota = Math.min(
+      QUOTAS.DISCOVER_GRID_PROFILES,
+      Math.max(1, Number.isFinite(configuredQuota) ? Math.round(configuredQuota) : QUOTAS.DISCOVER_GRID_PROFILES)
+    );
 
     const result = await runEntitlementOnce({
       reference,

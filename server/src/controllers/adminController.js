@@ -29,6 +29,20 @@ const chunkRows = (rows, size) => {
   return chunks;
 };
 
+const normalizePricingPricesForAdmin = (prices = {}) => {
+  const configuredGridQuota = Number(prices.GRID_QUOTA);
+  const gridQuota = Number.isFinite(configuredGridQuota)
+    ? configuredGridQuota
+    : pricingDefaults.QUOTAS.DISCOVER_GRID_PROFILES;
+  return {
+    ...prices,
+    GRID_QUOTA: Math.min(
+      pricingDefaults.QUOTAS.DISCOVER_GRID_PROFILES,
+      Math.max(1, Math.floor(gridQuota))
+    )
+  };
+};
+
 const normalizeAdminText = (value = '') => String(value || '')
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
@@ -461,7 +475,7 @@ const getPricing = async (req, res) => {
     const doc = await db.collection('app_settings').doc('pricing').get();
     if (!doc.exists) {
       return res.json({
-        PRICES: pricingDefaults.PRICES,
+        PRICES: normalizePricingPricesForAdmin(pricingDefaults.PRICES),
         PLAN_AMOUNTS: pricingDefaults.PLAN_AMOUNTS,
         PARTNER_PLAN_AMOUNTS: pricingDefaults.PARTNER_PLAN_AMOUNTS,
         ROSE_PACKS: pricingDefaults.ROSE_PACKS,
@@ -470,7 +484,7 @@ const getPricing = async (req, res) => {
     }
     const data = doc.data() || {};
     res.json({
-      PRICES: { ...pricingDefaults.PRICES, ...(data.PRICES || {}) },
+      PRICES: normalizePricingPricesForAdmin({ ...pricingDefaults.PRICES, ...(data.PRICES || {}) }),
       PLAN_AMOUNTS: { ...pricingDefaults.PLAN_AMOUNTS, ...(data.PLAN_AMOUNTS || {}) },
       PARTNER_PLAN_AMOUNTS: { ...pricingDefaults.PARTNER_PLAN_AMOUNTS, ...(data.PARTNER_PLAN_AMOUNTS || {}) },
       ROSE_PACKS: mergeRosePacks(data.ROSE_PACKS),
@@ -483,7 +497,7 @@ const updatePricing = async (req, res) => {
   const { PRICES, PLAN_AMOUNTS, PARTNER_PLAN_AMOUNTS, ROSE_PACKS } = req.body;
   try {
     const data = {
-      PRICES: PRICES || {},
+      PRICES: normalizePricingPricesForAdmin(PRICES || {}),
       PLAN_AMOUNTS: PLAN_AMOUNTS || {},
       PARTNER_PLAN_AMOUNTS: PARTNER_PLAN_AMOUNTS || {},
       ROSE_PACKS: ROSE_PACKS || {},

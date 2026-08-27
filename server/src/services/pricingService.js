@@ -17,6 +17,20 @@ const mergeRosePacks = (overrides = {}) => {
   return merged;
 };
 
+const normalizePrices = (prices = {}) => {
+  const configuredGridQuota = Number(prices.GRID_QUOTA);
+  const gridQuota = Number.isFinite(configuredGridQuota)
+    ? configuredGridQuota
+    : constants.QUOTAS.DISCOVER_GRID_PROFILES;
+  return {
+    ...prices,
+    GRID_QUOTA: Math.min(
+      constants.QUOTAS.DISCOVER_GRID_PROFILES,
+      Math.max(1, Math.floor(gridQuota))
+    )
+  };
+};
+
 /**
  * Gets the current pricing, with fallback to constants.
  */
@@ -31,14 +45,14 @@ const getCurrentPricing = async ({ forceRefresh = false } = {}) => {
     if (doc.exists) {
       const data = doc.data() || {};
       cachedPricing = {
-        PRICES: { ...constants.PRICES, ...(data.PRICES || {}) },
+        PRICES: normalizePrices({ ...constants.PRICES, ...(data.PRICES || {}) }),
         PLAN_AMOUNTS: { ...constants.PLAN_AMOUNTS, ...(data.PLAN_AMOUNTS || {}) },
         PARTNER_PLAN_AMOUNTS: { ...constants.PARTNER_PLAN_AMOUNTS, ...(data.PARTNER_PLAN_AMOUNTS || {}) },
         ROSE_PACKS: mergeRosePacks(data.ROSE_PACKS)
       };
     } else {
       cachedPricing = {
-        PRICES: constants.PRICES,
+        PRICES: normalizePrices(constants.PRICES),
         PLAN_AMOUNTS: constants.PLAN_AMOUNTS,
         PARTNER_PLAN_AMOUNTS: constants.PARTNER_PLAN_AMOUNTS,
         ROSE_PACKS: constants.ROSE_PACKS
@@ -52,7 +66,7 @@ const getCurrentPricing = async ({ forceRefresh = false } = {}) => {
       return cachedPricing;
     }
     return {
-      PRICES: constants.PRICES,
+      PRICES: normalizePrices(constants.PRICES),
       PLAN_AMOUNTS: constants.PLAN_AMOUNTS,
       PARTNER_PLAN_AMOUNTS: constants.PARTNER_PLAN_AMOUNTS,
       ROSE_PACKS: constants.ROSE_PACKS

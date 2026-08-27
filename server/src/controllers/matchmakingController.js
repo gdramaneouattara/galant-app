@@ -18,6 +18,12 @@ const normalizeText = (value) => String(value || '').trim().toLowerCase()
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '');
 
+const normalizeGridRemaining = (value) => {
+  const remaining = Number(value || 0);
+  if (!Number.isFinite(remaining)) return 0;
+  return Math.max(0, Math.min(QUOTAS.DISCOVER_GRID_PROFILES, Math.floor(remaining)));
+};
+
 const toPublicProfile = (p) => {
   if (!p) return null;
   return {
@@ -181,11 +187,12 @@ const getSuggestions = async (req, res) => {
   const myLon = Number(me.passport_longitude || me.longitude);
   const myCity = normalizeCity(me.passport_city || me.city);
   const myCountry = normalizeText(me.passport_country || me.country);
+  let gridRemainingForResponse = null;
 
   // 0. Quota check for Grid
   if (isGridMode && !me.is_premium) {
-    const remaining = me.grid_consultations_remaining || 0;
-    if (remaining <= 0) {
+    gridRemainingForResponse = normalizeGridRemaining(me.grid_consultations_remaining);
+    if (gridRemainingForResponse <= 0) {
       return res.status(403).json({ error: 'grid_quota_exceeded', message: "Votre quota d'exploration est épuisé. Repassez au Swipe ou débloquez un pack." });
     }
   }
@@ -398,7 +405,7 @@ const getSuggestions = async (req, res) => {
       suggestions: sliced,
       current_user_rank: selfRank > 0 ? selfRank : null,
       next_cursor: nextCursor,
-      grid_remaining: isGridMode && !me.is_premium ? Math.max(0, me.grid_consultations_remaining || 0) : null
+      grid_remaining: isGridMode && !me.is_premium ? gridRemainingForResponse : null
     });
 
   } catch (error) {
@@ -418,7 +425,7 @@ const markGridProfilesViewed = async (req, res) => {
     return res.json({
       success: true,
       consumed: 0,
-      remaining: Math.max(0, me.grid_consultations_remaining || 0)
+      remaining: normalizeGridRemaining(me.grid_consultations_remaining)
     });
   }
 
@@ -436,7 +443,9 @@ const markGridProfilesViewed = async (req, res) => {
       const profileDoc = await transaction.get(profileRef);
       if (!profileDoc.exists) throw new Error('profile_not_found');
 
-      const remaining = Math.max(0, Number(profileDoc.data().grid_consultations_remaining || 0));
+      const profileData = profileDoc.data();
+      const rawRemaining = Math.max(0, Number(profileData.grid_consultations_remaining || 0));
+      const remaining = normalizeGridRemaining(rawRemaining);
       if (remaining <= 0) return { consumed: 0, remaining: 0, exhausted: true };
 
       const viewDocs = await Promise.all(viewRefs.map(ref => transaction.get(ref)));
@@ -446,6 +455,12 @@ const markGridProfilesViewed = async (req, res) => {
         .slice(0, remaining);
 
       if (newViewIndexes.length === 0) {
+        if (rawRemaining !== remaining) {
+          transaction.update(profileRef, {
+            grid_consultations_remaining: remaining,
+            updated_at: new Date().toISOString()
+          });
+        }
         return { consumed: 0, remaining, exhausted: false };
       }
 
@@ -460,7 +475,7 @@ const markGridProfilesViewed = async (req, res) => {
         });
       });
       transaction.update(profileRef, {
-        grid_consultations_remaining: FieldValue.increment(-newViewIndexes.length),
+        grid_consultations_remaining: Math.max(0, remaining - newViewIndexes.length),
         updated_at: now
       });
 
