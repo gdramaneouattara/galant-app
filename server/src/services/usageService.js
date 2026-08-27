@@ -1,5 +1,6 @@
 const { db } = require('../config/firebase');
 const { FieldValue } = require('firebase-admin/firestore');
+const crypto = require('crypto');
 
 const todayKey = () => new Date().toISOString().split('T')[0];
 const usageDocId = (userId, type, date = todayKey()) => (
@@ -65,6 +66,9 @@ const incrementUsage = async (userId, type, seconds = 0) => {
 const userPurchasedInteractionsQuery = (userId) => db.collection('purchased_interactions')
   .where('user_id', '==', userId);
 
+const manualPaymentLedgerId = (reference = '') => `payment_${crypto.createHash('sha256').update(String(reference)).digest('hex')}`;
+const storyManualPaymentReference = (payment, docId) => `wave_${payment.reference_code || docId}`;
+
 const getStoryPurchaseDocs = async (userId, tx = null) => {
   if (!userId) return [];
   const query = userPurchasedInteractionsQuery(userId);
@@ -76,6 +80,56 @@ const getUnusedStoryPurchaseDoc = async (userId, tx = null) => {
   if (!userId) return null;
   const docs = await getStoryPurchaseDocs(userId, tx);
   return docs.find((row) => row.data()?.status === 'UNUSED') || null;
+};
+
+const getApprovedStoryManualPaymentDocs = async (userId, tx = null) => {
+  if (!userId) return [];
+  const query = db.collection('manual_payments').where('user_id', '==', userId);
+  const snapshot = tx ? await tx.get(query) : await query.get();
+  return snapshot.docs.filter((row) => {
+    const item = row.data() || {};
+    return item.status === 'APPROVED' && item.type === 'STORY_UPLOAD';
+  });
+};
+
+const buildStoryPurchaseFromManualPayment = (payment, docId, nowIso, status = 'UNUSED') => {
+  const reference = storyManualPaymentReference(payment, docId);
+  return {
+    ref: db.collection('purchased_interactions').doc(manualPaymentLedgerId(reference)),
+    payload: {
+      user_id: payment.user_id,
+      interaction_type: 'STORY_UPLOAD',
+      status,
+      price_amount: payment.amount || 500,
+      provider: payment.provider || 'WAVE_MANUAL',
+      reference,
+      entitlement_status: 'APPLIED',
+      created_at: payment.approved_at || payment.updated_at || nowIso,
+      updated_at: nowIso,
+      repaired_from_manual_payment: docId
+    }
+  };
+};
+
+const repairUnusedStoryPurchaseFromApprovedPayment = async (userId) => {
+  const nowIso = new Date().toISOString();
+  const payments = await getApprovedStoryManualPaymentDocs(userId);
+
+  for (const row of payments) {
+    const payment = row.data() || {};
+    const { ref, payload } = buildStoryPurchaseFromManualPayment(payment, row.id, nowIso, 'UNUSED');
+    const existing = await ref.get();
+    if (existing.exists) {
+      const item = existing.data() || {};
+      if (item.interaction_type === 'STORY_UPLOAD' && item.status === 'UNUSED') return true;
+      continue;
+    }
+
+    await ref.set(payload);
+    return true;
+  }
+
+  return false;
 };
 
 /**
@@ -101,19 +155,35 @@ const consumeStoryPurchase = async (userId) => {
 const consumeStoryPurchaseInTransaction = async (tx, userId, nowIso = new Date().toISOString()) => {
   if (!tx || !userId) return false;
   const doc = await getUnusedStoryPurchaseDoc(userId, tx);
-  if (!doc) return false;
+  if (doc) {
+    tx.update(doc.ref, {
+      status: 'USED',
+      consumed_at: nowIso
+    });
+    return true;
+  }
 
-  tx.update(doc.ref, {
-    status: 'USED',
-    consumed_at: nowIso
-  });
-  return true;
+  const approvedPayments = await getApprovedStoryManualPaymentDocs(userId, tx);
+  for (const row of approvedPayments) {
+    const payment = row.data() || {};
+    const { ref, payload } = buildStoryPurchaseFromManualPayment(payment, row.id, nowIso, 'USED');
+    const existing = await tx.get(ref);
+    if (existing.exists) continue;
+
+    tx.set(ref, {
+      ...payload,
+      consumed_at: nowIso
+    });
+    return true;
+  }
+
+  return false;
 };
 
 const hasUnusedStoryPurchase = async (userId) => {
   if (!userId) return false;
   try {
-    return !!(await getUnusedStoryPurchaseDoc(userId));
+    return !!(await getUnusedStoryPurchaseDoc(userId)) || await repairUnusedStoryPurchaseFromApprovedPayment(userId);
   } catch (error) {
     console.error('Error checking story purchase:', error);
     return false;
@@ -127,7 +197,7 @@ const hasStoryPurchaseAccess = async (userId) => {
     const accessWindowMs = 24 * 3600 * 1000;
     const docs = await getStoryPurchaseDocs(userId);
 
-    return docs.some((row) => {
+    const hasAccess = docs.some((row) => {
       const item = row.data();
       const status = String(item.status || '').toUpperCase();
       if (status === 'UNUSED') return true;
@@ -135,6 +205,7 @@ const hasStoryPurchaseAccess = async (userId) => {
       const accessDate = new Date(item.consumed_at || item.created_at || 0).getTime();
       return Number.isFinite(accessDate) && now - accessDate <= accessWindowMs;
     });
+    return hasAccess || await repairUnusedStoryPurchaseFromApprovedPayment(userId);
   } catch (error) {
     console.error('Error checking story access purchase:', error);
     return false;
@@ -147,6 +218,7 @@ module.exports = {
   incrementUsage,
   consumeStoryPurchase,
   consumeStoryPurchaseInTransaction,
+  repairUnusedStoryPurchaseFromApprovedPayment,
   hasUnusedStoryPurchase,
   hasStoryPurchaseAccess
 };
