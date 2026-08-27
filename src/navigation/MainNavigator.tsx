@@ -75,6 +75,8 @@ export type ProfileDetailParam = {
   photos?: string[] | null;
   photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }> | null;
   interests?: string[] | null;
+  religion?: string | null;
+  religion_other?: string | null;
   is_verified?: boolean;
   is_premium?: boolean;
   galanterie_score?: number | null;

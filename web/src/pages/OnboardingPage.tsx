@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import {
   User as UserIcon, MapPin, Heart, Sparkles, Image as ImageIcon,
   CheckCircle2, ChevronRight, ChevronLeft, Loader2,
-  Rocket, Gem, ShieldCheck, Lock, Camera
+  Rocket, Gem, ShieldCheck, Lock, Camera, Cross, Moon, CircleEllipsis
 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { apiRequest } from '@shared/lib/api';
@@ -25,10 +25,10 @@ const LocalPreviewImage: React.FC<{ file: File; className?: string }> = ({ file,
   return <img src={previewUrl} className={className} alt="Preview" loading="lazy" decoding="async" />;
 };
 
-const INTERESTS_OPTIONS = [
-  'Voyage', 'Gastronomie', 'Vin', 'Art', 'Mode', 'Fitness',
-  'Business', 'Musique', 'Cinéma', 'Lecture', 'Développement personnel',
-  'Sorties chic', 'Automobile', 'Architecture', 'Cigare', 'Opéra', 'Golf'
+const RELIGION_OPTIONS = [
+  { id: 'CHRISTIAN', label: 'Chrétien(ne)', icon: Cross, desc: 'Une information personnelle utile pour des intentions claires.' },
+  { id: 'MUSLIM', label: 'Musulman(e)', icon: Moon, desc: 'Une rencontre plus alignée avec vos repères de vie.' },
+  { id: 'OTHER', label: 'Autre', icon: CircleEllipsis, desc: 'Vous pouvez préciser si vous le souhaitez.' },
 ];
 
 const RELATIONSHIP_GOALS = [
@@ -57,6 +57,8 @@ const OnboardingPage: React.FC = () => {
     age: '',
     gender: 'MALE',
     relationship_goal: 'SERIOUS',
+    religion: 'CHRISTIAN',
+    religion_other: '',
     bio: '',
     interests: [] as string[],
     city: '',
@@ -73,7 +75,7 @@ const OnboardingPage: React.FC = () => {
   const calculateRadiance = () => {
     let score = 0;
     if (formData.name && formData.age) score += 20;
-    if (formData.relationship_goal && formData.interests.length >= 3) score += 30;
+    if (formData.relationship_goal && formData.religion) score += 30;
     if (formData.city && formData.bio.length >= 15) score += 25;
     if (photoFiles.length >= 1) score += 25;
     return score;
@@ -87,15 +89,6 @@ const OnboardingPage: React.FC = () => {
 
   const nextStep = () => setStep(prev => prev + 1);
   const prevStep = () => setStep(prev => Math.max(1, prev - 1));
-
-  const toggleInterest = (interest: string) => {
-    setForm(prev => ({
-      ...prev,
-      interests: prev.interests.includes(interest)
-        ? prev.interests.filter(i => i !== interest)
-        : [...prev.interests, interest]
-    }));
-  };
 
   const addPromptToBio = (prompt: string) => {
     setForm(prev => ({
@@ -174,7 +167,9 @@ const OnboardingPage: React.FC = () => {
           age: formData.age,
           gender: formData.gender,
           relationship_goal: formData.relationship_goal,
-          interests: formData.interests,
+          religion: formData.religion,
+          religion_other: formData.religion === 'OTHER' ? formData.religion_other.trim() : null,
+          interests: [],
           bio: formData.bio,
           city: formData.city,
           country: formData.country,
@@ -261,7 +256,7 @@ const OnboardingPage: React.FC = () => {
           </div>
         );
 
-      case 2: // Goal & Interests
+      case 2: // Goal & Religion
         return (
           <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
              <div className="text-center space-y-2">
@@ -293,22 +288,42 @@ const OnboardingPage: React.FC = () => {
                </div>
 
                <div className="space-y-3">
-                  <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige ml-1">Centres d'intérêt (choisissez-en 3 ou plus)</label>
-                  <div className="flex flex-wrap gap-2">
-                    {INTERESTS_OPTIONS.map(interest => (
-                      <button
-                        key={interest}
-                        onClick={() => toggleInterest(interest)}
-                        className={`px-4 py-2.5 rounded-xl font-bold text-[11px] transition-all border ${
-                          formData.interests.includes(interest)
-                          ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white'
-                          : 'bg-white dark:bg-white/5 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/30'
-                        }`}
-                      >
-                        {interest}
-                      </button>
-                    ))}
+                  <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige ml-1">Religion</label>
+                  <div className="grid grid-cols-1 gap-3">
+                    {RELIGION_OPTIONS.map(option => {
+                      const Icon = option.icon;
+                      const active = formData.religion === option.id;
+                      return (
+                        <button
+                          key={option.id}
+                          onClick={() => setForm(prev => ({ ...prev, religion: option.id }))}
+                          className={`p-4 rounded-2xl text-left transition-all border flex items-center gap-4 ${
+                            active
+                            ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-lg shadow-slate-900/10'
+                            : 'bg-white dark:bg-white/5 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/30'
+                          }`}
+                        >
+                          <span className={`w-12 h-12 rounded-2xl flex items-center justify-center ${active ? 'bg-white/10 dark:bg-slate-900/10' : 'bg-slate-50 dark:bg-slate-900/40'}`}>
+                            <Icon size={22} className={active ? 'text-primary' : 'text-slate-400'} />
+                          </span>
+                          <span className="flex-1 min-w-0">
+                            <span className="block text-sm font-bold uppercase tracking-prestige">{option.label}</span>
+                            <span className={`block text-[10px] font-bold mt-1 ${active ? 'text-white/70 dark:text-slate-500' : 'text-slate-400 dark:text-slate-500'}`}>{option.desc}</span>
+                          </span>
+                          {active && <CheckCircle2 className="text-primary" size={20} />}
+                        </button>
+                      );
+                    })}
                   </div>
+                  {formData.religion === 'OTHER' && (
+                    <input
+                      type="text"
+                      value={formData.religion_other}
+                      onChange={e => setForm(prev => ({ ...prev, religion_other: e.target.value }))}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/20 transition-colors"
+                      placeholder="Préciser, facultatif"
+                    />
+                  )}
                </div>
             </div>
 
@@ -318,7 +333,7 @@ const OnboardingPage: React.FC = () => {
               </button>
               <button
                 onClick={nextStep}
-                disabled={formData.interests.length < 3}
+                disabled={!formData.relationship_goal || !formData.religion}
                 className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-medium text-xs uppercase tracking-prestige flex items-center justify-center gap-3 hover:bg-black dark:hover:bg-slate-200 transition-all disabled:opacity-30"
               >
                 Suivant <ChevronRight size={16} />

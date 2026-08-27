@@ -24,6 +24,8 @@ export interface User {
   photos: string[];
   photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
   interests: string[];
+  religion?: string | null;
+  religion_other?: string | null;
   city?: string | null;
   country?: string | null;
   location: {

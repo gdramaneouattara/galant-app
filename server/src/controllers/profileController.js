@@ -4,9 +4,22 @@ const { getDailyUsage, incrementUsage } = require('../services/usageService');
 const { QUOTAS, BOOST_SCORES, PHOTO_LIMITS } = require('../config/constants');
 const { buildProfileGeohashUpdate } = require('../utils/geohash');
 
+const RELIGION_VALUES = new Set(['CHRISTIAN', 'MUSLIM', 'OTHER']);
+
+const normalizeReligion = (value) => {
+  const normalized = String(value || '').trim().toUpperCase();
+  return RELIGION_VALUES.has(normalized) ? normalized : null;
+};
+
+const normalizeReligionOther = (religion, value) => {
+  if (religion !== 'OTHER') return null;
+  const text = String(value || '').trim();
+  return text ? text.slice(0, 80) : null;
+};
+
 const updateProfile = async (req, res) => {
   const {
-    bio, interests, relationship_goal, photos, photo_variants,
+    bio, interests, relationship_goal, religion, religion_other, photos, photo_variants,
     city, country, latitude, longitude,
     passport_city, passport_country, passport_latitude, passport_longitude, is_passport_active,
     radiance_score, onboarding_completed, emergency_contacts
@@ -18,6 +31,13 @@ const updateProfile = async (req, res) => {
   if (bio !== undefined) updates.bio = bio;
   if (interests !== undefined) updates.interests = interests;
   if (relationship_goal !== undefined) updates.relationship_goal = relationship_goal;
+  if (religion !== undefined) {
+    const normalizedReligion = normalizeReligion(religion);
+    updates.religion = normalizedReligion;
+    updates.religion_other = normalizeReligionOther(normalizedReligion, religion_other);
+  } else if (religion_other !== undefined) {
+    updates.religion_other = normalizeReligionOther(req.user.religion, religion_other);
+  }
   if (photos !== undefined) {
     const limitedPhotos = Array.isArray(photos) ? photos.slice(0, maxPhotos) : [];
     updates.photos = limitedPhotos;
@@ -189,7 +209,7 @@ const createProfile = async (req, res) => {
 
 const completeOnboarding = async (req, res) => {
   const {
-    name, age, gender, bio, interests, relationship_goal,
+    name, age, gender, bio, interests, relationship_goal, religion, religion_other,
     city, country, latitude, longitude, photos, photo_variants, radiance_score
   } = req.body;
   const userId = req.authUser.uid;
@@ -210,14 +230,17 @@ const completeOnboarding = async (req, res) => {
       }
       return acc;
     }, {});
+    const normalizedReligion = normalizeReligion(religion);
     const profileRef = db.collection('profiles').doc(userId);
     const updates = {
       name,
       age: parseInt(age),
       gender: String(gender).toUpperCase(),
       bio,
-      interests,
+      interests: Array.isArray(interests) ? interests : [],
       relationship_goal,
+      religion: normalizedReligion,
+      religion_other: normalizeReligionOther(normalizedReligion, religion_other),
       city,
       country,
       latitude,

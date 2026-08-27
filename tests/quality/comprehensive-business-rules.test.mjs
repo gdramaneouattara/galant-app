@@ -85,6 +85,42 @@ test('Rules: Relationship goals are harmonized across onboarding and profile', a
   assert.match(translations, /networking_goal:\s*"Networking"/);
 });
 
+test('Rules: Onboarding asks for religion instead of interests', async () => {
+  const webOnboarding = await read('web/src/pages/OnboardingPage.tsx');
+  const nativeAuthFlow = await read('src/screens/auth/AuthFlowScreen.tsx');
+  const nativeReligionStep = await read('src/screens/auth/components/ReligionStep.tsx');
+  const profileController = await read('server/src/controllers/profileController.js');
+
+  assert.match(webOnboarding, /RELIGION_OPTIONS/);
+  assert.match(webOnboarding, /id:\s*'CHRISTIAN'/);
+  assert.match(webOnboarding, /id:\s*'MUSLIM'/);
+  assert.match(webOnboarding, /id:\s*'OTHER'/);
+  assert.match(webOnboarding, />Religion</);
+  assert.match(webOnboarding, /religion_other/);
+  assert.match(webOnboarding, /Préciser, facultatif/);
+  assert.match(webOnboarding, /interests:\s*\[\]/);
+  assert.doesNotMatch(webOnboarding, /INTERESTS_OPTIONS/);
+  assert.doesNotMatch(webOnboarding, /Centres d'intérêt/);
+  assert.doesNotMatch(webOnboarding, /interests\.length\s*<\s*3/);
+  assert.doesNotMatch(webOnboarding, /interests\.length\s*>=\s*3/);
+
+  assert.match(nativeAuthFlow, /ReligionStep/);
+  assert.match(nativeAuthFlow, /religion:\s*'CHRISTIAN'/);
+  assert.match(nativeAuthFlow, /religion_other/);
+  assert.match(nativeAuthFlow, /interests:\s*\[\]/);
+  assert.doesNotMatch(nativeAuthFlow, /InterestsStep/);
+  assert.doesNotMatch(nativeAuthFlow, /interests\.length\s*>=\s*3/);
+
+  assert.match(nativeReligionStep, /RELIGION_OPTIONS/);
+  assert.match(nativeReligionStep, /Chrétien\(ne\)/);
+  assert.match(nativeReligionStep, /Musulman\(e\)/);
+  assert.match(nativeReligionStep, /Préciser, facultatif/);
+
+  assert.match(profileController, /normalizeReligion/);
+  assert.match(profileController, /RELIGION_VALUES/);
+  assert.match(profileController, /religion_other/);
+});
+
 test('Rules: Stories move into discovery and Apps replaces the stories tab', async () => {
   const homeScreen = await read('src/screens/home/HomeScreen.tsx');
   const navigator = await read('src/navigation/MainNavigator.tsx');

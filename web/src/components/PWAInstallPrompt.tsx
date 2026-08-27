@@ -117,8 +117,8 @@ const PWAInstallPrompt: React.FC = () => {
               <img src="/galant-logo-web.png" alt="Galant" className="w-8 h-8 object-contain" />
             </div>
             <div>
-              <h4 className="font-black  text-sm uppercase tracking-tighter text-primary">Galant App</h4>
-              <p className="text-xs text-slate-400 font-medium">Installez Galant sur votre ecran d'accueil</p>
+              <h4 className="font-black  text-sm uppercase tracking-tighter text-primary">Galants App</h4>
+              <p className="text-xs text-slate-400 font-medium">Installez Galants sur votre ecran d'accueil</p>
             </div>
           </div>
           <button onClick={collapseHelp} className="p-2 text-slate-500 hover:text-white transition-colors" aria-label="Reduire">
