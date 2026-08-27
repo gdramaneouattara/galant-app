@@ -103,6 +103,42 @@ const fetchManualPaymentsByStatus = async (itemStatus, queryLimit) => {
     .get();
 };
 
+const fetchOpenPendingManualPayments = async (queryLimit) => {
+  const collected = [];
+  const nowMs = Date.now();
+  const pageSize = Math.min(100, Math.max(20, queryLimit));
+  const maxScanned = Math.min(1500, Math.max(queryLimit * 8, queryLimit));
+  let scanned = 0;
+  let lastDoc = null;
+
+  while (collected.length < queryLimit && scanned < maxScanned) {
+    const batchLimit = Math.min(pageSize, maxScanned - scanned);
+    let query = db.collection(MANUAL_PAYMENTS_COLLECTION)
+      .where('status', '==', 'PENDING')
+      .orderBy('created_at', 'asc')
+      .limit(batchLimit);
+
+    if (lastDoc) query = query.startAfter(lastDoc);
+
+    const snapshot = await query.get();
+    if (snapshot.empty) break;
+
+    scanned += snapshot.docs.length;
+    for (const doc of snapshot.docs) {
+      const payment = { id: doc.id, ...doc.data() };
+      if (!isManualPaymentExpired(payment, nowMs)) {
+        collected.push(payment);
+        if (collected.length >= queryLimit) break;
+      }
+    }
+
+    lastDoc = snapshot.docs[snapshot.docs.length - 1];
+    if (snapshot.docs.length < batchLimit) break;
+  }
+
+  return collected;
+};
+
 const validateQuotedAmount = async ({ type, planId, amount }) => {
   const normalizedType = String(type || '').toUpperCase();
   const normalizedPlanId = String(planId || '').toUpperCase();
@@ -270,20 +306,22 @@ const submitWaveManualPaymentProof = async (req, res) => {
 const listWaveManualPayments = async (req, res) => {
   const status = String(req.query.status || 'OPEN').toUpperCase();
   const limit = Math.max(1, Math.min(200, parseInt(req.query.limit || '80', 10)));
-  const openStatuses = ['SUBMITTED', 'PENDING', 'PROCESSING'];
 
   try {
-    const statusesToFetch = status === 'OPEN' ? openStatuses : (status === 'ALL' ? null : [status]);
     const queryLimit = Math.min(300, Math.max(limit * 3, limit));
-    const snapshots = statusesToFetch
-      ? await Promise.all(statusesToFetch.map(itemStatus => fetchManualPaymentsByStatus(itemStatus, queryLimit)))
-      : [await db.collection(MANUAL_PAYMENTS_COLLECTION)
-        .orderBy('created_at', 'asc')
-        .limit(queryLimit)
-        .get()];
-    const payments = snapshots
-      .flatMap(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
-      .filter(item => status !== 'OPEN' || item.status !== 'PENDING' || !isManualPaymentExpired(item))
+    const snapshots = status === 'OPEN'
+      ? await Promise.all(['SUBMITTED', 'PROCESSING'].map(itemStatus => fetchManualPaymentsByStatus(itemStatus, queryLimit)))
+      : status === 'ALL'
+        ? [await db.collection(MANUAL_PAYMENTS_COLLECTION)
+          .orderBy('created_at', 'asc')
+          .limit(queryLimit)
+          .get()]
+        : [await fetchManualPaymentsByStatus(status, queryLimit)];
+    const pendingPayments = status === 'OPEN' ? await fetchOpenPendingManualPayments(queryLimit) : [];
+    const payments = [
+      ...snapshots.flatMap(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))),
+      ...pendingPayments
+    ]
       .sort(status === 'OPEN' ? sortOpenPaymentsForAdmin : sortOldestFirst)
       .slice(0, limit);
 
