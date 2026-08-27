@@ -1,31 +1,41 @@
-# Interface Chat Pleine Largeur (Suppression des marges)
+# Automatisation via Pont de Notifications (Smartphone Relais)
 
-Ce plan vise à rendre l'interface de discussion plus immersive en supprimant les marges latérales externes et internes qui limitent l'espace de lecture sur la version Web.
+Ce plan vise à automatiser le déblocage des services sur Galant en interceptant les notifications de paiement Wave Business sur un smartphone Android dédié.
 
 ## Proposed Changes
 
-### [Web Mobile] Mise en page globale
+### [Server] Réception des signaux du Smartphone
 
-#### [MODIFY] [App.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/App.tsx)
-- **Déverrouillage du Layout** : Ajouter la route `/chat` à la liste des exceptions qui ne subissent pas le `max-w-6xl` et le `p-4` global.
-- **Impact** : Le conteneur du chat pourra utiliser 100% de la largeur du navigateur.
+#### [NEW] [notificationBridgeController.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/controllers/notificationBridgeController.js)
+- `receivePaymentSignal` :
+    - Reçoit le montant et le numéro de téléphone (ou texte brut) envoyés par le smartphone.
+    - Utilise une **Clé Secrète de Pont** (Bridge Key) pour vérifier que l'envoi vient bien de votre téléphone.
+    - Identifie l'utilisateur Galant correspondant au numéro d'expéditeur.
+    - Appelle `applyPurchasedEntitlement` pour activer le service.
+    - Gère les cas où plusieurs achats sont en attente (choisit le plus récent ou correspondant au montant).
 
-#### [MODIFY] [ChatPage.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/pages/ChatPage.tsx)
-- **Élargissement du composant** :
-    - Remplacer `max-w-2xl mx-auto` par `w-full`.
-    - Ajuster la hauteur de `h-[80vh]` à `h-[calc(100vh-theme(spacing.20))]` pour une meilleure utilisation de l'écran vertical également.
-- **Optimisation des bordures** : Supprimer `rounded-[2.5rem]` et `border` sur les côtés pour un rendu "Edge-to-Edge" (bord à bord) plus moderne.
-- **Raffinage interne** : Réduire les paddings horizontaux (`p-6` -> `p-4`) pour gagner encore plus d'espace pour le texte des messages.
+#### [MODIFY] [paymentRoutes.js](file:///C:/Users/UTILISATEUR/galant-app/server/src/routes/paymentRoutes.js)
+- Ajouter la route `/api/payments/bridge/signal`.
+
+### [Web Mobile] Guide Utilisateur
+
+#### [MODIFY] [InteractionPurchaseModal.tsx](file:///C:/Users/UTILISATEUR/galant-app/web/src/components/InteractionPurchaseModal.tsx)
+- Informer l'utilisateur : *"Utilisez votre numéro de téléphone Galant pour payer. Activation automatique sous 30 secondes."*
+
+### [Android] Configuration Smartphone Relais (Instructions)
+- Je fournirai une configuration pour une application comme **MacroDroid** (gratuite et simple) qui fera le lien entre Wave et votre serveur.
 
 ## User Review Required
 
-> [!TIP]
-> **Rendu Visuel** : Sur ordinateur, le chat sera très large (style Facebook Messenger). Sur mobile, il remplira parfaitement l'écran sans laisser de fines bandes sombres sur les côtés.
+> [!IMPORTANT]
+> **Fiabilité du numéro** : Pour que l'automatisation fonctionne, le client doit payer avec le même numéro de téléphone que celui utilisé sur son compte Galant. S'il utilise un autre numéro, la validation devra rester manuelle via l'espace Admin.
 
 ## Verification Plan
 
+### Automated Tests
+- Envoyer une fausse notification de paiement au serveur avec une Bridge Key valide et vérifier l'activation du Premium.
+
 ### Manual Verification
-1.  Ouvrir une discussion sur Web.
-2.  Vérifier que le cadre de discussion touche les bords gauche et droit du navigateur.
-3.  Vérifier que le header (nom du contact) et le footer (saisie message) sont bien alignés sur toute la largeur.
-4.  Vérifier que les autres pages (Profil, Découverte) conservent bien leurs marges de sécurité habituelles.
+1.  Installer MacroDroid sur le téléphone Wave Business.
+2.  Simuler une notification Wave.
+3.  Vérifier que le serveur Galant reçoit l'information et débloque le service instantanément.

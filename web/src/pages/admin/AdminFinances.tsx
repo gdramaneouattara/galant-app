@@ -14,7 +14,7 @@ type WaveManualPayment = {
   target_id?: string | null;
   amount: number;
   currency: string;
-  status: 'PENDING' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
+  status: 'PENDING' | 'SUBMITTED' | 'PROCESSING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
   transaction_id?: string | null;
   payer_phone?: string | null;
   receiver_name?: string | null;
@@ -34,6 +34,7 @@ type WaveManualPayment = {
 const statusClasses: Record<string, string> = {
   PENDING: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300',
   SUBMITTED: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300',
+  PROCESSING: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300',
   APPROVED: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
   REJECTED: 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300',
   EXPIRED: 'bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400'
@@ -57,9 +58,26 @@ const hasWaveProof = (payment: WaveManualPayment) => (
   !!payment.transaction_id?.trim() && !!payment.payer_phone?.trim()
 );
 
-const sortOldestFirst = (items: WaveManualPayment[]) => [...items].sort(
-  (left, right) => String(left.created_at || '').localeCompare(String(right.created_at || ''))
-);
+const getOpenPaymentPriority = (payment: WaveManualPayment) => {
+  const priorities: Record<string, number> = {
+    SUBMITTED: 0,
+    PROCESSING: 1,
+    PENDING: 2
+  };
+  return priorities[payment.status] ?? 99;
+};
+
+const sortAdminPayments = (
+  items: WaveManualPayment[],
+  statusFilter: 'OPEN' | 'SUBMITTED' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'ALL'
+) => [...items].sort((left, right) => {
+  if (statusFilter === 'OPEN') {
+    const priorityDelta = getOpenPaymentPriority(left) - getOpenPaymentPriority(right);
+    if (priorityDelta !== 0) return priorityDelta;
+  }
+
+  return String(left.created_at || '').localeCompare(String(right.created_at || ''));
+});
 
 const AdminFinances: React.FC = () => {
   const navigate = useNavigate();
@@ -69,18 +87,18 @@ const AdminFinances: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'OPEN' | 'SUBMITTED' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'ALL'>('OPEN');
 
   const openCount = useMemo(
-    () => payments.filter(payment => payment.status === 'PENDING' || payment.status === 'SUBMITTED').length,
+    () => payments.filter(payment => payment.status === 'PENDING' || payment.status === 'SUBMITTED' || payment.status === 'PROCESSING').length,
     [payments]
   );
 
   const readyPayments = useMemo(
-    () => sortOldestFirst(payments.filter(hasWaveProof)),
-    [payments]
+    () => sortAdminPayments(payments.filter(hasWaveProof), statusFilter),
+    [payments, statusFilter]
   );
 
   const incompletePayments = useMemo(
-    () => sortOldestFirst(payments.filter(payment => !hasWaveProof(payment))),
-    [payments]
+    () => sortAdminPayments(payments.filter(payment => !hasWaveProof(payment)), statusFilter),
+    [payments, statusFilter]
   );
 
   const loadPayments = async () => {
