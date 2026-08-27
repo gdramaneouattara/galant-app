@@ -5,6 +5,7 @@ const normalizeText = (value) => String(value || '').trim().toLowerCase()
   .replace(/[\u0300-\u036f]/g, '');
 
 const normalizeGender = (value) => String(value || '').trim().toUpperCase();
+const normalizeReligion = (value) => String(value || '').trim().toUpperCase();
 
 const normalizeList = (value) => {
   if (!Array.isArray(value)) return [];
@@ -38,6 +39,23 @@ const getGoalCompatibility = (goalA, goalB) => {
   if (durable.has(a) && durable.has(b)) return 125;
   if (social.has(a) && social.has(b)) return 80;
   return -70;
+};
+
+const getReligionCompatibility = (profileA, profileB) => {
+  const religionA = normalizeReligion(profileA?.religion);
+  const religionB = normalizeReligion(profileB?.religion);
+  if (!religionA || !religionB) return 0;
+
+  if (religionA === religionB) {
+    if (religionA === 'OTHER') {
+      const otherA = normalizeText(profileA?.religion_other);
+      const otherB = normalizeText(profileB?.religion_other);
+      return otherA && otherB && otherA === otherB ? 55 : 25;
+    }
+    return 70;
+  }
+
+  return -25;
 };
 
 const getStableDailyJitter = (meId, candidateId) => {
@@ -132,7 +150,7 @@ const calculateMatchScore = ({
   if (isAgeAccepted(candidate.age, meAgePref)) compatibilityScore += 80;
   if (isAgeAccepted(me.age, candidateAgePref)) compatibilityScore += 70;
 
-  // 2. Common interests, with a small ratio bonus to avoid favoring long lists only.
+  // 2. Personal affinity. Religion is the durable onboarding signal; interests remain a small legacy hint.
   const myInterests = new Set(normalizeList(me.interests).map(normalizeText));
   const candidateInterests = normalizeList(candidate.interests);
   let commonCount = 0;
@@ -140,7 +158,9 @@ const calculateMatchScore = ({
     if (myInterests.has(normalizeText(interest))) commonCount++;
   });
   const interestUniverse = new Set([...myInterests, ...candidateInterests.map(normalizeText)]).size || 1;
-  compatibilityScore += (commonCount * 45) + Math.round((commonCount / interestUniverse) * 60);
+  const legacyInterestScore = Math.min(45, (commonCount * 15) + Math.round((commonCount / interestUniverse) * 20));
+  const religionCompatibilityScore = getReligionCompatibility(me, candidate);
+  compatibilityScore += legacyInterestScore + religionCompatibilityScore;
 
   // 3. Relationship goal alignment
   compatibilityScore += getGoalCompatibility(me.relationship_goal, candidate.relationship_goal);
@@ -203,9 +223,10 @@ const calculateMatchScore = ({
     activityPenaltyPercent,
     activityMultiplier,
     commonInterestsCount: commonCount,
+    religionCompatibilityScore,
     meAcceptsCandidate,
     candidateAcceptsMe,
   };
 };
 
-module.exports = { calculateDistance, calculateMatchScore, getActivityDecay };
+module.exports = { calculateDistance, calculateMatchScore, getActivityDecay, getReligionCompatibility };

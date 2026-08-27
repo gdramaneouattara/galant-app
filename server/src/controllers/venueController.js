@@ -44,6 +44,51 @@ const cityMatches = (value = '', search = '') => {
   return normalizeSearch(value).includes(normalizeSearch(search));
 };
 
+const venueText = (venue = {}) => normalizeSearch([
+  venue.name,
+  venue.description,
+  venue.benefit_description,
+  venue.venue_type,
+  venue.city,
+  venue.address
+].filter(Boolean).join(' '));
+
+const goalVenueKeywords = (goal = '') => {
+  const normalizedGoal = String(goal || '').toUpperCase();
+  if (normalizedGoal === 'SERIOUS') return ['restaurant', 'hotel', 'lounge', 'cafe', 'diner', 'romantique'];
+  if (normalizedGoal === 'FRIENDSHIP') return ['cafe', 'culture', 'loisir', 'parc', 'restaurant'];
+  if (normalizedGoal === 'NETWORKING') return ['business', 'hotel', 'restaurant', 'lounge', 'coworking'];
+  if (normalizedGoal === 'CASUAL') return ['bar', 'lounge', 'night', 'club', 'sortie'];
+  return [];
+};
+
+const religionVenueKeywords = (profile = {}) => {
+  const religion = String(profile.religion || '').toUpperCase();
+  if (religion === 'MUSLIM') return ['halal', 'sans alcool', 'familial', 'restaurant'];
+  if (religion === 'CHRISTIAN') return ['brunch', 'familial', 'culture', 'restaurant'];
+  if (religion === 'OTHER' && profile.religion_other) return [profile.religion_other];
+  return [];
+};
+
+const scoreVenueForProfile = (venue = {}, profile = {}) => {
+  const text = venueText(venue);
+  let score = 0;
+
+  if (cityMatches(venue.city || venue.city_normalized || '', profile.city || '')) score += 30;
+  if (venue.is_editorial) score += 12;
+  if (Number(venue.rating || 0) >= 4.5) score += 10;
+
+  for (const keyword of goalVenueKeywords(profile.relationship_goal)) {
+    if (text.includes(normalizeSearch(keyword))) score += 8;
+  }
+
+  for (const keyword of religionVenueKeywords(profile)) {
+    if (text.includes(normalizeSearch(keyword))) score += 6;
+  }
+
+  return score;
+};
+
 const googlePhotoNameForVenue = (venue = {}) => (
   venue.google_photo_name || extractGooglePhotoNameFromUrl(venue.photo_url)
 );
@@ -142,18 +187,11 @@ const getVenueById = async (req, res) => {
 
 const getVenueRecommendations = async (req, res) => {
   const me = req.user;
-  const interests = me.interests || [];
   try {
     const snapshot = await db.collection('venues').where('status', '==', 'APPROVED').limit(20).get();
     let venues = snapshot.docs.map(doc => decorateVenueMedia(req, { id: doc.id, ...doc.data() }, 'thumb'));
 
-    if (interests.length > 0) {
-      venues.sort((a, b) => {
-        const aMatch = interests.some(i => (a.description || '').toLowerCase().includes(i.toLowerCase()));
-        const bMatch = interests.some(i => (b.description || '').toLowerCase().includes(i.toLowerCase()));
-        return (bMatch ? 1 : 0) - (aMatch ? 1 : 0);
-      });
-    }
+    venues.sort((a, b) => scoreVenueForProfile(b, me) - scoreVenueForProfile(a, me));
 
     res.json({ venues: venues.slice(0, 5) });
   } catch (error) { res.status(500).json({ error: error.message }); }
