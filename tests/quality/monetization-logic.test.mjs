@@ -186,6 +186,7 @@ test('Payments: Wave manual orders stay pending until admin validation', async (
   assert.match(controller, /createApprovalLeaseId/);
   assert.match(controller, /approval_lease_id/);
   assert.match(controller, /manual_payment_approval_lease_lost/);
+  assert.match(controller, /missing_wave_payer_phone/);
   assert.match(controller, /NOTIFICATION_TYPES\.PAYMENT_FAILED/);
   assert.match(controller, /payment_failed_/);
   assert.match(controller, /await createPaymentNotificationSafely/);
@@ -197,12 +198,12 @@ test('Payments: Wave manual orders stay pending until admin validation', async (
   assert.match(notificationService, /timeout:\s*EXPO_PUSH_TIMEOUT_MS/);
   assert.match(controller, /fetchManualPaymentsByStatus/);
   assert.match(controller, /\.where\('status',\s*'==',\s*itemStatus\)/);
-  assert.match(controller, /\.where\('status',\s*'==',\s*itemStatus\)\s*\n\s*\.orderBy\('created_at',\s*'desc'\)\s*\n\s*\.limit\(queryLimit\)/);
+  assert.match(controller, /\.where\('status',\s*'==',\s*itemStatus\)\s*\n\s*\.orderBy\('created_at',\s*'asc'\)\s*\n\s*\.limit\(queryLimit\)/);
   assert.doesNotMatch(controller, /\.where\('status',\s*'==',\s*itemStatus\)\s*\n\s*\.limit\(queryLimit\)\s*\n\s*\.get\(\)/);
   assert.doesNotMatch(controller, /manual_payments_index_not_ready/);
   assert.match(firestoreIndexes, /"collectionGroup":\s*"manual_payments"/);
   assert.match(firestoreIndexes, /"fieldPath":\s*"status"[\s\S]*"order":\s*"ASCENDING"/);
-  assert.match(firestoreIndexes, /"fieldPath":\s*"created_at"[\s\S]*"order":\s*"DESCENDING"/);
+  assert.match(firestoreIndexes, /"fieldPath":\s*"created_at"[\s\S]*"order":\s*"ASCENDING"/);
   assert.match(firebaseConfig, /"indexes":\s*"firestore\.indexes\.json"/);
   assert.match(serverDeployWorkflow, /firestore\.indexes\.json/);
   assert.match(serverDeployWorkflow, /deploy --only firestore:indexes/);
@@ -241,6 +242,12 @@ test('Payments: web Store exposes Wave payment flow without screenshots', async 
   assert.doesNotMatch(modal, /phoneOptional/);
   assert.doesNotMatch(modal, /screenshot|capture/i);
   assert.match(finances, /Paiements Wave a verifier/);
+  assert.match(finances, /Paiements prets a verifier/);
+  assert.match(finances, /Paiements incomplets/);
+  assert.match(finances, /hasWaveProof/);
+  assert.match(finances, /sortOldestFirst/);
+  assert.match(finances, /!isReady/);
+  assert.doesNotMatch(finances, /payment\.payer_phone \|\| payment\.profile\?\.phone/);
   assert.match(finances, /Valider/);
   assert.match(finances, /Rejeter/);
 });

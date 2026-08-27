@@ -52,7 +52,7 @@ jobs:
                     && index.queryScope === 'COLLECTION'
                     && index.state === 'READY'
                     && fields.some(field => field.fieldPath === 'status' && field.order === 'ASCENDING')
-                    && fields.some(field => field.fieldPath === 'created_at' && field.order === 'DESCENDING');
+                    && fields.some(field => field.fieldPath === 'created_at' && field.order === 'ASCENDING');
                 });
                 process.exit(ready ? 0 : 1);
               });

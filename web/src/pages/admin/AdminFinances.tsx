@@ -53,6 +53,14 @@ const formatDate = (value?: string | null) => {
   }
 };
 
+const hasWaveProof = (payment: WaveManualPayment) => (
+  !!payment.transaction_id?.trim() && !!payment.payer_phone?.trim()
+);
+
+const sortOldestFirst = (items: WaveManualPayment[]) => [...items].sort(
+  (left, right) => String(left.created_at || '').localeCompare(String(right.created_at || ''))
+);
+
 const AdminFinances: React.FC = () => {
   const navigate = useNavigate();
   const [payments, setPayments] = useState<WaveManualPayment[]>([]);
@@ -62,6 +70,16 @@ const AdminFinances: React.FC = () => {
 
   const openCount = useMemo(
     () => payments.filter(payment => payment.status === 'PENDING' || payment.status === 'SUBMITTED').length,
+    [payments]
+  );
+
+  const readyPayments = useMemo(
+    () => sortOldestFirst(payments.filter(hasWaveProof)),
+    [payments]
+  );
+
+  const incompletePayments = useMemo(
+    () => sortOldestFirst(payments.filter(payment => !hasWaveProof(payment))),
     [payments]
   );
 
@@ -102,6 +120,88 @@ const AdminFinances: React.FC = () => {
       setActionId(null);
     }
   };
+
+  const renderPaymentCard = (payment: WaveManualPayment) => {
+    const isReady = hasWaveProof(payment);
+
+    return (
+      <article key={payment.reference_code} className="rounded-2xl border border-slate-100 p-4 dark:border-white/10">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-lg font-black text-primary">{payment.reference_code}</span>
+              <span className={`rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest ${statusClasses[payment.status] || statusClasses.PENDING}`}>
+                {payment.status}
+              </span>
+              {isReady ? (
+                <span className="rounded-full bg-emerald-50 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+                  Dossier complet
+                </span>
+              ) : (
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-slate-500 dark:bg-white/5 dark:text-slate-400">
+                  Infos manquantes
+                </span>
+              )}
+            </div>
+            <p className="text-sm font-black text-slate-900 dark:text-white">
+              {payment.amount} F CFA - {payment.type}{payment.plan_id ? ` / ${payment.plan_id}` : ''}
+            </p>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Client: {payment.profile?.name || payment.user_email || payment.user_id}
+              {payment.profile?.city ? ` - ${payment.profile.city}` : ''}
+            </p>
+            <div className="grid gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400 sm:grid-cols-2">
+              <span>ID Wave: {payment.transaction_id || 'non renseigne'}</span>
+              <span>Numero: {payment.payer_phone || '-'}</span>
+              <span>Cree: {formatDate(payment.created_at)}</span>
+              <span>Expire: {formatDate(payment.expires_at)}</span>
+            </div>
+          </div>
+
+          <div className="flex gap-2 lg:flex-col">
+            <button
+              onClick={() => void resolvePayment(payment, 'approve')}
+              disabled={!!actionId || payment.status === 'APPROVED' || !isReady}
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-40 lg:flex-none"
+            >
+              {actionId === `approve_${payment.reference_code}` ? <Loader2 className="animate-spin" size={15} /> : <CheckCircle2 size={15} />}
+              Valider
+            </button>
+            <button
+              onClick={() => void resolvePayment(payment, 'reject')}
+              disabled={!!actionId || payment.status === 'APPROVED' || payment.status === 'REJECTED'}
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-red-600 disabled:opacity-40 dark:bg-red-500/10 dark:text-red-300 lg:flex-none"
+            >
+              {actionId === `reject_${payment.reference_code}` ? <Loader2 className="animate-spin" size={15} /> : <XCircle size={15} />}
+              Rejeter
+            </button>
+          </div>
+        </div>
+      </article>
+    );
+  };
+
+  const renderPaymentSection = (title: string, subtitle: string, items: WaveManualPayment[]) => (
+    <div className="space-y-3">
+      <div className="flex flex-col gap-1 rounded-2xl bg-slate-50 px-4 py-3 dark:bg-white/5">
+        <div className="flex items-center justify-between gap-3">
+          <h4 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white">{title}</h4>
+          <span className="rounded-full bg-white px-3 py-1 text-[10px] font-black text-slate-500 dark:bg-slate-950 dark:text-slate-400">
+            {items.length}
+          </span>
+        </div>
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{subtitle}</p>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 p-5 text-center text-xs font-bold text-slate-400 dark:border-white/10">
+          Aucun paiement dans cette section.
+        </div>
+      ) : (
+        items.map(renderPaymentCard)
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-6 lg:space-y-10">
@@ -168,7 +268,7 @@ const AdminFinances: React.FC = () => {
           <div>
             <h3 className="text-xl font-black text-slate-900 dark:text-white">Paiements Wave a verifier</h3>
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Controlez montant, beneficiaire, ID transaction, heure et numero avant validation.
+              Les paiements complets sont separes des dossiers incomplets. Les plus anciens sont toujours en haut.
             </p>
           </div>
           <select
@@ -194,53 +294,17 @@ const AdminFinances: React.FC = () => {
             Aucun paiement Wave pour ce filtre.
           </div>
         ) : (
-          <div className="space-y-3">
-            {payments.map((payment) => (
-              <article key={payment.reference_code} className="rounded-2xl border border-slate-100 p-4 dark:border-white/10">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0 space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-lg font-black text-primary">{payment.reference_code}</span>
-                      <span className={`rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest ${statusClasses[payment.status] || statusClasses.PENDING}`}>
-                        {payment.status}
-                      </span>
-                    </div>
-                    <p className="text-sm font-black text-slate-900 dark:text-white">
-                      {payment.amount} F CFA - {payment.type}{payment.plan_id ? ` / ${payment.plan_id}` : ''}
-                    </p>
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                      Client: {payment.profile?.name || payment.user_email || payment.user_id}
-                      {payment.profile?.city ? ` - ${payment.profile.city}` : ''}
-                    </p>
-                    <div className="grid gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400 sm:grid-cols-2">
-                      <span>ID Wave: {payment.transaction_id || 'non renseigne'}</span>
-                      <span>Numero: {payment.payer_phone || payment.profile?.phone || '-'}</span>
-                      <span>Cree: {formatDate(payment.created_at)}</span>
-                      <span>Expire: {formatDate(payment.expires_at)}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 lg:flex-col">
-                    <button
-                      onClick={() => void resolvePayment(payment, 'approve')}
-                      disabled={!!actionId || payment.status === 'APPROVED' || !payment.transaction_id}
-                      className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-40 lg:flex-none"
-                    >
-                      {actionId === `approve_${payment.reference_code}` ? <Loader2 className="animate-spin" size={15} /> : <CheckCircle2 size={15} />}
-                      Valider
-                    </button>
-                    <button
-                      onClick={() => void resolvePayment(payment, 'reject')}
-                      disabled={!!actionId || payment.status === 'APPROVED' || payment.status === 'REJECTED'}
-                      className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-red-600 disabled:opacity-40 dark:bg-red-500/10 dark:text-red-300 lg:flex-none"
-                    >
-                      {actionId === `reject_${payment.reference_code}` ? <Loader2 className="animate-spin" size={15} /> : <XCircle size={15} />}
-                      Rejeter
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))}
+          <div className="space-y-6">
+            {renderPaymentSection(
+              'Paiements prets a verifier',
+              'ID transaction Wave et numero Wave sont renseignes. A traiter en priorite.',
+              readyPayments
+            )}
+            {renderPaymentSection(
+              'Paiements incomplets',
+              'ID transaction ou numero Wave manquant. Ils restent visibles mais ne peuvent pas etre valides.',
+              incompletePayments
+            )}
           </div>
         )}
       </section>
