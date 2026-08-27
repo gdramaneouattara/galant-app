@@ -185,6 +185,21 @@ const createWaveReference = async () => {
   throw new Error('manual_reference_generation_failed');
 };
 
+const hasOpenManualPaymentForType = async (userId, type) => {
+  if (!userId || !type) return false;
+  const snapshot = await db.collection(MANUAL_PAYMENTS_COLLECTION)
+    .where('user_id', '==', userId)
+    .limit(100)
+    .get();
+  const nowMs = Date.now();
+  return snapshot.docs.some((doc) => {
+    const payment = doc.data() || {};
+    return payment.type === type &&
+      ['PENDING', 'SUBMITTED', 'PROCESSING'].includes(payment.status) &&
+      !isManualPaymentExpired(payment, nowMs);
+  });
+};
+
 const createWaveManualPayment = async (req, res) => {
   const { planId, type, targetId, note, amount } = req.body;
   const wavePaymentLink = normalizePaymentText(process.env.WAVE_PAYMENT_LINK || process.env.WAVE_MANUAL_PAYMENT_LINK);
@@ -195,6 +210,24 @@ const createWaveManualPayment = async (req, res) => {
   try {
     const quote = await validateQuotedAmount({ type, planId, amount });
     if (quote.error) return res.status(quote.error === 'price_changed' ? 409 : 400).json(quote);
+
+    if (quote.normalizedType === 'DISCOVER_GRID_UNLOCK') {
+      const hasGalleryAccess = !!req.user?.is_premium ||
+        !!req.user?.is_vip ||
+        Number(req.user?.grid_consultations_remaining || 0) > 0;
+      if (hasGalleryAccess) {
+        return res.status(409).json({
+          error: 'grid_access_already_available',
+          message: 'Votre acces Galerie est deja disponible.'
+        });
+      }
+      if (await hasOpenManualPaymentForType(req.user.id, quote.normalizedType)) {
+        return res.status(409).json({
+          error: 'grid_payment_already_pending',
+          message: 'Une commande Galerie est deja en attente de validation.'
+        });
+      }
+    }
 
     const referenceCode = await createWaveReference();
     const now = new Date();
