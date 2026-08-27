@@ -229,7 +229,8 @@ const StoriesPage: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    if (!canPublishNow) {
+    const canPublish = canPublishNow || await refreshUploadAccess();
+    if (!canPublish) {
       setIsPurchaseOpen(true);
       e.target.value = '';
       return;
@@ -298,8 +299,20 @@ const StoriesPage: React.FC = () => {
       showAlert(t('success'), t('story_published'));
       setStoryUploadUnlocked(false);
       await fetchStatuses({ append: false });
-    } catch {
-      showAlert(t('error'), t('story_publish_failed'));
+    } catch (error: any) {
+      const message = String(error?.message || '');
+      const lowerMessage = message.toLowerCase();
+      if (lowerMessage.includes('subscription_required')) {
+        setStoryUploadUnlocked(false);
+        showAlert(
+          t('error'),
+          language === 'en'
+            ? 'No validated Story ticket is available for this account. If your Wave payment was just approved, refresh and try again.'
+            : 'Aucun ticket Story valide n’est disponible pour ce compte. Si votre paiement Wave vient d’être validé, actualisez puis réessayez.'
+        );
+      } else {
+        showAlert(t('error'), message || t('story_publish_failed'));
+      }
     } finally {
       setUploading(false);
       e.target.value = '';

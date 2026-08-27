@@ -62,24 +62,31 @@ const incrementUsage = async (userId, type, seconds = 0) => {
   }
 };
 
+const userPurchasedInteractionsQuery = (userId) => db.collection('purchased_interactions')
+  .where('user_id', '==', userId);
+
+const getStoryPurchaseDocs = async (userId, tx = null) => {
+  if (!userId) return [];
+  const query = userPurchasedInteractionsQuery(userId);
+  const snapshot = tx ? await tx.get(query) : await query.get();
+  return snapshot.docs.filter((row) => row.data()?.interaction_type === 'STORY_UPLOAD');
+};
+
+const getUnusedStoryPurchaseDoc = async (userId, tx = null) => {
+  if (!userId) return null;
+  const docs = await getStoryPurchaseDocs(userId, tx);
+  return docs.find((row) => row.data()?.status === 'UNUSED') || null;
+};
+
 /**
  * Checks if a user has an unused story upload purchase
  */
 const consumeStoryPurchase = async (userId) => {
   if (!userId) return false;
   try {
-    const snapshot = await db.collection('purchased_interactions')
-      .where('user_id', '==', userId)
-      .limit(80)
-      .get();
-
-    const doc = snapshot.docs.find((row) => {
-      const item = row.data();
-      return item.interaction_type === 'STORY_UPLOAD' && item.status === 'UNUSED';
-    });
+    const doc = await getUnusedStoryPurchaseDoc(userId);
     if (!doc) return false;
 
-    // Consume it
     await doc.ref.update({
       status: 'USED',
       consumed_at: new Date().toISOString()
@@ -91,18 +98,22 @@ const consumeStoryPurchase = async (userId) => {
   }
 };
 
+const consumeStoryPurchaseInTransaction = async (tx, userId, nowIso = new Date().toISOString()) => {
+  if (!tx || !userId) return false;
+  const doc = await getUnusedStoryPurchaseDoc(userId, tx);
+  if (!doc) return false;
+
+  tx.update(doc.ref, {
+    status: 'USED',
+    consumed_at: nowIso
+  });
+  return true;
+};
+
 const hasUnusedStoryPurchase = async (userId) => {
   if (!userId) return false;
   try {
-    const snapshot = await db.collection('purchased_interactions')
-      .where('user_id', '==', userId)
-      .limit(80)
-      .get();
-
-    return snapshot.docs.some((row) => {
-      const item = row.data();
-      return item.interaction_type === 'STORY_UPLOAD' && item.status === 'UNUSED';
-    });
+    return !!(await getUnusedStoryPurchaseDoc(userId));
   } catch (error) {
     console.error('Error checking story purchase:', error);
     return false;
@@ -114,14 +125,10 @@ const hasStoryPurchaseAccess = async (userId) => {
   try {
     const now = Date.now();
     const accessWindowMs = 24 * 3600 * 1000;
-    const snapshot = await db.collection('purchased_interactions')
-      .where('user_id', '==', userId)
-      .limit(80)
-      .get();
+    const docs = await getStoryPurchaseDocs(userId);
 
-    return snapshot.docs.some((row) => {
+    return docs.some((row) => {
       const item = row.data();
-      if (item.interaction_type !== 'STORY_UPLOAD') return false;
       const status = String(item.status || '').toUpperCase();
       if (status === 'UNUSED') return true;
       if (status !== 'USED') return false;
@@ -134,4 +141,12 @@ const hasStoryPurchaseAccess = async (userId) => {
   }
 };
 
-module.exports = { hasDirectMessagePurchase, getDailyUsage, incrementUsage, consumeStoryPurchase, hasUnusedStoryPurchase, hasStoryPurchaseAccess };
+module.exports = {
+  hasDirectMessagePurchase,
+  getDailyUsage,
+  incrementUsage,
+  consumeStoryPurchase,
+  consumeStoryPurchaseInTransaction,
+  hasUnusedStoryPurchase,
+  hasStoryPurchaseAccess
+};
