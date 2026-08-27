@@ -53,9 +53,9 @@ const paystackUnavailablePayload = {
 };
 
 const getManualPaymentExpiryMinutes = () => {
-  const value = Number(process.env.WAVE_MANUAL_PAYMENT_EXPIRES_MINUTES || 60);
-  if (!Number.isFinite(value)) return 60;
-  return Math.max(10, Math.min(240, Math.round(value)));
+  const value = Number(process.env.WAVE_MANUAL_PAYMENT_EXPIRES_MINUTES || 300);
+  if (!Number.isFinite(value)) return 300;
+  return Math.max(10, Math.min(300, Math.round(value)));
 };
 
 const getManualPaymentProcessingTimeoutMs = () => {

@@ -46,8 +46,15 @@ type GridCache = {
 };
 
 const GRID_PAGE_SIZE = 12;
+const GRID_PROFILE_QUOTA = 100;
 const GRID_CACHE_TTL_MS = 90 * 60 * 1000;
 const GRID_CACHE_PREFIX = 'galant:discover-grid:v3';
+
+const normalizeGridQuota = (value: number | null | undefined) => {
+  const remaining = Number(value || 0);
+  if (!Number.isFinite(remaining)) return 0;
+  return Math.max(0, Math.min(GRID_PROFILE_QUOTA, Math.floor(remaining)));
+};
 
 const DiscoverGridPage: React.FC = () => {
   const { user, profile: myProfile, loading: authLoading, language } = useAuth();
@@ -57,7 +64,11 @@ const DiscoverGridPage: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [remainingQuota, setRemainingQuota] = useState<number | null>(myProfile?.grid_consultations_remaining ?? null);
+  const [remainingQuota, setRemainingQuota] = useState<number | null>(
+    myProfile?.grid_consultations_remaining === undefined
+      ? null
+      : normalizeGridQuota(myProfile.grid_consultations_remaining)
+  );
   const observerRef = useRef<IntersectionObserver | null>(null);
   const cardNodesRef = useRef<Map<string, Element>>(new Map());
   const viewedIdsRef = useRef<Set<string>>(new Set());
@@ -136,7 +147,11 @@ const DiscoverGridPage: React.FC = () => {
   }, [getCacheKey]);
 
   useEffect(() => {
-    setRemainingQuota(myProfile?.grid_consultations_remaining ?? null);
+    setRemainingQuota(
+      myProfile?.grid_consultations_remaining === undefined
+        ? null
+        : normalizeGridQuota(myProfile.grid_consultations_remaining)
+    );
   }, [myProfile?.grid_consultations_remaining]);
 
   const flushViewedProfiles = useCallback(async () => {
@@ -155,7 +170,7 @@ const DiscoverGridPage: React.FC = () => {
         requireAuth: true,
         body: JSON.stringify({ profileIds: ids })
       });
-      if (typeof res.remaining === 'number') setRemainingQuota(Math.max(0, res.remaining));
+      if (typeof res.remaining === 'number') setRemainingQuota(normalizeGridQuota(res.remaining));
     } catch (e: any) {
       if (String(e?.message || '').includes('grid_quota_exceeded')) {
         setRemainingQuota(0);
@@ -222,7 +237,7 @@ const DiscoverGridPage: React.FC = () => {
       if (cached) {
         setProfiles(cached.profiles);
         setNextCursor(cached.nextCursor);
-        if (typeof cached.remainingQuota === 'number') setRemainingQuota(cached.remainingQuota);
+        if (typeof cached.remainingQuota === 'number') setRemainingQuota(normalizeGridQuota(cached.remainingQuota));
         setLoading(false);
         return;
       }
@@ -246,7 +261,7 @@ const DiscoverGridPage: React.FC = () => {
       const incoming = res.suggestions || [];
       const newCursor = res.next_cursor || null;
       setNextCursor(newCursor);
-      if (typeof res.grid_remaining === 'number') setRemainingQuota(Math.max(0, res.grid_remaining));
+      if (typeof res.grid_remaining === 'number') setRemainingQuota(normalizeGridQuota(res.grid_remaining));
 
       setProfiles((prev) => {
         const base = reset ? [] : prev;
@@ -258,7 +273,7 @@ const DiscoverGridPage: React.FC = () => {
         writeCache(safeQ, {
           profiles: merged,
           nextCursor: newCursor,
-          remainingQuota: typeof res.grid_remaining === 'number' ? Math.max(0, res.grid_remaining) : remainingQuota
+          remainingQuota: typeof res.grid_remaining === 'number' ? normalizeGridQuota(res.grid_remaining) : remainingQuota
         });
         return merged;
       });
@@ -313,7 +328,7 @@ const DiscoverGridPage: React.FC = () => {
               <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2">
                 <Sparkles size={10} className="text-amber-500" />
                 <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">
-                  {labels.remaining(Math.max(0, remainingQuota ?? myProfile.grid_consultations_remaining))}
+                  {labels.remaining(normalizeGridQuota(remainingQuota ?? myProfile.grid_consultations_remaining))}
                 </span>
               </div>
             )}

@@ -378,7 +378,8 @@ const StorePage: React.FC = () => {
         </div>
 
         <div className="space-y-12">
-          {/* Roses & Visibilité */}
+          {/* Roses & Visibilité - HIDDEN AS PER USER REQUEST */}
+          {/*
           <div className="space-y-4">
             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">{labels.rosesVisibility}</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -403,6 +404,7 @@ const StorePage: React.FC = () => {
               ))}
             </div>
           </div>
+          */}
 
           {/* Boosts */}
           <div className="space-y-4">
