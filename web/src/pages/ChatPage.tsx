@@ -42,6 +42,13 @@ const ensureVideoUploadFile = (file: File | Blob, fallbackName = 'chat.mp4') => 
   return new File([file], name, { type: mimeType });
 };
 
+type PendingAttachment = {
+  type: 'IMAGE' | 'VIDEO';
+  file: File;
+  previewUrl: string;
+  name: string;
+};
+
 const ChatPage: React.FC = () => {
   const { matchId } = useParams();
   const { user, profile, t, language } = useAuth();
@@ -53,6 +60,7 @@ const ChatPage: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [pendingAttachment, setPendingAttachment] = useState<PendingAttachment | null>(null);
   const [generating, setGenerating] = useState(false);
   const [targetPresence, setTargetPresence] = useState<{ state?: string; last_changed?: number | string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -64,6 +72,19 @@ const ChatPage: React.FC = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
   const [messageBottomPadding, setMessageBottomPadding] = useState(176);
+
+  const clearPendingAttachment = () => {
+    setPendingAttachment((current) => {
+      if (current?.previewUrl) URL.revokeObjectURL(current.previewUrl);
+      return null;
+    });
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (videoInputRef.current) videoInputRef.current.value = '';
+  };
+
+  useEffect(() => () => {
+    if (pendingAttachment?.previewUrl) URL.revokeObjectURL(pendingAttachment.previewUrl);
+  }, [pendingAttachment?.previewUrl]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -268,12 +289,67 @@ const ChatPage: React.FC = () => {
     }
   };
 
+  const uploadChatMedia = async (file: File, type: 'IMAGE' | 'VIDEO') => {
+    let mediaUrl = '';
+    let metadata: Record<string, any> = {};
+
+    if (type === 'IMAGE') {
+      const finalFile = await compressImageWeb(file);
+      const sRef = storageRef(fbStorage, `chats/${venueChatId || matchId}/${Date.now()}_image.webp`);
+      await uploadBytes(sRef, finalFile, { contentType: 'image/webp' });
+      mediaUrl = await getStorageUrl(sRef);
+      return { mediaUrl, metadata };
+    }
+
+    try {
+      await validateVideoFileWeb(file, CHAT_VIDEO_MAX_DURATION_SECONDS);
+    } catch (error: any) {
+      if (error?.message === 'video_too_large') {
+        showAlert(t('video_too_heavy_title'), t('video_too_heavy'));
+      } else if (error?.message === 'video_too_long') {
+        showAlert(t('video_too_long_title'), t('video_too_long_chat'));
+      } else {
+        showAlert(t('error'), t('video_unreadable'));
+      }
+      error.alreadyShown = true;
+      throw error;
+    }
+
+    const optimizedVideo = await compressVideoWeb(file, {
+      kind: 'CHAT',
+      maxDurationSeconds: CHAT_VIDEO_MAX_DURATION_SECONDS,
+    });
+    if (optimizedVideo.size > VIDEO_UPLOAD_MAX_BYTES) {
+      showAlert(t('video_too_heavy_title'), t('video_still_too_heavy'));
+      throw new Error('video_too_large');
+    }
+
+    const formData = new FormData();
+    const uploadVideo = ensureVideoUploadFile(optimizedVideo, file.name || 'chat.mp4');
+    formData.append('type', 'CHAT');
+    formData.append('video', uploadVideo, uploadVideo.name);
+    const res = await apiRequest<{ mediaUrl: string; thumbnailUrl?: string }>('/api/media/upload-video', {
+      method: 'POST',
+      requireAuth: true,
+      body: formData,
+    });
+    const videoRef = storageRef(fbStorage, `chat-media/${res.mediaUrl}`);
+    mediaUrl = await getStorageUrl(videoRef);
+    if (res.thumbnailUrl) {
+      metadata.thumbnail_url = await getStorageUrl(storageRef(fbStorage, `chat-media/${res.thumbnailUrl}`));
+    }
+    return { mediaUrl, metadata };
+  };
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim() || sending || !user || !targetUser) return;
+    if ((!inputText.trim() && !pendingAttachment) || sending || uploading || !user || !targetUser) return;
 
     setSending(true);
+    if (pendingAttachment) setUploading(true);
     try {
+      const attachment = pendingAttachment;
+      const mediaResult = attachment ? await uploadChatMedia(attachment.file, attachment.type) : null;
       await apiRequest('/api/messages/send', {
         method: 'POST',
         requireAuth: true,
@@ -281,82 +357,73 @@ const ChatPage: React.FC = () => {
           matchId: venueChatId ? undefined : matchId,
           venueChatId: venueChatId || undefined,
           content: inputText.trim(),
-          messageType: 'TEXT',
+          messageType: attachment?.type || 'TEXT',
+          mediaPath: mediaResult?.mediaUrl,
+          metadata: mediaResult?.metadata || {},
           recipientId: targetUser.isVenue ? undefined : targetUser.id
         })
       });
       setInputText('');
+      clearPendingAttachment();
     } catch (error: any) {
-      showAlert(t('error'), error.message);
+      const message = String(error?.message || '').toLowerCase();
+      if (error?.alreadyShown) {
+        return;
+      } else if (message.includes('video_too_large')) {
+        showAlert(t('video_too_heavy_title'), t('video_too_heavy'));
+      } else if (message.includes('video_too_long')) {
+        showAlert(t('video_too_long_title'), t('video_too_long_chat'));
+      } else if (message.includes('invalid_video') || message.includes('video_upload_failed')) {
+        showAlert(t('error'), t('video_unreadable'));
+      } else {
+        showAlert(t('error'), error.message);
+      }
     } finally {
       setSending(false);
+      setUploading(false);
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | Blob, type: 'IMAGE' | 'VIDEO' | 'VOICE') => {
+  const handleMediaSelect = async (e: React.ChangeEvent<HTMLInputElement>, type: 'IMAGE' | 'VIDEO') => {
     if (!profile?.is_premium) {
       showAlert(t('premium_required'), t('media_premium_only'));
       navigate('/store');
       return;
     }
 
-    const file = e instanceof Blob ? e : (e as React.ChangeEvent<HTMLInputElement>).target.files?.[0];
+    const file = e.target.files?.[0];
     if (!file || !user || (!matchId && !venueChatId)) return;
+    if (type === 'VIDEO') {
+      try {
+        await validateVideoFileWeb(file, CHAT_VIDEO_MAX_DURATION_SECONDS);
+      } catch (error: any) {
+        if (error?.message === 'video_too_large') {
+          showAlert(t('video_too_heavy_title'), t('video_too_heavy'));
+        } else if (error?.message === 'video_too_long') {
+          showAlert(t('video_too_long_title'), t('video_too_long_chat'));
+        } else {
+          showAlert(t('error'), t('video_unreadable'));
+        }
+        e.target.value = '';
+        return;
+      }
+    }
 
+    clearPendingAttachment();
+    setPendingAttachment({
+      type,
+      file,
+      previewUrl: URL.createObjectURL(file),
+      name: file.name || (type === 'IMAGE' ? 'image' : 'video'),
+    });
+  };
+
+  const handleVoiceUpload = async (file: Blob) => {
     setUploading(true);
     try {
-      let mediaUrl = '';
-      let metadata: Record<string, any> = {};
-
-      if (type === 'IMAGE') {
-        const finalFile = await compressImageWeb(file as File);
-        const sRef = storageRef(fbStorage, `chats/${venueChatId || matchId}/${Date.now()}_image.webp`);
-        await uploadBytes(sRef, finalFile, { contentType: 'image/webp' });
-        mediaUrl = await getStorageUrl(sRef);
-      } else if (type === 'VIDEO') {
-        const videoFile = file as File;
-        try {
-          await validateVideoFileWeb(videoFile, CHAT_VIDEO_MAX_DURATION_SECONDS);
-        } catch (error: any) {
-          if (error?.message === 'video_too_large') {
-            showAlert(t('video_too_heavy_title'), t('video_too_heavy'));
-          } else if (error?.message === 'video_too_long') {
-            showAlert(t('video_too_long_title'), t('video_too_long_chat'));
-          } else {
-            showAlert(t('error'), t('video_unreadable'));
-          }
-          return;
-        }
-
-        const optimizedVideo = await compressVideoWeb(videoFile, {
-          kind: 'CHAT',
-          maxDurationSeconds: CHAT_VIDEO_MAX_DURATION_SECONDS,
-        });
-        if (optimizedVideo.size > VIDEO_UPLOAD_MAX_BYTES) {
-          showAlert(t('video_too_heavy_title'), t('video_still_too_heavy'));
-          return;
-        }
-
-        const formData = new FormData();
-        const uploadVideo = ensureVideoUploadFile(optimizedVideo, videoFile.name || 'chat.mp4');
-        formData.append('type', 'CHAT');
-        formData.append('video', uploadVideo, uploadVideo.name);
-        const res = await apiRequest<{ mediaUrl: string; thumbnailUrl?: string }>('/api/media/upload-video', {
-          method: 'POST',
-          requireAuth: true,
-          body: formData,
-        });
-        const videoRef = storageRef(fbStorage, `chat-media/${res.mediaUrl}`);
-        mediaUrl = await getStorageUrl(videoRef);
-        if (res.thumbnailUrl) {
-          metadata.thumbnail_url = await getStorageUrl(storageRef(fbStorage, `chat-media/${res.thumbnailUrl}`));
-        }
-      } else if (type === 'VOICE') {
-        const sRef = storageRef(fbStorage, `chats/${venueChatId || matchId}/${Date.now()}_serenade.webm`);
-        await uploadBytes(sRef, file, { contentType: file.type || 'audio/webm' });
-        mediaUrl = await getStorageUrl(sRef);
-        metadata.is_serenade = true;
-      }
+      const sRef = storageRef(fbStorage, `chats/${venueChatId || matchId}/${Date.now()}_serenade.webm`);
+      await uploadBytes(sRef, file, { contentType: file.type || 'audio/webm' });
+      const mediaUrl = await getStorageUrl(sRef);
 
       await apiRequest('/api/messages/send', {
         method: 'POST',
@@ -364,9 +431,9 @@ const ChatPage: React.FC = () => {
         body: JSON.stringify({
           matchId: venueChatId ? undefined : matchId,
           venueChatId: venueChatId || undefined,
-          messageType: type,
+          messageType: 'VOICE',
           mediaPath: mediaUrl,
-          metadata,
+          metadata: { is_serenade: true },
           recipientId: targetUser.isVenue ? undefined : targetUser.id
         })
       });
@@ -383,9 +450,6 @@ const ChatPage: React.FC = () => {
       }
     } finally {
       setUploading(false);
-      if (!(e instanceof Blob)) {
-        (e as React.ChangeEvent<HTMLInputElement>).target.value = '';
-      }
     }
   };
 
@@ -414,7 +478,7 @@ const ChatPage: React.FC = () => {
       return;
     }
     if (blob.size > 1000) { // Minimum size to avoid empty rec
-      await handleFileUpload(blob, 'VOICE');
+      await handleVoiceUpload(blob);
     }
     setRecorder(null);
     setAudioStream(null);
@@ -521,23 +585,32 @@ const ChatPage: React.FC = () => {
           const isMine = msg.sender_id === user?.uid;
           const isVenue = msg.message_type === 'VENUE_SUGGESTION';
           const isEvent = msg.message_type === 'EVENT_SUGGESTION';
+          const isVisualMedia = msg.message_type === 'IMAGE' || msg.message_type === 'VIDEO';
 
           return (
             <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] group relative ${isMine ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
 
                 {/* Bulle Standard */}
-                <div className={`p-4 rounded-3xl text-sm font-medium shadow-sm overflow-hidden ${
-                  isMine
-                    ? 'bg-primary text-white rounded-tr-none'
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-white/10 rounded-tl-none'
+                <div className={`overflow-hidden ${
+                  isVisualMedia
+                    ? `p-1.5 rounded-[1.75rem] border shadow-sm ${
+                        isMine
+                          ? 'bg-primary/10 border-primary/25 rounded-tr-md'
+                          : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-white/10 rounded-tl-md'
+                      }`
+                    : `p-4 rounded-3xl text-sm font-medium shadow-sm ${
+                        isMine
+                          ? 'bg-primary text-white rounded-tr-none'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-white/10 rounded-tl-none'
+                      }`
                 }`}>
 
                   {/* Media Content */}
                   {msg.message_type === 'IMAGE' && msg.media_url && (
                     <OptimizedImage
                       src={msg.media_url}
-                      className="max-w-full rounded-2xl mb-2 hover:scale-[1.02] transition-transform cursor-pointer"
+                      className="block w-full max-h-[58vh] rounded-[1.35rem] object-contain bg-slate-100 dark:bg-slate-950 cursor-pointer"
                       alt="Shared media"
                       onClick={() => window.open(msg.media_url, '_blank')}
                     />
@@ -549,7 +622,7 @@ const ChatPage: React.FC = () => {
                       controls
                       preload="none"
                       poster={typeof msg.metadata?.thumbnail_url === 'string' ? msg.metadata.thumbnail_url : undefined}
-                      className="max-w-full rounded-2xl mb-2 bg-black"
+                      className="block w-full max-h-[58vh] rounded-[1.35rem] bg-black"
                     />
                   )}
 
@@ -620,7 +693,11 @@ const ChatPage: React.FC = () => {
                     </div>
                   )}
 
-                  <p>{translations[msg.id] || msg.content}</p>
+                  {msg.content && (
+                    <p className={isVisualMedia ? 'px-2 pb-2 pt-2 text-sm font-medium text-slate-900 dark:text-white' : ''}>
+                      {translations[msg.id] || msg.content}
+                    </p>
+                  )}
 
                   {/* Bouton Traduction */}
                   {!isMine && msg.content && !isVenue && !isEvent && (
@@ -690,6 +767,32 @@ const ChatPage: React.FC = () => {
           </button>
         )}
 
+        {pendingAttachment && !isRecording && (
+          <div className="mb-3 flex items-center gap-3 rounded-2xl border border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-slate-800/70 p-2">
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-slate-200 dark:bg-slate-950">
+              {pendingAttachment.type === 'IMAGE' ? (
+                <img src={pendingAttachment.previewUrl} className="h-full w-full object-cover" alt="" />
+              ) : (
+                <video src={pendingAttachment.previewUrl} className="h-full w-full object-cover" muted playsInline />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-bold text-slate-900 dark:text-white">{pendingAttachment.name}</p>
+              <p className="text-[10px] font-medium uppercase tracking-prestige text-slate-400 dark:text-slate-500">
+                {pendingAttachment.type === 'IMAGE' ? 'Photo prete a envoyer' : 'Video prete a envoyer'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={clearPendingAttachment}
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm transition-colors hover:text-primary dark:bg-slate-900"
+              aria-label="Retirer le media"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        )}
+
         <form onSubmit={handleSend} className="flex gap-2 items-end w-full">
           <div className="flex gap-0.5 flex-shrink-0 mb-1.5">
             <button
@@ -716,8 +819,8 @@ const ChatPage: React.FC = () => {
             >
               <Mic size={20} />
             </button>
-            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'IMAGE')} />
-            <input type="file" ref={videoInputRef} className="hidden" accept="video/*" onChange={(e) => handleFileUpload(e, 'VIDEO')} />
+            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => handleMediaSelect(e, 'IMAGE')} />
+            <input type="file" ref={videoInputRef} className="hidden" accept="video/*" onChange={(e) => handleMediaSelect(e, 'VIDEO')} />
           </div>
 
           <textarea
@@ -737,7 +840,7 @@ const ChatPage: React.FC = () => {
           />
           <button
             type="submit"
-            disabled={(!inputText.trim() && !uploading) || sending || uploading}
+            disabled={(!inputText.trim() && !pendingAttachment) || sending || uploading}
             className="w-11 h-11 bg-primary text-white rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shadow-red-200 disabled:opacity-30 flex-shrink-0 z-10 mb-0.5"
           >
             {uploading ? <Loader2 size={18} className="animate-spin" /> : <Send size={20} fill="white" />}
