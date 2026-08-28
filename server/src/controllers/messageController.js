@@ -11,6 +11,14 @@ const createNotificationSafely = (payload) => {
   });
 };
 
+const hasPremiumVoiceAccess = async (user = {}) => {
+  if (user.is_premium || user.is_vip) return true;
+
+  const profileSnap = await db.collection('profiles').doc(user.id).get();
+  const profile = profileSnap.exists ? profileSnap.data() : {};
+  return !!(profile?.is_premium || profile?.is_vip);
+};
+
 const hasPriorVenueSuggestionForReply = async (messagesRef, meId, metadata = {}) => {
   const sourceMessageId = String(metadata.source_message_id || '').trim();
   const venueId = String(metadata.venue_id || '').trim();
@@ -64,6 +72,7 @@ const sendMessage = async (req, res) => {
   const normalizedType = String(messageType || 'TEXT').toUpperCase();
   const normalizedContent = typeof content === 'string' ? content.trim() : '';
   const metadata = req.body.metadata && typeof req.body.metadata === 'object' ? req.body.metadata : {};
+  const isVoiceMessage = normalizedType === 'VOICE';
   const isVenueSuggestionOpinion =
     normalizedType === 'TEXT' &&
     metadata.reply_kind === 'VENUE_SUGGESTION_OPINION';
@@ -146,6 +155,16 @@ const sendMessage = async (req, res) => {
       }
     } else {
       return res.status(400).json({ error: 'missing_chat_context' });
+    }
+
+    if (isVoiceMessage) {
+      const canSendVoice = await hasPremiumVoiceAccess(me);
+      if (!canSendVoice) {
+        return res.status(403).json({
+          error: 'subscription_required',
+          message: 'serenade_requires_premium'
+        });
+      }
     }
 
     const now = new Date().toISOString();
