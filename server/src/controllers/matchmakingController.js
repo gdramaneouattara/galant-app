@@ -28,7 +28,10 @@ const normalizeGridRemaining = (value, quotaCeiling = QUOTAS.DISCOVER_GRID_PROFI
 const getPurchasedGridQuotaCeiling = (profile = {}) => {
   const purchasedTotal = Number(profile.grid_quota_purchased_total || 0);
   if (!Number.isFinite(purchasedTotal) || purchasedTotal <= 0) {
-    return QUOTAS.DISCOVER_GRID_PROFILES;
+    const legacyRemaining = Number(profile.grid_consultations_remaining || 0);
+    return Number.isFinite(legacyRemaining)
+      ? Math.max(QUOTAS.DISCOVER_GRID_PROFILES, Math.floor(legacyRemaining))
+      : QUOTAS.DISCOVER_GRID_PROFILES;
   }
   return Math.max(QUOTAS.DISCOVER_GRID_PROFILES, Math.floor(purchasedTotal));
 };
