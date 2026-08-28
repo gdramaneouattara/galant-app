@@ -102,6 +102,7 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, onApply, defau
   };
 
   const normalizeAge = (value: unknown, fallback: number) => {
+    if (value === '' || value === null || value === undefined) return fallback;
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) return fallback;
     return Math.max(18, Math.min(80, Math.floor(parsed)));
