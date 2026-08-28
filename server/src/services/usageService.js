@@ -69,6 +69,13 @@ const userPurchasedInteractionsQuery = (userId) => db.collection('purchased_inte
 const manualPaymentLedgerId = (reference = '') => `payment_${crypto.createHash('sha256').update(String(reference)).digest('hex')}`;
 const storyManualPaymentReference = (payment, docId) => `wave_${payment.reference_code || docId}`;
 
+const getStoryPurchaseReference = (item = {}) => String(
+  item.reference ||
+  item.payment_reference ||
+  item.metadata?.payment_reference ||
+  ''
+);
+
 const getStoryPurchaseDocs = async (userId, tx = null) => {
   if (!userId) return [];
   const query = userPurchasedInteractionsQuery(userId);
@@ -114,10 +121,20 @@ const buildStoryPurchaseFromManualPayment = (payment, docId, nowIso, status = 'U
 const repairUnusedStoryPurchaseFromApprovedPayment = async (userId) => {
   const nowIso = new Date().toISOString();
   const payments = await getApprovedStoryManualPaymentDocs(userId);
+  const storyPurchaseDocs = await getStoryPurchaseDocs(userId);
 
   for (const row of payments) {
     const payment = row.data() || {};
     const { ref, payload } = buildStoryPurchaseFromManualPayment(payment, row.id, nowIso, 'UNUSED');
+    const existingByReference = storyPurchaseDocs.find((doc) => (
+      getStoryPurchaseReference(doc.data() || {}) === payload.reference
+    ));
+    if (existingByReference) {
+      const item = existingByReference.data() || {};
+      if (item.status === 'UNUSED') return true;
+      continue;
+    }
+
     const existing = await ref.get();
     if (existing.exists) {
       const item = existing.data() || {};
@@ -154,7 +171,8 @@ const consumeStoryPurchase = async (userId) => {
 
 const consumeStoryPurchaseInTransaction = async (tx, userId, nowIso = new Date().toISOString()) => {
   if (!tx || !userId) return false;
-  const doc = await getUnusedStoryPurchaseDoc(userId, tx);
+  const storyPurchaseDocs = await getStoryPurchaseDocs(userId, tx);
+  const doc = storyPurchaseDocs.find((row) => row.data()?.status === 'UNUSED') || null;
   if (doc) {
     tx.update(doc.ref, {
       status: 'USED',
@@ -167,6 +185,11 @@ const consumeStoryPurchaseInTransaction = async (tx, userId, nowIso = new Date()
   for (const row of approvedPayments) {
     const payment = row.data() || {};
     const { ref, payload } = buildStoryPurchaseFromManualPayment(payment, row.id, nowIso, 'USED');
+    const existingByReference = storyPurchaseDocs.find((doc) => (
+      getStoryPurchaseReference(doc.data() || {}) === payload.reference
+    ));
+    if (existingByReference) continue;
+
     const existing = await tx.get(ref);
     if (existing.exists) continue;
 

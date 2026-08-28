@@ -37,6 +37,7 @@ const StorePage: React.FC = () => {
 
   const boostStatus = getBoostStatus(profile?.boosted_until);
   const hasPartnerDiscoveryAccess = !!(profile?.is_premium || profile?.is_vip || profile?.partner_discovery_unlocked);
+  const hasGalleryAccess = !!(profile?.is_premium || profile?.is_vip || Number(profile?.grid_consultations_remaining || 0) > 0);
   const getPrice = (key: string, fallback: number) => {
     const value = Number(pricing?.PRICES?.[key]);
     return Number.isFinite(value) && value > 0 ? value : fallback;
@@ -45,6 +46,7 @@ const StorePage: React.FC = () => {
     ? {
         alreadyTitle: 'Already available',
         alreadyBody: 'Partners around me is already included in your access.',
+        galleryAlreadyBody: 'Gallery access is already available on your account.',
         error: 'Error',
         subtitle: 'Privileges & Exclusives',
         statusLabel: 'Your current status',
@@ -117,6 +119,7 @@ const StorePage: React.FC = () => {
     : {
         alreadyTitle: 'Déjà disponible',
         alreadyBody: 'Partenaires autour de moi est déjà inclus dans votre accès.',
+        galleryAlreadyBody: 'L acces Galerie est deja disponible sur votre compte.',
         error: 'Erreur',
         subtitle: 'Privilèges & Exclusivités',
         statusLabel: 'Votre Statut Actuel',
@@ -203,6 +206,10 @@ const StorePage: React.FC = () => {
   const handlePurchase = async (type: PurchaseType, id: string, amount: number) => {
     if (type === 'PARTNER_DISCOVERY_UNLOCK' && hasPartnerDiscoveryAccess) {
       showAlert(labels.alreadyTitle, labels.alreadyBody);
+      return;
+    }
+    if (type === 'DISCOVER_GRID_UNLOCK' && hasGalleryAccess) {
+      showAlert(labels.alreadyTitle, labels.galleryAlreadyBody);
       return;
     }
 
@@ -434,7 +441,9 @@ const StorePage: React.FC = () => {
             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">{labels.passes}</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {labels.unlocks.map((item) => {
-                const alreadyGranted = item.type === 'PARTNER_DISCOVERY_UNLOCK' && hasPartnerDiscoveryAccess;
+                const alreadyGranted =
+                  (item.type === 'PARTNER_DISCOVERY_UNLOCK' && hasPartnerDiscoveryAccess) ||
+                  (item.type === 'DISCOVER_GRID_UNLOCK' && hasGalleryAccess);
                 const disabled = !!loadingId || purchaseLoading || alreadyGranted;
                 return (
                 <button

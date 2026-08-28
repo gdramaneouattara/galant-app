@@ -18,10 +18,26 @@ const normalizeText = (value) => String(value || '').trim().toLowerCase()
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '');
 
-const normalizeGridRemaining = (value) => {
+const normalizeGridRemaining = (value, quotaCeiling = QUOTAS.DISCOVER_GRID_PROFILES) => {
   const remaining = Number(value || 0);
   if (!Number.isFinite(remaining)) return 0;
-  return Math.max(0, Math.min(QUOTAS.DISCOVER_GRID_PROFILES, Math.floor(remaining)));
+  const ceiling = Math.max(QUOTAS.DISCOVER_GRID_PROFILES, Math.floor(Number(quotaCeiling) || 0));
+  return Math.max(0, Math.min(ceiling, Math.floor(remaining)));
+};
+
+const getPurchasedGridQuotaCeiling = async (userId, tx = null) => {
+  if (!userId) return QUOTAS.DISCOVER_GRID_PROFILES;
+  const query = db.collection('purchased_interactions')
+    .where('user_id', '==', userId)
+    .limit(300);
+  const snapshot = tx ? await tx.get(query) : await query.get();
+  const purchaseCount = snapshot.docs.filter((doc) => (
+    doc.data()?.interaction_type === 'DISCOVER_GRID_UNLOCK'
+  )).length;
+  return Math.max(
+    QUOTAS.DISCOVER_GRID_PROFILES,
+    purchaseCount * QUOTAS.DISCOVER_GRID_PROFILES
+  );
 };
 
 const toPublicProfile = (p) => {
@@ -191,7 +207,8 @@ const getSuggestions = async (req, res) => {
 
   // 0. Quota check for Grid
   if (isGridMode && !me.is_premium) {
-    gridRemainingForResponse = normalizeGridRemaining(me.grid_consultations_remaining);
+    const gridQuotaCeiling = await getPurchasedGridQuotaCeiling(me.id);
+    gridRemainingForResponse = normalizeGridRemaining(me.grid_consultations_remaining, gridQuotaCeiling);
     if (gridRemainingForResponse <= 0) {
       return res.status(403).json({ error: 'grid_quota_exceeded', message: "Votre quota d'exploration est épuisé. Repassez au Swipe ou débloquez un pack." });
     }
@@ -445,7 +462,8 @@ const markGridProfilesViewed = async (req, res) => {
 
       const profileData = profileDoc.data();
       const rawRemaining = Math.max(0, Number(profileData.grid_consultations_remaining || 0));
-      const remaining = normalizeGridRemaining(rawRemaining);
+      const gridQuotaCeiling = await getPurchasedGridQuotaCeiling(me.id, transaction);
+      const remaining = normalizeGridRemaining(rawRemaining, gridQuotaCeiling);
       if (remaining <= 0) return { consumed: 0, remaining: 0, exhausted: true };
 
       const viewDocs = await Promise.all(viewRefs.map(ref => transaction.get(ref)));
