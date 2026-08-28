@@ -42,13 +42,29 @@ const validateOriginalVideo = async (inputPath, profile) => {
   }
 
   const duration = Number(metadata.format?.duration || videoStream.duration || 0);
-  if (!Number.isFinite(duration) || duration <= 0 || duration > profile.maxDuration + 1) {
+  const hasFiniteDuration = Number.isFinite(duration) && duration > 0;
+  if (hasFiniteDuration && duration > profile.maxDuration + 1) {
     const error = new Error('video_too_long');
     error.statusCode = 400;
     throw error;
   }
 
-  return { duration, width: Number(videoStream.width || 0), height: Number(videoStream.height || 0) };
+  return {
+    duration: hasFiniteDuration ? duration : null,
+    hasFiniteDuration,
+    width: Number(videoStream.width || 0),
+    height: Number(videoStream.height || 0)
+  };
+};
+
+const validateCompressedVideo = async (inputPath, profile) => {
+  const metadata = await validateOriginalVideo(inputPath, profile);
+  if (!metadata.hasFiniteDuration) {
+    const error = new Error('invalid_video_duration');
+    error.statusCode = 400;
+    throw error;
+  }
+  return metadata;
 };
 
 /**
@@ -128,11 +144,18 @@ const uploadCompressedVideo = async (req, res) => {
 
   try {
     const profile = isChat ? VIDEO_PROFILES.CHAT : VIDEO_PROFILES.STATUS;
-    await validateOriginalVideo(inputPath, profile);
+    const originalMetadata = await validateOriginalVideo(inputPath, profile);
+    const canUseOriginalFallback = originalMetadata.hasFiniteDuration;
 
     try {
       await compressVideo(inputPath, outputPath, isChat);
+      await validateCompressedVideo(outputPath, profile);
     } catch (error) {
+      if (!canUseOriginalFallback) {
+        error.statusCode = error.statusCode || 400;
+        error.message = error.message || 'invalid_video_duration';
+        throw error;
+      }
       console.warn('[media] video_compression_failed_using_original', error.message);
       videoPathToUpload = inputPath;
       videoFilename = `original_${stamp}${getSafeVideoExtension(req.file)}`;
