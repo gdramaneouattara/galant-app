@@ -100,6 +100,9 @@ test('vocal serenade supports one-listen playback across web and mobile', async 
   assert.match(messageController, /metadata\/played_at/);
   assert.match(webChat, /VOICE_MAX_DURATION_SECONDS\s*=\s*30/);
   assert.match(webChat, /VOICE_UPLOAD_MAX_BYTES\s*=\s*2\s*\*\s*1024\s*\*\s*1024/);
+  assert.match(webChat, /const requirePremiumMediaAccess = \(\) =>/);
+  assert.match(webChat, /const handleVoiceUpload = async \(file: Blob\) => \{\s*if \(!requirePremiumMediaAccess\(\)\) return;/);
+  assert.match(webChat, /const handleStartRec = async \(\) => \{\s*if \(!requirePremiumMediaAccess\(\)\) return;/);
   assert.match(webVoicePlayer, /body:\s*JSON\.stringify\(\{\s*matchId,\s*venueChatId\s*\}\)/s);
   assert.match(nativeChat, /Audio\.Recording\.createAsync/);
   assert.match(nativeChat, /messageType:\s*'VOICE'/);

@@ -341,6 +341,13 @@ const ChatPage: React.FC = () => {
     return { mediaUrl, metadata };
   };
 
+  const requirePremiumMediaAccess = () => {
+    if (profile?.is_premium) return true;
+    showAlert(t('premium_required'), t('media_premium_only'));
+    navigate('/store');
+    return false;
+  };
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if ((!inputText.trim() && !pendingAttachment) || sending || uploading || !user || !targetUser) return;
@@ -385,11 +392,7 @@ const ChatPage: React.FC = () => {
   };
 
   const handleMediaSelect = async (e: React.ChangeEvent<HTMLInputElement>, type: 'IMAGE' | 'VIDEO') => {
-    if (!profile?.is_premium) {
-      showAlert(t('premium_required'), t('media_premium_only'));
-      navigate('/store');
-      return;
-    }
+    if (!requirePremiumMediaAccess()) return;
 
     const file = e.target.files?.[0];
     if (!file || !user || (!matchId && !venueChatId)) return;
@@ -419,6 +422,8 @@ const ChatPage: React.FC = () => {
   };
 
   const handleVoiceUpload = async (file: Blob) => {
+    if (!requirePremiumMediaAccess()) return;
+
     setUploading(true);
     try {
       const sRef = storageRef(fbStorage, `chats/${venueChatId || matchId}/${Date.now()}_serenade.webm`);
@@ -454,6 +459,8 @@ const ChatPage: React.FC = () => {
   };
 
   const handleStartRec = async () => {
+    if (!requirePremiumMediaAccess()) return;
+
     try {
       const { recorder, stream } = await startRecording();
       setRecorder(recorder);
