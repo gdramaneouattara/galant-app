@@ -432,6 +432,7 @@ const applyPurchasedEntitlement = async ({
         const profileRef = db.collection('profiles').doc(userId);
         const payload = {
           grid_consultations_remaining: FieldValue.increment(quota),
+          grid_quota_purchased_total: FieldValue.increment(quota),
           is_grid_unlocked: true,
           updated_at: nowIso
         };
