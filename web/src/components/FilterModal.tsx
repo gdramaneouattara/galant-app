@@ -95,8 +95,30 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, onApply, defau
     setDraftFilters({ ...draftFilters, minScore: score });
   };
 
+  const sanitizeAgeInput = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    if (!digits) return '';
+    return digits.length > 2 ? digits.slice(-2) : digits;
+  };
+
+  const normalizeAge = (value: unknown, fallback: number) => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.max(18, Math.min(80, Math.floor(parsed)));
+  };
+
+  const handleAgeChange = (key: 'minAge' | 'maxAge', value: string) => {
+    setDraftFilters({ ...draftFilters, [key]: sanitizeAgeInput(value) });
+  };
+
   const handleApply = () => {
-    onApply({ ...draftFilters });
+    const minAge = normalizeAge(draftFilters.minAge, defaultFilters.minAge);
+    const maxAge = normalizeAge(draftFilters.maxAge, defaultFilters.maxAge);
+    onApply({
+      ...draftFilters,
+      minAge: Math.min(minAge, maxAge),
+      maxAge: Math.max(minAge, maxAge)
+    });
     onClose();
   };
 
@@ -148,17 +170,25 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, onApply, defau
             <p className="text-xs font-black uppercase text-slate-400 tracking-widest">{c.age} : {draftFilters.minAge} - {draftFilters.maxAge}</p>
             <div className="flex items-center gap-4">
               <input
-                type="number"
-                value={draftFilters.minAge}
-                onChange={e => setDraftFilters({ ...draftFilters, minAge: parseInt(e.target.value, 10) || defaultFilters.minAge })}
-                className="w-full bg-slate-50 border-none p-4 rounded-2xl text-center font-bold"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={2}
+                value={draftFilters.minAge ?? ''}
+                onFocus={e => e.currentTarget.select()}
+                onChange={e => handleAgeChange('minAge', e.target.value)}
+                className="w-full bg-slate-50 border-none p-4 rounded-2xl text-center font-bold text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
               <span className="font-black text-slate-200">{c.to}</span>
               <input
-                type="number"
-                value={draftFilters.maxAge}
-                onChange={e => setDraftFilters({ ...draftFilters, maxAge: parseInt(e.target.value, 10) || defaultFilters.maxAge })}
-                className="w-full bg-slate-50 border-none p-4 rounded-2xl text-center font-bold"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={2}
+                value={draftFilters.maxAge ?? ''}
+                onFocus={e => e.currentTarget.select()}
+                onChange={e => handleAgeChange('maxAge', e.target.value)}
+                className="w-full bg-slate-50 border-none p-4 rounded-2xl text-center font-bold text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             </div>
           </div>
