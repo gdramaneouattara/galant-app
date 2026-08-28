@@ -10,6 +10,14 @@ const fs = require('fs');
 const MAX_VIDEO_UPLOAD_BYTES = 30 * 1024 * 1024;
 const VIDEO_UPLOAD_TMP_DIR = path.join(os.tmpdir(), 'galant-video-uploads');
 const VIDEO_EXTENSIONS = new Set(['.mp4', '.m4v', '.mov', '.webm', '.3gp', '.3gpp']);
+const VIDEO_MIME_TYPES = new Set([
+  'video/mp4',
+  'video/x-m4v',
+  'video/quicktime',
+  'video/webm',
+  'video/3gpp',
+  'video/3gpp2',
+]);
 const VIDEO_FALLBACK_MIME_TYPES = new Set([
   '',
   'application/octet-stream',
@@ -21,10 +29,10 @@ fs.mkdirSync(VIDEO_UPLOAD_TMP_DIR, { recursive: true });
 
 const isAcceptedVideoUpload = (file = {}) => {
   const mimetype = String(file.mimetype || '').toLowerCase();
-  if (mimetype.startsWith('video/')) return true;
-
   const ext = path.extname(file.originalname || '').toLowerCase();
-  return VIDEO_EXTENSIONS.has(ext) && VIDEO_FALLBACK_MIME_TYPES.has(mimetype);
+  if (!VIDEO_EXTENSIONS.has(ext)) return false;
+  if (VIDEO_FALLBACK_MIME_TYPES.has(mimetype)) return true;
+  return VIDEO_MIME_TYPES.has(mimetype);
 };
 
 const upload = multer({

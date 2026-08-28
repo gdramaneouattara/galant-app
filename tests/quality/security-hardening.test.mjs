@@ -48,9 +48,13 @@ test('video uploads are bounded, compressed, and use persisted thumbnails', asyn
   assert.match(mediaRoutes, /isAcceptedVideoUpload/);
   assert.match(mediaRoutes, /application\/octet-stream/);
   assert.match(mediaRoutes, /VIDEO_EXTENSIONS/);
+  assert.match(mediaRoutes, /VIDEO_MIME_TYPES/);
   assert.match(mediaRoutes, /\.3gpp/);
   assert.doesNotMatch(mediaRoutes, /\.avi/);
   assert.doesNotMatch(mediaRoutes, /\.mkv/);
+  assert.doesNotMatch(mediaRoutes, /startsWith\('video\/'\)\s*\)\s*return true/);
+  assert.doesNotMatch(mediaRoutes, /video\/x-msvideo/);
+  assert.doesNotMatch(mediaRoutes, /video\/x-matroska/);
   assert.match(mediaController, /validateOriginalVideo/);
   assert.match(mediaController, /validateCompressedVideo/);
   assert.match(mediaController, /createVideoValidationError/);
