@@ -9,7 +9,7 @@ const os = require('os');
 const fs = require('fs');
 const MAX_VIDEO_UPLOAD_BYTES = 30 * 1024 * 1024;
 const VIDEO_UPLOAD_TMP_DIR = path.join(os.tmpdir(), 'galant-video-uploads');
-const VIDEO_EXTENSIONS = new Set(['.mp4', '.m4v', '.mov', '.webm', '.avi', '.mkv', '.3gp']);
+const VIDEO_EXTENSIONS = new Set(['.mp4', '.m4v', '.mov', '.webm', '.3gp', '.3gpp']);
 const VIDEO_FALLBACK_MIME_TYPES = new Set([
   '',
   'application/octet-stream',
