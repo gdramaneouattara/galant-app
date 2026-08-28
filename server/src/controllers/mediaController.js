@@ -22,6 +22,35 @@ const VIDEO_PROFILES = {
   },
 };
 
+const getVideoMetadata = (inputPath) => (
+  new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(inputPath, (error, metadata) => {
+      if (error) return reject(error);
+      resolve(metadata || {});
+    });
+  })
+);
+
+const validateOriginalVideo = async (inputPath, profile) => {
+  const metadata = await getVideoMetadata(inputPath);
+  const streams = Array.isArray(metadata.streams) ? metadata.streams : [];
+  const videoStream = streams.find((stream) => stream.codec_type === 'video');
+  if (!videoStream) {
+    const error = new Error('invalid_video_stream');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const duration = Number(metadata.format?.duration || videoStream.duration || 0);
+  if (!Number.isFinite(duration) || duration <= 0 || duration > profile.maxDuration + 1) {
+    const error = new Error('video_too_long');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return { duration, width: Number(videoStream.width || 0), height: Number(videoStream.height || 0) };
+};
+
 /**
  * Compresses a video for Chat/Stories.
  * Stories: 15s, Chat: 30s
@@ -98,6 +127,9 @@ const uploadCompressedVideo = async (req, res) => {
   let thumbnailPathToUpload = thumbnailPath;
 
   try {
+    const profile = isChat ? VIDEO_PROFILES.CHAT : VIDEO_PROFILES.STATUS;
+    await validateOriginalVideo(inputPath, profile);
+
     try {
       await compressVideo(inputPath, outputPath, isChat);
     } catch (error) {
@@ -146,7 +178,9 @@ const uploadCompressedVideo = async (req, res) => {
   } catch (error) {
     console.error('Video processing error:', error);
     cleanupFiles(inputPath, outputPath, thumbnailPath);
-    res.status(500).json({ error: 'video_upload_failed' });
+    const statusCode = error.statusCode || 500;
+    const safeError = statusCode === 400 ? error.message : 'video_upload_failed';
+    res.status(statusCode).json({ error: safeError });
   }
 };
 
