@@ -45,6 +45,9 @@ test('video uploads are bounded, compressed, and use persisted thumbnails', asyn
 
   assert.match(mediaRoutes, /MAX_VIDEO_UPLOAD_BYTES\s*=\s*30\s*\*\s*1024\s*\*\s*1024/);
   assert.match(mediaRoutes, /LIMIT_FILE_SIZE/);
+  assert.match(mediaRoutes, /isAcceptedVideoUpload/);
+  assert.match(mediaRoutes, /application\/octet-stream/);
+  assert.match(mediaRoutes, /VIDEO_EXTENSIONS/);
   assert.match(mediaController, /validateOriginalVideo/);
   assert.match(mediaController, /validateCompressedVideo/);
   assert.match(mediaController, /createVideoValidationError/);
@@ -65,6 +68,8 @@ test('video uploads are bounded, compressed, and use persisted thumbnails', asyn
   assert.match(nativeChatItem, /videoOpen/);
   assert.match(webStories, /compressVideoWeb/);
   assert.match(webStories, /thumbnailUrl/);
+  assert.match(webChat, /ensureVideoUploadFile/);
+  assert.match(webChat, /inferVideoMimeType/);
   assert.match(webChat, /preload="none"/);
   assert.match(webChat, /poster=/);
   assert.match(webVideo, /MediaRecorder/);
