@@ -22,6 +22,22 @@ const VIDEO_PROFILES = {
   },
 };
 
+const VIDEO_VALIDATION_ERRORS = new Set(['invalid_video_stream', 'invalid_video_duration', 'video_too_long']);
+
+const createVideoValidationError = (message) => {
+  const error = new Error(VIDEO_VALIDATION_ERRORS.has(message) ? message : 'invalid_video_duration');
+  error.statusCode = 400;
+  error.isVideoValidationError = true;
+  return error;
+};
+
+const sanitizeVideoUploadError = (error) => {
+  if (error?.isVideoValidationError || error?.statusCode === 400) {
+    return VIDEO_VALIDATION_ERRORS.has(error.message) ? error.message : 'invalid_video_duration';
+  }
+  return 'video_upload_failed';
+};
+
 const getVideoMetadata = (inputPath) => (
   new Promise((resolve, reject) => {
     ffmpeg.ffprobe(inputPath, (error, metadata) => {
@@ -36,17 +52,13 @@ const validateOriginalVideo = async (inputPath, profile) => {
   const streams = Array.isArray(metadata.streams) ? metadata.streams : [];
   const videoStream = streams.find((stream) => stream.codec_type === 'video');
   if (!videoStream) {
-    const error = new Error('invalid_video_stream');
-    error.statusCode = 400;
-    throw error;
+    throw createVideoValidationError('invalid_video_stream');
   }
 
   const duration = Number(metadata.format?.duration || videoStream.duration || 0);
   const hasFiniteDuration = Number.isFinite(duration) && duration > 0;
   if (hasFiniteDuration && duration > profile.maxDuration + 1) {
-    const error = new Error('video_too_long');
-    error.statusCode = 400;
-    throw error;
+    throw createVideoValidationError('video_too_long');
   }
 
   return {
@@ -60,9 +72,7 @@ const validateOriginalVideo = async (inputPath, profile) => {
 const validateCompressedVideo = async (inputPath, profile) => {
   const metadata = await validateOriginalVideo(inputPath, profile);
   if (!metadata.hasFiniteDuration) {
-    const error = new Error('invalid_video_duration');
-    error.statusCode = 400;
-    throw error;
+    throw createVideoValidationError('invalid_video_duration');
   }
   return metadata;
 };
@@ -152,8 +162,9 @@ const uploadCompressedVideo = async (req, res) => {
       await validateCompressedVideo(outputPath, profile);
     } catch (error) {
       if (!canUseOriginalFallback) {
-        error.statusCode = error.statusCode || 400;
-        error.message = error.message || 'invalid_video_duration';
+        if (error?.isVideoValidationError || error?.statusCode === 400) {
+          throw createVideoValidationError(error.message);
+        }
         throw error;
       }
       console.warn('[media] video_compression_failed_using_original', error.message);
@@ -202,7 +213,7 @@ const uploadCompressedVideo = async (req, res) => {
     console.error('Video processing error:', error);
     cleanupFiles(inputPath, outputPath, thumbnailPath);
     const statusCode = error.statusCode || 500;
-    const safeError = statusCode === 400 ? error.message : 'video_upload_failed';
+    const safeError = sanitizeVideoUploadError(error);
     res.status(statusCode).json({ error: safeError });
   }
 };
