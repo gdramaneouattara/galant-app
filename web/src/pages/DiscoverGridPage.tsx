@@ -46,14 +46,13 @@ type GridCache = {
 };
 
 const GRID_PAGE_SIZE = 12;
-const GRID_PROFILE_QUOTA = 100;
 const GRID_CACHE_TTL_MS = 90 * 60 * 1000;
 const GRID_CACHE_PREFIX = 'galant:discover-grid:v3';
 
 const normalizeGridQuota = (value: number | null | undefined) => {
   const remaining = Number(value || 0);
   if (!Number.isFinite(remaining)) return 0;
-  return Math.max(0, Math.min(GRID_PROFILE_QUOTA, Math.floor(remaining)));
+  return Math.max(0, Math.floor(remaining));
 };
 
 const DiscoverGridPage: React.FC = () => {

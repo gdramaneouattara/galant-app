@@ -27,13 +27,26 @@ const normalizeGridRemaining = (value, quotaCeiling = QUOTAS.DISCOVER_GRID_PROFI
 
 const getPurchasedGridQuotaCeiling = async (userId, tx = null) => {
   if (!userId) return QUOTAS.DISCOVER_GRID_PROFILES;
-  const query = db.collection('purchased_interactions')
-    .where('user_id', '==', userId)
-    .limit(300);
-  const snapshot = tx ? await tx.get(query) : await query.get();
-  const purchaseCount = snapshot.docs.filter((doc) => (
-    doc.data()?.interaction_type === 'DISCOVER_GRID_UNLOCK'
-  )).length;
+  const pageSize = 300;
+  let purchaseCount = 0;
+  let lastDoc = null;
+
+  while (true) {
+    let query = db.collection('purchased_interactions')
+      .where('user_id', '==', userId)
+      .limit(pageSize);
+
+    if (lastDoc) query = query.startAfter(lastDoc);
+
+    const snapshot = tx ? await tx.get(query) : await query.get();
+    snapshot.docs.forEach((doc) => {
+      if (doc.data()?.interaction_type === 'DISCOVER_GRID_UNLOCK') purchaseCount += 1;
+    });
+
+    if (snapshot.docs.length < pageSize) break;
+    lastDoc = snapshot.docs[snapshot.docs.length - 1];
+  }
+
   return Math.max(
     QUOTAS.DISCOVER_GRID_PROFILES,
     purchaseCount * QUOTAS.DISCOVER_GRID_PROFILES
@@ -205,15 +218,6 @@ const getSuggestions = async (req, res) => {
   const myCountry = normalizeText(me.passport_country || me.country);
   let gridRemainingForResponse = null;
 
-  // 0. Quota check for Grid
-  if (isGridMode && !me.is_premium) {
-    const gridQuotaCeiling = await getPurchasedGridQuotaCeiling(me.id);
-    gridRemainingForResponse = normalizeGridRemaining(me.grid_consultations_remaining, gridQuotaCeiling);
-    if (gridRemainingForResponse <= 0) {
-      return res.status(403).json({ error: 'grid_quota_exceeded', message: "Votre quota d'exploration est épuisé. Repassez au Swipe ou débloquez un pack." });
-    }
-  }
-
   // Logic: Serious goals see opposite gender only. Casual/Friendship see all.
   const isStrictGoal = meGoal === 'SERIOUS' || meGoal === 'MARRIAGE';
   const forcedOppositeGender =
@@ -234,6 +238,15 @@ const getSuggestions = async (req, res) => {
 
   try {
     const now = new Date().toISOString();
+
+    // 0. Quota check for Grid
+    if (isGridMode && !me.is_premium) {
+      const gridQuotaCeiling = await getPurchasedGridQuotaCeiling(me.id);
+      gridRemainingForResponse = normalizeGridRemaining(me.grid_consultations_remaining, gridQuotaCeiling);
+      if (gridRemainingForResponse <= 0) {
+        return res.status(403).json({ error: 'grid_quota_exceeded', message: "Votre quota d'exploration est épuisé. Repassez au Swipe ou débloquez un pack." });
+      }
+    }
 
     // 1. Fetch Golden Roses, My positive likes, dismissed profiles, matches, and Super Likes received
     const [grSnapshot, myLikesSnapshot, myDismissedSnapshot, myMatchesSnapshot, incomingSuperLikesSnapshot] = await Promise.all([
