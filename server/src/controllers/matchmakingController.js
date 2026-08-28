@@ -25,32 +25,12 @@ const normalizeGridRemaining = (value, quotaCeiling = QUOTAS.DISCOVER_GRID_PROFI
   return Math.max(0, Math.min(ceiling, Math.floor(remaining)));
 };
 
-const getPurchasedGridQuotaCeiling = async (userId, tx = null) => {
-  if (!userId) return QUOTAS.DISCOVER_GRID_PROFILES;
-  const pageSize = 300;
-  let purchaseCount = 0;
-  let lastDoc = null;
-
-  while (true) {
-    let query = db.collection('purchased_interactions')
-      .where('user_id', '==', userId)
-      .limit(pageSize);
-
-    if (lastDoc) query = query.startAfter(lastDoc);
-
-    const snapshot = tx ? await tx.get(query) : await query.get();
-    snapshot.docs.forEach((doc) => {
-      if (doc.data()?.interaction_type === 'DISCOVER_GRID_UNLOCK') purchaseCount += 1;
-    });
-
-    if (snapshot.docs.length < pageSize) break;
-    lastDoc = snapshot.docs[snapshot.docs.length - 1];
+const getPurchasedGridQuotaCeiling = (profile = {}) => {
+  const purchasedTotal = Number(profile.grid_quota_purchased_total || 0);
+  if (!Number.isFinite(purchasedTotal) || purchasedTotal <= 0) {
+    return QUOTAS.DISCOVER_GRID_PROFILES;
   }
-
-  return Math.max(
-    QUOTAS.DISCOVER_GRID_PROFILES,
-    purchaseCount * QUOTAS.DISCOVER_GRID_PROFILES
-  );
+  return Math.max(QUOTAS.DISCOVER_GRID_PROFILES, Math.floor(purchasedTotal));
 };
 
 const toPublicProfile = (p) => {
@@ -241,7 +221,7 @@ const getSuggestions = async (req, res) => {
 
     // 0. Quota check for Grid
     if (isGridMode && !me.is_premium) {
-      const gridQuotaCeiling = await getPurchasedGridQuotaCeiling(me.id);
+      const gridQuotaCeiling = getPurchasedGridQuotaCeiling(me);
       gridRemainingForResponse = normalizeGridRemaining(me.grid_consultations_remaining, gridQuotaCeiling);
       if (gridRemainingForResponse <= 0) {
         return res.status(403).json({ error: 'grid_quota_exceeded', message: "Votre quota d'exploration est épuisé. Repassez au Swipe ou débloquez un pack." });
@@ -475,7 +455,7 @@ const markGridProfilesViewed = async (req, res) => {
 
       const profileData = profileDoc.data();
       const rawRemaining = Math.max(0, Number(profileData.grid_consultations_remaining || 0));
-      const gridQuotaCeiling = await getPurchasedGridQuotaCeiling(me.id, transaction);
+      const gridQuotaCeiling = getPurchasedGridQuotaCeiling(profileData);
       const remaining = normalizeGridRemaining(rawRemaining, gridQuotaCeiling);
       if (remaining <= 0) return { consumed: 0, remaining: 0, exhausted: true };
 
