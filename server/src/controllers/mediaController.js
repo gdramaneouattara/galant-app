@@ -126,12 +126,30 @@ const cleanupFiles = (...paths) => {
   });
 };
 
+const VIDEO_CONTENT_TYPE_BY_EXTENSION = {
+  '.mp4': 'video/mp4',
+  '.m4v': 'video/mp4',
+  '.mov': 'video/quicktime',
+  '.webm': 'video/webm',
+  '.3gp': 'video/3gpp',
+  '.3gpp': 'video/3gpp',
+};
+
 const getSafeVideoExtension = (file = {}) => {
   const ext = path.extname(file.originalname || '').toLowerCase();
-  if (['.mp4', '.mov', '.m4v', '.webm'].includes(ext)) return ext;
+  if (VIDEO_CONTENT_TYPE_BY_EXTENSION[ext]) return ext;
   if (String(file.mimetype || '').includes('webm')) return '.webm';
   if (String(file.mimetype || '').includes('quicktime')) return '.mov';
+  if (String(file.mimetype || '').includes('3gpp')) return '.3gp';
   return '.mp4';
+};
+
+const getSafeVideoContentType = (file = {}) => {
+  const declaredType = String(file.mimetype || '').toLowerCase();
+  if (declaredType.startsWith('video/')) return declaredType;
+
+  const ext = getSafeVideoExtension(file);
+  return VIDEO_CONTENT_TYPE_BY_EXTENSION[ext] || 'video/mp4';
 };
 
 const uploadCompressedVideo = async (req, res) => {
@@ -170,7 +188,7 @@ const uploadCompressedVideo = async (req, res) => {
       console.warn('[media] video_compression_failed_using_original', error.message);
       videoPathToUpload = inputPath;
       videoFilename = `original_${stamp}${getSafeVideoExtension(req.file)}`;
-      videoContentType = req.file.mimetype || 'video/mp4';
+      videoContentType = getSafeVideoContentType(req.file);
     }
 
     try {
