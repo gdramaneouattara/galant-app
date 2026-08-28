@@ -5,9 +5,14 @@ const { requireAuth } = require('../middleware/auth');
 const { uploadCompressedVideo } = require('../controllers/mediaController');
 
 const path = require('path');
+const os = require('os');
+const fs = require('fs');
 const MAX_VIDEO_UPLOAD_BYTES = 30 * 1024 * 1024;
+const VIDEO_UPLOAD_TMP_DIR = path.join(os.tmpdir(), 'galant-video-uploads');
+fs.mkdirSync(VIDEO_UPLOAD_TMP_DIR, { recursive: true });
+
 const upload = multer({
-  dest: path.join(__dirname, '../../uploads/'), // Chemin absolu vers le dossier temporaire
+  dest: VIDEO_UPLOAD_TMP_DIR,
   limits: { fileSize: MAX_VIDEO_UPLOAD_BYTES },
   fileFilter: (req, file, cb) => {
     if (!String(file.mimetype || '').startsWith('video/')) {
