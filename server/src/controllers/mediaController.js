@@ -61,6 +61,24 @@ const createVideoThumbnail = (inputPath, outputPath) => (
   })
 );
 
+const cleanupFiles = (...paths) => {
+  [...new Set(paths.filter(Boolean))].forEach((filePath) => {
+    try {
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    } catch (error) {
+      console.warn('[media] temp_cleanup_failed', error.message);
+    }
+  });
+};
+
+const getSafeVideoExtension = (file = {}) => {
+  const ext = path.extname(file.originalname || '').toLowerCase();
+  if (['.mp4', '.mov', '.m4v', '.webm'].includes(ext)) return ext;
+  if (String(file.mimetype || '').includes('webm')) return '.webm';
+  if (String(file.mimetype || '').includes('quicktime')) return '.mov';
+  return '.mp4';
+};
+
 const uploadCompressedVideo = async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
@@ -74,47 +92,61 @@ const uploadCompressedVideo = async (req, res) => {
   const folder = isChat ? 'chat-media' : 'statuses';
   const outputPath = path.join(path.dirname(inputPath), outputFilename);
   const thumbnailPath = path.join(path.dirname(inputPath), thumbnailFilename);
+  let videoPathToUpload = outputPath;
+  let videoFilename = outputFilename;
+  let videoContentType = 'video/mp4';
+  let thumbnailPathToUpload = thumbnailPath;
 
   try {
-    // 1. Compress
-    await compressVideo(inputPath, outputPath, isChat);
-    await createVideoThumbnail(outputPath, thumbnailPath);
+    try {
+      await compressVideo(inputPath, outputPath, isChat);
+    } catch (error) {
+      console.warn('[media] video_compression_failed_using_original', error.message);
+      videoPathToUpload = inputPath;
+      videoFilename = `original_${stamp}${getSafeVideoExtension(req.file)}`;
+      videoContentType = req.file.mimetype || 'video/mp4';
+    }
 
-    // 2. Upload to Firebase Storage
-    const destination = `${folder}/${req.user.id}/${outputFilename}`;
-    const thumbnailDestination = `${folder}/${req.user.id}/${thumbnailFilename}`;
+    try {
+      await createVideoThumbnail(videoPathToUpload, thumbnailPath);
+    } catch (error) {
+      console.warn('[media] video_thumbnail_failed_without_blocking_publish', error.message);
+      thumbnailPathToUpload = null;
+    }
 
-    await bucket.upload(outputPath, {
+    const destination = `${folder}/${req.user.id}/${videoFilename}`;
+    const thumbnailDestination = thumbnailPathToUpload ? `${folder}/${req.user.id}/${thumbnailFilename}` : null;
+
+    await bucket.upload(videoPathToUpload, {
       destination,
       metadata: {
-        contentType: 'video/mp4',
+        contentType: videoContentType,
+        cacheControl: 'public, max-age=31536000, immutable',
       }
     });
 
-    await bucket.upload(thumbnailPath, {
-      destination: thumbnailDestination,
-      metadata: {
-        contentType: 'image/jpeg',
-      }
-    });
+    if (thumbnailDestination) {
+      await bucket.upload(thumbnailPathToUpload, {
+        destination: thumbnailDestination,
+        metadata: {
+          contentType: 'image/jpeg',
+          cacheControl: 'public, max-age=31536000, immutable',
+        }
+      });
+    }
 
-    // 3. Clean up
-    if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-    if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-    if (fs.existsSync(thumbnailPath)) fs.unlinkSync(thumbnailPath);
+    cleanupFiles(inputPath, outputPath, thumbnailPath);
 
     res.json({
       success: true,
-      mediaUrl: `${req.user.id}/${outputFilename}`,
-      thumbnailUrl: `${req.user.id}/${thumbnailFilename}`
+      mediaUrl: `${req.user.id}/${videoFilename}`,
+      thumbnailUrl: thumbnailDestination ? `${req.user.id}/${thumbnailFilename}` : null
     });
 
   } catch (error) {
     console.error('Video processing error:', error);
-    if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-    if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-    if (fs.existsSync(thumbnailPath)) fs.unlinkSync(thumbnailPath);
-    res.status(500).json({ error: 'Failed to process video' });
+    cleanupFiles(inputPath, outputPath, thumbnailPath);
+    res.status(500).json({ error: 'video_upload_failed' });
   }
 };
 
