@@ -45,6 +45,9 @@ test('video uploads are bounded, compressed, and use persisted thumbnails', asyn
 
   assert.match(mediaRoutes, /MAX_VIDEO_UPLOAD_BYTES\s*=\s*30\s*\*\s*1024\s*\*\s*1024/);
   assert.match(mediaRoutes, /LIMIT_FILE_SIZE/);
+  assert.match(mediaController, /validateOriginalVideo/);
+  assert.match(mediaController, /ffmpeg\.ffprobe/);
+  assert.match(mediaController, /video_too_long/);
   assert.match(mediaController, /createVideoThumbnail/);
   assert.match(mediaController, /thumbnailUrl/);
   assert.match(mediaController, /scale=-2:540/);
