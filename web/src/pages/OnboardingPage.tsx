@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import {
   User as UserIcon, MapPin, Heart, Sparkles, Image as ImageIcon,
   CheckCircle2, ChevronRight, ChevronLeft, Loader2,
-  Rocket, Gem, ShieldCheck, Lock, Camera, Cross, Moon, CircleEllipsis
+  Rocket, Gem, ShieldCheck, Lock, Camera, Cross, Moon, CircleEllipsis, Bell
 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { apiRequest } from '@shared/lib/api';
