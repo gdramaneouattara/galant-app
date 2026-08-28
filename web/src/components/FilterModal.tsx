@@ -114,11 +114,15 @@ const FilterModal: React.FC<Props> = ({ isOpen, onClose, filters, onApply, defau
   const handleApply = () => {
     const minAge = normalizeAge(draftFilters.minAge, defaultFilters.minAge);
     const maxAge = normalizeAge(draftFilters.maxAge, defaultFilters.maxAge);
-    onApply({
+    const appliedFilters = {
       ...draftFilters,
       minAge: Math.min(minAge, maxAge),
       maxAge: Math.max(minAge, maxAge)
-    });
+    };
+    {
+      const draftFilters = appliedFilters;
+      onApply({ ...draftFilters });
+    }
     onClose();
   };
 
