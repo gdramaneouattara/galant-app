@@ -18,6 +18,29 @@ import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 const MOBILE_TAB_BAR_HEIGHT = 72;
 const MOBILE_COMPOSER_GAP = 16;
+const VIDEO_MIME_BY_EXTENSION: Record<string, string> = {
+  mp4: 'video/mp4',
+  m4v: 'video/mp4',
+  mov: 'video/quicktime',
+  webm: 'video/webm',
+  '3gp': 'video/3gpp',
+};
+
+const inferVideoMimeType = (file: File | Blob, fallbackName = 'chat.mp4') => {
+  if (file.type?.startsWith('video/')) return file.type;
+  const name = 'name' in file && file.name ? file.name : fallbackName;
+  const ext = name.split('.').pop()?.toLowerCase() || '';
+  return VIDEO_MIME_BY_EXTENSION[ext] || 'video/mp4';
+};
+
+const ensureVideoUploadFile = (file: File | Blob, fallbackName = 'chat.mp4') => {
+  const sourceName = 'name' in file && file.name ? file.name : fallbackName;
+  const hasExtension = /\.[a-z0-9]{2,5}$/i.test(sourceName);
+  const mimeType = inferVideoMimeType(file, sourceName);
+  const name = hasExtension ? sourceName : `${sourceName}.mp4`;
+  if (file instanceof File && file.type === mimeType && hasExtension) return file;
+  return new File([file], name, { type: mimeType });
+};
 
 const ChatPage: React.FC = () => {
   const { matchId } = useParams();
@@ -315,8 +338,9 @@ const ChatPage: React.FC = () => {
         }
 
         const formData = new FormData();
+        const uploadVideo = ensureVideoUploadFile(optimizedVideo, videoFile.name || 'chat.mp4');
         formData.append('type', 'CHAT');
-        formData.append('video', optimizedVideo, optimizedVideo.name || 'chat.webm');
+        formData.append('video', uploadVideo, uploadVideo.name);
         const res = await apiRequest<{ mediaUrl: string; thumbnailUrl?: string }>('/api/media/upload-video', {
           method: 'POST',
           requireAuth: true,
@@ -347,7 +371,16 @@ const ChatPage: React.FC = () => {
         })
       });
     } catch (error: any) {
-      showAlert(t('upload_error'), error.message);
+      const message = String(error?.message || '').toLowerCase();
+      if (message.includes('video_too_large')) {
+        showAlert(t('video_too_heavy_title'), t('video_too_heavy'));
+      } else if (message.includes('video_too_long')) {
+        showAlert(t('video_too_long_title'), t('video_too_long_chat'));
+      } else if (message.includes('invalid_video') || message.includes('video_upload_failed')) {
+        showAlert(t('error'), t('video_unreadable'));
+      } else {
+        showAlert(t('upload_error'), error.message);
+      }
     } finally {
       setUploading(false);
       if (!(e instanceof Blob)) {
