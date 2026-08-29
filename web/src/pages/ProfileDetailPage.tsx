@@ -6,20 +6,14 @@ import { apiRequest } from '@shared/lib/api';
 import { showAlert } from '@shared/lib/ui-bridge';
 import {
   ChevronLeft, Heart, MapPin, MessageCircle, Rocket,
-  ShieldCheck, Star, Info, Target, User as UserIcon, ShieldAlert
+  ShieldCheck, ShieldAlert
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
 import ReportModal from '../components/ReportModal';
 import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
-import { getRelationshipGoalLabel } from '../components/GoalModal';
-
-const GENDER_LABELS: Record<string, { fr: string; en: string }> = {
-  MALE: { fr: 'Homme', en: 'Man' },
-  FEMALE: { fr: 'Femme', en: 'Woman' },
-  OTHER: { fr: 'Autre', en: 'Other' },
-};
+import ProfileFacts from '../components/ProfileFacts';
 
 const ProfileDetailPage: React.FC = () => {
   const { id } = useParams();
@@ -193,20 +187,7 @@ const ProfileDetailPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl space-y-1 transition-colors">
-                <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige flex items-center gap-1 transition-colors">
-                  <UserIcon size={12} /> {language === 'en' ? 'Gender' : 'Genre'}
-                </span>
-                <p className="font-bold text-slate-700 dark:text-slate-300 transition-colors">{GENDER_LABELS[profile.gender]?.[language] || profile.gender || (language === 'en' ? 'Not provided' : 'Non renseigne')}</p>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl space-y-1 transition-colors">
-                <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige flex items-center gap-1 transition-colors">
-                  <Target size={12} /> {language === 'en' ? 'Goal' : 'Objectif'}
-                </span>
-                <p className="font-bold text-slate-700 dark:text-slate-300 transition-colors">{getRelationshipGoalLabel(profile.relationship_goal, language)}</p>
-              </div>
-            </div>
+            <ProfileFacts profile={profile} language={language} variant="panel" includeLocation includeStatus />
 
             <div className="space-y-3">
               <h3 className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-prestige transition-colors">{language === 'en' ? 'About' : 'A propos'}</h3>

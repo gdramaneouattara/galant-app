@@ -15,6 +15,7 @@ import { apiRequest } from '@shared/lib/api';
 import { showAlert } from '@shared/lib/ui-bridge';
 import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
+import ProfileFacts from '../components/ProfileFacts';
 
 type DiscoverSuggestion = {
   id: string;
@@ -23,6 +24,11 @@ type DiscoverSuggestion = {
   photos: string[];
   photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
   city: string | null;
+  country?: string | null;
+  gender?: string | null;
+  relationship_goal?: string | null;
+  religion?: string | null;
+  religion_other?: string | null;
   score: number;
   is_verified: boolean;
   is_premium: boolean;
@@ -407,6 +413,7 @@ const DiscoverGridPage: React.FC = () => {
                   <MapPin size={10} className="text-primary" />
                   <span className="text-[9px] font-bold uppercase tracking-widest truncate">{profile.city || labels.city}</span>
                 </div>
+                <ProfileFacts profile={profile} language={language} variant="overlay" className="mt-1" />
               </div>
             </div>
           ))}

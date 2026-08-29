@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
 import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
+import ProfileFacts from '../components/ProfileFacts';
 
 interface LikeInboxRow {
   liker_id: string;
@@ -18,6 +19,11 @@ interface LikeInboxRow {
     name: string;
     age: number;
     city: string | null;
+    country?: string | null;
+    gender?: string | null;
+    relationship_goal?: string | null;
+    religion?: string | null;
+    religion_other?: string | null;
     photos: string[];
     photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
     is_verified: boolean;
@@ -177,6 +183,7 @@ const LikesInboxPage: React.FC = () => {
                   <MapPin size={12} />
                   <span>{row.user.city || t('city_not_set')}</span>
                 </div>
+                <ProfileFacts profile={row.user} language={language} className="mb-3" />
 
                 <div className="flex gap-2">
                   {row.is_matched ? (

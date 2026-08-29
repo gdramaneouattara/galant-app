@@ -2,6 +2,8 @@ import React from 'react';
 import { X, Heart, Check, Star, MapPin } from 'lucide-react';
 import OptimizedImage from './OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
+import ProfileFacts from './ProfileFacts';
+import type { ProfileLanguage } from '@shared/lib/profileFacts';
 
 export type SuperLikeStatus = 'PENDING' | 'ACCEPTED' | 'IGNORED';
 
@@ -24,7 +26,10 @@ export interface SuperLikeRow {
     age?: number | null;
     city?: string | null;
     country?: string | null;
+    gender?: string | null;
     relationship_goal?: string | null;
+    religion?: string | null;
+    religion_other?: string | null;
     bio?: string | null;
     photos: string[];
     photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
@@ -46,6 +51,7 @@ interface Props {
   isLiking: boolean;
   isResponding: boolean;
   isSuperLiking: boolean;
+  language?: ProfileLanguage;
 }
 
 const statusClasses: Record<SuperLikeStatus, string> = {
@@ -72,6 +78,7 @@ const SuperLikeDetailModal: React.FC<Props> = ({
   isLiking,
   isResponding,
   isSuperLiking,
+  language = 'fr',
 }) => {
   if (!isOpen || !row) return null;
 
@@ -112,11 +119,7 @@ const SuperLikeDetailModal: React.FC<Props> = ({
               </span>
             </div>
 
-            {row.user.relationship_goal && (
-              <span className="inline-flex bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-xs font-black">
-                {row.user.relationship_goal}
-              </span>
-            )}
+            <ProfileFacts profile={row.user} language={language} includeStatus />
 
             {row.note && (
               <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4">
