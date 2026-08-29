@@ -58,6 +58,19 @@ test('Rules: StatusScreen exists and is accessible', async () => {
   assert.doesNotMatch(code, /const canPublish = !locked/);
 });
 
+test('Rules: Story likers stay visible and preserve raw like context', async () => {
+  const webStories = await read('web/src/pages/StoriesPage.tsx');
+  const webLikersModal = await read('web/src/components/StatusLikersModal.tsx');
+  const statusController = await read('server/src/controllers/statusController.js');
+
+  assert.match(webStories, /expectedCount=\{selectedStatus\?\.likes_count \|\| 0\}/);
+  assert.match(webLikersModal, /createPortal/);
+  assert.match(webLikersModal, /z-\[260\]/);
+  assert.match(webLikersModal, /expectedCount > 0/);
+  assert.match(statusController, /getStatusLikeUserId/);
+  assert.match(statusController, /raw_count: snap\.size/);
+});
+
 test('Rules: Auth forms keep Galant logo visible after login or signup choice', async () => {
   const webAuth = await read('web/src/pages/AuthPage.tsx');
   const nativeAuthMethod = await read('src/screens/auth/components/AuthMethodStep.tsx');
