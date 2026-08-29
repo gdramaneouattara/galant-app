@@ -183,7 +183,7 @@ const ProfileDetailPage: React.FC = () => {
                 {profile.distance_km && <span> • {profile.distance_km.toFixed(1)} km</span>}
               </div>
               <div className="inline-block bg-rose-50 dark:bg-rose-900/20 text-primary px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter transition-colors">
-                🌹 {profile.roses_count || 0} {language === 'en' ? 'roses received' : 'roses reçues'}
+                {'\u{1F339}'} {profile.roses_count || 0} {language === 'en' ? 'roses received' : 'roses reçues'}
               </div>
             </div>
 
@@ -225,7 +225,7 @@ const ProfileDetailPage: React.FC = () => {
                 disabled={superLiking}
                 className="bg-white dark:bg-slate-800 border-2 border-primary text-primary dark:text-white py-5 rounded-2xl font-medium text-sm uppercase tracking-prestige flex items-center justify-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all active:scale-95"
               >
-                {superLiking ? <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div> : <span className="text-xl">🌹</span>}
+                {superLiking ? <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div> : <span className="text-xl leading-none">{'\u{1F339}'}</span>}
                 {language === 'en' ? 'Offer a bouquet' : 'Offrir un bouquet'}
               </button>
 

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, ChevronLeft, Heart, MapPin, MessageCircle, ShieldCheck, Star, X } from 'lucide-react';
+import { Check, ChevronLeft, Heart, MapPin, MessageCircle, ShieldCheck, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '@shared/lib/api';
 import { showAlert } from '@shared/lib/ui-bridge';
@@ -215,7 +215,7 @@ const RosesInboxPage: React.FC = () => {
     if (displayedRows.length === 0) {
       return (
         <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-[2rem] border-2 border-dashed border-slate-100 dark:border-white/5 px-6 transition-colors">
-          <Star size={48} className="mx-auto text-slate-200 dark:text-slate-800 mb-4 transition-colors" />
+          <span className="mx-auto mb-4 block text-5xl leading-none opacity-25 transition-opacity">{'\u{1F339}'}</span>
           <p className="text-slate-400 dark:text-slate-500 font-bold transition-colors">
             {activeTab === 'PENDING' ? labels.emptyPending : labels.emptyHistory}
           </p>
@@ -269,7 +269,7 @@ const RosesInboxPage: React.FC = () => {
                   </div>
                   <ProfileFacts profile={row.user} language={language} className="mb-3" />
                   <div className="flex items-center gap-2 bg-rose-50 dark:bg-rose-900/20 px-3 py-1.5 rounded-xl w-fit transition-colors">
-                    <Star size={12} className="text-primary" fill="currentColor" />
+                    <span className="text-sm leading-none">{'\u{1F339}'}</span>
                     <span className="text-[10px] font-extrabold text-primary uppercase tracking-tight">{labels.roseReceived}</span>
                   </div>
                 </div>

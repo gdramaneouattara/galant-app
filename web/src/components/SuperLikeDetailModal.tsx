@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Heart, Check, Star, MapPin } from 'lucide-react';
+import { X, Heart, Check, MapPin } from 'lucide-react';
 import OptimizedImage from './OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 import ProfileFacts from './ProfileFacts';
@@ -163,10 +163,10 @@ const SuperLikeDetailModal: React.FC<Props> = ({
               className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 border-2 transition-all active:scale-95 disabled:cursor-not-allowed ${
                 isSuperLiked
                   ? 'bg-emerald-600 border-emerald-600 text-white'
-                  : 'bg-white border-primary text-primary hover:bg-red-50'
+                  : 'bg-white border-primary text-primary hover:bg-red-50 group'
               } ${isSuperLiking ? 'opacity-65' : ''}`}
             >
-              <Star size={18} fill="currentColor" />
+              <span className="text-xl leading-none group-hover:rotate-12 transition-transform">{'\u{1F339}'}</span>
               {isSuperLiked ? 'Rose envoyée' : 'Envoyer une rose'}
             </button>
 
