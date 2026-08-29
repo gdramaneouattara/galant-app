@@ -54,6 +54,7 @@ type MediaViewerState = {
   type: 'IMAGE' | 'VIDEO';
   url: string;
   poster?: string;
+  startAt?: number;
 } | null;
 
 const getReadableChatError = (error: any, fallback: string, language: string) => {
@@ -156,6 +157,7 @@ const ChatPage: React.FC = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
+  const inlineVideoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
   const [messageBottomPadding, setMessageBottomPadding] = useState(176);
 
   const clearPendingAttachment = () => {
@@ -165,6 +167,15 @@ const ChatPage: React.FC = () => {
     });
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (videoInputRef.current) videoInputRef.current.value = '';
+  };
+
+  const openVideoPreview = (messageId: string, url: string, poster?: string) => {
+    const inlineVideo = inlineVideoRefs.current[messageId];
+    const startAt = inlineVideo && Number.isFinite(inlineVideo.currentTime)
+      ? inlineVideo.currentTime
+      : 0;
+    inlineVideo?.pause();
+    setMediaViewer({ type: 'VIDEO', url, poster, startAt });
   };
 
   useEffect(() => () => {
@@ -725,6 +736,9 @@ const ChatPage: React.FC = () => {
                   {msg.message_type === 'VIDEO' && msg.media_url && (
                     <div className="relative">
                       <video
+                        ref={(node) => {
+                          inlineVideoRefs.current[msg.id] = node;
+                        }}
                         src={msg.media_url}
                         controls
                         preload="none"
@@ -733,7 +747,7 @@ const ChatPage: React.FC = () => {
                       />
                       <button
                         type="button"
-                        onClick={() => setMediaViewer({ type: 'VIDEO', url: msg.media_url, poster: videoPoster })}
+                        onClick={() => openVideoPreview(msg.id, msg.media_url, videoPoster)}
                         className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-slate-950/70 text-white backdrop-blur transition-colors hover:bg-slate-950"
                         aria-label={language === 'en' ? 'Open video preview' : 'Ouvrir la video'}
                       >
@@ -1003,6 +1017,12 @@ const ChatPage: React.FC = () => {
                 poster={mediaViewer.poster}
                 controls
                 autoPlay
+                onLoadedMetadata={(event) => {
+                  const startAt = mediaViewer.startAt || 0;
+                  if (startAt > 0 && Number.isFinite(startAt)) {
+                    event.currentTarget.currentTime = startAt;
+                  }
+                }}
                 className="max-h-[88vh] max-w-full rounded-2xl bg-black shadow-2xl"
               />
             )}
