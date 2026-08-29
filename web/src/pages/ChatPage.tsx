@@ -134,6 +134,21 @@ const getReadableChatError = (error: any, fallback: string, language: string) =>
   return rawMessage;
 };
 
+const getLocalChatOpeners = (recipientName: string | undefined, language: string) => {
+  const name = recipientName?.trim() || (language === 'en' ? 'there' : 'vous');
+  const isEnglish = language === 'en';
+  const suggestions = isEnglish ? [
+    `Hi ${name}, I liked your profile. How is your day going?`,
+    `Hello ${name}, your profile caught my attention. What would make today a good day for you?`,
+    `Hi ${name}, I would enjoy getting to know you better. What are you in the mood to talk about?`,
+  ] : [
+    `Bonjour ${name}, j'ai aime votre profil. Comment se passe votre journee ?`,
+    `Bonjour ${name}, votre profil a attire mon attention. Qu'est-ce qui ferait une belle journee pour vous ?`,
+    `Bonjour ${name}, j'aimerais apprendre a mieux vous connaitre. De quoi avez-vous envie de parler ?`,
+  ];
+  return suggestions;
+};
+
 const ChatPage: React.FC = () => {
   const { matchId } = useParams();
   const { user, profile, t, language } = useAuth();
@@ -331,8 +346,9 @@ const ChatPage: React.FC = () => {
       if (res.suggestions?.[0]) {
         setInputText(res.suggestions[0]);
       }
-    } catch (error) {
-      showAlert(t('ai_error'), t('ai_error_desc'));
+    } catch {
+      const fallbackSuggestions = getLocalChatOpeners(targetUser?.name, language);
+      setInputText(fallbackSuggestions[0]);
     } finally {
       setGenerating(false);
     }

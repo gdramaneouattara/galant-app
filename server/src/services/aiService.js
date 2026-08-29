@@ -125,6 +125,49 @@ const getAIRoseNoteSuggestion = async (recipientName, interests) => {
   return pool.slice(0, 3);
 };
 
+const cleanName = (value, fallback = 'ce profil') => {
+  const name = String(value || '').trim();
+  return name ? name.slice(0, 60) : fallback;
+};
+
+const pickSuggestions = (templates, limit = 3) => (
+  [...templates].sort(() => 0.5 - Math.random()).slice(0, limit)
+);
+
+const getAIMessageSuggestion = async (recipientName, lang = 'fr') => {
+  const name = cleanName(recipientName, lang === 'en' ? 'there' : 'vous');
+  const isEn = String(lang || 'fr').toLowerCase().startsWith('en');
+  const templates = isEn ? [
+    `Hi ${name}, I liked your profile. How is your day going?`,
+    `Hello ${name}, your profile caught my attention. What would make today a good day for you?`,
+    `Hi ${name}, I would enjoy getting to know you better. What are you in the mood to talk about?`,
+    `Hello ${name}, nice to meet you here. What kind of place do you like discovering in the city?`
+  ] : [
+    `Bonjour ${name}, j'ai aime votre profil. Comment se passe votre journee ?`,
+    `Bonjour ${name}, votre profil a attire mon attention. Qu'est-ce qui ferait une belle journee pour vous ?`,
+    `Bonjour ${name}, j'aimerais apprendre a mieux vous connaitre. De quoi avez-vous envie de parler ?`,
+    `Bonjour ${name}, ravi de vous croiser ici. Quel genre de lieu aimez-vous decouvrir en ville ?`
+  ];
+
+  return pickSuggestions(templates);
+};
+
+const getAIBioSuggestion = async (currentBio, lang = 'fr') => {
+  const bio = String(currentBio || '').trim();
+  const isEn = String(lang || 'fr').toLowerCase().startsWith('en');
+  const templates = isEn ? [
+    `Elegant, curious and sincere. ${bio || 'I enjoy meaningful conversations and beautiful places.'} Here to build a genuine connection.`,
+    `On Galants with a calm heart and clear intentions. ${bio || 'I appreciate kindness, ambition and good energy.'}`,
+    `I believe charm is in attention and respect. ${bio || 'Looking forward to meeting someone authentic.'}`
+  ] : [
+    `Elegant, curieux et sincere. ${bio || "J'aime les conversations vraies et les beaux endroits."} Ici pour construire une connexion authentique.`,
+    `Sur Galants avec le coeur calme et des intentions claires. ${bio || "J'apprecie la bienveillance, l'ambition et les bonnes energies."}`,
+    `Je crois que le charme se trouve dans l'attention et le respect. ${bio || 'Au plaisir de rencontrer une personne authentique.'}`
+  ];
+
+  return pickSuggestions(templates);
+};
+
 const translateText = async (text, targetLang) => {
   const mockTranslations = {
     'bonjour': 'hello',
@@ -151,4 +194,10 @@ const translateText = async (text, targetLang) => {
   return translated;
 };
 
-module.exports = { analyzeMessageWithAI, getAIRoseNoteSuggestion, translateText };
+module.exports = {
+  analyzeMessageWithAI,
+  getAIRoseNoteSuggestion,
+  getAIMessageSuggestion,
+  getAIBioSuggestion,
+  translateText
+};

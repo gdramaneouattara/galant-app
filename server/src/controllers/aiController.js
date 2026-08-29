@@ -1,5 +1,10 @@
 const { db, rtdb } = require('../config/firebase');
-const { getAIRoseNoteSuggestion, translateText } = require('../services/aiService');
+const {
+  getAIRoseNoteSuggestion,
+  getAIMessageSuggestion,
+  getAIBioSuggestion,
+  translateText
+} = require('../services/aiService');
 
 const normalizeTranslationLang = (targetLang) => {
   const normalized = String(targetLang || 'fr').toLowerCase().split('-')[0].trim();
@@ -74,14 +79,27 @@ const getWritingSuggestions = async (req, res) => {
   const me = req.user;
   if (!me.is_premium) return res.status(403).json({ error: 'premium_required' });
 
-  const { type, recipientName, interests, lang = 'fr' } = req.body;
-  const isEn = String(lang).toLowerCase() === 'en';
+  const { type, recipientName, interests, lang = 'fr', context = {} } = req.body;
+  const normalizedType = String(type || '').trim().toUpperCase();
+  const isEn = String(lang).toLowerCase().startsWith('en');
+  const resolvedRecipientName = recipientName || context.recipientName || context.name;
 
-  if (type === 'ROSE_NOTE') {
-    const suggestions = await getAIRoseNoteSuggestion(recipientName, interests);
+  if (normalizedType === 'MESSAGE') {
+    const suggestions = await getAIMessageSuggestion(resolvedRecipientName, lang);
+    return res.json({ suggestions });
+  }
+
+  if (normalizedType === 'ROSE_NOTE') {
+    const suggestions = await getAIRoseNoteSuggestion(resolvedRecipientName, interests);
     if (isEn) {
        return res.json({ suggestions: suggestions.map(s => `[EN] ${s}`) });
     }
+    return res.json({ suggestions });
+  }
+
+  if (normalizedType === 'BIO_IMPROVEMENT' || normalizedType === 'BIO') {
+    const { currentBio } = req.body;
+    const suggestions = await getAIBioSuggestion(currentBio, lang);
     return res.json({ suggestions });
   }
 
