@@ -8,6 +8,10 @@ test('Rules: ChatScreen handles send messages', async () => {
   const code = await read('src/screens/messages/ChatScreen.tsx');
   const webChat = await read('web/src/pages/ChatPage.tsx');
   assert.match(code, /handleSend/);
+  assert.match(webChat, /getReadableChatError/);
+  assert.match(webChat, /conversation_blocked/);
+  assert.match(webChat, /ai_moderation_triggered/);
+  assert.doesNotMatch(webChat, /attachment_name/);
   assert.match(webChat, /MOBILE_TAB_BAR_HEIGHT = 72/);
   assert.match(webChat, /bottom-\[72px\]/);
   assert.match(webChat, /composerRef/);

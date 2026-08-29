@@ -71,6 +71,36 @@ const getReadableChatError = (error: any, fallback: string, language: string) =>
       : "Cette conversation n'est plus disponible. Rouvrez-la depuis Messages.";
   }
 
+  if (details.includes('conversation_blocked')) {
+    return isEnglish
+      ? 'This conversation is blocked. You can no longer send messages here.'
+      : 'Cette conversation est bloquee. Vous ne pouvez plus envoyer de message ici.';
+  }
+
+  if (details.includes('conversation_unmatched')) {
+    return isEnglish
+      ? 'This conversation is no longer active.'
+      : "Cette conversation n'est plus active.";
+  }
+
+  if (details.includes('chat_not_authorized')) {
+    return isEnglish
+      ? 'You no longer have access to this conversation.'
+      : "Vous n'avez plus acces a cette conversation.";
+  }
+
+  if (details.includes('match_not_found') || details.includes('chat_not_found')) {
+    return isEnglish
+      ? 'This conversation could not be found. Please reopen it from Messages.'
+      : "Cette conversation est introuvable. Rouvrez-la depuis Messages.";
+  }
+
+  if (details.includes('ai_moderation_triggered')) {
+    return isEnglish
+      ? 'This message cannot be sent as written. Please rephrase it.'
+      : 'Ce message ne peut pas etre envoye tel quel. Reformulez-le.';
+  }
+
   if (details.includes('subscription_required') || details.includes('payment_required')) {
     return isEnglish
       ? 'This action requires Premium access or an unlock.'
@@ -414,10 +444,7 @@ const ChatPage: React.FC = () => {
           content: contentToSend,
           messageType: attachment?.type || 'TEXT',
           mediaPath: mediaResult?.mediaUrl,
-          metadata: {
-            ...(mediaResult?.metadata || {}),
-            ...(attachment ? { attachment_name: attachment.name } : {})
-          },
+          metadata: mediaResult?.metadata || {},
           recipientId: targetUser.isVenue ? undefined : targetUser.id
         })
       });
