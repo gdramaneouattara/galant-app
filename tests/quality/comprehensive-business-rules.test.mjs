@@ -69,6 +69,9 @@ test('Rules: Story likers stay visible and preserve raw like context', async () 
   const statusController = await read('server/src/controllers/statusController.js');
 
   assert.match(webStories, /expectedCount=\{selectedStatus\?\.likes_count \|\| 0\}/);
+  assert.match(webStories, /const handleOpenLikerProfile/);
+  assert.match(webStories, /setIsLikersOpen\(false\);\s*setSelectedLiker\(liker\);/);
+  assert.match(webStories, /onOpenProfile=\{handleOpenLikerProfile\}/);
   assert.match(webLikersModal, /createPortal/);
   assert.match(webLikersModal, /z-\[260\]/);
   assert.match(webLikersModal, /expectedCount > 0/);
