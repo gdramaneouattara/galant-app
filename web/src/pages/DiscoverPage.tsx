@@ -498,7 +498,7 @@ const DiscoverPage: React.FC = () => {
               onClick={handleSuperLike}
               className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center hover:scale-110 active:scale-95 transition-all border border-slate-100 dark:border-white/5 group"
             >
-              <span className="text-2xl group-hover:rotate-12 transition-transform">🌹</span>
+              <span className="text-2xl group-hover:rotate-12 transition-transform">{'\u{1F339}'}</span>
             </button>
 
             <button

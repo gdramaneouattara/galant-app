@@ -133,7 +133,7 @@ const InteractionPurchaseModal: React.FC<Props> = ({ isOpen, onClose, type, targ
             isPartnerDiscoveryUnlock ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 shadow-emerald-100 dark:shadow-none' :
             'bg-blue-50 dark:bg-blue-900/20 text-blue-500 shadow-blue-100 dark:shadow-none'
           }`}>
-            {isSuperLike ? <span className="text-4xl">🌹</span> :
+            {isSuperLike ? <span className="text-4xl leading-none">{'\u{1F339}'}</span> :
              isLikesInbox ? <Heart className="w-8 h-8 sm:w-10 sm:h-10" fill="currentColor" /> :
              isGridUnlock ? <LayoutGrid className="w-8 h-8 sm:w-10 sm:h-10" /> :
              isFiltersUnlock ? <FiltersIcon className="w-8 h-8 sm:w-10 sm:h-10" /> :
