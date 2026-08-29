@@ -76,6 +76,12 @@ const sendMessage = async (req, res) => {
   const isVenueSuggestionOpinion =
     normalizedType === 'TEXT' &&
     metadata.reply_kind === 'VENUE_SUGGESTION_OPINION';
+  let senderPremiumAccessPromise = null;
+  const ensureSenderPremiumAccess = () => {
+    if (me.is_premium || me.is_vip) return Promise.resolve(true);
+    if (!senderPremiumAccessPromise) senderPremiumAccessPromise = hasPremiumVoiceAccess(me);
+    return senderPremiumAccessPromise;
+  };
 
   try {
     if (matchId) {
@@ -95,7 +101,7 @@ const sendMessage = async (req, res) => {
       }
 
       // Premium/Quota checks for engagement
-      if (!me.is_premium && me.gender === 'MALE') {
+      if (!(await ensureSenderPremiumAccess()) && me.gender === 'MALE') {
         const otherUserId = match.user_one_id === me.id ? match.user_two_id : match.user_one_id;
         const targetUserId = recipientId ? String(recipientId) : otherUserId;
 
@@ -158,7 +164,7 @@ const sendMessage = async (req, res) => {
     }
 
     if (isVoiceMessage) {
-      const canSendVoice = await hasPremiumVoiceAccess(me);
+      const canSendVoice = await ensureSenderPremiumAccess();
       if (!canSendVoice) {
         return res.status(403).json({
           error: 'subscription_required',
