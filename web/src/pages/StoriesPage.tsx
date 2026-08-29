@@ -361,6 +361,11 @@ const StoriesPage: React.FC = () => {
     }
   };
 
+  const handleOpenLikerProfile = (liker: StatusLiker) => {
+    setIsLikersOpen(false);
+    setSelectedLiker(liker);
+  };
+
   const updateLikerState = (targetUserId: string, patch: Partial<StatusLiker>) => {
     setLikers((prev) => prev.map((entry) => entry.user_id === targetUserId ? { ...entry, ...patch } : entry));
     setSelectedLiker((current) => current?.user_id === targetUserId ? { ...current, ...patch } : current);
@@ -796,7 +801,7 @@ const StoriesPage: React.FC = () => {
         likers={likers}
         loading={likersLoading}
         expectedCount={selectedStatus?.likes_count || 0}
-        onOpenProfile={(liker) => setSelectedLiker(liker)}
+        onOpenProfile={handleOpenLikerProfile}
         onLikeBack={handleLikeBack}
         likingBackUserId={likingBackUserId}
         formatDate={formatPublishedAt}
