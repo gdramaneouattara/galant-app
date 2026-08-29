@@ -27,8 +27,10 @@ const VIDEO_FALLBACK_MIME_TYPES = new Set([
 ]);
 fs.mkdirSync(VIDEO_UPLOAD_TMP_DIR, { recursive: true });
 
+const normalizeMimeType = (value = '') => String(value || '').toLowerCase().split(';')[0].trim();
+
 const isAcceptedVideoUpload = (file = {}) => {
-  const mimetype = String(file.mimetype || '').toLowerCase();
+  const mimetype = normalizeMimeType(file.mimetype);
   const ext = path.extname(file.originalname || '').toLowerCase();
   if (!VIDEO_EXTENSIONS.has(ext)) return false;
   if (VIDEO_FALLBACK_MIME_TYPES.has(mimetype)) return true;
