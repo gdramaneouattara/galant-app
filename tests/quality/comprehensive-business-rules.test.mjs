@@ -9,6 +9,10 @@ test('Rules: ChatScreen handles send messages', async () => {
   const webChat = await read('web/src/pages/ChatPage.tsx');
   assert.match(code, /handleSend/);
   assert.match(webChat, /getReadableChatError/);
+  assert.match(webChat, /MediaViewerState/);
+  assert.match(webChat, /setMediaViewer\(\{ type: 'IMAGE', url: msg\.media_url \}\)/);
+  assert.match(webChat, /aria-label=\{language === 'en' \? 'Media preview' : 'Apercu du media'\}/);
+  assert.doesNotMatch(webChat, /window\.open\(msg\.media_url/);
   assert.match(webChat, /conversation_blocked/);
   assert.match(webChat, /ai_moderation_triggered/);
   assert.doesNotMatch(webChat, /attachment_name/);
