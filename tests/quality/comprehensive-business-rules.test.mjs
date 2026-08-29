@@ -1185,14 +1185,18 @@ test('Rules: Backend handles internationalization in AI', async () => {
   const code = await read('server/src/controllers/aiController.js');
   const aiService = await read('server/src/services/aiService.js');
   const webChat = await read('web/src/pages/ChatPage.tsx');
+  const webProfile = await read('web/src/pages/ProfilePage.tsx');
   assert.match(code, /lang/);
   assert.match(code, /targetLang/);
   assert.match(code, /normalizedType === 'MESSAGE'/);
   assert.match(code, /normalizedType === 'BIO_IMPROVEMENT' \|\| normalizedType === 'BIO'/);
+  assert.match(code, /context\.currentBio/);
   assert.match(aiService, /getAIMessageSuggestion/);
   assert.match(aiService, /getAIBioSuggestion/);
+  assert.match(webChat, /type: 'MESSAGE'[\s\S]*lang: language/);
   assert.match(webChat, /getLocalChatOpeners/);
   assert.match(webChat, /setInputText\(fallbackSuggestions\[0\]\)/);
+  assert.match(webProfile, /type: 'BIO'[\s\S]*currentBio: bio/);
 });
 
 test('Rules: AdminDashboard includes partner moderation', async () => {

@@ -341,7 +341,11 @@ const ChatPage: React.FC = () => {
       const res = await apiRequest<{ suggestions: string[] }>('/api/ai/writing-assistant', {
         method: 'POST',
         requireAuth: true,
-        body: JSON.stringify({ type: 'MESSAGE', context: { recipientName: targetUser?.name } })
+        body: JSON.stringify({
+          type: 'MESSAGE',
+          lang: language,
+          context: { recipientName: targetUser?.name }
+        })
       });
       if (res.suggestions?.[0]) {
         setInputText(res.suggestions[0]);

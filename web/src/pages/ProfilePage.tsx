@@ -254,7 +254,12 @@ const ProfilePage: React.FC = () => {
       const res = await apiRequest<{ suggestions: string[] }>('/api/ai/writing-assistant', {
         method: 'POST',
         requireAuth: true,
-        body: JSON.stringify({ type: 'BIO', context: { name: profile.name } })
+        body: JSON.stringify({
+          type: 'BIO',
+          lang: language,
+          currentBio: bio,
+          context: { name: profile.name, currentBio: bio }
+        })
       });
       if (res.suggestions?.[0]) {
         setBio(res.suggestions[0]);

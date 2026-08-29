@@ -98,7 +98,7 @@ const getWritingSuggestions = async (req, res) => {
   }
 
   if (normalizedType === 'BIO_IMPROVEMENT' || normalizedType === 'BIO') {
-    const { currentBio } = req.body;
+    const currentBio = req.body.currentBio ?? context.currentBio ?? context.bio ?? '';
     const suggestions = await getAIBioSuggestion(currentBio, lang);
     return res.json({ suggestions });
   }
