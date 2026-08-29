@@ -20,6 +20,34 @@ import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 
 const STORY_PAGE_SIZE = 10;
+const VIDEO_MIME_BY_EXTENSION: Record<string, string> = {
+  mp4: 'video/mp4',
+  m4v: 'video/mp4',
+  mov: 'video/quicktime',
+  webm: 'video/webm',
+  '3gp': 'video/3gpp',
+  '3gpp': 'video/3gpp',
+};
+
+const normalizeVideoMimeType = (value = '') => value.toLowerCase().split(';')[0].trim();
+
+const inferVideoMimeType = (file: File | Blob, fallbackName = 'story.mp4') => {
+  const declaredType = normalizeVideoMimeType(file.type || '');
+  if (declaredType.startsWith('video/')) return declaredType;
+  const name = 'name' in file && file.name ? file.name : fallbackName;
+  const ext = name.split('.').pop()?.toLowerCase() || '';
+  return VIDEO_MIME_BY_EXTENSION[ext] || 'video/mp4';
+};
+
+const ensureVideoUploadFile = (file: File | Blob, fallbackName = 'story.mp4') => {
+  const sourceName = 'name' in file && file.name ? file.name : fallbackName;
+  const mimeType = inferVideoMimeType(file, sourceName);
+  const extension = Object.entries(VIDEO_MIME_BY_EXTENSION).find(([, type]) => type === mimeType)?.[0] || 'mp4';
+  const hasExtension = /\.[a-z0-9]{2,5}$/i.test(sourceName);
+  const name = hasExtension ? sourceName : `${sourceName}.${extension}`;
+  if (file instanceof File && normalizeVideoMimeType(file.type) === mimeType && hasExtension) return file;
+  return new File([file], name, { type: mimeType });
+};
 
 interface Status {
   id: string;
@@ -273,8 +301,9 @@ const StoriesPage: React.FC = () => {
           showAlert(t('video_too_heavy_title'), t('video_still_too_heavy'));
           return;
         }
+        const uploadVideo = ensureVideoUploadFile(optimizedVideo, 'story.mp4');
         const formData = new FormData();
-        formData.append('video', optimizedVideo, optimizedVideo.name || 'story.webm');
+        formData.append('video', uploadVideo, uploadVideo.name);
 
         const res = await apiRequest<{ mediaUrl: string; thumbnailUrl?: string }>('/api/media/upload-video', {
           method: 'POST',
