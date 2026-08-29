@@ -49,6 +49,53 @@ type PendingAttachment = {
   name: string;
 };
 
+const getReadableChatError = (error: any, fallback: string, language: string) => {
+  const rawMessage = typeof error?.message === 'string' ? error.message.trim() : '';
+  const code = typeof error?.code === 'string' ? error.code.trim() : '';
+  const details = `${code} ${rawMessage}`.toLowerCase();
+  const isEnglish = language === 'en';
+
+  if (!rawMessage || rawMessage === 'undefined' || rawMessage === 'null') {
+    return fallback;
+  }
+
+  if (details.includes('storage/unauthorized') || details.includes('permission-denied')) {
+    return isEnglish
+      ? 'Unable to attach this media. Please reopen the conversation and try again.'
+      : "Impossible d'ajouter ce media. Rouvrez la conversation puis reessayez.";
+  }
+
+  if (details.includes('missing_chat_context')) {
+    return isEnglish
+      ? 'This conversation is no longer available. Please reopen it from Messages.'
+      : "Cette conversation n'est plus disponible. Rouvrez-la depuis Messages.";
+  }
+
+  if (details.includes('subscription_required') || details.includes('payment_required')) {
+    return isEnglish
+      ? 'This action requires Premium access or an unlock.'
+      : 'Cette action necessite un acces Premium ou un deblocage.';
+  }
+
+  if (details.includes('unauthenticated') || details.includes('missing_token') || details.includes('invalid_token')) {
+    return isEnglish
+      ? 'Please sign in again before sending this message.'
+      : "Veuillez vous reconnecter avant d'envoyer ce message.";
+  }
+
+  if (details.includes('network') || details.includes('failed to fetch') || details.includes('retry-limit')) {
+    return isEnglish
+      ? 'Connection issue during sending. Please try again.'
+      : "Probleme de connexion pendant l'envoi. Reessayez.";
+  }
+
+  if (details.includes('api error') || details.includes('firebase') || details.includes('storage/')) {
+    return fallback;
+  }
+
+  return rawMessage;
+};
+
 const ChatPage: React.FC = () => {
   const { matchId } = useParams();
   const { user, profile, t, language } = useAuth();
@@ -342,7 +389,7 @@ const ChatPage: React.FC = () => {
   };
 
   const requirePremiumMediaAccess = () => {
-    if (profile?.is_premium) return true;
+    if (profile?.is_premium || profile?.is_vip) return true;
     showAlert(t('premium_required'), t('media_premium_only'));
     navigate('/store');
     return false;
@@ -356,6 +403,7 @@ const ChatPage: React.FC = () => {
     if (pendingAttachment) setUploading(true);
     try {
       const attachment = pendingAttachment;
+      const contentToSend = inputText.trim();
       const mediaResult = attachment ? await uploadChatMedia(attachment.file, attachment.type) : null;
       await apiRequest('/api/messages/send', {
         method: 'POST',
@@ -363,10 +411,13 @@ const ChatPage: React.FC = () => {
         body: JSON.stringify({
           matchId: venueChatId ? undefined : matchId,
           venueChatId: venueChatId || undefined,
-          content: inputText.trim(),
+          content: contentToSend,
           messageType: attachment?.type || 'TEXT',
           mediaPath: mediaResult?.mediaUrl,
-          metadata: mediaResult?.metadata || {},
+          metadata: {
+            ...(mediaResult?.metadata || {}),
+            ...(attachment ? { attachment_name: attachment.name } : {})
+          },
           recipientId: targetUser.isVenue ? undefined : targetUser.id
         })
       });
@@ -383,7 +434,8 @@ const ChatPage: React.FC = () => {
       } else if (message.includes('invalid_video') || message.includes('video_upload_failed')) {
         showAlert(t('error'), t('video_unreadable'));
       } else {
-        showAlert(t('error'), error.message);
+        console.error('[chat] send_failed', error);
+        showAlert(t('error'), getReadableChatError(error, t('send_failed'), language));
       }
     } finally {
       setSending(false);
@@ -451,7 +503,8 @@ const ChatPage: React.FC = () => {
       } else if (message.includes('invalid_video') || message.includes('video_upload_failed')) {
         showAlert(t('error'), t('video_unreadable'));
       } else {
-        showAlert(t('upload_error'), error.message);
+        console.error('[chat] voice_upload_failed', error);
+        showAlert(t('upload_error'), getReadableChatError(error, t('send_failed'), language));
       }
     } finally {
       setUploading(false);
@@ -531,7 +584,8 @@ const ChatPage: React.FC = () => {
         })
       });
     } catch (error: any) {
-      showAlert(t('error'), error.message);
+      console.error('[chat] venue_reply_failed', error);
+      showAlert(t('error'), getReadableChatError(error, t('send_failed'), language));
     } finally {
       setSending(false);
     }
