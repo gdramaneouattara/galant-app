@@ -2,6 +2,8 @@ import React from 'react';
 import { X, Heart, Flower2, MessageCircle, MapPin } from 'lucide-react';
 import OptimizedImage from './OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
+import ProfileFacts from './ProfileFacts';
+import type { ProfileLanguage } from '@shared/lib/profileFacts';
 
 export interface StatusLiker {
   user_id: string;
@@ -15,6 +17,9 @@ export interface StatusLiker {
     gender?: string | null;
     city?: string | null;
     country?: string | null;
+    relationship_goal?: string | null;
+    religion?: string | null;
+    religion_other?: string | null;
     bio?: string;
     photos: string[];
     photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }>;
@@ -32,6 +37,7 @@ interface Props {
   onSuperLike: () => void;
   onDirectMessage: () => void;
   likingBackUserId: string | null;
+  language?: ProfileLanguage;
 }
 
 const LikerProfileModal: React.FC<Props> = ({
@@ -42,6 +48,7 @@ const LikerProfileModal: React.FC<Props> = ({
   onSuperLike,
   onDirectMessage,
   likingBackUserId,
+  language = 'fr',
 }) => {
   if (!isOpen || !liker) return null;
 
@@ -87,6 +94,7 @@ const LikerProfileModal: React.FC<Props> = ({
               <MapPin size={16} className="text-primary" />
               <span>{location || 'Localisation non renseignee'}</span>
             </div>
+            <ProfileFacts profile={liker.profile} language={language} includeStatus />
 
             {liker.profile.bio && (
               <p className="text-slate-700 leading-relaxed font-medium">

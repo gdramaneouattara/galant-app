@@ -8,16 +8,20 @@ export type ProfileDetailParam = {
   name: string;
   age: number;
   photos: string[];
+  photo_variants?: Record<string, { thumb?: string; medium?: string; full?: string }> | null;
   city: string | null;
+  country?: string | null;
   score: number;
   is_verified: boolean;
   is_premium: boolean;
+  is_vip?: boolean;
   distance_km?: number | null;
   bio?: string;
   interests?: string[];
   religion?: string | null;
   religion_other?: string | null;
-  gender?: string;
+  gender?: string | null;
+  relationship_goal?: string | null;
 };
 
 export type SwipeDirection = 'LEFT' | 'RIGHT';

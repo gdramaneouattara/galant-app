@@ -815,6 +815,7 @@ const StoriesPage: React.FC = () => {
         onSuperLike={() => setPurchaseAction({ isOpen: true, type: 'SUPER_LIKE' })}
         onDirectMessage={() => setPurchaseAction({ isOpen: true, type: 'DIRECT_MESSAGE' })}
         likingBackUserId={likingBackUserId}
+        language={language}
       />
 
       <InteractionPurchaseModal

@@ -9,6 +9,7 @@ import InteractionPurchaseModal from '../components/InteractionPurchaseModal';
 import SuperLikeDetailModal, { type SuperLikeRow } from '../components/SuperLikeDetailModal';
 import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
+import ProfileFacts from '../components/ProfileFacts';
 
 type RoseTab = 'PENDING' | 'HISTORY';
 
@@ -266,6 +267,7 @@ const RosesInboxPage: React.FC = () => {
                     <MapPin size={12} />
                     <span className="truncate">{row.user.city || labels.cityMissing}</span>
                   </div>
+                  <ProfileFacts profile={row.user} language={language} className="mb-3" />
                   <div className="flex items-center gap-2 bg-rose-50 dark:bg-rose-900/20 px-3 py-1.5 rounded-xl w-fit transition-colors">
                     <Star size={12} className="text-primary" fill="currentColor" />
                     <span className="text-[10px] font-extrabold text-primary uppercase tracking-tight">{labels.roseReceived}</span>
@@ -393,6 +395,7 @@ const RosesInboxPage: React.FC = () => {
         isLiking={!!selectedRose && likingId === selectedRose.user.id}
         isResponding={!!selectedRose && respondingId === selectedRose.id}
         isSuperLiking={false}
+        language={language}
       />
 
       <InteractionPurchaseModal

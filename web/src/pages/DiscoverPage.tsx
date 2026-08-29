@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useMatchmaking } from '@shared/hooks/useMatchmaking';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, MapPin, X, Heart, Lock, Info, Rocket, User as UserIcon, SlidersHorizontal as FiltersIcon, Sparkles, RefreshCw, ChevronRight, Crown, Gem, MessageCircle, PlayCircle, LayoutGrid, Bell, ShoppingBag as StoreIcon } from 'lucide-react';
+import { ShieldCheck, MapPin, X, Heart, Lock, SlidersHorizontal as FiltersIcon, Sparkles, RefreshCw, ChevronRight, Crown, MessageCircle, PlayCircle, LayoutGrid, Bell, ShoppingBag as StoreIcon } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
 import FilterModal from '../components/FilterModal';
@@ -10,6 +10,7 @@ import { apiRequest } from '@shared/lib/api';
 import logoImg from '../assets/galant-logo-web.png';
 import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
+import ProfileFacts from '../components/ProfileFacts';
 
 const DEFAULT_DISCOVER_FILTERS = {
   gender: 'ALL',
@@ -467,6 +468,12 @@ const DiscoverPage: React.FC = () => {
                     <span>{currentProfile.city || t('city_not_set')}</span>
                   </div>
                 </div>
+                <ProfileFacts
+                  profile={currentProfile}
+                  language={language}
+                  variant="overlay"
+                  className="mt-2 max-w-[92%]"
+                />
               </div>
             </div>
           </motion.div>

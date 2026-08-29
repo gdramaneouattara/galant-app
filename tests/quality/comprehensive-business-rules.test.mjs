@@ -165,6 +165,42 @@ test('Rules: Onboarding asks for religion instead of interests', async () => {
   assert.doesNotMatch(venueController, /interests\.some/);
 });
 
+test('Rules: Web profile cards surface onboarding details everywhere', async () => {
+  const profileFacts = await read('src/lib/profileFacts.ts');
+  const webProfileFacts = await read('web/src/components/ProfileFacts.tsx');
+  const profileDetail = await read('web/src/pages/ProfileDetailPage.tsx');
+  const profilePage = await read('web/src/pages/ProfilePage.tsx');
+  const discoverPage = await read('web/src/pages/DiscoverPage.tsx');
+  const discoverGrid = await read('web/src/pages/DiscoverGridPage.tsx');
+  const likesInbox = await read('web/src/pages/LikesInboxPage.tsx');
+  const rosesInbox = await read('web/src/pages/RosesInboxPage.tsx');
+  const superLikeModal = await read('web/src/components/SuperLikeDetailModal.tsx');
+  const likerModal = await read('web/src/components/LikerProfileModal.tsx');
+  const matchmakingController = await read('server/src/controllers/matchmakingController.js');
+  const statusController = await read('server/src/controllers/statusController.js');
+  const venueController = await read('server/src/controllers/venueController.js');
+
+  for (const code of [profileFacts]) {
+    assert.match(code, /relationship_goal/);
+    assert.match(code, /religion/);
+    assert.match(code, /religion_other/);
+    assert.match(code, /gender/);
+    assert.match(code, /country/);
+  }
+  assert.match(webProfileFacts, /getProfileFactItems/);
+
+  for (const code of [profileDetail, profilePage, discoverPage, discoverGrid, likesInbox, rosesInbox, superLikeModal, likerModal]) {
+    assert.match(code, /ProfileFacts/);
+  }
+
+  for (const code of [matchmakingController, statusController, venueController]) {
+    assert.match(code, /country:\s*p\.country/);
+    assert.match(code, /relationship_goal:\s*p\.relationship_goal/);
+    assert.match(code, /religion:\s*p\.religion/);
+    assert.match(code, /religion_other:\s*p\.religion_other/);
+  }
+});
+
 test('Rules: Stories move into discovery and Apps replaces the stories tab', async () => {
   const homeScreen = await read('src/screens/home/HomeScreen.tsx');
   const navigator = await read('src/navigation/MainNavigator.tsx');
@@ -1149,14 +1185,18 @@ test('Rules: Backend handles internationalization in AI', async () => {
   const code = await read('server/src/controllers/aiController.js');
   const aiService = await read('server/src/services/aiService.js');
   const webChat = await read('web/src/pages/ChatPage.tsx');
+  const webProfile = await read('web/src/pages/ProfilePage.tsx');
   assert.match(code, /lang/);
   assert.match(code, /targetLang/);
   assert.match(code, /normalizedType === 'MESSAGE'/);
   assert.match(code, /normalizedType === 'BIO_IMPROVEMENT' \|\| normalizedType === 'BIO'/);
+  assert.match(code, /context\.currentBio/);
   assert.match(aiService, /getAIMessageSuggestion/);
   assert.match(aiService, /getAIBioSuggestion/);
+  assert.match(webChat, /type: 'MESSAGE'[\s\S]*lang: language/);
   assert.match(webChat, /getLocalChatOpeners/);
   assert.match(webChat, /setInputText\(fallbackSuggestions\[0\]\)/);
+  assert.match(webProfile, /type: 'BIO'[\s\S]*currentBio: bio/);
 });
 
 test('Rules: AdminDashboard includes partner moderation', async () => {

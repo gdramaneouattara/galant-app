@@ -5,8 +5,8 @@ import { doc, updateDoc } from 'firebase/firestore';
 import {
   Camera, ShieldCheck, MapPin, Edit3, Save, LogOut,
   Sparkles, Plane, Globe, ChevronRight, Share2,
-  EyeOff, Eye, Crown, Gem, Settings, User as UserIcon, Bell,
-  Heart, Star, LayoutDashboard, Lock,
+  EyeOff, Eye, Crown, Settings, User as UserIcon, Bell,
+  Heart, LayoutDashboard, Lock,
   ShoppingBag as StoreIcon
 } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
@@ -19,6 +19,7 @@ import { hasAdminProfileAccess } from '../lib/adminAccess';
 import OptimizedImage from '../components/OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 import { uploadImageVariantsWeb } from '../lib/imageUploadVariants';
+import ProfileFacts from '../components/ProfileFacts';
 
 const ProfilePage: React.FC = () => {
   const { user, profile, logout, t, language } = useAuth();
@@ -253,7 +254,12 @@ const ProfilePage: React.FC = () => {
       const res = await apiRequest<{ suggestions: string[] }>('/api/ai/writing-assistant', {
         method: 'POST',
         requireAuth: true,
-        body: JSON.stringify({ type: 'BIO', context: { name: profile.name } })
+        body: JSON.stringify({
+          type: 'BIO',
+          lang: language,
+          currentBio: bio,
+          context: { name: profile.name, currentBio: bio }
+        })
       });
       if (res.suggestions?.[0]) {
         setBio(res.suggestions[0]);
@@ -374,6 +380,10 @@ const ProfilePage: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="mb-6 rounded-[2rem] border border-slate-100 bg-white p-4 shadow-xl shadow-slate-200/50 transition-colors dark:border-white/10 dark:bg-slate-900 dark:shadow-none">
+        <ProfileFacts profile={profile} language={language} variant="panel" includeLocation includeStatus />
       </div>
 
       {hasAdminAccess && (
