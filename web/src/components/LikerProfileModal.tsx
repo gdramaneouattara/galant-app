@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Heart, Flower2, MessageCircle, MapPin } from 'lucide-react';
+import { X, Heart, MessageCircle, MapPin } from 'lucide-react';
 import OptimizedImage from './OptimizedImage';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
 import ProfileFacts from './ProfileFacts';
@@ -132,9 +132,9 @@ const LikerProfileModal: React.FC<Props> = ({
 
             <button
               onClick={onSuperLike}
-              className="w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 bg-white border-2 border-primary text-primary hover:bg-red-50 transition-all active:scale-95"
+              className="w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 bg-white border-2 border-primary text-primary hover:bg-red-50 transition-all active:scale-95 group"
             >
-              <Flower2 size={18} />
+              <span className="text-xl leading-none group-hover:rotate-12 transition-transform">{'\u{1F339}'}</span>
               Rose payante
             </button>
 
