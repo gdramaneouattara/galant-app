@@ -49,6 +49,12 @@ type PendingAttachment = {
   name: string;
 };
 
+type MediaViewerState = {
+  type: 'IMAGE' | 'VIDEO';
+  url: string;
+  poster?: string;
+} | null;
+
 const getReadableChatError = (error: any, fallback: string, language: string) => {
   const rawMessage = typeof error?.message === 'string' ? error.message.trim() : '';
   const code = typeof error?.code === 'string' ? error.code.trim() : '';
@@ -145,6 +151,7 @@ const ChatPage: React.FC = () => {
   const [translations, setTranslations] = useState<Record<string, string>>({});
   const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [mediaViewer, setMediaViewer] = useState<MediaViewerState>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
@@ -624,6 +631,15 @@ const ChatPage: React.FC = () => {
     }
   }, [isRecording, recordingDuration]);
 
+  useEffect(() => {
+    if (!mediaViewer) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMediaViewer(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mediaViewer]);
+
   if (!targetUser) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
 
   return (
@@ -700,7 +716,7 @@ const ChatPage: React.FC = () => {
                       src={msg.media_url}
                       className="block w-full max-h-[58vh] rounded-[1.35rem] object-contain bg-slate-100 dark:bg-slate-950 cursor-pointer"
                       alt="Shared media"
-                      onClick={() => window.open(msg.media_url, '_blank')}
+                      onClick={() => setMediaViewer({ type: 'IMAGE', url: msg.media_url })}
                     />
                   )}
 
@@ -943,6 +959,43 @@ const ChatPage: React.FC = () => {
           reportedUserId={targetUser.id}
           userName={targetUser.name}
         />
+      )}
+
+      {mediaViewer && (
+        <div
+          className="fixed inset-0 z-[240] flex items-center justify-center bg-slate-950/95 px-3 py-6"
+          role="dialog"
+          aria-modal="true"
+          aria-label={language === 'en' ? 'Media preview' : 'Apercu du media'}
+          onClick={() => setMediaViewer(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setMediaViewer(null)}
+            className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur transition-colors hover:bg-white/20"
+            aria-label={language === 'en' ? 'Close media preview' : "Fermer l'apercu"}
+          >
+            <X size={24} />
+          </button>
+
+          <div className="flex max-h-full w-full max-w-5xl items-center justify-center" onClick={(event) => event.stopPropagation()}>
+            {mediaViewer.type === 'IMAGE' ? (
+              <img
+                src={mediaViewer.url}
+                className="max-h-[88vh] max-w-full rounded-2xl object-contain shadow-2xl"
+                alt={language === 'en' ? 'Shared media' : 'Media partage'}
+              />
+            ) : (
+              <video
+                src={mediaViewer.url}
+                poster={mediaViewer.poster}
+                controls
+                autoPlay
+                className="max-h-[88vh] max-w-full rounded-2xl bg-black shadow-2xl"
+              />
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
