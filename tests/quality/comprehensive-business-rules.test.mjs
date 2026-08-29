@@ -12,7 +12,12 @@ test('Rules: ChatScreen handles send messages', async () => {
   assert.match(webChat, /MediaViewerState/);
   assert.match(webChat, /createPortal/);
   assert.match(webChat, /setMediaViewer\(\{ type: 'IMAGE', url: msg\.media_url \}\)/);
-  assert.match(webChat, /setMediaViewer\(\{ type: 'VIDEO', url: msg\.media_url, poster: videoPoster \}\)/);
+  assert.match(webChat, /inlineVideoRefs/);
+  assert.match(webChat, /const openVideoPreview/);
+  assert.match(webChat, /inlineVideo\?\.pause\(\)/);
+  assert.match(webChat, /setMediaViewer\(\{ type: 'VIDEO', url, poster, startAt \}\)/);
+  assert.match(webChat, /openVideoPreview\(msg\.id, msg\.media_url, videoPoster\)/);
+  assert.match(webChat, /currentTime = startAt/);
   assert.match(webChat, /aria-label=\{language === 'en' \? 'Media preview' : 'Apercu du media'\}/);
   assert.doesNotMatch(webChat, /window\.open\(msg\.media_url/);
   assert.match(webChat, /conversation_blocked/);
@@ -56,6 +61,19 @@ test('Rules: StatusScreen exists and is accessible', async () => {
   assert.match(code, /locked\s*\?\s*await refreshStoryUploadAccess\(\{ forceServer: true \}\)/);
   assert.match(code, /!forceServer && \(currentUser\.is_premium \|\| currentUser\.is_vip\)/);
   assert.doesNotMatch(code, /const canPublish = !locked/);
+});
+
+test('Rules: Story likers stay visible and preserve raw like context', async () => {
+  const webStories = await read('web/src/pages/StoriesPage.tsx');
+  const webLikersModal = await read('web/src/components/StatusLikersModal.tsx');
+  const statusController = await read('server/src/controllers/statusController.js');
+
+  assert.match(webStories, /expectedCount=\{selectedStatus\?\.likes_count \|\| 0\}/);
+  assert.match(webLikersModal, /createPortal/);
+  assert.match(webLikersModal, /z-\[260\]/);
+  assert.match(webLikersModal, /expectedCount > 0/);
+  assert.match(statusController, /getStatusLikeUserId/);
+  assert.match(statusController, /raw_count: snap\.size/);
 });
 
 test('Rules: Auth forms keep Galant logo visible after login or signup choice', async () => {

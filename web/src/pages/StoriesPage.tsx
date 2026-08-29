@@ -795,6 +795,7 @@ const StoriesPage: React.FC = () => {
         onClose={() => setIsLikersOpen(false)}
         likers={likers}
         loading={likersLoading}
+        expectedCount={selectedStatus?.likes_count || 0}
         onOpenProfile={(liker) => setSelectedLiker(liker)}
         onLikeBack={handleLikeBack}
         likingBackUserId={likingBackUserId}

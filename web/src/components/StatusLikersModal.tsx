@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { X, Heart, ShieldCheck, Gem, Loader2 } from 'lucide-react';
 import type { StatusLiker } from './LikerProfileModal';
 import { optimizedPhotoUrl } from '@shared/lib/mediaVariants';
@@ -12,6 +13,7 @@ interface Props {
   onLikeBack: (liker: StatusLiker) => void;
   likingBackUserId: string | null;
   formatDate: (date: string) => string;
+  expectedCount?: number;
 }
 
 const StatusLikersModal: React.FC<Props> = ({
@@ -23,6 +25,7 @@ const StatusLikersModal: React.FC<Props> = ({
   onLikeBack,
   likingBackUserId,
   formatDate,
+  expectedCount = 0,
 }) => {
   if (!isOpen) return null;
 
@@ -32,9 +35,13 @@ const StatusLikersModal: React.FC<Props> = ({
     return <span className="text-primary">Nouveau</span>;
   };
 
-  return (
-    <div className="fixed inset-0 z-[150] bg-slate-900/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-white w-full sm:max-w-md rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
+  const emptyMessage = expectedCount > 0
+    ? 'Les profils qui ont aime cette story ne sont plus disponibles ou sont temporairement masques.'
+    : 'Pas encore de likes sur cette story.';
+
+  return createPortal(
+    <div className="fixed inset-0 z-[260] bg-slate-900/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="bg-white w-full sm:max-w-md max-h-[calc(100dvh-16px)] sm:max-h-[88vh] rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
         <div className="p-5 border-b border-slate-100 flex justify-between items-center">
           <div>
             <h3 className="text-xl font-black text-slate-950">Personnes ayant aime</h3>
@@ -49,7 +56,7 @@ const StatusLikersModal: React.FC<Props> = ({
           </button>
         </div>
 
-        <div className="p-4 max-h-[70vh] overflow-y-auto space-y-3">
+        <div className="p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] max-h-[calc(100dvh-116px)] sm:max-h-[calc(88vh-84px)] overflow-y-auto space-y-3">
           {loading ? (
             <div className="py-16 flex justify-center">
               <Loader2 className="animate-spin text-primary" size={32} />
@@ -59,7 +66,7 @@ const StatusLikersModal: React.FC<Props> = ({
               <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-200">
                 <Heart size={32} />
               </div>
-              <p className="text-slate-400 font-bold text-sm">Pas encore de likes sur cette story.</p>
+              <p className="text-slate-400 font-bold text-sm">{emptyMessage}</p>
             </div>
           ) : (
             likers.map((liker) => (
@@ -109,7 +116,8 @@ const StatusLikersModal: React.FC<Props> = ({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

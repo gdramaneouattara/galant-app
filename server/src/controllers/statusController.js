@@ -29,6 +29,7 @@ const toPublicProfile = (p) => {
     photos: p.photos,
     photo_variants: p.photo_variants || {},
     city: p.city,
+    country: p.country,
     gender: p.gender,
     is_verified: p.is_verified,
     is_premium: p.is_premium,
@@ -36,6 +37,22 @@ const toPublicProfile = (p) => {
     boosted_until: p.boosted_until || null,
     is_vip: p.is_vip || false
   };
+};
+
+const getStatusLikeUserId = (doc, statusId) => {
+  const data = doc.data() || {};
+  if (data.user_id) return data.user_id;
+  if (data.liker_id) return data.liker_id;
+
+  const legacyPrefix = `${statusId}_`;
+  if (doc.id.startsWith(legacyPrefix)) return doc.id.slice(legacyPrefix.length);
+  return null;
+};
+
+const isVisibleStatusLikerProfile = (profile) => {
+  if (!profile) return false;
+  if (profile.suspended_at || profile.deleted_at) return false;
+  return profile.onboarding_completed !== false;
 };
 
 const chunkArray = (items, size = 30) => {
@@ -311,13 +328,23 @@ const getStatusLikes = async (req, res) => {
 
     const snap = await db.collection('status_likes').where('status_id', '==', statusId).get();
     const likes = await Promise.all(snap.docs.map(async doc => {
-      const data = doc.data();
-      const pDoc = await db.collection('profiles').doc(data.user_id).get();
-      return { user_id: data.user_id, created_at: data.created_at, profile: pDoc.exists ? toPublicProfile({ id: pDoc.id, ...pDoc.data() }) : null };
+      const data = doc.data() || {};
+      const userId = getStatusLikeUserId(doc, statusId);
+      if (!userId) return null;
+
+      const pDoc = await db.collection('profiles').doc(userId).get();
+      const profile = pDoc.exists ? pDoc.data() : null;
+      if (!isVisibleStatusLikerProfile(profile)) return null;
+
+      return {
+        user_id: userId,
+        created_at: data.created_at || null,
+        profile: toPublicProfile({ id: pDoc.id, ...profile })
+      };
     }));
 
     const filtered = likes
-      .filter(l => !!l.profile && !l.profile.suspended_at && l.profile.onboarding_completed !== false)
+      .filter(Boolean)
       .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
 
     const likerIds = filtered.map(l => l.user_id);
@@ -342,7 +369,8 @@ const getStatusLikes = async (req, res) => {
         liked_back: likedBackIds.has(l.user_id),
         is_matched: matchedIds.has(l.user_id)
       })),
-      count: filtered.length
+      count: filtered.length,
+      raw_count: snap.size
     });
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
