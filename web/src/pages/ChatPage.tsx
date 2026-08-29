@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { db, rtdb, COLLECTIONS, fbStorage } from '../firebase';
@@ -690,6 +691,7 @@ const ChatPage: React.FC = () => {
           const isVenue = msg.message_type === 'VENUE_SUGGESTION';
           const isEvent = msg.message_type === 'EVENT_SUGGESTION';
           const isVisualMedia = msg.message_type === 'IMAGE' || msg.message_type === 'VIDEO';
+          const videoPoster = typeof msg.metadata?.thumbnail_url === 'string' ? msg.metadata.thumbnail_url : undefined;
 
           return (
             <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
@@ -721,13 +723,23 @@ const ChatPage: React.FC = () => {
                   )}
 
                   {msg.message_type === 'VIDEO' && msg.media_url && (
-                    <video
-                      src={msg.media_url}
-                      controls
-                      preload="none"
-                      poster={typeof msg.metadata?.thumbnail_url === 'string' ? msg.metadata.thumbnail_url : undefined}
-                      className="block w-full max-h-[58vh] rounded-[1.35rem] bg-black"
-                    />
+                    <div className="relative">
+                      <video
+                        src={msg.media_url}
+                        controls
+                        preload="none"
+                        poster={videoPoster}
+                        className="block w-full max-h-[58vh] rounded-[1.35rem] bg-black"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setMediaViewer({ type: 'VIDEO', url: msg.media_url, poster: videoPoster })}
+                        className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-slate-950/70 text-white backdrop-blur transition-colors hover:bg-slate-950"
+                        aria-label={language === 'en' ? 'Open video preview' : 'Ouvrir la video'}
+                      >
+                        <ExternalLink size={16} />
+                      </button>
+                    </div>
                   )}
 
                   {msg.message_type === 'VOICE' && msg.media_url && (
@@ -961,7 +973,7 @@ const ChatPage: React.FC = () => {
         />
       )}
 
-      {mediaViewer && (
+      {mediaViewer && createPortal((
         <div
           className="fixed inset-0 z-[240] flex items-center justify-center bg-slate-950/95 px-3 py-6"
           role="dialog"
@@ -996,7 +1008,7 @@ const ChatPage: React.FC = () => {
             )}
           </div>
         </div>
-      )}
+      ), document.body)}
     </div>
   );
 };

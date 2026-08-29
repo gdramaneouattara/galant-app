@@ -10,7 +10,9 @@ test('Rules: ChatScreen handles send messages', async () => {
   assert.match(code, /handleSend/);
   assert.match(webChat, /getReadableChatError/);
   assert.match(webChat, /MediaViewerState/);
+  assert.match(webChat, /createPortal/);
   assert.match(webChat, /setMediaViewer\(\{ type: 'IMAGE', url: msg\.media_url \}\)/);
+  assert.match(webChat, /setMediaViewer\(\{ type: 'VIDEO', url: msg\.media_url, poster: videoPoster \}\)/);
   assert.match(webChat, /aria-label=\{language === 'en' \? 'Media preview' : 'Apercu du media'\}/);
   assert.doesNotMatch(webChat, /window\.open\(msg\.media_url/);
   assert.match(webChat, /conversation_blocked/);
