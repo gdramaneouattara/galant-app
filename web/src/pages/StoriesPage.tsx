@@ -394,6 +394,7 @@ const StoriesPage: React.FC = () => {
   const handleOpenLikerProfile = (liker: StatusLiker) => {
     setIsLikersOpen(false);
     setSelectedLiker(liker);
+    setSelectedStatusId(null);
   };
 
   const updateLikerState = (targetUserId: string, patch: Partial<StatusLiker>) => {
