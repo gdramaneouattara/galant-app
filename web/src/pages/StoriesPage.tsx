@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { ArrowLeft, Plus, Heart, X, Play, Film, Lock, Share2, Users, Crown, Trash2 } from 'lucide-react';
@@ -713,23 +714,22 @@ const StoriesPage: React.FC = () => {
         </div>
       )}
 
-      {selectedStatus && (
-        <div className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-2xl flex items-center justify-center p-0 md:p-10 animate-in fade-in duration-300">
+      {selectedStatus && createPortal((
+        <div className="fixed inset-0 z-[240] h-[100dvh] bg-slate-950/95 backdrop-blur-2xl flex items-center justify-center p-0 md:p-10 animate-in fade-in duration-300">
           <button
             onClick={() => setSelectedStatusId(null)}
-            className="absolute top-6 left-6 md:top-10 md:left-10 inline-flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-xs font-black uppercase tracking-widest text-white/70 backdrop-blur-xl border border-white/10 hover:text-white hover:bg-white/15 transition-all z-[110]"
+            className="absolute top-[calc(env(safe-area-inset-top)+0.85rem)] left-4 md:top-10 md:left-10 w-11 h-11 rounded-full bg-black/30 text-white/80 backdrop-blur-xl border border-white/10 hover:text-white hover:bg-white/15 transition-all z-[250] flex items-center justify-center"
             aria-label={labels.back}
           >
-            <ArrowLeft size={20} />
-            {labels.back}
+            <ArrowLeft size={24} />
           </button>
 
           <button
             onClick={() => setSelectedStatusId(null)}
-            className="absolute top-6 right-6 md:top-10 md:right-10 text-white/50 hover:text-white transition-all z-[110]"
+            className="absolute top-[calc(env(safe-area-inset-top)+0.85rem)] right-4 md:top-10 md:right-10 w-11 h-11 rounded-full bg-black/30 text-white/70 backdrop-blur-xl border border-white/10 hover:text-white hover:bg-white/15 transition-all z-[250] flex items-center justify-center"
             aria-label="Fermer"
           >
-            <X size={42} />
+            <X size={24} />
           </button>
 
           <div className="relative w-full max-w-lg h-full md:h-[90vh] bg-black rounded-none md:rounded-[2.5rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] border-0 md:border-8 border-white/10">
@@ -739,34 +739,34 @@ const StoriesPage: React.FC = () => {
                 autoPlay
                 loop
                 playsInline
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
                 controls={false}
               />
             ) : (
-              <OptimizedImage src={resolvedUrls[selectedStatus.media_url]} className="w-full h-full object-cover" alt="" eager />
+              <OptimizedImage src={resolvedUrls[selectedStatus.media_url]} className="w-full h-full object-contain" alt="" eager />
             )}
 
-            <div className="absolute top-6 left-8 right-8 flex gap-1.5 z-50">
-              <div className="h-1 flex-1 bg-white rounded-full overflow-hidden">
+            <div className="absolute top-[calc(env(safe-area-inset-top)+0.5rem)] left-16 right-16 md:top-6 md:left-8 md:right-8 flex gap-1.5 z-50">
+              <div className="h-0.5 flex-1 bg-white rounded-full overflow-hidden">
                 <div className="h-full bg-primary w-2/3" />
               </div>
-              <div className="h-1 flex-1 bg-white/20 rounded-full" />
-              <div className="h-1 flex-1 bg-white/20 rounded-full" />
+              <div className="h-0.5 flex-1 bg-white/20 rounded-full" />
+              <div className="h-0.5 flex-1 bg-white/20 rounded-full" />
             </div>
 
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/45 pointer-events-none" />
 
-            <div className="absolute top-12 left-6 right-6 sm:left-10 sm:right-10 flex justify-between items-center gap-3 z-50">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border-2 p-0.5 flex-shrink-0 ${selectedStatus.profiles.is_premium ? 'border-amber-400' : 'border-primary shadow-lg shadow-red-500/20'}`}>
+            <div className="absolute top-[calc(env(safe-area-inset-top)+4rem)] left-4 right-4 sm:left-8 sm:right-8 flex justify-between items-center gap-3 z-50">
+              <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl border-2 p-0.5 flex-shrink-0 ${selectedStatus.profiles.is_premium ? 'border-amber-400' : 'border-primary shadow-lg shadow-red-500/20'}`}>
                   <OptimizedImage src={optimizedPhotoUrl(selectedStatus.profiles.photos?.[0], selectedStatus.profiles.photo_variants, 'thumb') || 'https://placehold.co/100x100'} className="w-full h-full object-cover rounded-xl" alt="" eager />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="font-sans  tracking-tighter text-white text-base sm:text-lg truncate">{selectedStatus.profiles.name}</p>
+                    <p className="font-sans tracking-tighter text-white text-sm sm:text-base truncate">{selectedStatus.profiles.name}</p>
                     {selectedStatus.profiles.is_premium && <Crown size={14} className="text-amber-400 flex-shrink-0" fill="currentColor" />}
                   </div>
-                  <p className="text-[10px] font-medium text-white/60 uppercase tracking-prestige mt-0.5">
+                  <p className="text-[9px] font-medium text-white/60 uppercase tracking-prestige mt-0.5">
                     {formatPublishedAt(selectedStatus.created_at)}
                   </p>
                 </div>
@@ -776,53 +776,55 @@ const StoriesPage: React.FC = () => {
                 <div className="flex items-center gap-2 flex-shrink-0">
                     <button
                     onClick={() => handleOpenLikers(selectedStatus)}
-                    className="bg-white/10 backdrop-blur-xl border border-white/10 px-3 sm:px-5 py-3 rounded-2xl flex items-center gap-2 text-white hover:bg-white/20 transition-all"
+                    className="w-11 h-11 rounded-full bg-black/30 text-white/90 backdrop-blur-xl border border-white/10 hover:bg-white/20 transition-all flex items-center justify-center gap-1"
+                    aria-label="Voir les likes"
                   >
-                    <Users size={18} />
-                    <span className="text-[10px] sm:text-xs font-medium uppercase tracking-prestige">
+                    <Users size={16} />
+                    <span className="text-[10px] font-black">
                       {selectedStatus.likes_count || 0}
                     </span>
                   </button>
                   <button
                     onClick={() => void handleDeleteStatus(selectedStatus)}
-                    className="bg-red-500/20 backdrop-blur-xl border border-red-400/20 p-3 rounded-2xl text-white hover:bg-red-500/40 transition-all"
+                    className="w-11 h-11 rounded-full bg-red-500/20 backdrop-blur-xl border border-red-400/20 text-white hover:bg-red-500/40 transition-all flex items-center justify-center"
                     aria-label={t('delete')}
                   >
-                    <Trash2 size={18} />
+                    <Trash2 size={16} />
                   </button>
                 </div>
               )}
             </div>
 
-            <div className="absolute bottom-8 sm:bottom-12 left-6 right-6 sm:left-10 sm:right-10 flex items-end gap-4 z-50">
-              <div className="flex-1 bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl p-5 min-w-0">
-                <p className="text-white text-sm sm:text-base font-medium leading-relaxed ">
+            <div className="absolute bottom-[calc(env(safe-area-inset-bottom)+1rem)] sm:bottom-8 left-4 right-4 sm:left-8 sm:right-8 flex items-end gap-3 z-50">
+              <div className="flex-1 bg-black/35 backdrop-blur-xl border border-white/10 rounded-2xl px-4 py-3 min-w-0">
+                <p className="text-white text-sm sm:text-base font-medium leading-relaxed line-clamp-3">
                   {selectedStatus.content || "Vivre l'instant présent avec élégance..."}
                 </p>
               </div>
 
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3">
                 <button
                   onClick={(e) => { e.stopPropagation(); void toggleLike(selectedStatus); }}
                   disabled={!!likeLoadingByStatusId[selectedStatus.id]}
-                  className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex flex-col items-center justify-center transition-all shadow-2xl disabled:opacity-70 ${selectedStatus.liked_by_me ? 'bg-primary text-white scale-105' : 'bg-white/10 text-white backdrop-blur-xl border border-white/10 hover:bg-white/20'}`}
+                  className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex flex-col items-center justify-center transition-all shadow-2xl disabled:opacity-70 ${selectedStatus.liked_by_me ? 'bg-primary text-white scale-105' : 'bg-black/35 text-white backdrop-blur-xl border border-white/10 hover:bg-white/20'}`}
+                  aria-label={selectedStatus.liked_by_me ? 'Retirer le like' : 'Aimer la story'}
                 >
-                  <Heart size={28} fill={selectedStatus.liked_by_me ? 'white' : 'none'} />
-                  {!!selectedStatus.likes_count && <span className="text-[10px] font-black mt-1">{selectedStatus.likes_count}</span>}
+                  <Heart size={24} fill={selectedStatus.liked_by_me ? 'white' : 'none'} />
+                  {!!selectedStatus.likes_count && <span className="text-[9px] font-black mt-0.5">{selectedStatus.likes_count}</span>}
                 </button>
 
                 <button
                   onClick={() => void handleShare(selectedStatus)}
-                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all shadow-2xl"
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/35 backdrop-blur-xl border border-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all shadow-2xl"
                   aria-label="Partager"
                 >
-                  <Share2 size={26} />
+                  <Share2 size={22} />
                 </button>
               </div>
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
 
       <StatusLikersModal
         isOpen={isLikersOpen}
