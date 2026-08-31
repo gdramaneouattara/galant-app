@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '@shared/lib/api';
 import { fbStorage } from '../firebase';
 import { showAlert } from '@shared/lib/ui-bridge';
-import { compressVideoWeb, STORY_VIDEO_MAX_DURATION_SECONDS, validateVideoFileWeb, VIDEO_UPLOAD_MAX_BYTES } from '../lib/videoOptimization';
+import { compressVideoWeb, STORY_VIDEO_MAX_DURATION_SECONDS, VIDEO_UPLOAD_MAX_BYTES } from '../lib/videoOptimization';
 import { uploadImageVariantsWeb } from '../lib/imageUploadVariants';
 import StatusLikersModal from '../components/StatusLikersModal';
 import StoryPurchaseModal from '../components/StoryPurchaseModal';
@@ -278,20 +278,8 @@ const StoriesPage: React.FC = () => {
     const type = isVideoLikeFile(file) ? 'VIDEO' : 'IMAGE';
 
     if (type === 'VIDEO') {
-      try {
-        await validateVideoFileWeb(file, STORY_VIDEO_MAX_DURATION_SECONDS);
-      } catch (error: any) {
-        if (error?.message === 'video_too_large') {
-          showAlert(t('video_too_heavy_title'), t('video_too_heavy'));
-          e.target.value = '';
-          return;
-        }
-        if (error?.message === 'video_too_long') {
-          showAlert(t('video_too_long_title'), t('video_too_long_story'));
-          e.target.value = '';
-          return;
-        }
-        showAlert(t('error'), t('video_unreadable'));
+      if (file.size > VIDEO_UPLOAD_MAX_BYTES) {
+        showAlert(t('video_too_heavy_title'), t('video_too_heavy'));
         e.target.value = '';
         return;
       }

@@ -9,7 +9,7 @@ import { apiRequest } from '@shared/lib/api';
 import { Send, ChevronLeft, ShieldCheck, Gem, Sparkles, Languages, Loader2, MapPin, Calendar, Image as ImageIcon, Video, Paperclip, Mic, Square, Trash2, ExternalLink, Check, X, ShieldAlert } from 'lucide-react';
 import { showAlert } from '@shared/lib/ui-bridge';
 import { compressImageWeb } from '../lib/imageCompression';
-import { CHAT_VIDEO_MAX_DURATION_SECONDS, compressVideoWeb, validateVideoFileWeb, VIDEO_UPLOAD_MAX_BYTES } from '../lib/videoOptimization';
+import { CHAT_VIDEO_MAX_DURATION_SECONDS, compressVideoWeb, VIDEO_UPLOAD_MAX_BYTES } from '../lib/videoOptimization';
 import { startRecording, stopRecording } from '../lib/audioRecording';
 import { ref as storageRef, uploadBytes, getDownloadURL as getStorageUrl } from 'firebase/storage';
 import OptimizedImage from '../components/OptimizedImage';
@@ -426,17 +426,10 @@ const ChatPage: React.FC = () => {
       return { mediaUrl, metadata };
     }
 
-    try {
-      await validateVideoFileWeb(file, CHAT_VIDEO_MAX_DURATION_SECONDS);
-    } catch (error: any) {
-      if (error?.message === 'video_too_large') {
-        showAlert(t('video_too_heavy_title'), t('video_too_heavy'));
-      } else if (error?.message === 'video_too_long') {
-        showAlert(t('video_too_long_title'), t('video_too_long_chat'));
-      } else {
-        showAlert(t('error'), t('video_unreadable'));
-      }
-      error.alreadyShown = true;
+    if (file.size > VIDEO_UPLOAD_MAX_BYTES) {
+      showAlert(t('video_too_heavy_title'), t('video_too_heavy'));
+      const error = new Error('video_too_large');
+      (error as any).alreadyShown = true;
       throw error;
     }
 
@@ -524,16 +517,8 @@ const ChatPage: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file || !user || (!matchId && !venueChatId)) return;
     if (type === 'VIDEO') {
-      try {
-        await validateVideoFileWeb(file, CHAT_VIDEO_MAX_DURATION_SECONDS);
-      } catch (error: any) {
-        if (error?.message === 'video_too_large') {
-          showAlert(t('video_too_heavy_title'), t('video_too_heavy'));
-        } else if (error?.message === 'video_too_long') {
-          showAlert(t('video_too_long_title'), t('video_too_long_chat'));
-        } else {
-          showAlert(t('error'), t('video_unreadable'));
-        }
+      if (file.size > VIDEO_UPLOAD_MAX_BYTES) {
+        showAlert(t('video_too_heavy_title'), t('video_too_heavy'));
         e.target.value = '';
         return;
       }

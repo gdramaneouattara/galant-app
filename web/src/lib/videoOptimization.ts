@@ -79,7 +79,16 @@ export const compressVideoWeb = async (
   const recorderMimeType = getRecorderMimeType();
   if (!recorderMimeType) return file;
 
-  const metadata = await validateVideoFileWeb(file, options.maxDurationSeconds);
+  let metadata: VideoValidation;
+  try {
+    metadata = await validateVideoFileWeb(file, options.maxDurationSeconds);
+  } catch (error: any) {
+    if (error?.message === 'video_too_large' || error?.message === 'video_too_long') {
+      throw error;
+    }
+    return file;
+  }
+
   const targetBytes = options.kind === 'STORY' ? STORY_TARGET_BYTES : CHAT_TARGET_BYTES;
   if (file.size <= targetBytes && metadata.width <= VIDEO_LONG_SIDE && metadata.height <= VIDEO_LONG_SIDE) {
     return file;
