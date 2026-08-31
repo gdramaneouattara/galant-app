@@ -182,7 +182,7 @@ const uploadCompressedVideo = async (req, res) => {
   try {
     const profile = isChat ? VIDEO_PROFILES.CHAT : VIDEO_PROFILES.STATUS;
     const originalMetadata = await validateOriginalVideo(inputPath, profile);
-    const canUseOriginalFallback = originalMetadata.hasFiniteDuration;
+    const canUseOriginalFallback = isChat && originalMetadata.hasFiniteDuration;
 
     try {
       await compressVideo(inputPath, outputPath, isChat);
