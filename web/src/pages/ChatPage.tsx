@@ -25,21 +25,30 @@ const VIDEO_MIME_BY_EXTENSION: Record<string, string> = {
   mov: 'video/quicktime',
   webm: 'video/webm',
   '3gp': 'video/3gpp',
+  '3gpp': 'video/3gpp',
 };
 
+const normalizeVideoMimeType = (value = '') => value.toLowerCase().split(';')[0].trim();
+
 const inferVideoMimeType = (file: File | Blob, fallbackName = 'chat.mp4') => {
-  if (file.type?.startsWith('video/')) return file.type;
+  const declaredType = normalizeVideoMimeType(file.type || '');
+  if (declaredType.startsWith('video/')) return declaredType;
   const name = 'name' in file && file.name ? file.name : fallbackName;
   const ext = name.split('.').pop()?.toLowerCase() || '';
   return VIDEO_MIME_BY_EXTENSION[ext] || 'video/mp4';
 };
 
+const getVideoExtensionForMimeType = (mimeType: string) => (
+  Object.entries(VIDEO_MIME_BY_EXTENSION).find(([, type]) => type === normalizeVideoMimeType(mimeType))?.[0] || 'mp4'
+);
+
 const ensureVideoUploadFile = (file: File | Blob, fallbackName = 'chat.mp4') => {
   const sourceName = 'name' in file && file.name ? file.name : fallbackName;
-  const hasExtension = /\.[a-z0-9]{2,5}$/i.test(sourceName);
   const mimeType = inferVideoMimeType(file, sourceName);
-  const name = hasExtension ? sourceName : `${sourceName}.mp4`;
-  if (file instanceof File && file.type === mimeType && hasExtension) return file;
+  const extension = getVideoExtensionForMimeType(mimeType);
+  const baseName = sourceName.replace(/\.[a-z0-9]{2,5}$/i, '') || fallbackName.replace(/\.[a-z0-9]{2,5}$/i, '') || 'chat';
+  const name = `${baseName}.${extension}`;
+  if (file instanceof File && normalizeVideoMimeType(file.type) === mimeType && file.name === name) return file;
   return new File([file], name, { type: mimeType });
 };
 

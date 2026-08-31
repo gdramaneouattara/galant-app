@@ -135,19 +135,26 @@ const VIDEO_CONTENT_TYPE_BY_EXTENSION = {
   '.3gpp': 'video/3gpp',
 };
 
+const normalizeMimeType = (value = '') => String(value || '').toLowerCase().split(';')[0].trim();
+
+const VIDEO_EXTENSION_BY_CONTENT_TYPE = {
+  'video/mp4': '.mp4',
+  'video/x-m4v': '.m4v',
+  'video/quicktime': '.mov',
+  'video/webm': '.webm',
+  'video/3gpp': '.3gp',
+  'video/3gpp2': '.3gp',
+};
+
 const getSafeVideoExtension = (file = {}) => {
+  const declaredType = normalizeMimeType(file.mimetype);
+  if (VIDEO_EXTENSION_BY_CONTENT_TYPE[declaredType]) return VIDEO_EXTENSION_BY_CONTENT_TYPE[declaredType];
   const ext = path.extname(file.originalname || '').toLowerCase();
   if (VIDEO_CONTENT_TYPE_BY_EXTENSION[ext]) return ext;
-  if (String(file.mimetype || '').includes('webm')) return '.webm';
-  if (String(file.mimetype || '').includes('quicktime')) return '.mov';
-  if (String(file.mimetype || '').includes('3gpp')) return '.3gp';
   return '.mp4';
 };
 
 const getSafeVideoContentType = (file = {}) => {
-  const declaredType = String(file.mimetype || '').toLowerCase();
-  if (declaredType.startsWith('video/')) return declaredType;
-
   const ext = getSafeVideoExtension(file);
   return VIDEO_CONTENT_TYPE_BY_EXTENSION[ext] || 'video/mp4';
 };
