@@ -40,13 +40,23 @@ const inferVideoMimeType = (file: File | Blob, fallbackName = 'story.mp4') => {
   return VIDEO_MIME_BY_EXTENSION[ext] || 'video/mp4';
 };
 
+const getVideoExtensionForMimeType = (mimeType: string) => (
+  Object.entries(VIDEO_MIME_BY_EXTENSION).find(([, type]) => type === normalizeVideoMimeType(mimeType))?.[0] || 'mp4'
+);
+
+const isVideoLikeFile = (file: File) => {
+  const declaredType = normalizeVideoMimeType(file.type || '');
+  if (declaredType.startsWith('video/')) return true;
+  return /\.(mp4|m4v|mov|webm|3gp|3gpp)$/i.test(file.name || '');
+};
+
 const ensureVideoUploadFile = (file: File | Blob, fallbackName = 'story.mp4') => {
   const sourceName = 'name' in file && file.name ? file.name : fallbackName;
   const mimeType = inferVideoMimeType(file, sourceName);
-  const extension = Object.entries(VIDEO_MIME_BY_EXTENSION).find(([, type]) => type === mimeType)?.[0] || 'mp4';
-  const hasExtension = /\.[a-z0-9]{2,5}$/i.test(sourceName);
-  const name = hasExtension ? sourceName : `${sourceName}.${extension}`;
-  if (file instanceof File && normalizeVideoMimeType(file.type) === mimeType && hasExtension) return file;
+  const extension = getVideoExtensionForMimeType(mimeType);
+  const baseName = sourceName.replace(/\.[a-z0-9]{2,5}$/i, '') || fallbackName.replace(/\.[a-z0-9]{2,5}$/i, '') || 'story';
+  const name = `${baseName}.${extension}`;
+  if (file instanceof File && normalizeVideoMimeType(file.type) === mimeType && file.name === name) return file;
   return new File([file], name, { type: mimeType });
 };
 
@@ -265,7 +275,7 @@ const StoriesPage: React.FC = () => {
       return;
     }
 
-    const type = file.type.startsWith('video') ? 'VIDEO' : 'IMAGE';
+    const type = isVideoLikeFile(file) ? 'VIDEO' : 'IMAGE';
 
     if (type === 'VIDEO') {
       try {
@@ -340,6 +350,14 @@ const StoriesPage: React.FC = () => {
             ? 'No validated Story ticket is available for this account. If your Wave payment was just approved, refresh and try again.'
             : 'Aucun ticket Story valide n’est disponible pour ce compte. Si votre paiement Wave vient d’être validé, actualisez puis réessayez.'
         );
+      } else if (
+        lowerMessage.includes('invalid_video') ||
+        lowerMessage.includes('video_upload_failed') ||
+        lowerMessage.includes('video_too_long') ||
+        lowerMessage.includes('invalid_video_type')
+      ) {
+        console.error('[stories] video_upload_failed', error);
+        showAlert(t('error'), t('video_unreadable'));
       } else {
         console.error('[stories] publish_failed', error);
         showAlert(t('error'), t('story_publish_failed'));
