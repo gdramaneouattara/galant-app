@@ -62,7 +62,9 @@ test('video uploads are bounded, compressed, and use persisted thumbnails', asyn
   assert.match(mediaController, /sanitizeVideoUploadError/);
   assert.match(mediaController, /VIDEO_CONTENT_TYPE_BY_EXTENSION/);
   assert.match(mediaController, /getSafeVideoContentType/);
+  assert.match(mediaController, /if \(VIDEO_EXTENSION_BY_CONTENT_TYPE\[declaredType\]\) return declaredType/);
   assert.match(mediaController, /video\/3gpp/);
+  assert.match(mediaController, /video\/3gpp2/);
   assert.match(mediaController, /isVideoValidationError/);
   assert.match(mediaController, /ffmpeg\.ffprobe/);
   assert.match(mediaController, /canUseOriginalFallback/);

@@ -155,6 +155,8 @@ const getSafeVideoExtension = (file = {}) => {
 };
 
 const getSafeVideoContentType = (file = {}) => {
+  const declaredType = normalizeMimeType(file.mimetype);
+  if (VIDEO_EXTENSION_BY_CONTENT_TYPE[declaredType]) return declaredType;
   const ext = getSafeVideoExtension(file);
   return VIDEO_CONTENT_TYPE_BY_EXTENSION[ext] || 'video/mp4';
 };
