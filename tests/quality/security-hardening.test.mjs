@@ -77,6 +77,8 @@ test('video uploads are bounded, compressed, and use persisted thumbnails', asyn
   assert.match(mediaController, /thumbnailUrl/);
   assert.match(mediaController, /scale=-2:540/);
   assert.match(statusController, /thumbnail_url/);
+  assert.match(statusController, /extractTrustedStatusStoragePath/);
+  assert.match(statusController, /invalid_status_media_url/);
   assert.match(nativeStories, /videoExportPreset:\s*ImagePicker\.VideoExportPreset\.H264_960x540/);
   assert.match(nativeChat, /formData\.append\('type', 'CHAT'\)/);
   assert.match(nativeChat, /chat-media\/\$\{res\.mediaUrl\}/);
@@ -85,6 +87,7 @@ test('video uploads are bounded, compressed, and use persisted thumbnails', asyn
   assert.match(webStories, /ensureVideoUploadFile/);
   assert.match(webStories, /normalizeVideoMimeType/);
   assert.match(webStories, /isVideoLikeFile/);
+  assert.match(webStories, /isTrustedFirebaseStorageUrl/);
   assert.match(webStories, /isResolvedMediaUrl/);
   assert.match(webStories, /getStatusStoragePath/);
   assert.match(webStories, /\\\.\(mp4\|m4v\|mov\|webm\|3gp\|3gpp\)/);
@@ -93,6 +96,8 @@ test('video uploads are bounded, compressed, and use persisted thumbnails', asyn
   assert.match(webStories, /thumbnailUrl/);
   assert.match(webStories, /poster=\{selectedThumbnailUrl \|\| undefined\}/);
   assert.match(webStories, /video_playback_failed/);
+  assert.match(webStories, /clearVideoFailure/);
+  assert.match(webStories, /retryVideo/);
   assert.match(webChat, /ensureVideoUploadFile/);
   assert.match(webChat, /inferVideoMimeType/);
   assert.match(webChat, /normalizeVideoMimeType/);

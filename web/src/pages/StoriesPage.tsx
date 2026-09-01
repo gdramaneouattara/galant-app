@@ -50,7 +50,29 @@ const isVideoLikeFile = (file: File) => {
   return /\.(mp4|m4v|mov|webm|3gp|3gpp)$/i.test(file.name || '');
 };
 
-const isResolvedMediaUrl = (value = '') => /^(https?:|blob:|data:)/i.test(value);
+const getConfiguredStorageBucket = () => String(
+  import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || (fbStorage as any)?.app?.options?.storageBucket || ''
+).trim();
+
+const isTrustedFirebaseStorageUrl = (value = '') => {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:') return false;
+    const bucket = getConfiguredStorageBucket();
+    if (!bucket) return false;
+    if (url.hostname === 'firebasestorage.googleapis.com') {
+      return url.pathname.includes(`/b/${bucket}/o/`);
+    }
+    if (url.hostname === 'storage.googleapis.com') {
+      return url.pathname === `/${bucket}` || url.pathname.startsWith(`/${bucket}/`);
+    }
+    return url.hostname === bucket && bucket.endsWith('.firebasestorage.app');
+  } catch {
+    return false;
+  }
+};
+
+const isResolvedMediaUrl = (value = '') => isTrustedFirebaseStorageUrl(value);
 
 const getStatusStoragePath = (value = '') => {
   const clean = String(value || '').replace(/^\/+/, '');
@@ -144,6 +166,9 @@ const StoriesPage: React.FC = () => {
         loadingMore: 'Loading stories...',
         premium: 'Become Premium',
         myStory: 'My story',
+        videoUnavailable: 'Video unavailable',
+        videoUnavailableBody: 'This story video cannot be played on this browser.',
+        retryVideo: 'Try again',
       }
     : {
         title: 'Galant Stories',
@@ -157,6 +182,9 @@ const StoriesPage: React.FC = () => {
         loadingMore: 'Chargement des stories...',
         premium: 'Devenir Premium',
         myStory: 'Ma story',
+        videoUnavailable: 'Video indisponible',
+        videoUnavailableBody: 'Cette story video ne peut pas etre lue sur ce navigateur.',
+        retryVideo: 'Reessayer',
       };
 
   const handleBack = () => {
@@ -165,6 +193,20 @@ const StoriesPage: React.FC = () => {
       return;
     }
     navigate('/');
+  };
+
+  const clearVideoFailure = (statusId: string) => {
+    setFailedVideoStatusIds((current) => {
+      if (!current[statusId]) return current;
+      const next = { ...current };
+      delete next[statusId];
+      return next;
+    });
+  };
+
+  const closeSelectedStatus = () => {
+    if (selectedStatusId) clearVideoFailure(selectedStatusId);
+    setSelectedStatusId(null);
   };
 
   const resolveMediaUrls = useCallback((items: Status[]) => {
@@ -741,7 +783,7 @@ const StoriesPage: React.FC = () => {
       {selectedStatus && createPortal((
         <div className="fixed inset-0 z-[240] h-[100dvh] bg-slate-950/95 backdrop-blur-2xl flex items-center justify-center p-0 md:p-10 animate-in fade-in duration-300">
           <button
-            onClick={() => setSelectedStatusId(null)}
+            onClick={closeSelectedStatus}
             className="absolute top-[calc(env(safe-area-inset-top)+0.85rem)] left-4 md:top-10 md:left-10 w-11 h-11 rounded-full bg-black/30 text-white/80 backdrop-blur-xl border border-white/10 hover:text-white hover:bg-white/15 transition-all z-[250] flex items-center justify-center"
             aria-label={labels.back}
           >
@@ -749,7 +791,7 @@ const StoriesPage: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setSelectedStatusId(null)}
+            onClick={closeSelectedStatus}
             className="absolute top-[calc(env(safe-area-inset-top)+0.85rem)] right-4 md:top-10 md:right-10 w-11 h-11 rounded-full bg-black/30 text-white/70 backdrop-blur-xl border border-white/10 hover:text-white hover:bg-white/15 transition-all z-[250] flex items-center justify-center"
             aria-label="Fermer"
           >
@@ -790,13 +832,20 @@ const StoriesPage: React.FC = () => {
                 </div>
                 <div className="relative z-10 max-w-xs">
                   <p className="text-base font-black text-white">
-                    {language === 'en' ? 'Video unavailable' : 'Video indisponible'}
+                    {labels.videoUnavailable}
                   </p>
                   <p className="mt-2 text-sm font-bold text-white/60">
-                    {language === 'en'
-                      ? 'This story video cannot be played on this browser.'
-                      : 'Cette story video ne peut pas etre lue sur ce navigateur.'}
+                    {labels.videoUnavailableBody}
                   </p>
+                  {selectedMediaUrl ? (
+                    <button
+                      type="button"
+                      onClick={() => clearVideoFailure(selectedStatus.id)}
+                      className="mt-5 rounded-2xl bg-white px-5 py-3 text-[10px] font-black uppercase tracking-prestige text-slate-950 shadow-xl transition active:scale-95"
+                    >
+                      {labels.retryVideo}
+                    </button>
+                  ) : null}
                 </div>
               </div>
             ) : (
