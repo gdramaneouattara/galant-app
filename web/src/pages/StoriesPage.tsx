@@ -338,10 +338,11 @@ const StoriesPage: React.FC = () => {
             ? 'No validated Story ticket is available for this account. If your Wave payment was just approved, refresh and try again.'
             : 'Aucun ticket Story valide n’est disponible pour ce compte. Si votre paiement Wave vient d’être validé, actualisez puis réessayez.'
         );
+      } else if (lowerMessage.includes('video_too_long')) {
+        showAlert(t('video_too_long_title'), t('video_too_long_story'));
       } else if (
         lowerMessage.includes('invalid_video') ||
         lowerMessage.includes('video_upload_failed') ||
-        lowerMessage.includes('video_too_long') ||
         lowerMessage.includes('invalid_video_type')
       ) {
         console.error('[stories] video_upload_failed', error);

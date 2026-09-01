@@ -86,6 +86,7 @@ test('video uploads are bounded, compressed, and use persisted thumbnails', asyn
   assert.match(webStories, /isVideoLikeFile/);
   assert.match(webStories, /\\\.\(mp4\|m4v\|mov\|webm\|3gp\|3gpp\)/);
   assert.match(webStories, /const type = isVideoLikeFile\(file\) \? 'VIDEO' : 'IMAGE'/);
+  assert.match(webStories, /lowerMessage\.includes\('video_too_long'\)[\s\S]*video_too_long_story[\s\S]*lowerMessage\.includes\('invalid_video'\)/);
   assert.match(webStories, /thumbnailUrl/);
   assert.match(webChat, /ensureVideoUploadFile/);
   assert.match(webChat, /inferVideoMimeType/);
