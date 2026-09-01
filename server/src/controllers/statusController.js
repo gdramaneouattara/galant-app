@@ -19,6 +19,49 @@ const STORY_SCAN_MAX_DOCS = 180;
 
 const hasStorySubscriptionAccess = (profile) => !!(profile?.is_premium || profile?.is_vip);
 
+const getConfiguredStorageBucket = () => String(process.env.FIREBASE_STORAGE_BUCKET || bucket?.name || '').trim();
+
+const extractTrustedStatusStoragePath = (value = '') => {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  if (/^(blob:|data:)/i.test(raw)) return null;
+
+  const withoutLeadingSlash = raw.replace(/^\/+/, '');
+  if (!/^https?:/i.test(raw)) {
+    const clean = withoutLeadingSlash.startsWith('statuses/')
+      ? withoutLeadingSlash.slice('statuses/'.length)
+      : withoutLeadingSlash;
+    return clean && !clean.includes('..') ? clean : null;
+  }
+
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== 'https:') return null;
+    const trustedBucket = getConfiguredStorageBucket();
+    if (!trustedBucket) return null;
+    let objectPath = '';
+
+    if (url.hostname === 'firebasestorage.googleapis.com') {
+      const match = url.pathname.match(/\/b\/([^/]+)\/o\/(.+)$/);
+      if (!match || match[1] !== trustedBucket) return null;
+      objectPath = decodeURIComponent(match[2]);
+    } else if (url.hostname === 'storage.googleapis.com') {
+      const prefix = `/${trustedBucket}/`;
+      if (!url.pathname.startsWith(prefix)) return null;
+      objectPath = decodeURIComponent(url.pathname.slice(prefix.length));
+    } else if (url.hostname === trustedBucket && trustedBucket.endsWith('.firebasestorage.app')) {
+      objectPath = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
+    } else {
+      return null;
+    }
+
+    if (!objectPath.startsWith('statuses/') || objectPath.includes('..')) return null;
+    return objectPath.slice('statuses/'.length);
+  } catch {
+    return null;
+  }
+};
+
 const toPublicProfile = (p) => {
   if (!p) return null;
   return {
@@ -215,10 +258,12 @@ const createStatus = async (req, res) => {
   const me = req.user;
   const nowIso = new Date().toISOString();
   const expiresAt = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+  const normalizedMediaUrl = extractTrustedStatusStoragePath(mediaUrl);
+  const normalizedThumbnailUrl = thumbnailUrl ? extractTrustedStatusStoragePath(thumbnailUrl) : null;
   const data = {
     user_id: me.id,
-    media_url: mediaUrl,
-    thumbnail_url: thumbnailUrl || null,
+    media_url: normalizedMediaUrl,
+    thumbnail_url: normalizedThumbnailUrl,
     message_type: type,
     content: content || '',
     expires_at: expiresAt,
@@ -227,6 +272,9 @@ const createStatus = async (req, res) => {
 
   try {
     if (!mediaUrl || !type) return res.status(400).json({ error: 'missing_status_payload' });
+    if (!normalizedMediaUrl || (thumbnailUrl && !normalizedThumbnailUrl)) {
+      return res.status(400).json({ error: 'invalid_status_media_url' });
+    }
 
     if (!hasStorySubscriptionAccess(me)) {
       const created = await db.runTransaction(async (tx) => {
