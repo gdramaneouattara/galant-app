@@ -1,4 +1,5 @@
 const path = require('path');
+const crypto = require('crypto');
 const fs = require('fs');
 const { bucket } = require('../config/firebase');
 const { configureFfmpeg } = require('../utils/ffmpegBinary');
@@ -87,11 +88,18 @@ const compressVideo = (inputPath, outputPath, isChat = false) => {
     ffmpeg(inputPath)
       .duration(profile.maxDuration)
       .outputOptions([
+        '-map 0:v:0',
+        '-map 0:a?',
         `-vf ${profile.scale}`,
         `-r ${profile.frameRate}`,
         '-c:v libx264',
+        '-pix_fmt yuv420p',
+        '-profile:v baseline',
+        '-level 3.1',
+        '-tag:v avc1',
         `-crf ${profile.crf}`,
         '-preset veryfast',
+        '-bf 0',
         '-c:a aac',
         `-b:a ${profile.audioBitrate}`,
         '-movflags +faststart'
@@ -209,22 +217,34 @@ const uploadCompressedVideo = async (req, res) => {
 
     const destination = `${folder}/${req.user.id}/${videoFilename}`;
     const thumbnailDestination = thumbnailPathToUpload ? `${folder}/${req.user.id}/${thumbnailFilename}` : null;
+    const shouldCreatePublicDownloadTokens = !isChat;
+    const videoStorageMetadata = {
+      contentType: videoContentType,
+      cacheControl: 'public, max-age=31536000, immutable',
+    };
+    const thumbnailStorageMetadata = {
+      contentType: 'image/jpeg',
+      cacheControl: 'public, max-age=31536000, immutable',
+    };
+
+    if (shouldCreatePublicDownloadTokens) {
+      videoStorageMetadata.metadata = {
+        firebaseStorageDownloadTokens: crypto.randomUUID(),
+      };
+      thumbnailStorageMetadata.metadata = {
+        firebaseStorageDownloadTokens: crypto.randomUUID(),
+      };
+    }
 
     await bucket.upload(videoPathToUpload, {
       destination,
-      metadata: {
-        contentType: videoContentType,
-        cacheControl: 'public, max-age=31536000, immutable',
-      }
+      metadata: videoStorageMetadata
     });
 
     if (thumbnailDestination) {
       await bucket.upload(thumbnailPathToUpload, {
         destination: thumbnailDestination,
-        metadata: {
-          contentType: 'image/jpeg',
-          cacheControl: 'public, max-age=31536000, immutable',
-        }
+        metadata: thumbnailStorageMetadata
       });
     }
 

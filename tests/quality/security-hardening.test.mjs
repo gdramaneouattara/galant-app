@@ -73,6 +73,12 @@ test('video uploads are bounded, compressed, and use persisted thumbnails', asyn
   assert.match(mediaController, /hasFiniteDuration/);
   assert.match(mediaController, /invalid_video_duration/);
   assert.match(mediaController, /video_too_long/);
+  assert.match(mediaController, /-pix_fmt yuv420p/);
+  assert.match(mediaController, /-tag:v avc1/);
+  assert.match(mediaController, /-map 0:a\?/);
+  assert.match(mediaController, /firebaseStorageDownloadTokens/);
+  assert.match(mediaController, /crypto\.randomUUID/);
+  assert.match(mediaController, /shouldCreatePublicDownloadTokens\s*=\s*!isChat/);
   assert.match(mediaController, /createVideoThumbnail/);
   assert.match(mediaController, /thumbnailUrl/);
   assert.match(mediaController, /scale=-2:540/);
