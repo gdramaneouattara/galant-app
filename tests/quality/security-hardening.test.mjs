@@ -78,6 +78,9 @@ test('video uploads are bounded, compressed, and use persisted thumbnails', asyn
   assert.match(mediaController, /scale=-2:540/);
   assert.match(statusController, /thumbnail_url/);
   assert.match(statusController, /extractTrustedStatusStoragePath/);
+  assert.match(statusController, /belongsToStatusOwner/);
+  assert.match(statusController, /extractTrustedStatusStoragePath\(mediaUrl,\s*me\.id\)/);
+  assert.match(statusController, /extractTrustedStatusStoragePath\(thumbnailUrl,\s*me\.id\)/);
   assert.match(statusController, /invalid_status_media_url/);
   assert.match(nativeStories, /videoExportPreset:\s*ImagePicker\.VideoExportPreset\.H264_960x540/);
   assert.match(nativeChat, /formData\.append\('type', 'CHAT'\)/);

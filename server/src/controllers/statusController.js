@@ -21,7 +21,12 @@ const hasStorySubscriptionAccess = (profile) => !!(profile?.is_premium || profil
 
 const getConfiguredStorageBucket = () => String(process.env.FIREBASE_STORAGE_BUCKET || bucket?.name || '').trim();
 
-const extractTrustedStatusStoragePath = (value = '') => {
+const belongsToStatusOwner = (mediaPath = '', ownerId = '') => {
+  const cleanOwnerId = String(ownerId || '').trim();
+  return !!cleanOwnerId && String(mediaPath || '').startsWith(`${cleanOwnerId}/`);
+};
+
+const extractTrustedStatusStoragePath = (value = '', ownerId = '') => {
   const raw = String(value || '').trim();
   if (!raw) return null;
   if (/^(blob:|data:)/i.test(raw)) return null;
@@ -31,7 +36,7 @@ const extractTrustedStatusStoragePath = (value = '') => {
     const clean = withoutLeadingSlash.startsWith('statuses/')
       ? withoutLeadingSlash.slice('statuses/'.length)
       : withoutLeadingSlash;
-    return clean && !clean.includes('..') ? clean : null;
+    return clean && !clean.includes('..') && belongsToStatusOwner(clean, ownerId) ? clean : null;
   }
 
   try {
@@ -56,7 +61,8 @@ const extractTrustedStatusStoragePath = (value = '') => {
     }
 
     if (!objectPath.startsWith('statuses/') || objectPath.includes('..')) return null;
-    return objectPath.slice('statuses/'.length);
+    const clean = objectPath.slice('statuses/'.length);
+    return belongsToStatusOwner(clean, ownerId) ? clean : null;
   } catch {
     return null;
   }
@@ -258,8 +264,8 @@ const createStatus = async (req, res) => {
   const me = req.user;
   const nowIso = new Date().toISOString();
   const expiresAt = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
-  const normalizedMediaUrl = extractTrustedStatusStoragePath(mediaUrl);
-  const normalizedThumbnailUrl = thumbnailUrl ? extractTrustedStatusStoragePath(thumbnailUrl) : null;
+  const normalizedMediaUrl = extractTrustedStatusStoragePath(mediaUrl, me.id);
+  const normalizedThumbnailUrl = thumbnailUrl ? extractTrustedStatusStoragePath(thumbnailUrl, me.id) : null;
   const data = {
     user_id: me.id,
     media_url: normalizedMediaUrl,
