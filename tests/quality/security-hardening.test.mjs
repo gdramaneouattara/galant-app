@@ -69,6 +69,7 @@ test('video uploads are bounded, compressed, and use persisted thumbnails', asyn
   assert.match(mediaController, /ffmpeg\.ffprobe/);
   assert.match(mediaController, /canUseOriginalFallback/);
   assert.match(mediaController, /canUseOriginalFallback\s*=\s*isChat\s*&&\s*originalMetadata\.hasFiniteDuration/);
+  assert.match(mediaController, /allowUnknownDuration:\s*true/);
   assert.match(mediaController, /hasFiniteDuration/);
   assert.match(mediaController, /invalid_video_duration/);
   assert.match(mediaController, /video_too_long/);
@@ -84,10 +85,14 @@ test('video uploads are bounded, compressed, and use persisted thumbnails', asyn
   assert.match(webStories, /ensureVideoUploadFile/);
   assert.match(webStories, /normalizeVideoMimeType/);
   assert.match(webStories, /isVideoLikeFile/);
+  assert.match(webStories, /isResolvedMediaUrl/);
+  assert.match(webStories, /getStatusStoragePath/);
   assert.match(webStories, /\\\.\(mp4\|m4v\|mov\|webm\|3gp\|3gpp\)/);
   assert.match(webStories, /const type = isVideoLikeFile\(file\) \? 'VIDEO' : 'IMAGE'/);
   assert.match(webStories, /lowerMessage\.includes\('video_too_long'\)[\s\S]*video_too_long_story[\s\S]*lowerMessage\.includes\('invalid_video'\)/);
   assert.match(webStories, /thumbnailUrl/);
+  assert.match(webStories, /poster=\{selectedThumbnailUrl \|\| undefined\}/);
+  assert.match(webStories, /video_playback_failed/);
   assert.match(webChat, /ensureVideoUploadFile/);
   assert.match(webChat, /inferVideoMimeType/);
   assert.match(webChat, /normalizeVideoMimeType/);

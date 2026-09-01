@@ -69,9 +69,9 @@ const validateOriginalVideo = async (inputPath, profile) => {
   };
 };
 
-const validateCompressedVideo = async (inputPath, profile) => {
+const validateCompressedVideo = async (inputPath, profile, { allowUnknownDuration = false } = {}) => {
   const metadata = await validateOriginalVideo(inputPath, profile);
-  if (!metadata.hasFiniteDuration) {
+  if (!metadata.hasFiniteDuration && !allowUnknownDuration) {
     throw createVideoValidationError('invalid_video_duration');
   }
   return metadata;
@@ -186,7 +186,7 @@ const uploadCompressedVideo = async (req, res) => {
 
     try {
       await compressVideo(inputPath, outputPath, isChat);
-      await validateCompressedVideo(outputPath, profile);
+      await validateCompressedVideo(outputPath, profile, { allowUnknownDuration: true });
     } catch (error) {
       if (!canUseOriginalFallback) {
         if (error?.isVideoValidationError || error?.statusCode === 400) {
