@@ -78,6 +78,7 @@ test('video uploads are bounded, compressed, and use persisted thumbnails', asyn
   assert.match(mediaController, /-map 0:a\?/);
   assert.match(mediaController, /firebaseStorageDownloadTokens/);
   assert.match(mediaController, /crypto\.randomUUID/);
+  assert.match(mediaController, /shouldCreatePublicDownloadTokens\s*=\s*!isChat/);
   assert.match(mediaController, /createVideoThumbnail/);
   assert.match(mediaController, /thumbnailUrl/);
   assert.match(mediaController, /scale=-2:540/);

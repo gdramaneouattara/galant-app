@@ -217,30 +217,34 @@ const uploadCompressedVideo = async (req, res) => {
 
     const destination = `${folder}/${req.user.id}/${videoFilename}`;
     const thumbnailDestination = thumbnailPathToUpload ? `${folder}/${req.user.id}/${thumbnailFilename}` : null;
-    const videoDownloadToken = crypto.randomUUID();
-    const thumbnailDownloadToken = thumbnailDestination ? crypto.randomUUID() : null;
+    const shouldCreatePublicDownloadTokens = !isChat;
+    const videoStorageMetadata = {
+      contentType: videoContentType,
+      cacheControl: 'public, max-age=31536000, immutable',
+    };
+    const thumbnailStorageMetadata = {
+      contentType: 'image/jpeg',
+      cacheControl: 'public, max-age=31536000, immutable',
+    };
+
+    if (shouldCreatePublicDownloadTokens) {
+      videoStorageMetadata.metadata = {
+        firebaseStorageDownloadTokens: crypto.randomUUID(),
+      };
+      thumbnailStorageMetadata.metadata = {
+        firebaseStorageDownloadTokens: crypto.randomUUID(),
+      };
+    }
 
     await bucket.upload(videoPathToUpload, {
       destination,
-      metadata: {
-        contentType: videoContentType,
-        cacheControl: 'public, max-age=31536000, immutable',
-        metadata: {
-          firebaseStorageDownloadTokens: videoDownloadToken,
-        },
-      }
+      metadata: videoStorageMetadata
     });
 
     if (thumbnailDestination) {
       await bucket.upload(thumbnailPathToUpload, {
         destination: thumbnailDestination,
-        metadata: {
-          contentType: 'image/jpeg',
-          cacheControl: 'public, max-age=31536000, immutable',
-          metadata: {
-            firebaseStorageDownloadTokens: thumbnailDownloadToken,
-          },
-        }
+        metadata: thumbnailStorageMetadata
       });
     }
 
