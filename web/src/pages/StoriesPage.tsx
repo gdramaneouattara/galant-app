@@ -50,6 +50,13 @@ const isVideoLikeFile = (file: File) => {
   return /\.(mp4|m4v|mov|webm|3gp|3gpp)$/i.test(file.name || '');
 };
 
+const isResolvedMediaUrl = (value = '') => /^(https?:|blob:|data:)/i.test(value);
+
+const getStatusStoragePath = (value = '') => {
+  const clean = String(value || '').replace(/^\/+/, '');
+  return clean.startsWith('statuses/') ? clean : `statuses/${clean}`;
+};
+
 const ensureVideoUploadFile = (file: File | Blob, fallbackName = 'story.mp4') => {
   const sourceName = 'name' in file && file.name ? file.name : fallbackName;
   const mimeType = inferVideoMimeType(file, sourceName);
@@ -101,6 +108,7 @@ const StoriesPage: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [selectedStatusId, setSelectedStatusId] = useState<string | null>(null);
   const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
+  const [failedVideoStatusIds, setFailedVideoStatusIds] = useState<Record<string, boolean>>({});
   const [likeLoadingByStatusId, setLikeLoadingByStatusId] = useState<Record<string, boolean>>({});
 
   const [isLikersOpen, setIsLikersOpen] = useState(false);
@@ -165,7 +173,8 @@ const StoriesPage: React.FC = () => {
         const path = String(mediaPath);
         setResolvedUrls((prev) => {
           if (prev[path]) return prev;
-          getDownloadURL(ref(fbStorage, `statuses/${path}`))
+          if (isResolvedMediaUrl(path)) return { ...prev, [path]: path };
+          getDownloadURL(ref(fbStorage, getStatusStoragePath(path)))
             .then((url) => {
               setResolvedUrls((current) => current[path] ? current : { ...current, [path]: url });
             })
@@ -508,6 +517,13 @@ const StoriesPage: React.FC = () => {
   };
 
   const selectedStatus = selectedStatusId ? statuses.find((s) => s.id === selectedStatusId) || null : null;
+  const selectedMediaUrl = selectedStatus
+    ? resolvedUrls[selectedStatus.media_url] || (isResolvedMediaUrl(selectedStatus.media_url) ? selectedStatus.media_url : '')
+    : '';
+  const selectedThumbnailUrl = selectedStatus?.thumbnail_url
+    ? resolvedUrls[selectedStatus.thumbnail_url] || (isResolvedMediaUrl(selectedStatus.thumbnail_url) ? selectedStatus.thumbnail_url : '')
+    : '';
+  const selectedVideoFailed = !!(selectedStatus && failedVideoStatusIds[selectedStatus.id]);
 
   if (loading) return (
     <div className="flex justify-center py-40">
@@ -741,17 +757,50 @@ const StoriesPage: React.FC = () => {
           </button>
 
           <div className="relative w-full max-w-lg h-full md:h-[90vh] bg-black rounded-none md:rounded-[2.5rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] border-0 md:border-8 border-white/10">
-            {selectedStatus.message_type === 'VIDEO' ? (
+            {selectedStatus.message_type === 'VIDEO' && selectedMediaUrl && !selectedVideoFailed ? (
               <video
-                src={resolvedUrls[selectedStatus.media_url]}
+                src={selectedMediaUrl}
+                poster={selectedThumbnailUrl || undefined}
                 autoPlay
                 loop
                 playsInline
                 className="w-full h-full object-contain"
                 controls={false}
+                onError={() => {
+                  setFailedVideoStatusIds((current) => ({ ...current, [selectedStatus.id]: true }));
+                  console.error('[stories] video_playback_failed', {
+                    statusId: selectedStatus.id,
+                    mediaUrl: selectedStatus.media_url,
+                    resolvedUrl: selectedMediaUrl,
+                  });
+                }}
               />
+            ) : selectedStatus.message_type === 'VIDEO' ? (
+              <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-slate-950 px-8 text-center">
+                {selectedThumbnailUrl ? (
+                  <OptimizedImage
+                    src={selectedThumbnailUrl}
+                    className="absolute inset-0 h-full w-full object-contain opacity-35"
+                    alt=""
+                    eager
+                  />
+                ) : null}
+                <div className="relative z-10 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-white">
+                  <Film size={30} />
+                </div>
+                <div className="relative z-10 max-w-xs">
+                  <p className="text-base font-black text-white">
+                    {language === 'en' ? 'Video unavailable' : 'Video indisponible'}
+                  </p>
+                  <p className="mt-2 text-sm font-bold text-white/60">
+                    {language === 'en'
+                      ? 'This story video cannot be played on this browser.'
+                      : 'Cette story video ne peut pas etre lue sur ce navigateur.'}
+                  </p>
+                </div>
+              </div>
             ) : (
-              <OptimizedImage src={resolvedUrls[selectedStatus.media_url]} className="w-full h-full object-contain" alt="" eager />
+              <OptimizedImage src={selectedMediaUrl} className="w-full h-full object-contain" alt="" eager />
             )}
 
             <div className="absolute top-[calc(env(safe-area-inset-top)+0.5rem)] left-16 right-16 md:top-6 md:left-8 md:right-8 flex gap-1.5 z-50">
