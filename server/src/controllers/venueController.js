@@ -252,7 +252,9 @@ const discoverGooglePartners = async (req, res) => {
   const longitude = req.query.longitude ?? req.user.longitude;
   const radiusKm = Math.max(1, Math.min(50, Number(req.query.radiusKm || 15)));
   const category = String(req.query.category || 'ALL').trim().toUpperCase();
-  const ratingLevel = String(req.query.ratingLevel || 'ALL').trim().toUpperCase();
+  const ratingLevel = req.query.ratingLevel === undefined
+    ? undefined
+    : String(req.query.ratingLevel || 'ALL').trim().toUpperCase();
 
   if (!city && (!Number.isFinite(Number(latitude)) || !Number.isFinite(Number(longitude)))) {
     return res.status(400).json({ error: 'missing_city_or_location' });
@@ -266,7 +268,7 @@ const discoverGooglePartners = async (req, res) => {
       radiusKm,
       limit: 20,
       category,
-      ratingLevel
+      ...(ratingLevel ? { ratingLevel } : {})
     });
 
     res.json({
@@ -274,7 +276,7 @@ const discoverGooglePartners = async (req, res) => {
       source: 'GOOGLE_PLACES_DIRECT',
       city: city || null,
       category,
-      ratingLevel,
+      ratingLevel: ratingLevel || 'PRESTIGE',
       radiusKm,
       access: {
         includedWithPremium: !!(req.user.is_premium || req.user.is_vip),

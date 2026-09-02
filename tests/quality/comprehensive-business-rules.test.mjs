@@ -1043,6 +1043,8 @@ test('Rules: Apps exposes paid user partner discovery with direct Google import'
   assert.match(googleMapsService, /locationBias/);
   assert.match(googleMapsService, /USER_DISCOVERY_CATEGORY_TYPES/);
   assert.match(googleMapsService, /USER_DISCOVERY_RATING_LEVELS/);
+  assert.match(googleMapsService, /normalizeUserRatingLevel = \(ratingLevel = 'PRESTIGE'\)/);
+  assert.match(googleMapsService, /ratingLevel = 'PRESTIGE'/);
   assert.match(googleMapsService, /PRESTIGE:\s*\{\s*min:\s*4\.5,\s*max:\s*5/);
   assert.match(googleMapsService, /HIGH:\s*\{\s*min:\s*4\.0,\s*max:\s*4\.49/);
   assert.match(googleMapsService, /GOOD:\s*\{\s*min:\s*3\.0,\s*max:\s*3\.99/);
@@ -1057,6 +1059,7 @@ test('Rules: Apps exposes paid user partner discovery with direct Google import'
   assert.match(venueController, /discoverGooglePartners/);
   assert.match(venueController, /req\.query\.category/);
   assert.match(venueController, /req\.query\.ratingLevel/);
+  assert.match(venueController, /ratingLevel:\s*ratingLevel \|\| 'PRESTIGE'/);
   assert.match(venueController, /partner_discovery_unlocked/);
   assert.match(venueController, /partner_discovery_requires_payment/);
   assert.match(venueRoutes, /\/partner-discovery\/google/);
