@@ -1052,6 +1052,11 @@ test('Rules: Apps exposes paid user partner discovery with direct Google import'
   assert.match(googleMapsService, /GOOGLE_SEARCH_MAX_PAGES/);
   assert.match(googleMapsService, /shouldExpandForRatingFilter/);
   assert.match(googleMapsService, /ratingFilter\.max/);
+  assert.match(googleMapsService, /IVORY_COAST_REGION_CODE = 'CI'/);
+  assert.match(googleMapsService, /regionCode:\s*IVORY_COAST_REGION_CODE/);
+  assert.match(googleMapsService, /isIvoryCoastPlace/);
+  assert.match(googleMapsService, /placeMatchesRequestedCity/);
+  assert.match(googleMapsService, /partner_discovery_v2_ci_city/);
   assert.match(googleMapsService, /CAFE:\s*\['cafe'\]/);
   assert.match(googleMapsService, /BEAUTY:\s*\['spa',\s*'beauty_salon'\]/);
   assert.match(googleMapsService, /GIFTS:\s*\['florist',\s*'gift_shop'\]/);

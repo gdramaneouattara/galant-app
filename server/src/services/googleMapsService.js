@@ -10,6 +10,14 @@ const DEFAULT_LIMIT = 20;
 const GOOGLE_SEARCH_PAGE_SIZE = 10;
 const GOOGLE_SEARCH_EXPANDED_PAGE_SIZE = 20;
 const GOOGLE_SEARCH_MAX_PAGES = 3;
+const IVORY_COAST_REGION_CODE = 'CI';
+const IVORY_COAST_COUNTRY_ALIASES = new Set([
+  'ci',
+  'civ',
+  'cote d ivoire',
+  'cote divoire',
+  'ivory coast'
+]);
 const USER_DISCOVERY_CACHE_DAYS = Math.max(1, Math.min(30, Number(process.env.PARTNER_DISCOVERY_CACHE_DAYS || 14)));
 const GOOGLE_PHOTO_WIDTHS = {
   thumb: 320,
@@ -59,6 +67,7 @@ const FIELD_MASK = [
   'places.displayName',
   'places.formattedAddress',
   'places.location',
+  'places.addressComponents',
   'places.rating',
   'places.userRatingCount',
   'places.types',
@@ -77,6 +86,47 @@ const normalizeCacheText = (value = '') => String(value)
   .toLowerCase()
   .replace(/[^a-z0-9]+/g, '_')
   .replace(/^_+|_+$/g, '') || 'unknown';
+
+const normalizeSearchText = (value = '') => String(value)
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+const placeAddressText = (place) => [
+  place?.formattedAddress,
+  ...(Array.isArray(place?.addressComponents)
+    ? place.addressComponents.flatMap((component) => [component.longText, component.shortText])
+    : [])
+].filter(Boolean).join(' ');
+
+const getCountryComponent = (place) => {
+  if (!Array.isArray(place?.addressComponents)) return null;
+  return place.addressComponents.find((component) => (
+    Array.isArray(component.types) && component.types.includes('country')
+  )) || null;
+};
+
+const isIvoryCoastPlace = (place) => {
+  const country = getCountryComponent(place);
+  if (country) {
+    const shortText = normalizeSearchText(country.shortText);
+    const longText = normalizeSearchText(country.longText);
+    return IVORY_COAST_COUNTRY_ALIASES.has(shortText) || IVORY_COAST_COUNTRY_ALIASES.has(longText);
+  }
+
+  const address = normalizeSearchText(place?.formattedAddress || '');
+  return Array.from(IVORY_COAST_COUNTRY_ALIASES).some((alias) => address.includes(alias));
+};
+
+const placeMatchesRequestedCity = (place, city) => {
+  const requestedCity = normalizeSearchText(city);
+  if (!requestedCity || requestedCity === 'autour de vous') return true;
+  const address = normalizeSearchText(placeAddressText(place));
+  return address.includes(requestedCity);
+};
 
 const normalizeRequestedType = (type) => {
   const cleanType = String(type || '').trim();
@@ -204,11 +254,13 @@ const hasCoordinates = (latitude, longitude) => (
 const buildSearchBody = (city, category, options = {}) => {
   const useLocationBias = hasCoordinates(options.latitude, options.longitude);
   const shouldExpand = shouldExpandForRatingFilter(options.ratingFilter);
+  const countryScopedCity = city ? `${city}, Cote d'Ivoire` : "Cote d'Ivoire";
   const body = {
     textQuery: useLocationBias
-      ? `best ${category.label} nearby`
-      : `best ${category.label} in ${city}`,
+      ? `best ${category.label} nearby in Cote d'Ivoire`
+      : `best ${category.label} in ${countryScopedCity}`,
     languageCode: 'fr',
+    regionCode: IVORY_COAST_REGION_CODE,
     includedType: category.googleType,
     strictTypeFiltering: true,
     minRating: MIN_PRESTIGE_RATING,
@@ -260,6 +312,8 @@ const searchCategory = async (city, category, options = {}) => {
 
     const pageMatches = (response.data.places || [])
       .filter((place) => place?.id && normalizePlaceName(place))
+      .filter((place) => isIvoryCoastPlace(place))
+      .filter((place) => options.allowAnyCity || placeMatchesRequestedCity(place, city))
       .filter((place) => matchesRatingFilter(place, options.ratingFilter));
 
     matchedPlaces.push(...pageMatches);
@@ -361,7 +415,7 @@ const discoveryCacheKey = ({ city, latitude, longitude, radiusKm, category, rati
     ? `${Number(latitude).toFixed(2)}_${Number(longitude).toFixed(2)}`
     : normalizeCacheText(city);
   const rawKey = [
-    'partner_discovery_v1',
+    'partner_discovery_v2_ci_city',
     normalizeCacheText(category || 'ALL'),
     normalizeCacheText(ratingLevel || 'ALL'),
     Math.max(1, Math.min(50, Number(radiusKm || 15))),
@@ -425,7 +479,8 @@ const searchUserPartnerDiscovery = async ({
     longitude,
     radiusKm,
     minRating: ratingFilter.min,
-    ratingFilter
+    ratingFilter,
+    allowAnyCity: hasCoordinates(latitude, longitude)
   });
 
   const mapped = venues.map((venue) => {
