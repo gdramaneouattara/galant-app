@@ -7,6 +7,7 @@ import { COLORS } from '../../../data/mock';
 import { useApp } from '../../../state/AppContext';
 
 const FREE_PROFILE_PHOTO_LIMIT = 3;
+const MIN_REQUIRED_PROFILE_PHOTOS = 1;
 
 interface SelectedPhoto {
   previewUri: string;
@@ -97,8 +98,8 @@ const PhotosStep: React.FC<PhotosStepProps> = ({ form, setForm, onNext }) => {
           );
         })}
       </View>
-      <Text style={[styles.caption, { color: colors.textMuted, marginTop: 10 }]}>Photos: {form.photos.length}/{FREE_PROFILE_PHOTO_LIMIT} (minimum 3)</Text>
-      <PrimaryButton label="Continuer" onPress={onNext} disabled={form.photos.length < 3} />
+      <Text style={[styles.caption, { color: colors.textMuted, marginTop: 10 }]}>Photos: {form.photos.length}/{FREE_PROFILE_PHOTO_LIMIT} (minimum 1)</Text>
+      <PrimaryButton label="Continuer" onPress={onNext} disabled={form.photos.length < MIN_REQUIRED_PROFILE_PHOTOS} />
     </ScrollView>
   );
 };

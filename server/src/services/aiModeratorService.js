@@ -11,7 +11,7 @@ const autoReviewProfile = async (userId) => {
     const user = userDoc.data();
 
     // 1. Critères de l'IA Galant
-    const hasMinPhotos = user.photos && user.photos.length >= 3;
+    const hasMinPhotos = user.photos && user.photos.length >= 1;
     const hasBio = user.bio && user.bio.length > 10;
 
     // 2. Décision Automatique

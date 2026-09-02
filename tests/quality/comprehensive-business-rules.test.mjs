@@ -119,10 +119,13 @@ test('Rules: Relationship goals are harmonized across onboarding and profile', a
 test('Rules: Onboarding asks for religion instead of interests', async () => {
   const webOnboarding = await read('web/src/pages/OnboardingPage.tsx');
   const nativeAuthFlow = await read('src/screens/auth/AuthFlowScreen.tsx');
+  const nativePhotosStep = await read('src/screens/auth/components/PhotosStep.tsx');
   const nativeReligionStep = await read('src/screens/auth/components/ReligionStep.tsx');
   const profileController = await read('server/src/controllers/profileController.js');
   const matchmakingService = await read('server/src/services/matchmakingService.js');
   const venueController = await read('server/src/controllers/venueController.js');
+  const aiModeratorService = await read('server/src/services/aiModeratorService.js');
+  const conciergeService = await read('server/src/services/conciergeService.js');
 
   assert.match(webOnboarding, /RELIGION_OPTIONS/);
   assert.match(webOnboarding, /id:\s*'CHRISTIAN'/);
@@ -136,6 +139,9 @@ test('Rules: Onboarding asks for religion instead of interests', async () => {
   assert.doesNotMatch(webOnboarding, /Centres d'intérêt/);
   assert.doesNotMatch(webOnboarding, /interests\.length\s*<\s*3/);
   assert.doesNotMatch(webOnboarding, /interests\.length\s*>=\s*3/);
+  assert.match(webOnboarding, /MIN_REQUIRED_PROFILE_PHOTOS = 1/);
+  assert.match(webOnboarding, /photoFiles\.length < MIN_REQUIRED_PROFILE_PHOTOS/);
+  assert.doesNotMatch(webOnboarding, /Veuillez ajouter 3 photos/);
 
   assert.match(nativeAuthFlow, /ReligionStep/);
   assert.match(nativeAuthFlow, /religion:\s*'CHRISTIAN'/);
@@ -143,6 +149,12 @@ test('Rules: Onboarding asks for religion instead of interests', async () => {
   assert.match(nativeAuthFlow, /interests:\s*\[\]/);
   assert.doesNotMatch(nativeAuthFlow, /InterestsStep/);
   assert.doesNotMatch(nativeAuthFlow, /interests\.length\s*>=\s*3/);
+  assert.match(nativePhotosStep, /MIN_REQUIRED_PROFILE_PHOTOS = 1/);
+  assert.match(nativePhotosStep, /form\.photos\.length < MIN_REQUIRED_PROFILE_PHOTOS/);
+  assert.doesNotMatch(nativePhotosStep, /minimum 3/);
+  assert.match(aiModeratorService, /user\.photos && user\.photos\.length >= 1/);
+  assert.match(conciergeService, /user\.photos\.length < 1/);
+  assert.doesNotMatch(conciergeService, /3ème photo/);
 
   assert.match(nativeReligionStep, /RELIGION_OPTIONS/);
   assert.match(nativeReligionStep, /Chrétien\(ne\)/);
