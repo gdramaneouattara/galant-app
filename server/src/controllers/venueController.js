@@ -248,17 +248,19 @@ const discoverGooglePartners = async (req, res) => {
   }
 
   const hasRequestCoordinates = req.query.latitude !== undefined && req.query.longitude !== undefined;
-  const city = String(req.query.city || (hasRequestCoordinates ? '' : req.user.city) || '').trim();
-  const country = String(req.query.country || (hasRequestCoordinates ? '' : req.user.country) || '').trim();
-  const latitude = req.query.latitude ?? req.user.latitude;
-  const longitude = req.query.longitude ?? req.user.longitude;
+  const requestedCity = String(req.query.city || '').trim();
+  const hasRequestedCity = requestedCity.length > 0;
+  const city = String(requestedCity || (hasRequestCoordinates ? '' : req.user.city) || '').trim();
+  const country = String(req.query.country || (!hasRequestedCity && !hasRequestCoordinates ? req.user.country : '') || '').trim();
+  const latitude = hasRequestCoordinates ? req.query.latitude : (hasRequestedCity ? undefined : req.user.latitude);
+  const longitude = hasRequestCoordinates ? req.query.longitude : (hasRequestedCity ? undefined : req.user.longitude);
   const radiusKm = Math.max(1, Math.min(50, Number(req.query.radiusKm || 15)));
   const category = String(req.query.category || 'ALL').trim().toUpperCase();
   const ratingLevel = req.query.ratingLevel === undefined
     ? undefined
     : String(req.query.ratingLevel || 'ALL').trim().toUpperCase();
 
-  if (!city && (!Number.isFinite(Number(latitude)) || !Number.isFinite(Number(longitude)))) {
+  if (!city && (!hasRequestCoordinates || !Number.isFinite(Number(latitude)) || !Number.isFinite(Number(longitude)))) {
     return res.status(400).json({ error: 'missing_city_or_location' });
   }
 
@@ -271,6 +273,7 @@ const discoverGooglePartners = async (req, res) => {
       radiusKm,
       limit: 20,
       category,
+      useLocationScope: hasRequestCoordinates,
       ...(ratingLevel ? { ratingLevel } : {})
     });
 
