@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft,
+  CheckCircle2,
   Coffee,
   ExternalLink,
   Flower2,
@@ -55,6 +56,9 @@ const copy = {
     cityPlaceholder: 'Ex: Abidjan, Douala, Yaounde...',
     searchCity: 'Chercher cette ville',
     nearMe: 'Me geolocaliser',
+    searchNearMe: 'Chercher autour de moi',
+    locationReady: 'Position prete',
+    chooseCategoryFirst: 'Choisissez une categorie, puis cherchez par ville ou autour de vous.',
     payTitle: 'Fonctionnalite payante',
     payBody: 'Les membres Premium y accèdent directement. Les comptes gratuits peuvent débloquer cette recherche pour 500 F CFA.',
     unlock: 'Débloquer pour 500 F',
@@ -78,6 +82,9 @@ const copy = {
     cityPlaceholder: 'E.g. Abidjan, Douala, Yaounde...',
     searchCity: 'Search this city',
     nearMe: 'Use location',
+    searchNearMe: 'Search near me',
+    locationReady: 'Location ready',
+    chooseCategoryFirst: 'Choose a category, then search by city or around you.',
     payTitle: 'Paid feature',
     payBody: 'Premium members get direct access. Free accounts can unlock this search for 500 F CFA.',
     unlock: 'Unlock for 500 F',
@@ -104,6 +111,8 @@ const PartnerDiscoveryPage: React.FC = () => {
   const [loadingDiscovery, setLoadingDiscovery] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [category, setCategory] = useState<DiscoveryCategory>('ALL');
+  const [locationCoords, setLocationCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [locating, setLocating] = useState(false);
   const [unlockModalOpen, setUnlockModalOpen] = useState(false);
   const c = copy[language] || copy.fr;
   const hasDiscoveryAccess = !!(profile?.is_premium || profile?.is_vip || profile?.partner_discovery_unlocked);
@@ -137,6 +146,7 @@ const PartnerDiscoveryPage: React.FC = () => {
   const handleCitySearch = () => {
     const cleanCity = city.trim();
     if (!cleanCity) return;
+    setLocationCoords(null);
     void fetchDiscovery({ city: cleanCity, category });
   };
 
@@ -146,18 +156,31 @@ const PartnerDiscoveryPage: React.FC = () => {
       return;
     }
 
+    setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        void fetchDiscovery({
+        setLocationCoords({
           latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          radiusKm: 15,
-          category
+          longitude: position.coords.longitude
         });
+        setLocating(false);
       },
-      () => showAlert('Erreur', 'Impossible de récupérer votre position.'),
+      () => {
+        setLocating(false);
+        showAlert('Erreur', 'Impossible de récupérer votre position.');
+      },
       { enableHighAccuracy: true, timeout: 12000 }
     );
+  };
+
+  const handleNearbySearch = () => {
+    if (!locationCoords) return;
+    void fetchDiscovery({
+      latitude: locationCoords.latitude,
+      longitude: locationCoords.longitude,
+      radiusKm: 15,
+      category
+    });
   };
 
   return (
@@ -177,15 +200,9 @@ const PartnerDiscoveryPage: React.FC = () => {
             <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{c.subtitle}</p>
           </div>
         </div>
-
-        <button
-          onClick={handleLocate}
-          disabled={loadingDiscovery}
-          className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 text-xs font-black uppercase tracking-widest text-white disabled:opacity-50"
-        >
-          {loadingDiscovery ? <Loader2 size={16} className="animate-spin" /> : <LocateFixed size={16} />}
-          {c.nearMe}
-        </button>
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+          {c.chooseCategoryFirst}
+        </p>
 
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
           {DISCOVERY_CATEGORIES.map((item) => {
@@ -226,6 +243,26 @@ const PartnerDiscoveryPage: React.FC = () => {
           >
             {loadingDiscovery ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
             {c.searchCity}
+          </button>
+        </div>
+
+        <div className="space-y-3 border-t border-slate-200 pt-4 dark:border-white/10">
+          <button
+            onClick={handleLocate}
+            disabled={loadingDiscovery || locating}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-xs font-black uppercase tracking-widest text-slate-700 transition-colors disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+          >
+            {locating ? <Loader2 size={16} className="animate-spin" /> : locationCoords ? <CheckCircle2 size={16} /> : <LocateFixed size={16} />}
+            {locationCoords ? c.locationReady : c.nearMe}
+          </button>
+
+          <button
+            onClick={handleNearbySearch}
+            disabled={loadingDiscovery || locating || !locationCoords}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-red-500/20 disabled:opacity-50"
+          >
+            {loadingDiscovery ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+            {c.searchNearMe}
           </button>
         </div>
       </div>
