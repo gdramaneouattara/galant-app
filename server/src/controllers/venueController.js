@@ -247,7 +247,9 @@ const discoverGooglePartners = async (req, res) => {
     });
   }
 
-  const city = String(req.query.city || req.user.city || '').trim();
+  const hasRequestCoordinates = req.query.latitude !== undefined && req.query.longitude !== undefined;
+  const city = String(req.query.city || (hasRequestCoordinates ? '' : req.user.city) || '').trim();
+  const country = String(req.query.country || (hasRequestCoordinates ? '' : req.user.country) || '').trim();
   const latitude = req.query.latitude ?? req.user.latitude;
   const longitude = req.query.longitude ?? req.user.longitude;
   const radiusKm = Math.max(1, Math.min(50, Number(req.query.radiusKm || 15)));
@@ -263,6 +265,7 @@ const discoverGooglePartners = async (req, res) => {
   try {
     const venues = await searchUserPartnerDiscovery({
       city,
+      country,
       latitude,
       longitude,
       radiusKm,
@@ -275,6 +278,7 @@ const discoverGooglePartners = async (req, res) => {
       venues,
       source: 'GOOGLE_PLACES_DIRECT',
       city: city || null,
+      country: country || null,
       category,
       ratingLevel: ratingLevel || 'PRESTIGE',
       radiusKm,
