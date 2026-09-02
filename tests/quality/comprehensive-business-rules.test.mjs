@@ -1077,6 +1077,12 @@ test('Rules: Apps exposes paid user partner discovery with direct Google import'
   assert.match(webPartnerDiscovery, /\/api\/venues\/partner-discovery\/google/);
   assert.match(webPartnerDiscovery, /DISCOVERY_CATEGORIES/);
   assert.match(webPartnerDiscovery, /category/);
+  assert.match(webPartnerDiscovery, /locationCoords/);
+  assert.match(webPartnerDiscovery, /setLocationCoords/);
+  assert.match(webPartnerDiscovery, /setLocationCoords\(null\);\s+setLocating\(true\)/);
+  assert.match(webPartnerDiscovery, /handleNearbySearch/);
+  assert.match(webPartnerDiscovery, /searchNearMe/);
+  assert.match(webPartnerDiscovery, /disabled=\{loadingDiscovery \|\| locating \|\| !locationCoords\}/);
   assert.match(webPartnerDiscovery, /Spa & Beaute/);
   assert.match(webPartnerDiscovery, /Fleurs & Cadeaux/);
   assert.match(webPartnerDiscovery, /Culture & Loisirs/);
