@@ -156,6 +156,7 @@ const PartnerDiscoveryPage: React.FC = () => {
       return;
     }
 
+    setLocationCoords(null);
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -166,6 +167,7 @@ const PartnerDiscoveryPage: React.FC = () => {
         setLocating(false);
       },
       () => {
+        setLocationCoords(null);
         setLocating(false);
         showAlert('Erreur', 'Impossible de récupérer votre position.');
       },
