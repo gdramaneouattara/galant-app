@@ -10,6 +10,20 @@ const DEFAULT_LIMIT = 20;
 const GOOGLE_SEARCH_PAGE_SIZE = 10;
 const GOOGLE_SEARCH_EXPANDED_PAGE_SIZE = 20;
 const GOOGLE_SEARCH_MAX_PAGES = 3;
+const CITY_COUNTRY_HINTS = {
+  abidjan: { country: "Cote d'Ivoire", regionCode: 'CI', aliases: ['ci', 'civ', 'cote d ivoire', 'cote divoire', 'ivory coast'] },
+  yamoussoukro: { country: "Cote d'Ivoire", regionCode: 'CI', aliases: ['ci', 'civ', 'cote d ivoire', 'cote divoire', 'ivory coast'] },
+  bouake: { country: "Cote d'Ivoire", regionCode: 'CI', aliases: ['ci', 'civ', 'cote d ivoire', 'cote divoire', 'ivory coast'] },
+  daloa: { country: "Cote d'Ivoire", regionCode: 'CI', aliases: ['ci', 'civ', 'cote d ivoire', 'cote divoire', 'ivory coast'] },
+  korhogo: { country: "Cote d'Ivoire", regionCode: 'CI', aliases: ['ci', 'civ', 'cote d ivoire', 'cote divoire', 'ivory coast'] },
+  'san pedro': { country: "Cote d'Ivoire", regionCode: 'CI', aliases: ['ci', 'civ', 'cote d ivoire', 'cote divoire', 'ivory coast'] },
+  dakar: { country: 'Senegal', regionCode: 'SN', aliases: ['sn', 'senegal'] },
+  thies: { country: 'Senegal', regionCode: 'SN', aliases: ['sn', 'senegal'] },
+  'saint louis': { country: 'Senegal', regionCode: 'SN', aliases: ['sn', 'senegal'] },
+  douala: { country: 'Cameroun', regionCode: 'CM', aliases: ['cm', 'cameroun', 'cameroon'] },
+  yaounde: { country: 'Cameroun', regionCode: 'CM', aliases: ['cm', 'cameroun', 'cameroon'] },
+  bafoussam: { country: 'Cameroun', regionCode: 'CM', aliases: ['cm', 'cameroun', 'cameroon'] }
+};
 const USER_DISCOVERY_CACHE_DAYS = Math.max(1, Math.min(30, Number(process.env.PARTNER_DISCOVERY_CACHE_DAYS || 14)));
 const GOOGLE_PHOTO_WIDTHS = {
   thumb: 320,
@@ -59,6 +73,7 @@ const FIELD_MASK = [
   'places.displayName',
   'places.formattedAddress',
   'places.location',
+  'places.addressComponents',
   'places.rating',
   'places.userRatingCount',
   'places.types',
@@ -77,6 +92,98 @@ const normalizeCacheText = (value = '') => String(value)
   .toLowerCase()
   .replace(/[^a-z0-9]+/g, '_')
   .replace(/^_+|_+$/g, '') || 'unknown';
+
+const normalizeSearchText = (value = '') => String(value)
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+const placeAddressText = (place) => [
+  place?.formattedAddress,
+  ...(Array.isArray(place?.addressComponents)
+    ? place.addressComponents.flatMap((component) => [component.longText, component.shortText])
+    : [])
+].filter(Boolean).join(' ');
+
+const buildCountryHintFromName = (countryName = '') => {
+  const cleanCountry = normalizeSearchText(countryName);
+  if (!cleanCountry) return null;
+  const knownHint = Object.values(CITY_COUNTRY_HINTS)
+    .find((hint) => hint.aliases.includes(cleanCountry) || normalizeSearchText(hint.country) === cleanCountry);
+  if (knownHint) return knownHint;
+  return { country: countryName.trim(), regionCode: null, aliases: [cleanCountry] };
+};
+
+const parseSearchLocation = (city = '', fallbackCountry = '') => {
+  const rawCity = String(city || '').trim();
+  const parts = rawCity.split(',').map((part) => part.trim()).filter(Boolean);
+  const cityName = parts[0] || rawCity;
+  const explicitCountry = parts.length > 1 ? parts.slice(1).join(' ') : '';
+  const cityKey = normalizeSearchText(cityName);
+  const hintedCountry = CITY_COUNTRY_HINTS[cityKey] || null;
+  const countryHint = buildCountryHintFromName(explicitCountry) || hintedCountry || buildCountryHintFromName(fallbackCountry);
+
+  return {
+    city: cityName,
+    country: countryHint?.country || '',
+    regionCode: countryHint?.regionCode || null,
+    countryAliases: new Set(countryHint?.aliases || [])
+  };
+};
+
+const getCountryComponent = (place) => {
+  if (!Array.isArray(place?.addressComponents)) return null;
+  return place.addressComponents.find((component) => (
+    Array.isArray(component.types) && component.types.includes('country')
+  )) || null;
+};
+
+const placeMatchesExpectedCountry = (place, location) => {
+  if (!location?.countryAliases?.size) return true;
+  const country = getCountryComponent(place);
+  if (country) {
+    const shortText = normalizeSearchText(country.shortText);
+    const longText = normalizeSearchText(country.longText);
+    return location.countryAliases.has(shortText) || location.countryAliases.has(longText);
+  }
+
+  const address = normalizeSearchText(place?.formattedAddress || '');
+  return Array.from(location.countryAliases).some((alias) => address.includes(alias));
+};
+
+const placeMatchesRequestedCity = (place, location) => {
+  const requestedCity = normalizeSearchText(location?.city);
+  if (!requestedCity || requestedCity === 'autour de vous') return true;
+  const address = normalizeSearchText(placeAddressText(place));
+  return address.includes(requestedCity);
+};
+
+const distanceKmBetween = (leftLatitude, leftLongitude, rightLatitude, rightLongitude) => {
+  if (!hasCoordinates(leftLatitude, leftLongitude) || !hasCoordinates(rightLatitude, rightLongitude)) return null;
+  const toRad = (value) => Number(value) * Math.PI / 180;
+  const radiusKm = 6371;
+  const deltaLat = toRad(rightLatitude) - toRad(leftLatitude);
+  const deltaLon = toRad(rightLongitude) - toRad(leftLongitude);
+  const a = Math.sin(deltaLat / 2) ** 2
+    + Math.cos(toRad(leftLatitude)) * Math.cos(toRad(rightLatitude)) * Math.sin(deltaLon / 2) ** 2;
+  return 2 * radiusKm * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+const placeMatchesRequestedRadius = (place, options = {}) => {
+  if (!hasCoordinates(options.latitude, options.longitude)) return true;
+  const distanceKm = distanceKmBetween(
+    options.latitude,
+    options.longitude,
+    place?.location?.latitude,
+    place?.location?.longitude
+  );
+  if (distanceKm === null) return false;
+  const radiusKm = Math.max(1, Math.min(50, Number(options.radiusKm || 15)));
+  return distanceKm <= radiusKm * 1.25;
+};
 
 const normalizeRequestedType = (type) => {
   const cleanType = String(type || '').trim();
@@ -201,13 +308,42 @@ const hasCoordinates = (latitude, longitude) => (
   Math.abs(Number(longitude)) <= 180
 );
 
+const clampLatitude = (value) => Math.max(-90, Math.min(90, value));
+const normalizeLongitude = (value) => {
+  if (value > 180) return value - 360;
+  if (value < -180) return value + 360;
+  return value;
+};
+
+const buildLocationRestriction = (latitude, longitude, radiusKm = 15) => {
+  const lat = Number(latitude);
+  const lon = Number(longitude);
+  const radius = Math.max(1, Math.min(50, Number(radiusKm || 15)));
+  const latDelta = radius / 111.32;
+  const lonDelta = radius / Math.max(1, 111.32 * Math.cos(lat * Math.PI / 180));
+  return {
+    rectangle: {
+      low: {
+        latitude: clampLatitude(lat - latDelta),
+        longitude: normalizeLongitude(lon - lonDelta)
+      },
+      high: {
+        latitude: clampLatitude(lat + latDelta),
+        longitude: normalizeLongitude(lon + lonDelta)
+      }
+    }
+  };
+};
+
 const buildSearchBody = (city, category, options = {}) => {
-  const useLocationBias = hasCoordinates(options.latitude, options.longitude);
+  const useLocationScope = hasCoordinates(options.latitude, options.longitude);
   const shouldExpand = shouldExpandForRatingFilter(options.ratingFilter);
+  const location = options.location || parseSearchLocation(city, options.country);
+  const scopedCity = [location.city || city, location.country].filter(Boolean).join(', ');
   const body = {
-    textQuery: useLocationBias
+    textQuery: useLocationScope
       ? `best ${category.label} nearby`
-      : `best ${category.label} in ${city}`,
+      : `best ${category.label} in ${scopedCity || city}`,
     languageCode: 'fr',
     includedType: category.googleType,
     strictTypeFiltering: true,
@@ -215,21 +351,16 @@ const buildSearchBody = (city, category, options = {}) => {
     pageSize: shouldExpand ? GOOGLE_SEARCH_EXPANDED_PAGE_SIZE : GOOGLE_SEARCH_PAGE_SIZE
   };
 
+  if (location.regionCode) {
+    body.regionCode = location.regionCode;
+  }
+
   if (Number.isFinite(Number(options.minRating))) {
     body.minRating = Number(options.minRating);
   }
 
-  if (useLocationBias) {
-    const radiusMeters = Math.max(1000, Math.min(50000, Number(options.radiusKm || 15) * 1000));
-    body.locationBias = {
-      circle: {
-        center: {
-          latitude: Number(options.latitude),
-          longitude: Number(options.longitude)
-        },
-        radius: radiusMeters
-      }
-    };
+  if (useLocationScope) {
+    body.locationRestriction = buildLocationRestriction(options.latitude, options.longitude, options.radiusKm);
     body.rankPreference = 'DISTANCE';
   }
 
@@ -242,6 +373,7 @@ const buildSearchBody = (city, category, options = {}) => {
 
 const searchCategory = async (city, category, options = {}) => {
   const shouldExpand = shouldExpandForRatingFilter(options.ratingFilter);
+  const location = options.location || parseSearchLocation(city, options.country);
   const maxPages = shouldExpand ? GOOGLE_SEARCH_MAX_PAGES : 1;
   const targetMatches = Math.max(1, Math.min(DEFAULT_LIMIT, Number(options.limit || DEFAULT_LIMIT)));
   let pageToken = null;
@@ -250,7 +382,7 @@ const searchCategory = async (city, category, options = {}) => {
   for (let page = 0; page < maxPages; page += 1) {
     if (page > 0) await waitForNextPlacesPage();
 
-    const response = await axios.post(GOOGLE_TEXT_SEARCH_URL, buildSearchBody(city, category, { ...options, pageToken }), {
+    const response = await axios.post(GOOGLE_TEXT_SEARCH_URL, buildSearchBody(city, category, { ...options, location, pageToken }), {
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
@@ -260,6 +392,9 @@ const searchCategory = async (city, category, options = {}) => {
 
     const pageMatches = (response.data.places || [])
       .filter((place) => place?.id && normalizePlaceName(place))
+      .filter((place) => placeMatchesExpectedCountry(place, location))
+      .filter((place) => options.allowAnyCity || placeMatchesRequestedCity(place, location))
+      .filter((place) => placeMatchesRequestedRadius(place, options))
       .filter((place) => matchesRatingFilter(place, options.ratingFilter));
 
     matchedPlaces.push(...pageMatches);
@@ -269,7 +404,7 @@ const searchCategory = async (city, category, options = {}) => {
     if (!pageToken) break;
   }
 
-  return matchedPlaces.map((place) => toVenue(place, city, category));
+  return matchedPlaces.map((place) => toVenue(place, location.city || city, category));
 };
 
 const searchGoogleVenueCandidates = async (
@@ -280,14 +415,15 @@ const searchGoogleVenueCandidates = async (
 ) => {
   if (!GOOGLE_MAPS_API_KEY) throw new Error('missing_google_maps_api_key');
 
-  const cleanCity = String(city || options.city || '').trim();
+  const location = parseSearchLocation(city || options.city || '', options.country);
+  const cleanCity = String(location.city || '').trim();
   if (!cleanCity && !hasCoordinates(options.latitude, options.longitude)) throw new Error('missing_city_or_location');
 
   try {
     const requestedTypes = new Set((types || []).map(normalizeRequestedType).filter(Boolean));
     const categories = CATEGORY_QUERIES.filter((category) => requestedTypes.has(category.googleType));
     const settled = await Promise.allSettled(
-      categories.map((category) => searchCategory(cleanCity || 'Autour de vous', category, { ...options, limit }))
+      categories.map((category) => searchCategory(cleanCity || 'Autour de vous', category, { ...options, limit, location }))
     );
     const batches = settled
       .filter((entry) => entry.status === 'fulfilled')
@@ -355,13 +491,14 @@ const searchVenuesInCity = async (
   limit = DEFAULT_LIMIT
 ) => searchGoogleVenueCandidates(city, types, limit);
 
-const discoveryCacheKey = ({ city, latitude, longitude, radiusKm, category, ratingLevel, limit }) => {
+const discoveryCacheKey = ({ city, country, latitude, longitude, radiusKm, category, ratingLevel, limit }) => {
   const hasLocation = hasCoordinates(latitude, longitude);
+  const location = parseSearchLocation(city, country);
   const locationBucket = hasLocation
     ? `${Number(latitude).toFixed(2)}_${Number(longitude).toFixed(2)}`
-    : normalizeCacheText(city);
+    : `${normalizeCacheText(location.city)}_${normalizeCacheText(location.country || country)}`;
   const rawKey = [
-    'partner_discovery_v1',
+    'partner_discovery_v3_geo_scope',
     normalizeCacheText(category || 'ALL'),
     normalizeCacheText(ratingLevel || 'ALL'),
     Math.max(1, Math.min(50, Number(radiusKm || 15))),
@@ -389,6 +526,7 @@ const setCachedUserPartnerDiscovery = async (key, params, venues) => {
   const now = Date.now();
   await db.collection('partner_discovery_cache').doc(key).set({
     city: String(params.city || '').trim() || null,
+    country: String(params.country || '').trim() || null,
     latitude: hasCoordinates(params.latitude, params.longitude) ? Number(params.latitude) : null,
     longitude: hasCoordinates(params.latitude, params.longitude) ? Number(params.longitude) : null,
     radius_km: Math.max(1, Math.min(50, Number(params.radiusKm || 15))),
@@ -402,6 +540,7 @@ const setCachedUserPartnerDiscovery = async (key, params, venues) => {
 
 const searchUserPartnerDiscovery = async ({
   city,
+  country,
   latitude,
   longitude,
   radiusKm = 15,
@@ -413,7 +552,7 @@ const searchUserPartnerDiscovery = async ({
   const normalizedRatingLevel = normalizeUserRatingLevel(ratingLevel);
   const ratingFilter = USER_DISCOVERY_RATING_LEVELS[normalizedRatingLevel];
   const requestedTypes = USER_DISCOVERY_CATEGORY_TYPES[normalizedCategory] || USER_DISCOVERY_CATEGORY_TYPES.ALL;
-  const params = { city, latitude, longitude, radiusKm, limit, category: normalizedCategory, ratingLevel: normalizedRatingLevel };
+  const params = { city, country, latitude, longitude, radiusKm, limit, category: normalizedCategory, ratingLevel: normalizedRatingLevel };
   const cached = await getCachedUserPartnerDiscovery(params);
   if (cached.venues) {
     return cached.venues.map((venue) => ({ ...venue, cache_hit: true }));
@@ -421,11 +560,13 @@ const searchUserPartnerDiscovery = async ({
 
   const venues = await searchGoogleVenueCandidates(city, requestedTypes, limit, {
     city,
+    country,
     latitude,
     longitude,
     radiusKm,
     minRating: ratingFilter.min,
-    ratingFilter
+    ratingFilter,
+    allowAnyCity: hasCoordinates(latitude, longitude)
   });
 
   const mapped = venues.map((venue) => {

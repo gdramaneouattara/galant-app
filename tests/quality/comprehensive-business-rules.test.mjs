@@ -1040,7 +1040,8 @@ test('Rules: Apps exposes paid user partner discovery with direct Google import'
 
   assert.match(googleMapsService, /searchUserPartnerDiscovery/);
   assert.match(googleMapsService, /GOOGLE_PLACES_DIRECT/);
-  assert.match(googleMapsService, /locationBias/);
+  assert.match(googleMapsService, /locationRestriction/);
+  assert.match(googleMapsService, /buildLocationRestriction/);
   assert.match(googleMapsService, /USER_DISCOVERY_CATEGORY_TYPES/);
   assert.match(googleMapsService, /USER_DISCOVERY_RATING_LEVELS/);
   assert.match(googleMapsService, /normalizeUserRatingLevel = \(ratingLevel = 'PRESTIGE'\)/);
@@ -1052,6 +1053,16 @@ test('Rules: Apps exposes paid user partner discovery with direct Google import'
   assert.match(googleMapsService, /GOOGLE_SEARCH_MAX_PAGES/);
   assert.match(googleMapsService, /shouldExpandForRatingFilter/);
   assert.match(googleMapsService, /ratingFilter\.max/);
+  assert.match(googleMapsService, /CITY_COUNTRY_HINTS/);
+  assert.match(googleMapsService, /dakar:\s*\{\s*country:\s*'Senegal'/);
+  assert.match(googleMapsService, /douala:\s*\{\s*country:\s*'Cameroun'/);
+  assert.match(googleMapsService, /parseSearchLocation/);
+  assert.match(googleMapsService, /buildCountryHintFromName\(explicitCountry\) \|\| hintedCountry \|\| buildCountryHintFromName\(fallbackCountry\)/);
+  assert.match(googleMapsService, /body\.regionCode = location\.regionCode/);
+  assert.match(googleMapsService, /placeMatchesExpectedCountry/);
+  assert.match(googleMapsService, /placeMatchesRequestedCity/);
+  assert.match(googleMapsService, /placeMatchesRequestedRadius/);
+  assert.match(googleMapsService, /partner_discovery_v3_geo_scope/);
   assert.match(googleMapsService, /CAFE:\s*\['cafe'\]/);
   assert.match(googleMapsService, /BEAUTY:\s*\['spa',\s*'beauty_salon'\]/);
   assert.match(googleMapsService, /GIFTS:\s*\['florist',\s*'gift_shop'\]/);
@@ -1059,6 +1070,9 @@ test('Rules: Apps exposes paid user partner discovery with direct Google import'
   assert.match(venueController, /discoverGooglePartners/);
   assert.match(venueController, /req\.query\.category/);
   assert.match(venueController, /req\.query\.ratingLevel/);
+  assert.match(venueController, /hasRequestCoordinates/);
+  assert.match(venueController, /hasRequestCoordinates \? '' : req\.user\.city/);
+  assert.match(venueController, /hasRequestCoordinates \? '' : req\.user\.country/);
   assert.match(venueController, /ratingLevel:\s*ratingLevel \|\| 'PRESTIGE'/);
   assert.match(venueController, /partner_discovery_unlocked/);
   assert.match(venueController, /partner_discovery_requires_payment/);
