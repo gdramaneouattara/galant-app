@@ -525,11 +525,14 @@ const discoveryCacheKey = ({ city, country, latitude, longitude, radiusKm, categ
   const locationBucket = hasLocationScope
     ? `${Number(latitude).toFixed(2)}_${Number(longitude).toFixed(2)}`
     : `${normalizeCacheText(location.city)}_${normalizeCacheText(location.country || country)}`;
+  const radiusBucket = hasLocationScope
+    ? Math.max(1, Math.min(50, Number(radiusKm || 15)))
+    : 'city';
   const rawKey = [
-    'partner_discovery_v3_geo_scope',
+    'partner_discovery_v4_geo_scope',
     normalizeCacheText(category || 'ALL'),
     normalizeCacheText(ratingLevel || 'ALL'),
-    Math.max(1, Math.min(50, Number(radiusKm || 15))),
+    radiusBucket,
     Math.max(1, Math.min(DEFAULT_LIMIT, Number(limit) || DEFAULT_LIMIT)),
     locationBucket,
   ].join(':');
@@ -552,12 +555,14 @@ const getCachedUserPartnerDiscovery = async (params) => {
 
 const setCachedUserPartnerDiscovery = async (key, params, venues) => {
   const now = Date.now();
+  const hasLocationScope = params.useLocationScope === true && hasCoordinates(params.latitude, params.longitude);
   await db.collection('partner_discovery_cache').doc(key).set({
     city: String(params.city || '').trim() || null,
     country: String(params.country || '').trim() || null,
-    latitude: hasCoordinates(params.latitude, params.longitude) ? Number(params.latitude) : null,
-    longitude: hasCoordinates(params.latitude, params.longitude) ? Number(params.longitude) : null,
-    radius_km: Math.max(1, Math.min(50, Number(params.radiusKm || 15))),
+    latitude: hasLocationScope ? Number(params.latitude) : null,
+    longitude: hasLocationScope ? Number(params.longitude) : null,
+    radius_km: hasLocationScope ? Math.max(1, Math.min(50, Number(params.radiusKm || 15))) : null,
+    scope: hasLocationScope ? 'LOCATION' : 'CITY',
     category: String(params.category || 'ALL').trim().toUpperCase(),
     rating_level: String(params.ratingLevel || 'ALL').trim().toUpperCase(),
     venues,
