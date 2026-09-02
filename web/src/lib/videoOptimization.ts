@@ -136,18 +136,17 @@ export const compressVideoWeb = async (
   }
 
   if (!audioAttached) {
-    canvasStream.getTracks().forEach((track) => track.stop());
-    if (audioContext) void audioContext.close();
-    URL.revokeObjectURL(objectUrl);
-    return file;
+    console.warn('[videoOptimization] audio_attachment_failed, proceeding with silent video');
   }
 
   const chunks: BlobPart[] = [];
-  const recorder = new MediaRecorder(canvasStream, {
+  const recorderOptions: MediaRecorderOptions = {
     mimeType: recorderMimeType,
     videoBitsPerSecond: options.kind === 'STORY' ? 850_000 : 1_000_000,
     audioBitsPerSecond: 64_000,
-  });
+  };
+
+  const recorder = new MediaRecorder(canvasStream, recorderOptions);
 
   const stopped = new Promise<Blob>((resolve, reject) => {
     recorder.ondataavailable = (event) => {

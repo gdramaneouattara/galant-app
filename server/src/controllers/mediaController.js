@@ -190,7 +190,7 @@ const uploadCompressedVideo = async (req, res) => {
   try {
     const profile = isChat ? VIDEO_PROFILES.CHAT : VIDEO_PROFILES.STATUS;
     const originalMetadata = await validateOriginalVideo(inputPath, profile);
-    const canUseOriginalFallback = isChat && originalMetadata.hasFiniteDuration;
+    const canUseOriginalFallback = originalMetadata.hasFiniteDuration;
 
     try {
       await compressVideo(inputPath, outputPath, isChat);
@@ -202,7 +202,7 @@ const uploadCompressedVideo = async (req, res) => {
         }
         throw error;
       }
-      console.warn('[media] video_compression_failed_using_original', error.message);
+      console.warn(`[media] video_compression_failed_using_original (type: ${req.body.type})`, error.message);
       videoPathToUpload = inputPath;
       videoFilename = `original_${stamp}${getSafeVideoExtension(req.file)}`;
       videoContentType = getSafeVideoContentType(req.file);

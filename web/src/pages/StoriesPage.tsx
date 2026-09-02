@@ -391,12 +391,15 @@ const StoriesPage: React.FC = () => {
         );
       } else if (lowerMessage.includes('video_too_long')) {
         showAlert(t('video_too_long_title'), t('video_too_long_story'));
+      } else if (lowerMessage.includes('video_too_large')) {
+        showAlert(t('video_too_heavy_title'), t('video_too_heavy'));
       } else if (
         lowerMessage.includes('invalid_video') ||
         lowerMessage.includes('video_upload_failed') ||
-        lowerMessage.includes('invalid_video_type')
+        lowerMessage.includes('invalid_video_type') ||
+        lowerMessage.includes('invalid_video_stream')
       ) {
-        console.error('[stories] video_upload_failed', error);
+        console.error('[stories] video_processing_failed', error);
         showAlert(t('error'), t('video_unreadable'));
       } else {
         console.error('[stories] publish_failed', error);
