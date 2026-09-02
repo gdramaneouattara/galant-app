@@ -900,6 +900,7 @@ const ChatPage: React.FC = () => {
           </div>
         )}
 
+        {/* IA Assistant - Hidden for now to save space
         {inputText === '' && !isRecording && (
           <button
             onClick={handleAiAssist}
@@ -910,6 +911,7 @@ const ChatPage: React.FC = () => {
             {t('ai_nudge')}
           </button>
         )}
+        */}
 
         {pendingAttachment && !isRecording && (
           <div className="mb-3 flex items-center gap-3 rounded-2xl border border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-slate-800/70 p-2">
