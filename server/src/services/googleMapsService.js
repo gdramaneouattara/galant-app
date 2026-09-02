@@ -10,19 +10,39 @@ const DEFAULT_LIMIT = 20;
 const GOOGLE_SEARCH_PAGE_SIZE = 10;
 const GOOGLE_SEARCH_EXPANDED_PAGE_SIZE = 20;
 const GOOGLE_SEARCH_MAX_PAGES = 3;
+const COUNTRY_HINTS = {
+  CI: { country: "Cote d'Ivoire", regionCode: 'CI', aliases: ['ci', 'civ', 'cote d ivoire', 'cote divoire', 'ivory coast'] },
+  SN: { country: 'Senegal', regionCode: 'SN', aliases: ['sn', 'senegal'] },
+  CM: { country: 'Cameroun', regionCode: 'CM', aliases: ['cm', 'cameroun', 'cameroon'] },
+  US: { country: 'United States', regionCode: 'US', aliases: ['us', 'usa', 'u s a', 'united states', 'united states of america', 'etats unis'] },
+  CA: { country: 'Canada', regionCode: 'CA', aliases: ['ca', 'canada'] },
+  FR: { country: 'France', regionCode: 'FR', aliases: ['fr', 'france'] },
+  BJ: { country: 'Benin', regionCode: 'BJ', aliases: ['bj', 'benin', 'benin'] },
+  TG: { country: 'Togo', regionCode: 'TG', aliases: ['tg', 'togo'] },
+  GH: { country: 'Ghana', regionCode: 'GH', aliases: ['gh', 'ghana'] },
+  NG: { country: 'Nigeria', regionCode: 'NG', aliases: ['ng', 'nigeria'] },
+  BF: { country: 'Burkina Faso', regionCode: 'BF', aliases: ['bf', 'burkina faso'] },
+  ML: { country: 'Mali', regionCode: 'ML', aliases: ['ml', 'mali'] },
+  GN: { country: 'Guinee', regionCode: 'GN', aliases: ['gn', 'guinee', 'guinea'] },
+  CD: { country: 'Republique democratique du Congo', regionCode: 'CD', aliases: ['cd', 'rdc', 'congo kinshasa', 'democratic republic of the congo', 'republique democratique du congo'] },
+  CG: { country: 'Congo', regionCode: 'CG', aliases: ['cg', 'congo', 'congo brazzaville', 'republic of the congo'] },
+  GA: { country: 'Gabon', regionCode: 'GA', aliases: ['ga', 'gabon'] },
+  MA: { country: 'Maroc', regionCode: 'MA', aliases: ['ma', 'maroc', 'morocco'] },
+  TN: { country: 'Tunisie', regionCode: 'TN', aliases: ['tn', 'tunisie', 'tunisia'] }
+};
 const CITY_COUNTRY_HINTS = {
-  abidjan: { country: "Cote d'Ivoire", regionCode: 'CI', aliases: ['ci', 'civ', 'cote d ivoire', 'cote divoire', 'ivory coast'] },
-  yamoussoukro: { country: "Cote d'Ivoire", regionCode: 'CI', aliases: ['ci', 'civ', 'cote d ivoire', 'cote divoire', 'ivory coast'] },
-  bouake: { country: "Cote d'Ivoire", regionCode: 'CI', aliases: ['ci', 'civ', 'cote d ivoire', 'cote divoire', 'ivory coast'] },
-  daloa: { country: "Cote d'Ivoire", regionCode: 'CI', aliases: ['ci', 'civ', 'cote d ivoire', 'cote divoire', 'ivory coast'] },
-  korhogo: { country: "Cote d'Ivoire", regionCode: 'CI', aliases: ['ci', 'civ', 'cote d ivoire', 'cote divoire', 'ivory coast'] },
-  'san pedro': { country: "Cote d'Ivoire", regionCode: 'CI', aliases: ['ci', 'civ', 'cote d ivoire', 'cote divoire', 'ivory coast'] },
-  dakar: { country: 'Senegal', regionCode: 'SN', aliases: ['sn', 'senegal'] },
-  thies: { country: 'Senegal', regionCode: 'SN', aliases: ['sn', 'senegal'] },
-  'saint louis': { country: 'Senegal', regionCode: 'SN', aliases: ['sn', 'senegal'] },
-  douala: { country: 'Cameroun', regionCode: 'CM', aliases: ['cm', 'cameroun', 'cameroon'] },
-  yaounde: { country: 'Cameroun', regionCode: 'CM', aliases: ['cm', 'cameroun', 'cameroon'] },
-  bafoussam: { country: 'Cameroun', regionCode: 'CM', aliases: ['cm', 'cameroun', 'cameroon'] }
+  abidjan: COUNTRY_HINTS.CI,
+  yamoussoukro: COUNTRY_HINTS.CI,
+  bouake: COUNTRY_HINTS.CI,
+  daloa: COUNTRY_HINTS.CI,
+  korhogo: COUNTRY_HINTS.CI,
+  'san pedro': COUNTRY_HINTS.CI,
+  dakar: COUNTRY_HINTS.SN,
+  thies: COUNTRY_HINTS.SN,
+  'saint louis': COUNTRY_HINTS.SN,
+  douala: COUNTRY_HINTS.CM,
+  yaounde: COUNTRY_HINTS.CM,
+  bafoussam: COUNTRY_HINTS.CM
 };
 const USER_DISCOVERY_CACHE_DAYS = Math.max(1, Math.min(30, Number(process.env.PARTNER_DISCOVERY_CACHE_DAYS || 14)));
 const GOOGLE_PHOTO_WIDTHS = {
@@ -111,10 +131,15 @@ const placeAddressText = (place) => [
 const buildCountryHintFromName = (countryName = '') => {
   const cleanCountry = normalizeSearchText(countryName);
   if (!cleanCountry) return null;
-  const knownHint = Object.values(CITY_COUNTRY_HINTS)
+  const knownHint = Object.values(COUNTRY_HINTS)
     .find((hint) => hint.aliases.includes(cleanCountry) || normalizeSearchText(hint.country) === cleanCountry);
   if (knownHint) return knownHint;
-  return { country: countryName.trim(), regionCode: null, aliases: [cleanCountry] };
+  const maybeIsoCode = /^[a-z]{2}$/i.test(String(countryName).trim()) ? String(countryName).trim().toUpperCase() : null;
+  return {
+    country: countryName.trim(),
+    regionCode: maybeIsoCode,
+    aliases: maybeIsoCode ? [cleanCountry, maybeIsoCode.toLowerCase()] : [cleanCountry]
+  };
 };
 
 const parseSearchLocation = (city = '', fallbackCountry = '') => {
@@ -336,7 +361,7 @@ const buildLocationRestriction = (latitude, longitude, radiusKm = 15) => {
 };
 
 const buildSearchBody = (city, category, options = {}) => {
-  const useLocationScope = hasCoordinates(options.latitude, options.longitude);
+  const useLocationScope = options.useLocationScope === true && hasCoordinates(options.latitude, options.longitude);
   const shouldExpand = shouldExpandForRatingFilter(options.ratingFilter);
   const location = options.location || parseSearchLocation(city, options.country);
   const scopedCity = [location.city || city, location.country].filter(Boolean).join(', ');
@@ -417,7 +442,8 @@ const searchGoogleVenueCandidates = async (
 
   const location = parseSearchLocation(city || options.city || '', options.country);
   const cleanCity = String(location.city || '').trim();
-  if (!cleanCity && !hasCoordinates(options.latitude, options.longitude)) throw new Error('missing_city_or_location');
+  const canUseLocationScope = options.useLocationScope === true && hasCoordinates(options.latitude, options.longitude);
+  if (!cleanCity && !canUseLocationScope) throw new Error('missing_city_or_location');
 
   try {
     const requestedTypes = new Set((types || []).map(normalizeRequestedType).filter(Boolean));
@@ -491,10 +517,11 @@ const searchVenuesInCity = async (
   limit = DEFAULT_LIMIT
 ) => searchGoogleVenueCandidates(city, types, limit);
 
-const discoveryCacheKey = ({ city, country, latitude, longitude, radiusKm, category, ratingLevel, limit }) => {
+const discoveryCacheKey = ({ city, country, latitude, longitude, radiusKm, category, ratingLevel, limit, useLocationScope }) => {
   const hasLocation = hasCoordinates(latitude, longitude);
+  const hasLocationScope = useLocationScope === true && hasLocation;
   const location = parseSearchLocation(city, country);
-  const locationBucket = hasLocation
+  const locationBucket = hasLocationScope
     ? `${Number(latitude).toFixed(2)}_${Number(longitude).toFixed(2)}`
     : `${normalizeCacheText(location.city)}_${normalizeCacheText(location.country || country)}`;
   const rawKey = [
@@ -546,13 +573,14 @@ const searchUserPartnerDiscovery = async ({
   radiusKm = 15,
   limit = DEFAULT_LIMIT,
   category = 'ALL',
-  ratingLevel = 'PRESTIGE'
+  ratingLevel = 'PRESTIGE',
+  useLocationScope = false
 }) => {
   const normalizedCategory = String(category || 'ALL').trim().toUpperCase();
   const normalizedRatingLevel = normalizeUserRatingLevel(ratingLevel);
   const ratingFilter = USER_DISCOVERY_RATING_LEVELS[normalizedRatingLevel];
   const requestedTypes = USER_DISCOVERY_CATEGORY_TYPES[normalizedCategory] || USER_DISCOVERY_CATEGORY_TYPES.ALL;
-  const params = { city, country, latitude, longitude, radiusKm, limit, category: normalizedCategory, ratingLevel: normalizedRatingLevel };
+  const params = { city, country, latitude, longitude, radiusKm, limit, category: normalizedCategory, ratingLevel: normalizedRatingLevel, useLocationScope };
   const cached = await getCachedUserPartnerDiscovery(params);
   if (cached.venues) {
     return cached.venues.map((venue) => ({ ...venue, cache_hit: true }));
@@ -564,9 +592,10 @@ const searchUserPartnerDiscovery = async ({
     latitude,
     longitude,
     radiusKm,
+    useLocationScope,
     minRating: ratingFilter.min,
     ratingFilter,
-    allowAnyCity: hasCoordinates(latitude, longitude)
+    allowAnyCity: useLocationScope === true && hasCoordinates(latitude, longitude)
   });
 
   const mapped = venues.map((venue) => {
