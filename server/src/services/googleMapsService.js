@@ -7,6 +7,9 @@ const GOOGLE_TEXT_SEARCH_URL = 'https://places.googleapis.com/v1/places:searchTe
 const MIN_PRESTIGE_RATING = 4.0;
 const MIN_USER_DISCOVERY_RATING = 3.0;
 const DEFAULT_LIMIT = 20;
+const GOOGLE_SEARCH_PAGE_SIZE = 10;
+const GOOGLE_SEARCH_EXPANDED_PAGE_SIZE = 20;
+const GOOGLE_SEARCH_MAX_PAGES = 3;
 const USER_DISCOVERY_CACHE_DAYS = Math.max(1, Math.min(30, Number(process.env.PARTNER_DISCOVERY_CACHE_DAYS || 14)));
 const GOOGLE_PHOTO_WIDTHS = {
   thumb: 320,
@@ -62,7 +65,8 @@ const FIELD_MASK = [
   'places.photos',
   'places.googleMapsUri',
   'places.websiteUri',
-  'places.internationalPhoneNumber'
+  'places.internationalPhoneNumber',
+  'nextPageToken'
 ].join(',');
 
 const normalizePlaceName = (place) => String(place?.displayName?.text || '').trim();
@@ -95,6 +99,14 @@ const matchesRatingFilter = (place, ratingFilter) => {
   if (ratingFilter.max !== null && ratingFilter.max !== undefined && rating > Number(ratingFilter.max)) return false;
   return true;
 };
+
+const shouldExpandForRatingFilter = (ratingFilter) => (
+  ratingFilter &&
+  ratingFilter.max !== null &&
+  ratingFilter.max !== undefined
+);
+
+const waitForNextPlacesPage = () => new Promise((resolve) => setTimeout(resolve, 250));
 
 const getGoogleErrorInfo = (error) => {
   const data = error?.response?.data;
@@ -191,6 +203,7 @@ const hasCoordinates = (latitude, longitude) => (
 
 const buildSearchBody = (city, category, options = {}) => {
   const useLocationBias = hasCoordinates(options.latitude, options.longitude);
+  const shouldExpand = shouldExpandForRatingFilter(options.ratingFilter);
   const body = {
     textQuery: useLocationBias
       ? `best ${category.label} nearby`
@@ -199,7 +212,7 @@ const buildSearchBody = (city, category, options = {}) => {
     includedType: category.googleType,
     strictTypeFiltering: true,
     minRating: MIN_PRESTIGE_RATING,
-    pageSize: 10
+    pageSize: shouldExpand ? GOOGLE_SEARCH_EXPANDED_PAGE_SIZE : GOOGLE_SEARCH_PAGE_SIZE
   };
 
   if (Number.isFinite(Number(options.minRating))) {
@@ -220,22 +233,43 @@ const buildSearchBody = (city, category, options = {}) => {
     body.rankPreference = 'DISTANCE';
   }
 
+  if (options.pageToken) {
+    body.pageToken = String(options.pageToken);
+  }
+
   return body;
 };
 
 const searchCategory = async (city, category, options = {}) => {
-  const response = await axios.post(GOOGLE_TEXT_SEARCH_URL, buildSearchBody(city, category, options), {
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
-      'X-Goog-FieldMask': FIELD_MASK
-    }
-  });
+  const shouldExpand = shouldExpandForRatingFilter(options.ratingFilter);
+  const maxPages = shouldExpand ? GOOGLE_SEARCH_MAX_PAGES : 1;
+  const targetMatches = Math.max(1, Math.min(DEFAULT_LIMIT, Number(options.limit || DEFAULT_LIMIT)));
+  let pageToken = null;
+  const matchedPlaces = [];
 
-  return (response.data.places || [])
-    .filter((place) => place?.id && normalizePlaceName(place))
-    .filter((place) => matchesRatingFilter(place, options.ratingFilter))
-    .map((place) => toVenue(place, city, category));
+  for (let page = 0; page < maxPages; page += 1) {
+    if (page > 0) await waitForNextPlacesPage();
+
+    const response = await axios.post(GOOGLE_TEXT_SEARCH_URL, buildSearchBody(city, category, { ...options, pageToken }), {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
+        'X-Goog-FieldMask': FIELD_MASK
+      }
+    });
+
+    const pageMatches = (response.data.places || [])
+      .filter((place) => place?.id && normalizePlaceName(place))
+      .filter((place) => matchesRatingFilter(place, options.ratingFilter));
+
+    matchedPlaces.push(...pageMatches);
+    if (matchedPlaces.length >= targetMatches) break;
+
+    pageToken = response.data.nextPageToken || null;
+    if (!pageToken) break;
+  }
+
+  return matchedPlaces.map((place) => toVenue(place, city, category));
 };
 
 const searchGoogleVenueCandidates = async (
@@ -253,7 +287,7 @@ const searchGoogleVenueCandidates = async (
     const requestedTypes = new Set((types || []).map(normalizeRequestedType).filter(Boolean));
     const categories = CATEGORY_QUERIES.filter((category) => requestedTypes.has(category.googleType));
     const settled = await Promise.allSettled(
-      categories.map((category) => searchCategory(cleanCity || 'Autour de vous', category, options))
+      categories.map((category) => searchCategory(cleanCity || 'Autour de vous', category, { ...options, limit }))
     );
     const batches = settled
       .filter((entry) => entry.status === 'fulfilled')

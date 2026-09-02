@@ -1046,6 +1046,10 @@ test('Rules: Apps exposes paid user partner discovery with direct Google import'
   assert.match(googleMapsService, /PRESTIGE:\s*\{\s*min:\s*4\.5,\s*max:\s*5/);
   assert.match(googleMapsService, /HIGH:\s*\{\s*min:\s*4\.0,\s*max:\s*4\.49/);
   assert.match(googleMapsService, /GOOD:\s*\{\s*min:\s*3\.0,\s*max:\s*3\.99/);
+  assert.match(googleMapsService, /nextPageToken/);
+  assert.match(googleMapsService, /GOOGLE_SEARCH_MAX_PAGES/);
+  assert.match(googleMapsService, /shouldExpandForRatingFilter/);
+  assert.match(googleMapsService, /ratingFilter\.max/);
   assert.match(googleMapsService, /CAFE:\s*\['cafe'\]/);
   assert.match(googleMapsService, /BEAUTY:\s*\['spa',\s*'beauty_salon'\]/);
   assert.match(googleMapsService, /GIFTS:\s*\['florist',\s*'gift_shop'\]/);
