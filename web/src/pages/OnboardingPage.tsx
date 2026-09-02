@@ -11,6 +11,7 @@ import { apiRequest } from '@shared/lib/api';
 import { uploadImageVariantsWeb } from '../lib/imageUploadVariants';
 
 const FREE_PROFILE_PHOTO_LIMIT = 3;
+const MIN_REQUIRED_PROFILE_PHOTOS = 1;
 
 const LocalPreviewImage: React.FC<{ file: File; className?: string }> = ({ file, className }) => {
   const [previewUrl, setPreviewUrl] = useState('');
@@ -140,8 +141,8 @@ const OnboardingPage: React.FC = () => {
 
   const handleFinalSubmit = async () => {
     if (!user) return;
-    if (photoFiles.length < FREE_PROFILE_PHOTO_LIMIT) {
-      showAlert('Photos requises', 'Veuillez ajouter 3 photos pour continuer.');
+    if (photoFiles.length < MIN_REQUIRED_PROFILE_PHOTOS) {
+      showAlert('Photo requise', 'Veuillez ajouter au moins 1 photo pour continuer.');
       return;
     }
 
@@ -419,7 +420,7 @@ const OnboardingPage: React.FC = () => {
                   <Camera size={32} />
                </div>
                <h3 className="text-3xl font-bold tracking-tighter dark:text-white">Votre Galerie</h3>
-               <p className="text-slate-500 dark:text-slate-400 font-medium">Profil gratuit: 3 photos maximum. Premium permet jusqu'a 6.</p>
+               <p className="text-slate-500 dark:text-slate-400 font-medium">Ajoutez au moins 1 photo. Profil gratuit: 3 photos maximum. Premium permet jusqu'a 6.</p>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
@@ -480,7 +481,7 @@ const OnboardingPage: React.FC = () => {
               </button>
               <button
                 onClick={nextStep}
-                disabled={loading || photoFiles.length < FREE_PROFILE_PHOTO_LIMIT}
+                disabled={loading || photoFiles.length < MIN_REQUIRED_PROFILE_PHOTOS}
                 className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-medium text-xs uppercase tracking-prestige flex items-center justify-center gap-3 hover:bg-black dark:hover:bg-slate-200 transition-all disabled:opacity-30"
               >
                 Signer le Manifeste <ChevronRight size={16} />

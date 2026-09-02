@@ -205,8 +205,8 @@ const processUserAction = async (userId, actionType, context = {}) => {
       break;
 
     case 'INCOMPLETE_PROFILE':
-      if (!user.bio || (user.photos && user.photos.length < 3)) {
-        message = `Votre élégance mérite d'être vue sous tous ses angles. Il manque encore une petite touche (bio ou 3ème photo) pour que votre profil soit parfait. Relevez le défi et je boosterai votre visibilité !`;
+      if (!user.bio || !user.photos || user.photos.length < 1) {
+        message = `Votre élégance mérite d'être vue. Il manque encore une petite touche (bio ou photo) pour que votre profil soit parfait. Relevez le défi et je boosterai votre visibilité !`;
         pushTitle = "Sublimez votre profil 🌹";
       }
       break;
