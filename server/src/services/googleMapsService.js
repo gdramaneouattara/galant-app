@@ -198,6 +198,7 @@ const distanceKmBetween = (leftLatitude, leftLongitude, rightLatitude, rightLong
 };
 
 const placeMatchesRequestedRadius = (place, options = {}) => {
+  if (options.useLocationScope !== true) return true;
   if (!hasCoordinates(options.latitude, options.longitude)) return true;
   const distanceKm = distanceKmBetween(
     options.latitude,

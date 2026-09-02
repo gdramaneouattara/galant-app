@@ -1066,6 +1066,7 @@ test('Rules: Apps exposes paid user partner discovery with direct Google import'
   assert.match(googleMapsService, /placeMatchesExpectedCountry/);
   assert.match(googleMapsService, /placeMatchesRequestedCity/);
   assert.match(googleMapsService, /placeMatchesRequestedRadius/);
+  assert.match(googleMapsService, /if \(options\.useLocationScope !== true\) return true/);
   assert.match(googleMapsService, /partner_discovery_v3_geo_scope/);
   assert.match(googleMapsService, /CAFE:\s*\['cafe'\]/);
   assert.match(googleMapsService, /BEAUTY:\s*\['spa',\s*'beauty_salon'\]/);
