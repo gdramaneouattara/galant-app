@@ -84,9 +84,9 @@ const normalizeRequestedType = (type) => {
   return cleanType;
 };
 
-const normalizeUserRatingLevel = (ratingLevel = 'ALL') => {
-  const cleanLevel = String(ratingLevel || 'ALL').trim().toUpperCase();
-  return USER_DISCOVERY_RATING_LEVELS[cleanLevel] ? cleanLevel : 'ALL';
+const normalizeUserRatingLevel = (ratingLevel = 'PRESTIGE') => {
+  const cleanLevel = String(ratingLevel || 'PRESTIGE').trim().toUpperCase();
+  return USER_DISCOVERY_RATING_LEVELS[cleanLevel] ? cleanLevel : 'PRESTIGE';
 };
 
 const hasAdminPrestigeRating = (place) => Number(place.rating || 0) > MIN_PRESTIGE_RATING;
@@ -407,7 +407,7 @@ const searchUserPartnerDiscovery = async ({
   radiusKm = 15,
   limit = DEFAULT_LIMIT,
   category = 'ALL',
-  ratingLevel = 'ALL'
+  ratingLevel = 'PRESTIGE'
 }) => {
   const normalizedCategory = String(category || 'ALL').trim().toUpperCase();
   const normalizedRatingLevel = normalizeUserRatingLevel(ratingLevel);
