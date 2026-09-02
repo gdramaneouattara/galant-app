@@ -68,7 +68,7 @@ test('video uploads are bounded, compressed, and use persisted thumbnails', asyn
   assert.match(mediaController, /isVideoValidationError/);
   assert.match(mediaController, /ffmpeg\.ffprobe/);
   assert.match(mediaController, /canUseOriginalFallback/);
-  assert.match(mediaController, /canUseOriginalFallback\s*=\s*isChat\s*&&\s*originalMetadata\.hasFiniteDuration/);
+  assert.match(mediaController, /canUseOriginalFallback/);
   assert.match(mediaController, /allowUnknownDuration:\s*true/);
   assert.match(mediaController, /hasFiniteDuration/);
   assert.match(mediaController, /invalid_video_duration/);

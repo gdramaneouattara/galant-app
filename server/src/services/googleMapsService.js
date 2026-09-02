@@ -5,7 +5,11 @@ const { db } = require('../config/firebase');
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 const GOOGLE_TEXT_SEARCH_URL = 'https://places.googleapis.com/v1/places:searchText';
 const MIN_PRESTIGE_RATING = 4.0;
+const MIN_USER_DISCOVERY_RATING = 3.0;
 const DEFAULT_LIMIT = 20;
+const GOOGLE_SEARCH_PAGE_SIZE = 10;
+const GOOGLE_SEARCH_EXPANDED_PAGE_SIZE = 20;
+const GOOGLE_SEARCH_MAX_PAGES = 3;
 const USER_DISCOVERY_CACHE_DAYS = Math.max(1, Math.min(30, Number(process.env.PARTNER_DISCOVERY_CACHE_DAYS || 14)));
 const GOOGLE_PHOTO_WIDTHS = {
   thumb: 320,
@@ -43,6 +47,13 @@ const USER_DISCOVERY_CATEGORY_TYPES = {
 
 const ADMIN_SEEDER_CATEGORY_TYPES = { ...USER_DISCOVERY_CATEGORY_TYPES };
 
+const USER_DISCOVERY_RATING_LEVELS = {
+  ALL: { min: MIN_USER_DISCOVERY_RATING, max: null, label: 'tous les niveaux' },
+  PRESTIGE: { min: 4.5, max: 5, label: 'prestige' },
+  HIGH: { min: 4.0, max: 4.49, label: 'tres bien notes' },
+  GOOD: { min: 3.0, max: 3.99, label: 'corrects' }
+};
+
 const FIELD_MASK = [
   'places.id',
   'places.displayName',
@@ -54,7 +65,8 @@ const FIELD_MASK = [
   'places.photos',
   'places.googleMapsUri',
   'places.websiteUri',
-  'places.internationalPhoneNumber'
+  'places.internationalPhoneNumber',
+  'nextPageToken'
 ].join(',');
 
 const normalizePlaceName = (place) => String(place?.displayName?.text || '').trim();
@@ -71,6 +83,30 @@ const normalizeRequestedType = (type) => {
   if (cleanType === 'lodging') return 'hotel';
   return cleanType;
 };
+
+const normalizeUserRatingLevel = (ratingLevel = 'ALL') => {
+  const cleanLevel = String(ratingLevel || 'ALL').trim().toUpperCase();
+  return USER_DISCOVERY_RATING_LEVELS[cleanLevel] ? cleanLevel : 'ALL';
+};
+
+const hasAdminPrestigeRating = (place) => Number(place.rating || 0) > MIN_PRESTIGE_RATING;
+
+const matchesRatingFilter = (place, ratingFilter) => {
+  const rating = Number(place.rating || 0);
+  if (!Number.isFinite(rating)) return false;
+  if (!ratingFilter) return hasAdminPrestigeRating(place);
+  if (rating < Number(ratingFilter.min || 0)) return false;
+  if (ratingFilter.max !== null && ratingFilter.max !== undefined && rating > Number(ratingFilter.max)) return false;
+  return true;
+};
+
+const shouldExpandForRatingFilter = (ratingFilter) => (
+  ratingFilter &&
+  ratingFilter.max !== null &&
+  ratingFilter.max !== undefined
+);
+
+const waitForNextPlacesPage = () => new Promise((resolve) => setTimeout(resolve, 250));
 
 const getGoogleErrorInfo = (error) => {
   const data = error?.response?.data;
@@ -167,6 +203,7 @@ const hasCoordinates = (latitude, longitude) => (
 
 const buildSearchBody = (city, category, options = {}) => {
   const useLocationBias = hasCoordinates(options.latitude, options.longitude);
+  const shouldExpand = shouldExpandForRatingFilter(options.ratingFilter);
   const body = {
     textQuery: useLocationBias
       ? `best ${category.label} nearby`
@@ -175,8 +212,12 @@ const buildSearchBody = (city, category, options = {}) => {
     includedType: category.googleType,
     strictTypeFiltering: true,
     minRating: MIN_PRESTIGE_RATING,
-    pageSize: 10
+    pageSize: shouldExpand ? GOOGLE_SEARCH_EXPANDED_PAGE_SIZE : GOOGLE_SEARCH_PAGE_SIZE
   };
+
+  if (Number.isFinite(Number(options.minRating))) {
+    body.minRating = Number(options.minRating);
+  }
 
   if (useLocationBias) {
     const radiusMeters = Math.max(1000, Math.min(50000, Number(options.radiusKm || 15) * 1000));
@@ -192,22 +233,43 @@ const buildSearchBody = (city, category, options = {}) => {
     body.rankPreference = 'DISTANCE';
   }
 
+  if (options.pageToken) {
+    body.pageToken = String(options.pageToken);
+  }
+
   return body;
 };
 
 const searchCategory = async (city, category, options = {}) => {
-  const response = await axios.post(GOOGLE_TEXT_SEARCH_URL, buildSearchBody(city, category, options), {
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
-      'X-Goog-FieldMask': FIELD_MASK
-    }
-  });
+  const shouldExpand = shouldExpandForRatingFilter(options.ratingFilter);
+  const maxPages = shouldExpand ? GOOGLE_SEARCH_MAX_PAGES : 1;
+  const targetMatches = Math.max(1, Math.min(DEFAULT_LIMIT, Number(options.limit || DEFAULT_LIMIT)));
+  let pageToken = null;
+  const matchedPlaces = [];
 
-  return (response.data.places || [])
-    .filter((place) => place?.id && normalizePlaceName(place))
-    .filter((place) => Number(place.rating || 0) > MIN_PRESTIGE_RATING)
-    .map((place) => toVenue(place, city, category));
+  for (let page = 0; page < maxPages; page += 1) {
+    if (page > 0) await waitForNextPlacesPage();
+
+    const response = await axios.post(GOOGLE_TEXT_SEARCH_URL, buildSearchBody(city, category, { ...options, pageToken }), {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
+        'X-Goog-FieldMask': FIELD_MASK
+      }
+    });
+
+    const pageMatches = (response.data.places || [])
+      .filter((place) => place?.id && normalizePlaceName(place))
+      .filter((place) => matchesRatingFilter(place, options.ratingFilter));
+
+    matchedPlaces.push(...pageMatches);
+    if (matchedPlaces.length >= targetMatches) break;
+
+    pageToken = response.data.nextPageToken || null;
+    if (!pageToken) break;
+  }
+
+  return matchedPlaces.map((place) => toVenue(place, city, category));
 };
 
 const searchGoogleVenueCandidates = async (
@@ -225,7 +287,7 @@ const searchGoogleVenueCandidates = async (
     const requestedTypes = new Set((types || []).map(normalizeRequestedType).filter(Boolean));
     const categories = CATEGORY_QUERIES.filter((category) => requestedTypes.has(category.googleType));
     const settled = await Promise.allSettled(
-      categories.map((category) => searchCategory(cleanCity || 'Autour de vous', category, options))
+      categories.map((category) => searchCategory(cleanCity || 'Autour de vous', category, { ...options, limit }))
     );
     const batches = settled
       .filter((entry) => entry.status === 'fulfilled')
@@ -293,7 +355,7 @@ const searchVenuesInCity = async (
   limit = DEFAULT_LIMIT
 ) => searchGoogleVenueCandidates(city, types, limit);
 
-const discoveryCacheKey = ({ city, latitude, longitude, radiusKm, category, limit }) => {
+const discoveryCacheKey = ({ city, latitude, longitude, radiusKm, category, ratingLevel, limit }) => {
   const hasLocation = hasCoordinates(latitude, longitude);
   const locationBucket = hasLocation
     ? `${Number(latitude).toFixed(2)}_${Number(longitude).toFixed(2)}`
@@ -301,6 +363,7 @@ const discoveryCacheKey = ({ city, latitude, longitude, radiusKm, category, limi
   const rawKey = [
     'partner_discovery_v1',
     normalizeCacheText(category || 'ALL'),
+    normalizeCacheText(ratingLevel || 'ALL'),
     Math.max(1, Math.min(50, Number(radiusKm || 15))),
     Math.max(1, Math.min(DEFAULT_LIMIT, Number(limit) || DEFAULT_LIMIT)),
     locationBucket,
@@ -330,6 +393,7 @@ const setCachedUserPartnerDiscovery = async (key, params, venues) => {
     longitude: hasCoordinates(params.latitude, params.longitude) ? Number(params.longitude) : null,
     radius_km: Math.max(1, Math.min(50, Number(params.radiusKm || 15))),
     category: String(params.category || 'ALL').trim().toUpperCase(),
+    rating_level: String(params.ratingLevel || 'ALL').trim().toUpperCase(),
     venues,
     created_at: new Date(now).toISOString(),
     expires_at: new Date(now + USER_DISCOVERY_CACHE_DAYS * 24 * 60 * 60 * 1000).toISOString()
@@ -342,11 +406,14 @@ const searchUserPartnerDiscovery = async ({
   longitude,
   radiusKm = 15,
   limit = DEFAULT_LIMIT,
-  category = 'ALL'
+  category = 'ALL',
+  ratingLevel = 'ALL'
 }) => {
   const normalizedCategory = String(category || 'ALL').trim().toUpperCase();
+  const normalizedRatingLevel = normalizeUserRatingLevel(ratingLevel);
+  const ratingFilter = USER_DISCOVERY_RATING_LEVELS[normalizedRatingLevel];
   const requestedTypes = USER_DISCOVERY_CATEGORY_TYPES[normalizedCategory] || USER_DISCOVERY_CATEGORY_TYPES.ALL;
-  const params = { city, latitude, longitude, radiusKm, limit, category: normalizedCategory };
+  const params = { city, latitude, longitude, radiusKm, limit, category: normalizedCategory, ratingLevel: normalizedRatingLevel };
   const cached = await getCachedUserPartnerDiscovery(params);
   if (cached.venues) {
     return cached.venues.map((venue) => ({ ...venue, cache_hit: true }));
@@ -356,7 +423,9 @@ const searchUserPartnerDiscovery = async ({
     city,
     latitude,
     longitude,
-    radiusKm
+    radiusKm,
+    minRating: ratingFilter.min,
+    ratingFilter
   });
 
   const mapped = venues.map((venue) => {
@@ -373,6 +442,7 @@ const searchUserPartnerDiscovery = async ({
         }
       },
       source: 'GOOGLE_PLACES_DIRECT',
+      rating_level: normalizedRatingLevel,
       is_user_discovery: true
     };
   });
@@ -391,6 +461,7 @@ module.exports = {
   CATEGORY_QUERIES,
   USER_DISCOVERY_CATEGORY_TYPES,
   ADMIN_SEEDER_CATEGORY_TYPES,
+  USER_DISCOVERY_RATING_LEVELS,
   MIN_PRESTIGE_RATING,
   USER_DISCOVERY_CACHE_DAYS,
   normalizeCacheText

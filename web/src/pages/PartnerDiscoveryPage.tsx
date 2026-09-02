@@ -37,6 +37,7 @@ type DiscoveryVenue = {
 };
 
 type DiscoveryCategory = 'ALL' | 'RESTAURANT' | 'LOUNGE' | 'HOTEL' | 'CAFE' | 'BEAUTY' | 'GIFTS' | 'CULTURE';
+type RatingLevel = 'ALL' | 'PRESTIGE' | 'HIGH' | 'GOOD';
 
 const DISCOVERY_CATEGORIES: Array<{ id: DiscoveryCategory; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
   { id: 'ALL', icon: Sparkles },
@@ -49,6 +50,13 @@ const DISCOVERY_CATEGORIES: Array<{ id: DiscoveryCategory; icon: React.Component
   { id: 'CULTURE', icon: Palette }
 ];
 
+const RATING_LEVELS: Array<{ id: RatingLevel; range: string }> = [
+  { id: 'ALL', range: '' },
+  { id: 'PRESTIGE', range: '4.5 - 5' },
+  { id: 'HIGH', range: '4 - 4.4' },
+  { id: 'GOOD', range: '3 - 3.9' }
+];
+
 const copy = {
   fr: {
     title: 'Partenaires autour de moi',
@@ -58,7 +66,8 @@ const copy = {
     nearMe: 'Me geolocaliser',
     searchNearMe: 'Chercher autour de moi',
     locationReady: 'Position prete',
-    chooseCategoryFirst: 'Choisissez une categorie, puis cherchez par ville ou autour de vous.',
+    chooseCategoryFirst: 'Choisissez une categorie, un niveau, puis cherchez par ville ou autour de vous.',
+    ratingTitle: 'Niveau',
     payTitle: 'Fonctionnalite payante',
     payBody: 'Les membres Premium y accèdent directement. Les comptes gratuits peuvent débloquer cette recherche pour 500 F CFA.',
     unlock: 'Débloquer pour 500 F',
@@ -74,6 +83,12 @@ const copy = {
       BEAUTY: 'Spa & Beaute',
       GIFTS: 'Fleurs & Cadeaux',
       CULTURE: 'Culture & Loisirs'
+    },
+    ratingLevels: {
+      ALL: 'Tous les niveaux',
+      PRESTIGE: 'Prestige',
+      HIGH: 'Tres bien notes',
+      GOOD: 'Corrects'
     }
   },
   en: {
@@ -84,7 +99,8 @@ const copy = {
     nearMe: 'Use location',
     searchNearMe: 'Search near me',
     locationReady: 'Location ready',
-    chooseCategoryFirst: 'Choose a category, then search by city or around you.',
+    chooseCategoryFirst: 'Choose a category, a level, then search by city or around you.',
+    ratingTitle: 'Level',
     payTitle: 'Paid feature',
     payBody: 'Premium members get direct access. Free accounts can unlock this search for 500 F CFA.',
     unlock: 'Unlock for 500 F',
@@ -100,6 +116,12 @@ const copy = {
       BEAUTY: 'Spa & Beauty',
       GIFTS: 'Flowers & Gifts',
       CULTURE: 'Culture & Leisure'
+    },
+    ratingLevels: {
+      ALL: 'All levels',
+      PRESTIGE: 'Prestige',
+      HIGH: 'Highly rated',
+      GOOD: 'Good'
     }
   }
 };
@@ -111,6 +133,7 @@ const PartnerDiscoveryPage: React.FC = () => {
   const [loadingDiscovery, setLoadingDiscovery] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [category, setCategory] = useState<DiscoveryCategory>('ALL');
+  const [ratingLevel, setRatingLevel] = useState<RatingLevel>('ALL');
   const [locationCoords, setLocationCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [unlockModalOpen, setUnlockModalOpen] = useState(false);
@@ -147,7 +170,7 @@ const PartnerDiscoveryPage: React.FC = () => {
     const cleanCity = city.trim();
     if (!cleanCity) return;
     setLocationCoords(null);
-    void fetchDiscovery({ city: cleanCity, category });
+    void fetchDiscovery({ city: cleanCity, category, ratingLevel });
   };
 
   const handleLocate = () => {
@@ -181,7 +204,8 @@ const PartnerDiscoveryPage: React.FC = () => {
       latitude: locationCoords.latitude,
       longitude: locationCoords.longitude,
       radiusKm: 15,
-      category
+      category,
+      ratingLevel
     });
   };
 
@@ -225,6 +249,30 @@ const PartnerDiscoveryPage: React.FC = () => {
               </button>
             );
           })}
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">{c.ratingTitle}</p>
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+            {RATING_LEVELS.map((item) => {
+              const active = ratingLevel === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setRatingLevel(item.id)}
+                  className={`shrink-0 inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all ${
+                    active
+                      ? 'bg-amber-500 text-slate-950'
+                      : 'bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/10'
+                  }`}
+                >
+                  <Star size={14} fill={active ? 'currentColor' : 'none'} />
+                  <span>{c.ratingLevels[item.id]}</span>
+                  {item.range && <span className={active ? 'text-slate-900/70' : 'text-slate-400'}>{item.range}</span>}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
